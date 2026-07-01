@@ -1,0 +1,23 @@
+[book]
+title = "qmc : Quantum Mechanics implementations in C"
+authors = ["Harshit Dhanwalkar"]
+description = "Quantum Mechanics implementations in C."
+language = "en"
+src = "src"
+
+[preprocessor.katex]
+
+[output.html]
+smart-punctuation = true
+definition-lists = true
+admonitions = true
+mathjax-support = false
+git-repository-url = "https://github.com/Harshit-Dhanwalkar/qmc"
+git-repository-icon = "fab-github"
+edit-url-template = "https://github.com/Harshit-Dhanwalkar/qmc/edit/main/docs/src/{path}"
+
+[output.html.search]
+enable = true
+
+# [output.wordcount]
+# optional = true
