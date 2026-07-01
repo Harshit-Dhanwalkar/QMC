@@ -4,22 +4,22 @@ Qunatum Mechanics implementations : C library and executables for solving quantu
 
 ## Features
 
-- Core: complex numbers, vectors, matrices, special functions (Hermite, Laguerre, Legendre).
+- Core: complex numbers, vectors, matrices, special functions (Hermite, Laguerre, Legendre, Bressel).
 - ODE solvers: Numerov, RK4, Crank‑Nicolson.
 - 1D potentials: infinite well, harmonic, barrier, Coulomb.
-- Plotting via GR (2D) and GNUplot pipe.
+- Plotting via GR (2D), GNUplot pipe and matplotlib pipe for python.
 
 ## Planned / TODO
 
-- [ ] Full 1D TISE solver (shooting + diagonalisation).
-- [ ] 2D/3D systems and density of states.
-- [ ] Angular momentum (spherical harmonics, CG coefficients).
-- [ ] Hydrogen atom (radial wavefunctions).
-- [ ] Perturbation theory (static & time‑dependent).
-- [ ] Scattering theory (phase shifts, Born).
-- [ ] WKB approximation.
-- [ ] Identical particles and Slater determinants.
-- [ ] Relativistic quantum mechanics (Klein‑Gordon, Dirac 1D).
+- [x] Full 1D TISE solver (shooting + diagonalisation).
+- [x] 2D/3D systems and density of states.
+- [x] Angular momentum (spherical harmonics, CG coefficients).
+- [x] Hydrogen atom (radial wavefunctions).
+- [x] Perturbation theory (static & time‑dependent).
+- [x] Scattering theory (phase shifts, Born).
+- [x] WKB approximation.
+- [x] Identical particles and Slater determinants.
+- [x] Relativistic quantum mechanics (Klein‑Gordon, Dirac 1D).
 - [ ] 3D plotting (via GR).
 - [ ] LaTeX annotation on plots (via Pango/GR or external generation).
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
