@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Allocation / Free / Copy */
+// Allocation / Free / Copy
 cmatrix_t *cmatrix_alloc(int nrows, int ncols) {
   cmatrix_t *m = malloc(sizeof(cmatrix_t));
   if (!m)
@@ -39,7 +39,7 @@ cmatrix_t *cmatrix_copy(const cmatrix_t *m) {
   return c;
 }
 
-/* Basic operations */
+// Basic operations
 cmatrix_t *cmatrix_multiply(const cmatrix_t *a, const cmatrix_t *b) {
   if (!a || !b || a->ncols != b->nrows)
     return NULL;
@@ -89,7 +89,7 @@ void cmatrix_scale(cmatrix_t *m, complex_t s) {
     m->data[i] = c_mul(m->data[i], s);
 }
 
-/* LU decomposition (wrapper) */
+// LU decomposition (wrapper)
 void cmatrix_lu_decomp(cmatrix_t *a, int *pivot) {
   if (!a || !pivot)
     return;
@@ -100,7 +100,7 @@ void cmatrix_lu_decomp(cmatrix_t *a, int *pivot) {
   }
 }
 
-/* Solve A x = b (uses LU) */
+// Solve A x = b (uses LU)
 cvector_t *cmatrix_solve(cmatrix_t *a, const cvector_t *b) {
   if (!a || !b || a->nrows != a->ncols || a->nrows != b->n)
     return NULL;
@@ -121,7 +121,7 @@ cvector_t *cmatrix_solve(cmatrix_t *a, const cvector_t *b) {
   return x;
 }
 
-/* Print */
+// Print
 void cmatrix_print(const cmatrix_t *m, const char *label) {
   if (label)
     printf("%s:\n", label);

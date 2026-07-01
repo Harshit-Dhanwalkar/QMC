@@ -5,7 +5,7 @@ Spherical harmonics
 #include "special.h"
 #include <math.h>
 
-/* Real part of spherical harmonic Y_l^m(\theta, \phi) */
+// Real part of spherical harmonic Y_l^m(\theta, \phi)
 double spherical_harmonic_real(int l, int m, double theta, double phi) {
   if (m < 0) {
     // Use Y_l^{-m} = (-1)^m conj(Y_l^m)

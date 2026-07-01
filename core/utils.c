@@ -87,7 +87,7 @@ double expectation_position_squared(const cvector_t *psi, const double *x,
   return expect * dx;
 }
 
-/* Momentum expectation: given momentum-space wavefunction psi_k and k grid */
+// Momentum expectation: given momentum-space wavefunction psi_k and k grid
 double expectation_momentum(const cvector_t *psi_k, const double *k,
                             double dk) {
   if (!psi_k || !k)

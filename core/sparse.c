@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Allocation / Free */
+// Allocation / Free
 sparse_matrix_t *sparse_alloc(int nrows, int ncols, int nnz) {
   sparse_matrix_t *A = malloc(sizeof(sparse_matrix_t));
   if (!A)
@@ -32,7 +32,7 @@ void sparse_free(sparse_matrix_t *A) {
   free(A);
 }
 
-/* Dense to sparse */
+// Dense to sparse
 sparse_matrix_t *sparse_from_dense(const cmatrix_t *A, double tol) {
   if (!A)
     return NULL;
@@ -62,7 +62,7 @@ sparse_matrix_t *sparse_from_dense(const cmatrix_t *A, double tol) {
   return S;
 }
 
-/* Matrix-vector multiply */
+// Matrix-vector multiply
 void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y) {
   if (!A || !x || !y || A->ncols != x->n || A->nrows != y->n)
     return;
@@ -75,7 +75,7 @@ void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y) {
   }
 }
 
-/* Lanczos stub */
+// Lanczos
 lanczos_result_t *lanczos_eigs(sparse_matrix_t *A, int k, int max_iter,
                                double tol) {
   // TODO: Placeholder: currenlty returns NULL; implement when needed.

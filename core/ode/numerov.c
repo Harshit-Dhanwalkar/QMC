@@ -3,16 +3,6 @@ Numerov's method
 for Schrödinger equation
 */
 
-// // phi_{n+1} = (2phi_n(1 - 5h**2f_n/12) - phi_{n-1}(1 + h**2f_{n-1}/12)) / (1
-// // + h**2f_{n+1}/12)
-// void numerov(double *psi, double *f, int N, double h) {
-//   for (int i = 1; i < N - 1; i++) {
-//     psi[i + 1] = (2 * psi[i] * (1 - 5.0 / 12 * h * h * f[i]) -
-//                   psi[i - 1] * (1 + 1.0 / 12 * h * h * f[i - 1])) /
-//                  (1 + 1.0 / 12 * h * h * f[i + 1]);
-//   }
-// }
-
 #include "numerov.h"
 #include "../../core/complex.h"
 #include "../../core/vector.h"
