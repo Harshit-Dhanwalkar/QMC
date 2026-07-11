@@ -4,7 +4,7 @@
 #include "matrix.h"
 #include "vector.h"
 
-/* Array utilities */
+/* Array/Grid utilities */
 double *linspace(double start, double end, int n);
 double *logspace(double start, double end, int n);
 int *range(int start, int end);
@@ -29,12 +29,7 @@ double mean(const double *data, int n);
 double variance(const double *data, int n);
 double std_dev(const double *data, int n);
 
-/* File I/O */
-void save_wavefunction(const char *filename, const double *x,
-                       const cvector_t *psi, int n);
-void save_eigenvalues(const char *filename, const double *eigenvals, int n);
-void save_potential(const char *filename, const double *x, const double *V,
-                    int n);
-
+/* Matrix column extraction */
 cvector_t *cvector_from_matrix_column(const cmatrix_t *m, int col);
+
 #endif

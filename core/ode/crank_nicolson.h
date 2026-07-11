@@ -4,9 +4,9 @@
 #include "../matrix.h"
 #include "../vector.h"
 
-/* Crank-Nicolson time evolution for 1D Schrödinger equation.
+/* Crank-Nicolson time evolution for 1D Schr$\"{o}$dinger equation.
    Hamiltonian must be tridiagonal (kinetic + diagonal potential).
-   Solves: (I + i*dt/2*H) ψ_{n+1} = (I - i*dt/2*H) ψ_n
+   Solves: (I + i*dt/2*H) \phi_{n+1} = (I - i*dt/2*H) \phi_n
    using a complex tridiagonal Thomas algorithm.
 */
 
@@ -20,9 +20,9 @@ int crank_nicolson_step(const double *diag, const double *offdiag, double dt,
                         cvector_t *psi);
 
 /* Build tridiagonal Hamiltonian for 1D system:
-   H = -hbar^2/(2m) * d^2/dx^2 + V(x)
+   H = -\hbar^2/(2m) * d^2/dx^2 + V(x)
    discretized: diag[i] = 2*coeff + V[i], offdiag[i] = -coeff,
-   where coeff = hbar^2/(2m) / dx^2.
+   where coeff = \hbar^2/(2m) / dx^2.
 */
 void build_tridiagonal_hamiltonian(const double *x, const double *V, int N,
                                    double dx, double hbar_sq_2m, double *diag,

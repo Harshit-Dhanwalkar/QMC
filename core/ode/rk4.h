@@ -4,7 +4,7 @@
 #include "../vector.h"
 
 /* Runge-Kutta 4th order integrator for complex ODEs.
-   System: dψ/dt = f(ψ, t).
+   System: d\phi/dt = f(\phi, t).
 */
 
 typedef void (*ode_func_t)(double t, const cvector_t *y, cvector_t *dydt,

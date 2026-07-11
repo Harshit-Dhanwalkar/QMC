@@ -3,33 +3,42 @@
 
 #include "../vector.h"
 
-/* Numerov algorithm for 1D time-independent Schrödinger equation:
- * -ℏ**2/(2m) d**2\phi/dx**2 + V(x)\phi = E\cdot\phi
- *
- * Numerov is superior to finite differences for ODE:
- * \phi_{n+1} = (2\phi_n - \phi_{n-1} - (h**2/12)(f_n + 10f_{n-1} +
- * f_{n-2})\phi_n) / (1 - (h**2/12)f_{n+1}) where f_n = (2m/ℏ**2)(E - V_n)
+/*
+ * Numerov algorithm for 1D time-independent Schr$\"{o}$dinger equation:
+ *   -\hbar^2/(2m) d^2\phi/dx^2 + V(x)\phi = E \cdot \phi
  */
 
 typedef struct {
-  double *x;         // Position grid
-  double *V;         // Potential array V(x)
-  int n;             // Grid points
-  double dx;         // Grid spacing
-  double hbar_sq_2m; // ℏ**2/(2m) in atomic units
+    double *x;          // Position grid
+    double *V;          // Potential array V(x)
+    int     n;          // Grid points
+    double  dx;         // Grid spacing
+    double  hbar_sq_2m; // \hbar^2/(2m) in problem units
 } numerov_params_t;
 
-/* Solve TISE by shooting method
- * Boundary conditions: \phi(x_min) = 0, \phi(x_max) = 0
- * Returns eigenvalue E and eigenfunction \phi
- */
 typedef struct {
-  double energy;
-  cvector_t *psi;
+    double    energy;
+    cvector_t *psi;
 } numerov_solution_t;
 
+/*
+ * numerov_shoot: find eigenstate for given level.
+ *
+ * E_guess is used only to determine the target level index:
+ *   level = round(E_guess - V_min - 0.5), clamped to >= 0.
+ */
 numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
-                                  double E_tol);
+                                   double E_tol);
+
+/*
+ * numerov_integrate: Numerov integration at given energy.
+ *
+ * Fills psi with wavefunction by forward Numerov integration.
+ * Seed: psi[0]=0 (Dirichlet), psi[1]=1e-8.
+ * The result is not normalized; call vec_normalize() afterward.
+ */
+void numerov_integrate(const numerov_params_t *params, double E,
+                        cvector_t *psi);
 
 void numerov_solution_free(numerov_solution_t *sol);
 

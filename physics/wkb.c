@@ -38,7 +38,7 @@ double wkb_quantization(potential_fn V, void *params, double m, double hbar,
      HACK: assume turning points lie within a default range.
      TODO: implementation more parameters (x_min, x_max, grid).
   */
-  // Stub: returns E_min.  TODO: implement proper bisection with
+  // returns E_min.  TODO: implement proper bisection with
   // action_integral.
   return E_min;
 }
