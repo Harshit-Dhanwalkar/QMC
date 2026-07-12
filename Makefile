@@ -144,8 +144,9 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_hydrogen \
               $(BUILD_DIR)/test_perturbation \
               $(BUILD_DIR)/test_crank_nicolson \
+              $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials
-              # $(BUILD_DIR)/test_wkb \
+
 # ifeq ($(PLOT_BACKEND),GR)
 #     TESTS += $(BUILD_DIR)/test_grplot
 # endif
