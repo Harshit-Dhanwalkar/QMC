@@ -9,13 +9,13 @@
  *   Analytic threshold for n-th bound state: V_0^n = (2n-1)^2pi^2/(8a^2)
  *   (in natural units \hbar=2m=1)
  *
- * Method: finite-difference matrix eigensolver on x \in [-L, L].
+ * Method: finite-difference tridiagonal eigensolver on x \in [-L, L].
  */
 
-#include "../core/complex.h"
-#include "../core/matrix.h"
+#include "../core/linalg/tridiag_eigh.h"
 #include "../core/utils.h"
 #include "../export/plot.h"
+#include "../core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,10 +42,21 @@ int main(void) {
   double *V0_arr = malloc(n_V * sizeof *V0_arr);
   double *E_arr = malloc(n_V * n_states * sizeof *E_arr);
   int *n_bound = malloc(n_V * sizeof *n_bound);
-  if (!V0_arr || !E_arr || !n_bound) {
+  double *diag = malloc(N * sizeof *diag);
+  double *offdiag = malloc((N - 1) * sizeof *offdiag);
+  if (!V0_arr || !E_arr || !n_bound || !diag || !offdiag) {
     free(x);
+    free(V0_arr);
+    free(E_arr);
+    free(n_bound);
+    free(diag);
+    free(offdiag);
     return 1;
   }
+
+  // Off-diagonal is the same for every V_0, so build it once outside sweep
+  for (int i = 0; i < N - 1; i++)
+    offdiag[i] = -coeff;
 
   // Analytic threshold: V0_n = (2n-1)^2 * pi^2 / (8*a^2)
   printf("   Analytic thresholds for new bound states:\n");
@@ -55,28 +66,26 @@ int main(void) {
   }
   printf("\n");
   printf("   Sweeping V_0 from 0 to %.1f...\n", V_max);
+  fflush(stdout);
 
   // Sweep
+  int next_pct = 10;
   for (int v = 0; v < n_V; v++) {
     double V0 = V_max * v / (n_V - 1);
     V0_arr[v] = V0;
 
-    // Build Hamiltonian
-    cmatrix_t *H = cmatrix_alloc(N, N);
-    if (!H)
-      continue;
-
     for (int i = 0; i < N; i++) {
       double Vi = (fabs(x[i]) <= a) ? -V0 : 0.0;
-      CMAT(H, i, i) = c_real(2.0 * coeff + Vi);
-      if (i > 0)
-        CMAT(H, i, i - 1) = c_real(-coeff);
-      if (i < N - 1)
-        CMAT(H, i, i + 1) = c_real(-coeff);
+      diag[i] = 2.0 * coeff + Vi;
     }
 
-    eigen_t *eig = cmatrix_eigh(H);
-    cmatrix_free(H);
+    eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+    if (!eig) {
+      n_bound[v] = 0;
+      for (int k = 0; k < n_states; k++)
+        E_arr[v * n_states + k] = 1.0; // sentinel: not bound
+      continue;
+    }
 
     int nb = 0;
     for (int k = 0; k < n_states && k < eig->n; k++) {
@@ -88,6 +97,13 @@ int main(void) {
     }
     n_bound[v] = nb;
     eigen_free(eig);
+
+    int pct = (int)(100.0 * (v + 1) / n_V);
+    if (pct >= next_pct) {
+      printf("   ...%d%% (V_0=%.2f)\n", pct, V0);
+      fflush(stdout);
+      next_pct += 10;
+    }
   }
 
   // Print table at selected V0 values
@@ -155,6 +171,8 @@ int main(void) {
   free(V0_arr);
   free(E_arr);
   free(n_bound);
+  free(diag);
+  free(offdiag);
   free(x);
   return 0;
 }

@@ -3,7 +3,7 @@ Numerov's method
 for Schrödinger equation
 */
 
-// TODO:Implement Cooley’s method (or the log‑derivative matching)
+// TODO:Implement Cooley’s method (or log‑derivative matching)
 
 #include "numerov.h"
 #include "../../core/complex.h"
@@ -44,6 +44,7 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   free(f);
 }
 
+// TODO:
 static double find_eigenvalue_matrix(const numerov_params_t *p, int level) {
   int N = p->n;
   double coeff = p->hbar_sq_2m / (p->dx * p->dx);

@@ -20,10 +20,29 @@ Qunatum Mechanics implementations : C library and executables for solving quantu
 - [x] WKB approximation.
 - [x] Identical particles and Slater determinants.
 - [x] Relativistic quantum mechanics (Klein‑Gordon, Dirac 1D).
-- [ ] 3D plotting (via GR).
+- [ ] 3D plotting (via [GR](https://github.com/sciapp/gr.git)).
 - [ ] LaTeX annotation on plots (via Pango/GR or external generation).
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
-- [ ] Unit tests and examples for each topic.
+- [ ] Unit examples for each topic.
+  - [x] `eg_01_particle_box.c`
+  - [x] `eg_02_harmonic.c`
+  - [x] `eg_03_hydrogen.c`
+  - [x] `eg_04_perturbation.c`
+  - [x] `eg_05_tunnelling.c`
+  - [x] `eg_06_finite_well.c`
+  - [x] `eg_07_infinite_well.c`
+- [ ] Unit tests for each topic.
+  - [x] `test_complex.c`
+  - [x] `test_crank_nicolson.c`
+  - [x] `test_fft.c`
+  - [x] `test_grplot.c`
+  - [x] `test_hydrogen.c`
+  - [x] `test_matrix.c`
+  - [x] `test_numerov.c`
+  - [x] `test_perturbation.c`
+  - [x] `test_potentials.c`
+  - [x] `test_rk4.c`
+  - [x] `test_wkb.c`
 
 # LICENSE
 

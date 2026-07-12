@@ -57,3 +57,4 @@ dkms.conf
 # Others
 mdbook
 mdbook-katex
+compile_commands.json

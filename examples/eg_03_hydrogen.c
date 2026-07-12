@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" >  Hydrogen Atom (Radial Equation)\n\n");
+  printf(" > Hydrogen Atom (Radial Equation)\n\n");
 
   // Parameters (SI units)
   double hbar = HBAR;

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TODO: verify <r^2> and radial node count for n=2, l=0
+
 int main() {
   printf(" > Testing radial wavefunction for n=1, l=0...\n");
 

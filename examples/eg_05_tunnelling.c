@@ -81,7 +81,7 @@ int main(void) {
 
   printf("   Grid:    N=%d, x∈[%.1f,%.1f], dx=%.4f\n", N, x_min, x_max, dx);
   printf("   Barrier: V_0=%.2f, x∈[%.1f,%.1f]\n", V0, a, b);
-  printf("   Packet:  k_0=%.2f, \sigma=%.2f, x_0=%.2f\n", k0, sigma, x0);
+  printf("   Packet:  k_0=%.2f, \\sigma=%.2f, x_0=%.2f\n", k0, sigma, x0);
   printf("   E_kin = k_0^2/2 = %.2f  (barrier height = %.2f)\n", k0 * k0 / 2.0,
          V0);
   printf("   Running %d steps, dt=%.4f, T=%.2f...\n\n", steps, dt, steps * dt);
