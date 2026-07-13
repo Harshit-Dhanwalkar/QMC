@@ -18,6 +18,7 @@ https://github.com/birocoles/matcomp)
 #include <stdlib.h>
 #include <string.h>
 
+// TODO:
 // // QR decomposition using Householder reflections
 // // HACK: Reduces Hermitian matrix to tridiagonal form first for efficiency
 // static void householder_reflection(cmatrix_t *A, int k) {
@@ -93,6 +94,7 @@ https://github.com/birocoles/matcomp)
 //   free(x);
 // }
 
+// TODO:
 // // Power iteration for lowest eigenvalue/eigenvector
 // static void power_iteration(cmatrix_t *A, cvector_t *v, double *lambda,
 //                             int max_iter, double tol) {
@@ -101,7 +103,7 @@ https://github.com/birocoles/matcomp)
 //   cvector_t *v_old = cvector_copy(v);
 //
 //   for (int iter = 0; iter < max_iter; iter++) {
-//     /* w = A @ v */
+//     // w = A @ v
 //     for (int i = 0; i < A->nrows; i++) {
 //       w->data[i] = c_zero();
 //       for (int j = 0; j < A->ncols; j++) {
@@ -142,12 +144,13 @@ https://github.com/birocoles/matcomp)
 //   cvector_free(v_old);
 // }
 
+// TODO:
 // // Inverse iteration for specific eigenvalue
 // static void inverse_iteration(cmatrix_t *A, cvector_t *v, double sigma,
 //                               int max_iter, double tol) {
 //   cmatrix_t *B = cmatrix_copy(A);
 //
-//   /* Shift: B = A - \sigma I */
+//   // Shift: B = A - \sigma I
 //   for (int i = 0; i < B->nrows; i++) {
 //     CMAT(B, i, i) = c_sub(CMAT(B, i, i), c_real(sigma));
 //   }
@@ -232,10 +235,6 @@ static void jacobi_rotate(cmatrix_t *A, cmatrix_t *V, int i, int j) {
       double a_kj = CMAT(A, k, j).re;
       double new_ki = c * a_ki - s * a_kj;
       double new_kj = s * a_ki + c * a_kj;
-      // CMAT(A, k, i) = c_real(c * a_ki - s * a_kj);
-      // CMAT(A, i, k) = CMAT(A, k, i); // symmetric
-      // CMAT(A, k, j) = c_real(s * a_ki + c * a_kj);
-      // CMAT(A, j, k) = CMAT(A, k, j);
       CMAT(A, k, i) = c_real(new_ki);
       CMAT(A, i, k) = c_real(new_ki);
       CMAT(A, k, j) = c_real(new_kj);
@@ -410,7 +409,6 @@ eigen_t *cmatrix_eigh(cmatrix_t *A) {
    * Cyclic Jacobi: sweep all (p,q) pairs with p<q, repeat until
    * off-diagonal norm is below tolerance.
    */
-
   const double tol = 1e-12;
   const int max_sweeps = 100;
   int sweep = 0;

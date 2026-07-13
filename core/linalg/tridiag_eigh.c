@@ -1,19 +1,12 @@
 /*
- * Tridiagonal symmetric eigensolver: implicit QL algorithm with
- * Wilkinson shift (EISPACK tql2 / Numerical Recipes "tqli",
+ * Tridiagonal symmetric eigensolver:
+ * Implicit QL algorithm with Wilkinson shift (EISPACK tql2 / Numerical Recipes
+ * "tqli", adapted to 0-indexed C)
+ */
 
-For full dense matrices (3D, coupled systems):
-- TODO: Householder tridiagonalization -- Commented out
-(https://en.wikipedia.org/wiki/Householder_transformation)
-- QR iteration (Golub & Van Loan algorithm :
-https://github.com/birocoles/matcomp)
-
-// HACK: Use LAPACK via eigen_generic.
-*/
-
+#include "tridiag_eigh.h"
 #include "../complex.h"
 #include "../matrix.h"
-#include "tridiag_eigh.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -43,12 +36,12 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
   }
   for (int i = 0; i < n; i++)
     d[i] = diag[i];
-  // Build e[] in the QL sweep's convention
-  e[0] = 0.0;
-  for (int i = 1; i < n; i++)
-    e[i] = offdiag[i - 1];
-  for (int i = 1; i < n; i++)
-    e[i - 1] = e[i];
+
+  // NOTE:
+  // e[i] holds subdiagonal for row i in QL sweep's convention;
+  // e[n-1] is 0 sentinel used by loop's boundary check.
+  for (int i = 0; i < n - 1; i++)
+    e[i] = offdiag[i];
   e[n - 1] = 0.0;
 
   double *z = malloc((size_t)n * n * sizeof *z); // row-major eigenvectors

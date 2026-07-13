@@ -7,6 +7,7 @@ for Schrödinger equation
 
 #include "numerov.h"
 #include "../../core/complex.h"
+#include "../../core/linalg/tridiag_eigh.h"
 #include "../../core/matrix.h"
 #include "../../core/vector.h"
 #include <math.h>
@@ -44,33 +45,7 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   free(f);
 }
 
-// TODO:
-static double find_eigenvalue_matrix(const numerov_params_t *p, int level) {
-  int N = p->n;
-  double coeff = p->hbar_sq_2m / (p->dx * p->dx);
-  cmatrix_t *H = cmatrix_alloc(N, N);
-  if (!H)
-    return 0.0;
-  for (int i = 0; i < N; i++) {
-    CMAT(H, i, i) = c_real(2.0 * coeff + p->V[i]);
-    if (i > 0)
-      CMAT(H, i, i - 1) = c_real(-coeff);
-    if (i < N - 1)
-      CMAT(H, i, i + 1) = c_real(-coeff);
-  }
-  eigen_t *eig = cmatrix_eigh(H);
-  cmatrix_free(H);
-  if (!eig || level >= eig->n) {
-    if (eig)
-      eigen_free(eig);
-    return 0.0;
-  }
-  double E = eig->eigenvalues[level];
-  eigen_free(eig);
-  return E;
-}
-
-// Find eigenstate using matrix eigensolver
+// Find eigenstate using tridiagonal eigensolver
 numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
                                   double E_tol) {
   (void)E_tol;
@@ -89,21 +64,25 @@ numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
       level = 0;
   }
 
-  // Find eigenvalue + eigenvector via matrix diagonalization
-  int N2 = params->n;
+  // Build tridiagonal Hamiltonian
   double coeff = params->hbar_sq_2m / (params->dx * params->dx);
-  cmatrix_t *H = cmatrix_alloc(N2, N2);
-  if (!H)
+  double *diag = malloc(N * sizeof *diag);
+  double *offdiag = malloc((N - 1) * sizeof *offdiag);
+  if (!diag || !offdiag) {
+    free(diag);
+    free(offdiag);
     return NULL;
-  for (int i = 0; i < N2; i++) {
-    CMAT(H, i, i) = c_real(2.0 * coeff + params->V[i]);
-    if (i > 0)
-      CMAT(H, i, i - 1) = c_real(-coeff);
-    if (i < N2 - 1)
-      CMAT(H, i, i + 1) = c_real(-coeff);
   }
-  eigen_t *eig = cmatrix_eigh(H);
-  cmatrix_free(H);
+
+  for (int i = 0; i < N; i++)
+    diag[i] = 2.0 * coeff + params->V[i];
+
+  for (int i = 0; i < N - 1; i++)
+    offdiag[i] = -coeff;
+
+  eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+  free(diag);
+  free(offdiag);
   if (!eig || level >= eig->n) {
     if (eig)
       eigen_free(eig);
