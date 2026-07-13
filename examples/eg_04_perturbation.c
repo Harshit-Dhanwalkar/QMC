@@ -64,12 +64,13 @@ int main(void) {
   // Compute <n|V'|n> by integrating
   // Compute first-order correction by numerical integration:
   // E1 = <\phi_n|\lambda x^4|\phi_n>.
-  // Use perturb_nondeg which expects V matrix in eigenbasis.
+  // TODO: Use perturb_nondeg which expects V matrix in eigenbasis.
   // HACK: For simplicity, compute directly.
 
   // First 5 states and compute <n|x^4|n> using the grid
-  printf("   State n   E0 (exact)   <x^4>     \\lambda<x^4> (1st order)   E_full "
-         "(numerical)   Error (%%)\n");
+  printf(
+      "   State n   E0 (exact)   <x^4>     \\lambda<x^4> (1st order)   E_full "
+      "(numerical)   Error (%%)\n");
   printf("   -------   ----------   -------    ----------------   "
          "------------------   --------\n");
 
@@ -79,10 +80,17 @@ int main(void) {
     if (!psi)
       continue;
 
-    // Normalize (already normalized)
-    double norm = cvector_norm(psi);
-    if (fabs(norm - 1.0) > 1e-6)
-      cvector_normalize(psi);
+    double norm_sq = 0.0;
+    for (int i = 0; i < N; i++)
+      norm_sq += c_abs2(psi->data[i]) * dx;
+
+    if (norm_sq > 0.0) {
+      double inv = 1.0 / sqrt(norm_sq);
+      for (int i = 0; i < N; i++) {
+        psi->data[i].re *= inv;
+        psi->data[i].im *= inv;
+      }
+    }
 
     // Compute <x^4>
     double x4_expect = 0.0;

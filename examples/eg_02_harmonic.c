@@ -1,28 +1,28 @@
-#include "../core/complex.h"
 #include "../core/constants.h"
+#include "../core/linalg/tridiag_eigh.h"
 #include "../core/matrix.h"
 #include "../core/utils.h"
 #include "../core/vector.h"
 #include "../export/plot.h"
-#include "../physics/potentials.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 /*
  * Example 2: Quantum Harmonic Oscillator
- * V(x) = 0.5 * m * omega^2 * x^2
+ * V(x) = 0.5 * m * \omega^2 * x^2
  *
  * Analytical:
- *   E_n = hbar omega (n + 1/2)
- *   psi_n(x) = (1/sqrt(2^n n!)) * (m omega / pi hbar)^(1/4)
- *              * H_n( sqrt(m omega / hbar) x) * exp(-m omega x^2 / 2hbar)
+ *   E_n = \hbar \omega (n + 1/2)
+ *   \psi_n(x) = (1 / \sqrt(2^n n!)) * (m * \omega / \pi * \hbar)^(1/4)
+ *              * H_n(\sqrt(m * \omega / \hbar) x)
+ *              * \exp(-m * \omega x^2 / 2 * \hbar)
  */
 
 int main(void) {
   printf(" > Quantum Harmonic Oscillator\n\n");
 
-  // Parameters (atomic units: m=1, hbar=1, omega=1)
+  // Parameters (atomic units: m=1, \hbar=1, \omega=1)
   double omega = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -44,7 +44,7 @@ int main(void) {
          x_max, dx);
 
   // Analytical energies for first 5 states
-  printf("   Analytical energies (hbar omega units):\n");
+  printf("   Analytical energies (\\hbar \\omega units):\n");
   printf("   n   E_n    <x^2>\n");
   printf("  ---  -----  -----\n");
   for (int n = 0; n < 5; n++) {
@@ -54,30 +54,32 @@ int main(void) {
   }
   printf("\n");
 
-  // Build Hamiltonian matrix (tridiagonal)
-  cmatrix_t *H = cmatrix_alloc(n_grid, n_grid);
-  if (!H) {
+  // Build Hamiltonian (tridiagonal): diag[i] + offdiag connecting
+  // neighbors
+  double *diag = malloc(n_grid * sizeof *diag);
+  double *offdiag = malloc((n_grid - 1) * sizeof *offdiag);
+  if (!diag || !offdiag) {
     fprintf(stderr, "Memory allocation failed\n");
     free(x);
+    free(diag);
+    free(offdiag);
     return 1;
   }
   double coeff = -hbar * hbar / (2 * m * dx * dx);
   double mass_omega2 = 0.5 * m * omega * omega;
 
-  for (int i = 0; i < n_grid; i++) {
-    CMAT(H, i, i) = c_real(-2.0 * coeff + mass_omega2 * x[i] * x[i]);
-    if (i > 0)
-      CMAT(H, i, i - 1) = c_real(coeff);
-    if (i < n_grid - 1)
-      CMAT(H, i, i + 1) = c_real(coeff);
-  }
+  for (int i = 0; i < n_grid; i++)
+    diag[i] = -2.0 * coeff + mass_omega2 * x[i] * x[i];
+  for (int i = 0; i < n_grid - 1; i++)
+    offdiag[i] = coeff;
 
   // Diagonalize
-  eigen_t *eig = cmatrix_eigh(H);
+  eigen_t *eig = tridiag_eigh(diag, offdiag, n_grid);
   if (!eig) {
     fprintf(stderr, "Eigenvalue decomposition failed\n");
-    cmatrix_free(H);
     free(x);
+    free(diag);
+    free(offdiag);
     return 1;
   }
 
@@ -139,7 +141,8 @@ int main(void) {
   // Cleanup
   free(x);
   free(V);
-  cmatrix_free(H);
+  free(diag);
+  free(offdiag);
   eigen_free(eig);
 
   return 0;

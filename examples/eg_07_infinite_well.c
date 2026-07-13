@@ -1,172 +1,163 @@
-/*
- * Example 6: Finite Square Well - Bound States vs Well Depth
- *
- * Sweeps V_0 from 0 to V_max and finds bound state energies numerically.
- * Shows how states appear as V_0 increases - each new bound state appears
- * when V_0 crosses a threshold, visible as a kink in the E(V_0) curves.
- *
- *   V(x) = -V_0  for |x| ≤ a,   else 0
- *   Analytic threshold for n-th bound state: V_0^n = (2n-1)^2pi^2/(8a^2)
- *   (in natural units \hbar=2m=1)
- *
- * Method: finite-difference matrix eigensolver on x \in [-L, L].
- */
-
-#include "../core/complex.h"
-#include "../core/matrix.h"
+#include "../core/constants.h"
+#include "../core/linalg/tridiag_eigh.h"
 #include "../core/utils.h"
+#include "../core/vector.h"
 #include "../export/plot.h"
+#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+/*
+ * Example 7: Infinite Square Well (Particle in a Box)
+ *
+ *   V(x) = 0      for 0 < x < L
+ *        = \infty otherwise (hard walls: \psi(0) = \psi(L) = 0)
+ *
+ * Analytical:
+ *   E_n = n^2 * \pi^2 * \hbar^2 / (2 * m * L^2), n = 1, 2, 3, ...
+ *   \psi_n(x) = \sqrt(2/L) \sin(n * \pi * x / L)
+ */
+
 int main(void) {
-  printf(" > Finite Square Well: Bound States vs V_0\n\n");
+  printf(" > Infinite Square Well (Particle in a Box)\n\n");
 
-  // Parameters
-  //
-  // NOTE: On runtime, cmatrix_eigh() is a dense Jacobi eigensolver
-  // (O(N^3) per call, several sweeps to converge) even though this
-  // Hamiltonian is tridiagonal. This example calls it once per V_0
-  // sample, so total cost is O(n_V * N^3)
-  double a = 1.0;      // half-width of well
-  double L = 8.0;      // domain half-width (L >> a)
-  int N = 201;         // grid points
-  double V_max = 20.0; // sweep V_0 from 0 to V_max
-  int n_V = 60;        // number of V_0 values
-  int n_states = 5;    // track up to 5 bound states
+  // Parameters (natural units: m=1, hbar=1)
+  double L = 1.0;
+  double m = 1.0;
+  double hbar = 1.0;
 
-  double dx = 2.0 * L / (N - 1);
-  double *x = linspace(-L, L, N);
-  if (!x)
-    return 1;
+  int n_interior = 199; // interior grid points (walls excluded)
+  double dx = L / (n_interior + 1);
 
-  double coeff = 0.5 / (dx * dx); // \hbar^2/2m = 0.5
-
-  // Store energy vs V0 for each state
-  double *V0_arr = malloc(n_V * sizeof *V0_arr);
-  double *E_arr = malloc(n_V * n_states * sizeof *E_arr);
-  int *n_bound = malloc(n_V * sizeof *n_bound);
-  if (!V0_arr || !E_arr || !n_bound) {
-    free(x);
+  // Full grid including walls
+  int n_grid = n_interior + 2;
+  double *x = linspace(0.0, L, n_grid);
+  if (!x) {
+    fprintf(stderr, "Memory allocation failed\n");
     return 1;
   }
 
-  // Analytic threshold: V0_n = (2n-1)^2 * pi^2 / (8*a^2)
-  printf("   Analytic thresholds for new bound states:\n");
-  for (int n = 1; n <= n_states; n++) {
-    double V0_thresh = (2 * n - 1) * (2 * n - 1) * M_PI * M_PI / (8.0 * a * a);
-    printf("   n=%d: V_0 > %.4f\n", n, V0_thresh);
+  printf("     Parameters:   L = %.3f, m = %.3f, hbar = %.3f\n", L, m, hbar);
+  printf("     Grid: %d interior points, dx=%.6f\n\n", n_interior, dx);
+
+  // Analytical energies for first 5 states
+  printf("   Analytical energies (units hbar^2/(2mL^2)):\n");
+  printf("   n   E_n\n");
+  printf("  ---  -------\n");
+  for (int n = 1; n <= 5; n++) {
+    double E = (n * n * M_PI * M_PI * hbar * hbar) / (2.0 * m * L * L);
+    printf("   %2d  %7.4f\n", n, E);
   }
   printf("\n");
-  printf("   Sweeping V_0 from 0 to %.1f...\n", V_max);
 
-  // Sweep
-  int next_pct = 10;
-  for (int v = 0; v < n_V; v++) {
-    double V0 = V_max * v / (n_V - 1);
-    V0_arr[v] = V0;
+  // Build Hamiltonian on interior points.
+  // V=0 inside well
+  double *diag = malloc(n_interior * sizeof *diag);
+  double *offdiag = malloc((n_interior - 1) * sizeof *offdiag);
+  if (!diag || !offdiag) {
+    fprintf(stderr, "Memory allocation failed\n");
+    free(x);
+    free(diag);
+    free(offdiag);
+    return 1;
+  }
+  double coeff = hbar * hbar / (2.0 * m * dx * dx);
 
-    // Build Hamiltonian
-    cmatrix_t *H = cmatrix_alloc(N, N);
-    if (!H)
+  for (int i = 0; i < n_interior; i++)
+    diag[i] = 2.0 * coeff;
+  for (int i = 0; i < n_interior - 1; i++)
+    offdiag[i] = -coeff;
+
+  // Diagonalize
+  eigen_t *eig = tridiag_eigh(diag, offdiag, n_interior);
+  if (!eig) {
+    fprintf(stderr, "Eigenvalue decomposition failed\n");
+    free(x);
+    free(diag);
+    free(offdiag);
+    return 1;
+  }
+
+  printf("  Lowest 5 numerical eigenvalues (units hbar^2/(2mL^2)):\n");
+  printf("   n    E_num    E_ana     error %%\n");
+  printf("  ---  -------  -------   --------\n");
+  for (int i = 0; i < 5 && i < eig->n; i++) {
+    int n = i + 1;
+    double E_num = eig->eigenvalues[i];
+    double E_ana = (n * n * M_PI * M_PI * hbar * hbar) / (2.0 * m * L * L);
+    double err = fabs(E_num - E_ana) / E_ana * 100.0;
+    printf("   %2d  %7.4f  %7.4f  %6.3f%%\n", n, E_num, E_ana, err);
+  }
+  printf("\n");
+
+  // Save potential: V=0 inside the well
+  double *V = calloc(n_grid, sizeof *V);
+  save_potential("infinite_well_potential.dat", x, V, n_grid);
+
+  // Save wavefunctions and plot
+  for (int i = 0; i < 4 && i < eig->n; i++) {
+    cvector_t *col = cvector_from_matrix_column(eig->eigenvectors, i);
+    if (!col)
       continue;
 
-    for (int i = 0; i < N; i++) {
-      double Vi = (fabs(x[i]) <= a) ? -V0 : 0.0;
-      CMAT(H, i, i) = c_real(2.0 * coeff + Vi);
-      if (i > 0)
-        CMAT(H, i, i - 1) = c_real(-coeff);
-      if (i < N - 1)
-        CMAT(H, i, i + 1) = c_real(-coeff);
+    cvector_t *psi_full = cvector_alloc(n_grid);
+    psi_full->data[0].re = 0.0;
+    psi_full->data[0].im = 0.0;
+    psi_full->data[n_grid - 1].re = 0.0;
+    psi_full->data[n_grid - 1].im = 0.0;
+    for (int j = 0; j < n_interior; j++)
+      psi_full->data[j + 1] = col->data[j];
+
+    // Normalize on full grid
+    double norm = 0.0;
+    for (int j = 0; j < n_grid; j++)
+      norm += (psi_full->data[j].re * psi_full->data[j].re +
+               psi_full->data[j].im * psi_full->data[j].im) *
+              dx;
+    double inv = (norm > 0.0) ? 1.0 / sqrt(norm) : 1.0;
+
+    double *y = malloc(n_grid * sizeof *y);
+    for (int j = 0; j < n_grid; j++) {
+      psi_full->data[j].re *= inv;
+      psi_full->data[j].im *= inv;
+      y[j] = psi_full->data[j].re; // real eigenfunctions
     }
 
-    eigen_t *eig = cmatrix_eigh(H);
-    cmatrix_free(H);
+    char fname[64];
+    snprintf(fname, sizeof fname, "infinite_well_psi_%d.dat", i + 1);
+    save_wavefunction(fname, x, psi_full, n_grid);
 
-    int nb = 0;
-    for (int k = 0; k < n_states && k < eig->n; k++) {
-      double E = eig->eigenvalues[k];
-      // Bound states have E < 0
-      E_arr[v * n_states + k] = E;
-      if (E < 0.0)
-        nb++;
-    }
-    n_bound[v] = nb;
-    eigen_free(eig);
-
-    int pct = (int)(100.0 * (v + 1) / n_V);
-    if (pct >= next_pct) {
-      printf("   ...%d%% (V_0=%.2f)\n", pct, V0);
-      next_pct += 10;
-    }
-  }
-
-  // Print
-  printf("\n   V_0     E_1       E_2        E_3\n");
-  printf("   -----  ---------  ---------  ---------\n");
-  for (int v = 0; v < n_V; v += n_V / 10) {
-    printf("   %5.2f", V0_arr[v]);
-    for (int k = 0; k < 3; k++) {
-      double E = E_arr[v * n_states + k];
-      if (E < 0)
-        printf("  %9.4f", E);
-      else
-        printf("  %9s", "---");
-    }
-    printf("\n");
-  }
-
-  // Save data
-  {
-    char path[256];
-    snprintf(path, sizeof path, "%s/finite_well_energies.dat", QMC_OUTPUT_DIR);
-    FILE *f = fopen(path, "w");
-    if (f) {
-      fprintf(f, "# V0  E1  E2  E3  E4  E5\n");
-      for (int v = 0; v < n_V; v++) {
-        fprintf(f, "%.6e", V0_arr[v]);
-        for (int k = 0; k < n_states; k++)
-          fprintf(f, "  %.6e", E_arr[v * n_states + k]);
-        fprintf(f, "\n");
-      }
-      fclose(f);
-      printf("\n   Saved finite_well_energies.dat\n");
-    }
-  }
-
-  // Plot: E vs V0 for each bound state
-  {
-    // Extract each state's energy as a separate array
-    double **E_by_state = malloc(n_states * sizeof *E_by_state);
-    for (int k = 0; k < n_states; k++) {
-      E_by_state[k] = malloc(n_V * sizeof **E_by_state);
-      for (int v = 0; v < n_V; v++)
-        E_by_state[k][v] = E_arr[v * n_states + k];
-    }
-
-    const char *labels[] = {"n=1", "n=2", "n=3", "n=4", "n=5"};
+    char plot_name[64];
+    snprintf(plot_name, sizeof plot_name, "infinite_well_psi_%d", i + 1);
     plot_opts_t opts = {0};
-    opts.title = "Finite Well: E_n vs V_0";
-    opts.xlabel = "V_0";
-    opts.ylabel = "E_n";
-    opts.ymin = -V_max;
-    opts.ymax = 1.0;
-    opts.xmin = 0;
-    opts.xmax = V_max;
+    opts.title = "Infinite Square Well";
+    opts.xlabel = "x";
+    opts.ylabel = "\\psi(x)";
+    opts.width = 800;
+    opts.height = 600;
+    plot_line(plot_name, PLOT_FORMAT_PNG, x, y, n_grid, &opts);
 
-    plot_lines("finite_well", PLOT_FORMAT_PNG, V0_arr,
-               (const double **)E_by_state, n_states, n_V, labels, &opts);
-    printf("   Generated finite_well.png\n");
-
-    for (int k = 0; k < n_states; k++)
-      free(E_by_state[k]);
-    free(E_by_state);
+    free(y);
+    cvector_free(psi_full);
+    cvector_free(col);
+    printf("    Saved %s and plot %s.png\n", fname, plot_name);
   }
 
-  free(V0_arr);
-  free(E_arr);
-  free(n_bound);
+  // Save eigenvalues
+  int n_save = (eig->n < 10) ? eig->n : 10;
+  double *E_vals = malloc(n_save * sizeof *E_vals);
+  for (int i = 0; i < n_save; i++)
+    E_vals[i] = eig->eigenvalues[i];
+  save_eigenvalues("infinite_well_energies.dat", E_vals, n_save);
+  free(E_vals);
+
+  // Cleanup
   free(x);
+  free(V);
+  free(diag);
+  free(offdiag);
+  eigen_free(eig);
+
   return 0;
 }
