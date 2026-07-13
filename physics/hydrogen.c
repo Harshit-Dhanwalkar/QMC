@@ -3,11 +3,11 @@ Hydrogen atom: radial solver and analytic wavefunctions.
 */
 
 #include "hydrogen.h"
-#include "../core/constants.h"
-#include "../core/linalg/linalg.h"
-#include "../core/special/special.h"
-#include "../core/matrix.h"
 #include "../core/complex.h"
+#include "../core/constants.h"
+#include "../core/linalg/tridiag_eigh.h"
+#include "../core/matrix.h"
+#include "../core/special/special.h"
 #include "../core/vector.h"
 #include <math.h>
 #include <stdlib.h>
@@ -37,38 +37,43 @@ eigen_t *hydrogen_radial_solve(double *r, int N, int l, double hbar,
   double diag_factor = 2.0 * coeff / h2;
   double offdiag_factor = -coeff / h2;
 
-  cmatrix_t *H = cmatrix_alloc(N, N);
-  if (!H)
+  double *diag = malloc(N * sizeof *diag);
+  double *offdiag = malloc((N - 1) * sizeof *offdiag);
+  if (!diag || !offdiag) {
+    free(diag);
+    free(offdiag);
     return NULL;
+  }
 
   for (int i = 0; i < N; i++) {
     double r_i = r[i];
-    double V = coeff * l * (l + 1.0) / (r_i * r_i) - e2 / r_i;
-    CMAT(H, i, i) = c_real(diag_factor + V);
-    if (i > 0)
-      CMAT(H, i, i - 1) = c_real(offdiag_factor);
-    if (i < N - 1)
-      CMAT(H, i, i + 1) = c_real(offdiag_factor);
+    double V =
+        (r_i > 0.0) ? coeff * l * (l + 1.0) / (r_i * r_i) - e2 / r_i : 0.0;
+    diag[i] = diag_factor + V;
   }
+  for (int i = 0; i < N - 1; i++)
+    offdiag[i] = offdiag_factor;
 
-  // Apply boundary: R(0)=0, R(r_max)=0 (set large potential at boundaries)
-  // Set diagonal at r=0 to huge value to enforce zero
-  CMAT(H, 0, 0) = c_real(1e10);
-  CMAT(H, N - 1, N - 1) = c_real(1e10);
+  // Apply boundary: R(0)=0, R(r_max)=0
+  double boundary_val = 1e6 * diag_factor;
+  diag[0] = boundary_val;
+  diag[N - 1] = boundary_val;
 
-  eigen_t *eig = cmatrix_eigh_generic(H);
-  cmatrix_free(H);
+  eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+  free(diag);
+  free(offdiag);
   return eig;
 }
 
 cvector_t *hydrogen_radial_wavefunction(double *r, int N, int n, int l) {
   if (!r || N < 1 || n < 1 || l < 0 || l >= n)
     return NULL;
-  // Analytical: R_{nl}(r) = sqrt((2/(n a0))^3 * (n-l-1)!/(2n (n+l)!)) *
-  // exp(-r/(n a0)) * (2r/(n a0))^l * L_{n-l-1}^{2l+1}(2r/(n a0))
+  // Analytical: R_{nl}(r) = \sqrt((2 / (n a0))^3 * (n-l-1)!/(2n (n+l)!)) *
+  // \exp(-r / (n a_0)) * (2r / (n a_0))^l * L_{n-l-1}^{2l+1}(2r / (n a_0))
   double a0 = AU_LENGTH;
   cvector_t *psi = cvector_alloc(N);
-  if (!psi) return NULL;
+  if (!psi)
+    return NULL;
 
   double norm = sqrt(pow(2.0 / (n * a0), 3) * factorial(n - l - 1) /
                      (2.0 * n * factorial(n + l)));

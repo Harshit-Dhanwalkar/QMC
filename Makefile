@@ -147,9 +147,9 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials
 
-# ifeq ($(PLOT_BACKEND),GR)
-#     TESTS += $(BUILD_DIR)/test_grplot
-# endif
+ifeq ($(PLOT_BACKEND),GR)
+    TESTS += $(BUILD_DIR)/test_grplot
+endif
 
 .PHONY: all clean examples tests test run-examples info
 

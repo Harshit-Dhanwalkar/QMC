@@ -2,12 +2,21 @@
 #ifndef QMC_PHYSICS_H
 #define QMC_PHYSICS_H
 
+/* Standard Libs */
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 /* Core headers */
 #include "../core/complex.h"
 #include "../core/constants.h"
 #include "../core/matrix.h"
 #include "../core/utils.h"
 #include "../core/vector.h"
+// #include "../core/fft/fft.h"
+// #include "../core/linalg/linalg.h"
+// #include "../core/ode/crank_nicolson.h"
+// #include "../core/ode/numerov.h"
 
 /* Physics modules */
 #include "angular.h"
