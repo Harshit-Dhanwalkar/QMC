@@ -4,13 +4,32 @@
 #include "../core/matrix.h"
 #include "../core/vector.h"
 
-/* Slater determinant for fermions: given N single-particle states (as vectors),
-   returns a matrix where each column is orbital and determinant is N-particle
-   wavefunction. This is just matrix of orbitals.
-*/
-cmatrix_t *slater_determinant(cvector_t **orbitals, int N);
+/*
+ * Identical particles: build the N x N matrix needed to evaluate an
+ * N-particle Slater determinant (fermions) or permanent (bosons) at a
+ * specific configuration, and compute that determinant/permanent.
+ *
+ * orbitals[i]: tabulated single-particle orbital i, sampled on a
+ *   common position grid of length M.
+ * indices[j]: grid index of particle j's position (0 <= indices[j] < M).
+ *   Two particles at same grid index (indices[j1]==indices[j2]) or two
+ *   identical orbitals both make Slater determinant vanish exactly (Pauli
+ *   exclusion)
+ */
 
-/* Symmetrize product of orbitals for bosons (permanent) */
-cmatrix_t *bosonic_symmetrize(cvector_t **orbitals, int N);
+/* M_ij = orbitals[i]->data[indices[j]], size N x N */
+cmatrix_t *slater_matrix(cvector_t **orbitals, int N, const int *indices);
+
+/* Fermions: \psi(x_1,...,x_N) = (1 / \sqrt(N!)) * det[\phi_i(x_j)]
+ * Exactly 0 if two particles share a position or two orbitals coincide.
+ */
+complex_t slater_determinant_value(cvector_t **orbitals, int N,
+                                   const int *indices);
+
+/* Bosons: \psi(x_1,...,x_N) = (1 / sqrt(N!)) * perm[\phi_i(x_j)]
+ * is invariant under exchanging any two particles.
+ */
+complex_t bosonic_permanent_value(cvector_t **orbitals, int N,
+                                  const int *indices);
 
 #endif
