@@ -93,72 +93,50 @@ cmatrix_t *ly_matrix(int l) {
   return M;
 }
 
-// Clebsch-Gordan (for small j) using recursion
-double clebsch_gordan(int j1, int m1, int j2, int m2, int J, int M) {
-  // HACK: Simple implementation for j1,j2 <= 2 using known explicit formula
-  // or use recursive algorithm.
-  // Implement lookup table for common cases (j1,j2 <= 2).
-  // For general j, use Wigner 3j symbols.
-  if (m1 + m2 != M)
+static double lfact(int n) { return lgamma((double)n + 1.0); }
+
+// Clebsch-Gordan coefficient via Racah's formula.
+double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2,
+                      int M_2) {
+  if (m1_2 + m2_2 != M_2)
     return 0.0;
-  if (abs(j1 - j2) > J || J > j1 + j2)
+  if (J_2 < abs(j1_2 - j2_2) || J_2 > j1_2 + j2_2)
     return 0.0;
-  if (abs(m1) > j1 || abs(m2) > j2 || abs(M) > J)
+  if (abs(m1_2) > j1_2 || abs(m2_2) > j2_2 || abs(M_2) > J_2)
+    return 0.0;
+  if ((j1_2 + j2_2 + J_2) % 2 != 0)
     return 0.0;
 
-  // Generic recursion based on the lowering operator:
-  // CG(j1,m1;j2,m2|J,M) = sqrt((J+M)(J-M+1)/((J-M+1?))) etc.
-  // TODO: Use formula from Edmonds or a small table.
-  // TODO: use precomputed table.
-  // HACK: just return placeholder using known simple cases:
-  if (j1 == 0 && j2 == 0 && J == 0 && M == 0)
-    return 1.0;
-  if (j1 == 0) {
-    if (m1 == 0 && J == j2 && M == m2)
-      return 1.0;
-    return 0.0;
+  int j1 = j1_2, m1 = m1_2, j2 = j2_2, m2 = m2_2, J = J_2, M = M_2;
+
+  double log_pref =
+      0.5 * (log((double)(J + 1)) + lfact((J + j1 - j2) / 2) +
+             lfact((J - j1 + j2) / 2) + lfact((j1 + j2 - J) / 2) -
+             lfact((j1 + j2 + J) / 2 + 1) + lfact((J + M) / 2) +
+             lfact((J - M) / 2) + lfact((j1 - m1) / 2) + lfact((j1 + m1) / 2) +
+             lfact((j2 - m2) / 2) + lfact((j2 + m2) / 2));
+
+  int kmin = 0;
+  kmin = kmin > -(J - j2 + m1) / 2 ? kmin : -(J - j2 + m1) / 2;
+  kmin = kmin > -(J - j1 - m2) / 2 ? kmin : -(J - j1 - m2) / 2;
+  int kmax = (j1 + j2 - J) / 2;
+  int t1 = (j1 - m1) / 2, t2 = (j2 + m2) / 2;
+  kmax = kmax < t1 ? kmax : t1;
+  kmax = kmax < t2 ? kmax : t2;
+
+  double sum = 0.0;
+  for (int k = kmin; k <= kmax; k++) {
+    double log_term =
+        -(lfact(k) + lfact((j1 + j2 - J) / 2 - k) + lfact((j1 - m1) / 2 - k) +
+          lfact((j2 + m2) / 2 - k) + lfact((J - j2 + m1) / 2 + k) +
+          lfact((J - j1 - m2) / 2 + k));
+    double term = exp(log_term);
+    if (k % 2 != 0)
+      term = -term;
+    sum += term;
   }
-  if (j2 == 0) {
-    if (m2 == 0 && J == j1 && M == m1)
-      return 1.0;
-    return 0.0;
-  }
-  // For j1=1/2, j2=1/2:
-  if (j1 == 1 && j2 == 1) { // spin-1/2 + spin-1/2
-    if (J == 2) {
-      if (M == 2 && m1 == 1 && m2 == 1)
-        return 1.0;
-      if (M == 1 && ((m1 == 1 && m2 == 0) || (m1 == 0 && m2 == 1)))
-        return sqrt(0.5);
-      if (M == 0 && m1 == 0 && m2 == 0)
-        return sqrt(2.0 / 3.0);
-      // etc.
-      // TODO:
-    }
-    if (J == 1) {
-      if (M == 1 && ((m1 == 1 && m2 == 0) || (m1 == 0 && m2 == 1))) {
-        if (m1 == 1)
-          return sqrt(0.5);
-        else
-          return -sqrt(0.5);
-      }
-      if (M == 0 && m1 == 0 && m2 == 0)
-        return 1.0 / sqrt(3.0);
-      if (M == -1)
-        // FIX: expected expression
-        // For j1=1, j2=1 (spin-1/2 + spin-1/2) we can implement a few cases
-        // but for now, return 0.0 for everything else.
-        // TODO: implement full recursion.
-        return 0.0;
-    }
-    if (J == 0) {
-      if (M == 0 && m1 == 0 && m2 == 0)
-        return -1.0 / sqrt(3.0);
-    }
-  }
-  // HACK: For simplicity, return placeholder.
-  // Just return 0 for unsupported.
-  return 0.0;
+
+  return exp(log_pref) * sum;
 }
 
 // Spin operations

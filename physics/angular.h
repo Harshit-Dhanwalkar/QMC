@@ -21,11 +21,22 @@ cmatrix_t *lz_matrix(int l);
 cmatrix_t *lx_matrix(int l);
 cmatrix_t *ly_matrix(int l);
 
-// Clebsch-Gordan coefficient <j1 m1; j2 m2 | J M> for small j (j1,j2 <=
-//   Returns real coefficient (phase convention Condon-Shortley)
-double clebsch_gordan(int j1, int m1, int j2, int m2, int J, int M);
+/*
+ * Clebsch-Gordan coefficient <j1 m1; j2 m2 | J M>, general j1/j2/J via
+ * Racah's formula
+ *
+ *   spin-1/2, m=+1/2    -> j=1, m=+1
+ *   orbital   l=1, m=0  -> j=2, m=0
+ *   total     J=3/2     -> J=3
+ *
+ * Returns 0 if inputs violate triangle inequality, m1+m2 != M, |m| > j for any
+ * of three, or required integer/half-integer parity (j1+j2+J must be an
+ * integer).
+ * Phase convention: Condon-Shortley.
+ */
+double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2, int M_2);
 
-// Spin-1/2 operations: apply sigma_x, sigma_y, sigma_z to a 2-component spi
+// Spin-1/2 operations: apply sigma_x, sigma_y, sigma_z to 2-component spinor
 void spin_sigma_x(cvector_t *spinor);
 void spin_sigma_y(cvector_t *spinor);
 void spin_sigma_z(cvector_t *spinor);

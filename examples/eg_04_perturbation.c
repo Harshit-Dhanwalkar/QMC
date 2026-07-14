@@ -67,10 +67,9 @@ int main(void) {
   // TODO: Use perturb_nondeg which expects V matrix in eigenbasis.
   // HACK: For simplicity, compute directly.
 
-  // First 5 states and compute <n|x^4|n> using the grid
-  printf(
-      "   State n   E0 (exact)   <x^4>     \\lambda<x^4> (1st order)   E_full "
-      "(numerical)   Error (%%)\n");
+  // First 5 states and compute <n|x^4|n> using grid
+  printf("   State n   E0 (exact)   <x^4>   \\lambda<x^4> (1st order)   E_full "
+         "(numerical)   Error (%%)\n");
   printf("   -------   ----------   -------    ----------------   "
          "------------------   --------\n");
 
