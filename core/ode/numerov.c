@@ -3,7 +3,7 @@ Numerov's method
 for Schrödinger equation
 */
 
-// TODO:Implement Cooley’s method (or log‑derivative matching)
+// TODO:Implement Cooley's method (or log‑derivative matching)
 
 #include "numerov.h"
 #include "../../core/complex.h"
@@ -15,6 +15,10 @@ for Schrödinger equation
 #include <stdlib.h>
 #include <string.h>
 
+/*
+ *   y_{n+1}*(1 - h^2 f_{n+1}/12) = 2*y_n*(1 + 5h^2 f_n/12)
+ *                                  - y_{n-1}*(1 - h^2 f_{n-1}/12)
+ */
 void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   int N = p->n;
   double h2 = p->dx * p->dx;
@@ -30,9 +34,9 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   psi->data[1].im = 0.0;
 
   for (int i = 1; i < N - 1; i++) {
-    double num = 2.0 * (1.0 - (5.0 / 12.0) * h2 * f[i]) * psi->data[i].re -
-                 (1.0 + (1.0 / 12.0) * h2 * f[i - 1]) * psi->data[i - 1].re;
-    double den = 1.0 + (1.0 / 12.0) * h2 * f[i + 1];
+    double num = 2.0 * (1.0 + (5.0 / 12.0) * h2 * f[i]) * psi->data[i].re -
+                 (1.0 - (1.0 / 12.0) * h2 * f[i - 1]) * psi->data[i - 1].re;
+    double den = 1.0 - (1.0 / 12.0) * h2 * f[i + 1];
     double v = (fabs(den) > 1e-300) ? num / den : 0.0;
     if (!isfinite(v))
       v = 0.0;
@@ -45,7 +49,9 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   free(f);
 }
 
-// Find eigenstate using tridiagonal eigensolver
+// Find eigenstate using the tridiagonal eigensolver.
+// The Hamiltonian is tridiagonal by construction (kinetic term + diagonal
+// potential)
 numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
                                   double E_tol) {
   (void)E_tol;
