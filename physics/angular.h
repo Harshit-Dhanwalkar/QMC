@@ -36,7 +36,19 @@ cmatrix_t *ly_matrix(int l);
  */
 double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2, int M_2);
 
-// Spin-1/2 operations: apply sigma_x, sigma_y, sigma_z to 2-component spinor
+/*
+ * Angular momentum coupling: |j1,j2; J,M> in uncoupled product basis {|j1,m1>
+ * (x) |j2,m2>}
+ */
+cvector_t *couple_states(int j1_2, int j2_2, int J_2, int M_2);
+
+/*
+ * Enumerate allowed total-J values (doubled) for given j1_2, j2_2, i.e.
+ * J_2 = |j1_2-j2_2|, |j1_2-j2_2|+2, ..., j1_2+j2_2.
+ */
+int couple_allowed_J(int j1_2, int j2_2, int *J2_out);
+
+// Spin-1/2 operations: apply \sigma_x, \sigma_y, \sigma_z to 2-component spinor
 void spin_sigma_x(cvector_t *spinor);
 void spin_sigma_y(cvector_t *spinor);
 void spin_sigma_z(cvector_t *spinor);

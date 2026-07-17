@@ -139,6 +139,57 @@ double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2,
   return exp(log_pref) * sum;
 }
 
+int couple_allowed_J(int j1_2, int j2_2, int *J2_out) {
+  int Jmin = abs(j1_2 - j2_2);
+  int Jmax = j1_2 + j2_2;
+  int count = 0;
+
+  for (int J = Jmin; J <= Jmax; J += 2) {
+    if (J2_out)
+      J2_out[count] = J;
+    count++;
+  }
+
+  return count;
+}
+
+cvector_t *couple_states(int j1_2, int j2_2, int J_2, int M_2) {
+  if (j1_2 < 0 || j2_2 < 0)
+    return NULL;
+  if (J_2 < abs(j1_2 - j2_2) || J_2 > j1_2 + j2_2)
+    return NULL;
+  if (abs(M_2) > J_2)
+    return NULL;
+  if ((j1_2 + j2_2 + J_2) % 2 != 0)
+    return NULL;
+
+  int dim1 = j1_2 + 1; // = 2*j1+1, whether j1 integer or half-integer
+  int dim2 = j2_2 + 1;
+
+  cvector_t *v = cvector_alloc(dim1 * dim2);
+  if (!v)
+    return NULL;
+
+  for (int i = 0; i < dim1 * dim2; i++)
+    v->data[i] = c_zero();
+
+  // Same index convention as lz_matrix: index i -> m = i - j, so m1_2 = -j1_2 +
+  // 2*i1 and m2_2 = -j2_2 + 2*i2.
+  for (int i1 = 0; i1 < dim1; i1++) {
+    int m1_2 = -j1_2 + 2 * i1;
+    for (int i2 = 0; i2 < dim2; i2++) {
+      int m2_2 = -j2_2 + 2 * i2;
+      if (m1_2 + m2_2 != M_2)
+        continue; // CG is exactly 0 here; leave the slot at c_zero()
+
+      double cg = clebsch_gordan(j1_2, m1_2, j2_2, m2_2, J_2, M_2);
+      v->data[i1 * dim2 + i2] = c_real(cg);
+    }
+  }
+
+  return v;
+}
+
 // Spin operations
 void spin_sigma_x(cvector_t *spinor) {
   if (!spinor || spinor->n != 2)
