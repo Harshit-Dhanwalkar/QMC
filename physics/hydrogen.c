@@ -5,10 +5,11 @@ Hydrogen atom: radial solver and analytic wavefunctions.
 #include "hydrogen.h"
 #include "../core/complex.h"
 #include "../core/constants.h"
-#include "../core/linalg/tridiag_eigh.h"
 #include "../core/matrix.h"
 #include "../core/special/special.h"
 #include "../core/vector.h"
+#include "central_potential.h"
+#include "potentials.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,50 +25,17 @@ eigen_t *hydrogen_radial_solve(double *r, int N, int l, double hbar,
                                double mass, double e_charge, double eps0) {
   if (!r || N < 3)
     return NULL;
-  double coeff = hbar * hbar / (2.0 * mass);
+
+  // H = -\hbar^2/(2m) d^2/dr^2 + \hbar^2/(2m) l(l+1)/r^2 - \exp^2/(4 \pi \eps0
+  // r)
   double e2 = e_charge * e_charge / (4.0 * M_PI * eps0);
-
-  // Build Hamiltonian: H = -coeff * d^2/dr^2 + coeff * l(l+1)/r^2 - e2/r
-  // TODO: Use finite differences with logarithmic grid
-  // HACK: For hydrogen, often use non-uniform grid
-  double dr = r[1] - r[0];
-  if (dr < 0)
-    return NULL;
-  double h2 = dr * dr;
-  double diag_factor = 2.0 * coeff / h2;
-  double offdiag_factor = -coeff / h2;
-
-  double *diag = malloc(N * sizeof *diag);
-  double *offdiag = malloc((N - 1) * sizeof *offdiag);
-  if (!diag || !offdiag) {
-    free(diag);
-    free(offdiag);
-    return NULL;
-  }
-
-  for (int i = 0; i < N; i++) {
-    double r_i = r[i];
-    double V =
-        (r_i > 0.0) ? coeff * l * (l + 1.0) / (r_i * r_i) - e2 / r_i : 0.0;
-    diag[i] = diag_factor + V;
-  }
-  for (int i = 0; i < N - 1; i++)
-    offdiag[i] = offdiag_factor;
-
-  // Apply boundary: R(0)=0, R(r_max)=0
-  double boundary_val = 1e6 * diag_factor;
-  diag[0] = boundary_val;
-  diag[N - 1] = boundary_val;
-
-  eigen_t *eig = tridiag_eigh(diag, offdiag, N);
-  free(diag);
-  free(offdiag);
-  return eig;
+  return central_potential_radial_solve(r, N, l, hbar, mass, V_coulomb, &e2);
 }
 
 cvector_t *hydrogen_radial_wavefunction(double *r, int N, int n, int l) {
   if (!r || N < 1 || n < 1 || l < 0 || l >= n)
     return NULL;
+
   // Analytical: R_{nl}(r) = \sqrt((2 / (n a0))^3 * (n-l-1)!/(2n (n+l)!)) *
   // \exp(-r / (n a_0)) * (2r / (n a_0))^l * L_{n-l-1}^{2l+1}(2r / (n a_0))
   double a0 = AU_LENGTH;
