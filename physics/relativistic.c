@@ -5,6 +5,7 @@ Relativistic QM: Klein-Gordon and Dirac 1D solvers.
 #include "relativistic.h"
 #include "../core/complex.h"
 #include "../core/constants.h"
+#include "../core/linalg/complex_eigh.h"
 #include "../core/linalg/linalg.h"
 #include "../core/matrix.h"
 #include <math.h>
@@ -26,9 +27,11 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     if (i < N - 1)
       CMAT(H, i, i + 1) = c_real(-coeff);
   }
+
   // Solve H \psi = \lambda \psi, then E = V + \sqrt(\lambda) (choose positive
   // energy branch)
   eigen_t *eig = cmatrix_eigh_generic(H);
+  cmatrix_free(H);
   if (eig) {
     for (int i = 0; i < eig->n; i++) {
       double lambda = eig->eigenvalues[i];
@@ -46,10 +49,16 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
 
 eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar,
                   double c) {
-  // Build 2N x 2N matrix:
-  // [ V(x) + m c^2,    -i \hbar c d/dx ]
-  // [ -i \hbar c d/dx,  V(x) - m c^2   ]
-  // using finite differences.
+  // Build 2N x 2N Hermitian matrix:
+  // [ V(x)+mc^2,      -i hbar c d/dx ]
+  // [ -i hbar c d/dx,  V(x)-mc^2     ]
+  // via central differences.
+  //
+  // TODO: off-diagonal operator
+  // D_tilde = -i*hbar*c*d/dx is imaginary, both off-diagonal blocks must carry
+  // same D_tilde matrix, not one block and its negative - D_tilde is itself
+  // Hermitian, so Hermiticity of the full H requires block_21 =
+  // block_12^\dagger = D_tilde^\dagger = D_tilde, i.e. identical, not negated.
   double dx = x[1] - x[0];
   int M = 2 * N;
   cmatrix_t *H = cmatrix_alloc(M, M);
@@ -59,22 +68,25 @@ eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar,
     for (int j = 0; j < M; j++)
       CMAT(H, i, j) = c_zero();
 
-  double coeff = -hbar * c / (2.0 * dx);
+  // D_tilde_{i,i+1} = -i * \hbar * c/(2*dx), D_tilde_{i,i-1} = +i * \hbar *
+  // c/(2*dx)
+  double coeff = hbar * c / (2.0 * dx);
   for (int i = 0; i < N; i++) {
     int row1 = i, row2 = i + N;
-    // Diagonal potential and mass
     CMAT(H, row1, row1) = c_real(V[i] + m * c * c);
     CMAT(H, row2, row2) = c_real(V[i] - m * c * c);
-    // Kinetic coupling (off-diagonal)
+
     if (i > 0) {
-      CMAT(H, row1, i - 1 + N) = c_real(coeff);
-      CMAT(H, row2, i - 1) = c_real(-coeff);
+      CMAT(H, row1, i - 1 + N) = c_imag(coeff);
+      CMAT(H, row2, i - 1) = c_imag(coeff);
     }
     if (i < N - 1) {
-      CMAT(H, row1, i + 1 + N) = c_real(coeff);
-      CMAT(H, row2, i + 1) = c_real(-coeff);
+      CMAT(H, row1, i + 1 + N) = c_imag(-coeff);
+      CMAT(H, row2, i + 1) = c_imag(-coeff);
     }
   }
-  eigen_t *eig = cmatrix_eigh_generic(H);
+
+  eigen_t *eig = cmatrix_eigh_complex(H);
+  cmatrix_free(H);
   return eig;
 }
