@@ -31,35 +31,101 @@ cmatrix_t *slater_matrix(cvector_t **orbitals, int N, const int *indices) {
   return M;
 }
 
-// Recursive Laplace (cofactor) expansion along first row.
-static complex_t cofactor_expand(cmatrix_t *A, int use_sign) {
-  int n = A->nrows;
-  if (n == 1)
-    return CMAT(A, 0, 0);
+// Complex determinant via Gaussian elimination with partial pivoting
+static complex_t determinant_gauss_destructive(cmatrix_t *M) {
+  int n = M->nrows;
+  complex_t det = c_real(1.0);
 
-  complex_t sum = c_zero();
-  double sign = 1.0;
-  for (int j = 0; j < n; j++) {
-    cmatrix_t *minor = cmatrix_alloc(n - 1, n - 1);
-    for (int r = 1; r < n; r++) {
-      int mc = 0;
-      for (int c = 0; c < n; c++) {
-        if (c == j)
-          continue;
-        CMAT(minor, r - 1, mc) = CMAT(A, r, c);
-        mc++;
+  for (int col = 0; col < n; col++) {
+    int pivot = col;
+    double best = c_abs2(CMAT(M, col, col));
+    for (int r = col + 1; r < n; r++) {
+      double mag = c_abs2(CMAT(M, r, col));
+      if (mag > best) {
+        best = mag;
+        pivot = r;
       }
     }
-    complex_t sub = cofactor_expand(minor, use_sign);
-    complex_t term = c_mul(CMAT(A, 0, j), sub);
-    if (use_sign)
-      term = c_scale(term, sign);
+    if (best < 1e-300)
+      return c_zero(); // singular matrix
 
-    sum = c_add(sum, term);
-    cmatrix_free(minor);
-    sign = -sign;
+    if (pivot != col) {
+      for (int c = 0; c < n; c++) {
+        complex_t tmp = CMAT(M, col, c);
+        CMAT(M, col, c) = CMAT(M, pivot, c);
+        CMAT(M, pivot, c) = tmp;
+      }
+      det = c_scale(det, -1.0); // row swap flips determinant's sign
+    }
+
+    complex_t piv = CMAT(M, col, col);
+    det = c_mul(det, piv);
+    complex_t piv_recip = c_scale(c_conj(piv), 1.0 / c_abs2(piv));
+
+    for (int r = col + 1; r < n; r++) {
+      complex_t factor = c_mul(CMAT(M, r, col), piv_recip);
+      for (int c = col; c < n; c++)
+        CMAT(M, r, c) = c_sub(CMAT(M, r, c), c_mul(factor, CMAT(M, col, c)));
+    }
   }
-  return sum;
+  return det;
+}
+
+// Ryser's formula
+// Complex permanent via Ryser's formula (Gray-code subset enumeration):
+//
+// NOTE: Complexity-theoretic basis of boson-sampling argument for quantum
+// computational advantage (Aaronson & Arkhipov 2011)
+static complex_t permanent_ryser(cmatrix_t *A) {
+  int n = A->nrows;
+  if (n == 0)
+    return c_real(1.0);
+
+  double *row_sum_re = calloc(n, sizeof *row_sum_re);
+  double *row_sum_im = calloc(n, sizeof *row_sum_im);
+  if (!row_sum_re || !row_sum_im) {
+    free(row_sum_re);
+    free(row_sum_im);
+    return c_zero();
+  }
+
+  complex_t perm = c_zero();
+  unsigned long long num_subsets = 1ULL << n;
+  unsigned long long prev_gray = 0;
+
+  for (unsigned long long k = 1; k < num_subsets; k++) {
+    unsigned long long gray = k ^ (k >> 1);
+    unsigned long long diff = gray ^ prev_gray;
+    int col = 0;
+    while (!((diff >> col) & 1ULL))
+      col++;
+    int bit_turned_on = (gray >> col) & 1ULL;
+    double s = bit_turned_on ? 1.0 : -1.0;
+
+    for (int i = 0; i < n; i++) {
+      row_sum_re[i] += s * CMAT(A, i, col).re;
+      row_sum_im[i] += s * CMAT(A, i, col).im;
+    }
+
+    int subset_size = __builtin_popcountll(gray);
+    double term_sign = (subset_size % 2 == 0) ? 1.0 : -1.0;
+
+    complex_t prod = c_real(1.0);
+    for (int i = 0; i < n; i++) {
+      complex_t rs = {row_sum_re[i], row_sum_im[i]};
+      prod = c_mul(prod, rs);
+    }
+    perm = c_add(perm, c_scale(prod, term_sign));
+
+    prev_gray = gray;
+  }
+
+  free(row_sum_re);
+  free(row_sum_im);
+
+  double overall_sign = (n % 2 == 0) ? 1.0 : -1.0;
+
+  return c_scale(perm, overall_sign);
 }
 
 static double factorial(int n) {
@@ -74,9 +140,11 @@ complex_t slater_determinant_value(cvector_t **orbitals, int N,
   cmatrix_t *M = slater_matrix(orbitals, N, indices);
   if (!M)
     return c_zero();
-  complex_t det = cofactor_expand(M, 1);
+
+  complex_t det = determinant_gauss_destructive(M);
   cmatrix_free(M);
   double inv_sqrt_nfact = 1.0 / sqrt(factorial(N));
+
   return c_scale(det, inv_sqrt_nfact);
 }
 
@@ -85,8 +153,10 @@ complex_t bosonic_permanent_value(cvector_t **orbitals, int N,
   cmatrix_t *M = slater_matrix(orbitals, N, indices);
   if (!M)
     return c_zero();
-  complex_t perm = cofactor_expand(M, 0);
+
+  complex_t perm = permanent_ryser(M);
   cmatrix_free(M);
   double inv_sqrt_nfact = 1.0 / sqrt(factorial(N));
+
   return c_scale(perm, inv_sqrt_nfact);
 }
