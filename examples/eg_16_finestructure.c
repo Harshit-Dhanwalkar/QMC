@@ -1,5 +1,5 @@
 /*
- * Example 8: Hydrogen Fine Structure (Spin-Orbit Coupling)
+ * Hydrogen Fine Structure (Spin-Orbit Coupling)
  *
  * Demonstrates spin_orbit_ls_expect_from_coupling (built from
  * couple_states + ladder operators) matching the closed-form

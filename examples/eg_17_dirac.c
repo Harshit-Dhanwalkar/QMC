@@ -1,10 +1,10 @@
 /*
- * Example 9: 1D Dirac Equation (Free Particle)
+ * 1D Dirac Equation (Free Particle)
  *
- * Solves the 1D Dirac equation via the complex-Hermitian real-embedding
- * solver (cmatrix_eigh_complex). For a free particle, the  spectrum should
- * split into two branches separated by ~2mc^2, hard-wall-grid qualitative
- * analog of the textbook continuum result.
+ * Solves the 1D Dirac equation via the complex-Hermitian real-embedding solver
+ * (cmatrix_eigh_complex). For a free particle, spectrum should split into two
+ * branches separated by ~2mc^2, hard-wall-grid qualitative analog of
+ * theoretical continuum result.
  */
 
 #include "../core/complex.h"
