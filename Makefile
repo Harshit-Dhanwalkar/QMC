@@ -77,7 +77,6 @@ TESTS_DIR    = tests
 BUILD_DIR    = build
 
 # Source files
-# CORE_SRCS = $(CORE_DIR)/complex.c
 CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/matrix.c \
                $(CORE_DIR)/utils.c \
@@ -90,6 +89,7 @@ CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/linalg/qr.c \
                $(CORE_DIR)/linalg/lu.c \
                $(CORE_DIR)/linalg/svd.c \
+               $(CORE_DIR)/linalg/complex_eigh.c \
                $(CORE_DIR)/ode/numerov.c \
                $(CORE_DIR)/ode/rk4.c \
                $(CORE_DIR)/ode/crank_nicolson.c \
@@ -105,36 +105,46 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/schrodinger.c \
                $(PHYSICS_DIR)/uncertainty.c \
                $(PHYSICS_DIR)/angular.c \
+               $(PHYSICS_DIR)/central_potential.c \
                $(PHYSICS_DIR)/hydrogen.c \
+               $(PHYSICS_DIR)/helium.c \
                $(PHYSICS_DIR)/perturbation.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
+               $(PHYSICS_DIR)/rabi.c \
                $(PHYSICS_DIR)/identical.c \
-               $(PHYSICS_DIR)/relativistic.c
+               $(PHYSICS_DIR)/relativistic.c \
+               $(PHYSICS_DIR)/fine_structure.c \
+               $(PHYSICS_DIR)/qubits.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
 PLOT_SRCS    = $(PLOT_SRC)
 
 # Object files
-# CORE_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(CORE_SRCS))
-# PHYSICS_OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(PHYSICS_SRCS))
-# LATEX_OBJS   = $(patsubst %.c,$(BUILD_DIR)/%.o,$(LATEX_SRCS))
-# PLOT_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(PLOT_SRC))
-#
-# ALL_OBJS  = $(CORE_OBJS) $(PHYSICS_OBJS) $(LATEX_OBJS) $(PLOT_OBJS)
 ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC)
 ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
 
 # Targets
 EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_02_harmonic \
-              $(BUILD_DIR)/eg_03_hydrogen \
-              $(BUILD_DIR)/eg_04_perturbation \
-              $(BUILD_DIR)/eg_05_tunnelling \
-              $(BUILD_DIR)/eg_06_finite_well \
-              $(BUILD_DIR)/eg_07_infinite_well
+              $(BUILD_DIR)/eg_03_finite_well \
+              $(BUILD_DIR)/eg_04_infinite_well \
+              $(BUILD_DIR)/eg_05_uncertainty \
+              $(BUILD_DIR)/eg_06_hydrogen \
+              $(BUILD_DIR)/eg_07_central_potential \
+              $(BUILD_DIR)/eg_08_helium \
+              $(BUILD_DIR)/eg_09_identical_particles \
+              $(BUILD_DIR)/eg_10_perturbation \
+              $(BUILD_DIR)/eg_11_wkb \
+              $(BUILD_DIR)/eg_12_tunnelling \
+              $(BUILD_DIR)/eg_13_scattering \
+              $(BUILD_DIR)/eg_14_rabi \
+              $(BUILD_DIR)/eg_15_angular_coupling \
+              $(BUILD_DIR)/eg_16_finestructure \
+              $(BUILD_DIR)/eg_17_dirac \
+              $(BUILD_DIR)/eg_18_qubits
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -142,10 +152,21 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_rk4 \
               $(BUILD_DIR)/test_fft \
               $(BUILD_DIR)/test_hydrogen \
+              $(BUILD_DIR)/test_helium \
               $(BUILD_DIR)/test_perturbation \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
-              $(BUILD_DIR)/test_potentials
+              $(BUILD_DIR)/test_potentials \
+              $(BUILD_DIR)/test_central_potential \
+              $(BUILD_DIR)/test_rabi \
+              $(BUILD_DIR)/test_angular_coupling \
+              $(BUILD_DIR)/test_fine_structure \
+              $(BUILD_DIR)/test_complex_eigh \
+              $(BUILD_DIR)/test_identical \
+              $(BUILD_DIR)/test_dirac \
+              $(BUILD_DIR)/test_qubits \
+              $(BUILD_DIR)/test_scattering \
+              $(BUILD_DIR)/test_tridiag
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
@@ -186,12 +207,13 @@ tests:    directories $(TESTS)
 
 test: tests
 	@echo "Running all tests..."
-	@failed=0; \
+	@passed=0; failed=0; \
 	for t in $(TESTS); do \
 		name=$$(basename $$t); \
 		printf "Running $$name... "; \
 		if $$t > /tmp/$$name.out 2>&1; then \
 			printf "\033[32mPASS\033[0m\n"; \
+			passed=$$((passed+1)); \
 		else \
 			printf "\033[31mFAIL\033[0m\n"; \
 			cat /tmp/$$name.out; \
@@ -201,12 +223,6 @@ test: tests
 	echo ""; \
 	echo "Results: $$passed passed, $$failed failed"; \
 	[ $$failed -eq 0 ]
-	# if [ $$failed -eq 0 ]; then \
-	# 	echo "All tests passed."; \
-	# else \
-	# 	echo "$$failed test(s) failed."; \
-	# 	exit 1; \
-	# fi
 
 # Run a specific test
 test-%: $(BUILD_DIR)/test_%
@@ -229,5 +245,7 @@ info:
 	@echo "GR prefix    : $(GR_PREFIX)"
 	@echo "Output dir   : $(OUTPUT_DIR)"
 
+# Clean build,test and examples outputs
 clean:
 	rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
+	rm -f *.png *.pdf *.svg *.jpg *.dat
