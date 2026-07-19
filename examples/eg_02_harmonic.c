@@ -1,3 +1,14 @@
+/*
+ * Quantum Harmonic Oscillator
+ * V(x) = 0.5 * m * \omega^2 * x^2
+ *
+ * Analytical:
+ *   E_n = \hbar \omega (n + 1/2)
+ *   \psi_n(x) = (1 / \sqrt(2^n n!)) * (m * \omega / \pi * \hbar)^(1/4)
+ *              * H_n(\sqrt(m * \omega / \hbar) x)
+ *              * \exp(-m * \omega x^2 / 2 * \hbar)
+ */
+
 #include "../core/constants.h"
 #include "../core/linalg/tridiag_eigh.h"
 #include "../core/matrix.h"
@@ -7,17 +18,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-/*
- * Example 2: Quantum Harmonic Oscillator
- * V(x) = 0.5 * m * \omega^2 * x^2
- *
- * Analytical:
- *   E_n = \hbar \omega (n + 1/2)
- *   \psi_n(x) = (1 / \sqrt(2^n n!)) * (m * \omega / \pi * \hbar)^(1/4)
- *              * H_n(\sqrt(m * \omega / \hbar) x)
- *              * \exp(-m * \omega x^2 / 2 * \hbar)
- */
 
 int main(void) {
   printf(" > Quantum Harmonic Oscillator\n\n");
