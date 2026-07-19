@@ -3,7 +3,7 @@ Test: Helium (and helium-like ion) variational ground state.
 
 1. Numeric golden-section minimization must match exact analytic minimizer
    (Z'_opt=Z-5/16) and analytic minimum energy
-2. Helium (Z=2) must reproduce standard textbook result:
+2. Helium (Z=2) must reproduce standard theoretical result:
    Z'_opt=1.6875, E=-2.84765625 Hartree (~-77.5 eV).
 3. Variational theorem: E_variational must be >= known experimental ground-state
    energy (-2.9037 Hartree)
@@ -44,7 +44,7 @@ static int test_numeric_matches_analytic(double Z) {
   return fail;
 }
 
-static int test_helium_textbook_value(void) {
+static int test_helium_theoretical_value(void) {
   double Zeff;
   double E_hartree = helium_ground_state_energy_numeric(2.0, 1e-12, &Zeff);
   double E_eV = E_hartree * (AU_ENERGY / E_CHARGE);
@@ -91,7 +91,7 @@ int main(void) {
     failed += test_numeric_matches_analytic(Z_values[i]);
 
   printf("Helium (Z=2) theoretical value:\n");
-  failed += test_helium_textbook_value();
+  failed += test_helium_theoretical_value();
 
   printf("Variational upper-bound theorem:\n");
   failed += test_variational_upper_bound();
