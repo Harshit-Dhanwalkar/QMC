@@ -25,7 +25,7 @@ double variational_energy(const wavefunction_t *wf, potential_fn V,
                           void *params);
 
 /*
- *Minimize energy with respect to single parameter alpha
+ * Minimize energy with respect to single parameter alpha
  */
 double variational_minimize(double alpha_min, double alpha_max,
                             void (*trial_func)(double alpha,

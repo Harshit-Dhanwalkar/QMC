@@ -1,23 +1,18 @@
 /*
 Test: scattering.c (phase_shift, born_amplitude, born_cross_section).
 
-1. s-wave hard-sphere-like scattering: exact result is delta_0 = -k*a
-   for ANY energy. No hard-wall potential exists in potentials.c, so
-   this is approximated via V_barrier with a large (but finite) V0 -
-   flagged as an approximation, not an exact match, with a loose
-   tolerance reflecting that.
-2. Born approximation for a Yukawa potential: f(theta) has a clean
-   closed form via the standard Laplace transform
+1. s-wave hard-sphere-like scattering: exact result is \delta_0 = -k * a
+   for ANY energy.
+2. Born approximation for a Yukawa potential: f(theta) has closed form via
+   standard Laplace transform
    \Int_0^\inf \exp^{-\mu * r} * \sin(qr)dr = q/(\mu^2 + q^2):
-     f_Born(\theta) = (2 * M_ELECTRON/ \hbar^2) * g/(\mu^2 + q^2), q=2k *
-     \sin(\theta/2) checks born_amplitude's numerical
-   integration against an exact analytic result.
-3. born_cross_section = |f|^2, a trivial structural check.
+     f_Born(\theta) = (2 * M_ELECTRON/ \hbar^2) * g/(\mu^2 + q^2),
+     q=2k * \sin(\theta / 2) checks born_amplitude's numerical integration
+   against an exact analytic result.
+3. born_cross_section = |f|^2, structural check.
 
 // HACK: born_amplitude hardcodes M_ELECTRON and HBAR internally rather than
 taking mass/hbar as parameters
-
-// FIX: since fixing signature requires scattering.h
 */
 
 #include "../core/complex.h"
@@ -98,7 +93,7 @@ static int test_cross_section_structural(void) {
 int main(void) {
   int failed = 0;
 
-  printf("s-wave hard-sphere-like phase shift (vs exact delta_0=-ka):\n");
+  printf("s-wave hard-sphere-like phase shift (vs exact \\delta_0=-ka):\n");
   failed += test_hard_sphere_s_wave();
 
   printf("Born approximation, Yukawa potential (vs closed form):\n");

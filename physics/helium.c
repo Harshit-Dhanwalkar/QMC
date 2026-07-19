@@ -15,11 +15,13 @@ double helium_optimal_zeff_analytic(double Z) { return Z - 5.0 / 16.0; }
 
 double helium_ground_state_energy_analytic(double Z) {
   double d = Z - 5.0 / 16.0;
+
   return -(d * d);
 }
 
 static double helium_energy_adapter(double Z_eff, void *params) {
   double Z = *(double *)params;
+
   return helium_variational_energy(Z_eff, Z);
 }
 
@@ -31,5 +33,6 @@ double helium_ground_state_energy_numeric(double Z, double tol,
       golden_section_minimize(lo, hi, helium_energy_adapter, &Z, tol);
   if (Zeff_opt_out)
     *Zeff_opt_out = Zeff_opt;
+
   return helium_variational_energy(Zeff_opt, Z);
 }

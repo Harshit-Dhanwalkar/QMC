@@ -14,13 +14,14 @@ double spin_orbit_ls_expect(int l, int j_2) {
   double j = j_2 / 2.0;
   double ll = (double)l;
   double s = 0.5;
+
   return 0.5 * (j * (j + 1.0) - ll * (ll + 1.0) - s * (s + 1.0));
 }
 
 double hydrogen_expect_inv_r3(int n, int l, double hbar, double mass,
                               double e_charge, double eps0) {
   if (l < 1 || n < 1)
-    return 0.0; // diverges at l=0; not physically meaningful there anyway
+    return 0.0; // diverges at l=0
 
   double a0 = 4.0 * M_PI * eps0 * hbar * hbar / (mass * e_charge * e_charge);
   double nn = (double)n, ll = (double)l;
