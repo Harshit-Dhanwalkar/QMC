@@ -1,6 +1,8 @@
 CC     = gcc
-CFLAGS = -Wall -Wextra -O2 -fPIC
+CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 CFLAGS += -fsanitize=address -g
+CFLAGS += -MMD -MP
+-include $(ALL_OBJS:.o=.d)
 
 OUTPUT_DIR  = output
 CFLAGS     += -DQMC_OUTPUT_DIR=\"$(OUTPUT_DIR)\"
@@ -41,18 +43,26 @@ ifeq ($(PLOT_BACKEND),MATPLOTLIB)
 endif
 
 ifeq ($(PLOT_BACKEND),GR)
-    PLOT_SRC     = export/plot_gr.c export/gr/gr_plot.c
+    PLOT_SRC     = export/plot_gr.c \
+                   export/gr/gr_plot.c \
+                   export/gr/formats/png.c \
+                   export/gr/formats/jpeg.c \
+                   export/gr/formats/svg.c \
+                   export/gr/formats/pdf.c \
+                   export/gr/formats/interactive.c
     PLOT_LIBS    = -lGR
     PLOT_CFLAGS  = -DUSE_GR -I$(GR_INC) -Iexport
     PLOT_LDFLAGS = -L$(GR_LIB) -Wl,-rpath,$(GR_LIB)
     $(info Plot backend: GR ($(GR_LIB)))
 else ifeq ($(PLOT_BACKEND),GNUPLOT)
-    PLOT_SRC     = export/plot_gnuplot.c export/gnuplot/gnuplot_pipe.c
+    PLOT_SRC     = export/plot_gnuplot.c \
+                   export/gnuplot/gnuplot_pipe.c
     PLOT_CFLAGS  = -DUSE_GNUPLOT -Iexport
     PLOT_LDFLAGS =
     $(info Plot backend: GNUPLOT)
 else ifeq ($(PLOT_BACKEND),MATPLOTLIB)
-    PLOT_SRC     = export/plot_matplotlib.c export/matplotlib/matplotlib_pipe.c
+    PLOT_SRC     = export/plot_matplotlib.c \
+                   export/matplotlib/matplotlib_pipe.c
     PLOT_CFLAGS  = -DUSE_MATPLOTLIB -Iexport
     PLOT_LDFLAGS =
     $(info Plot backend: MATPLOTLIB)
@@ -61,7 +71,7 @@ else
     PLOT_SRC     = export/plot_none.c
     PLOT_CFLAGS  = -Iexport
     PLOT_LDFLAGS =
-    $(warning No usable plotting backend found (GR/gnuplot/matplotlib all unavailable) — building NO-OP backend; no plots will be generated)
+    $(warning No usable plotting backend found - building NO-OP backend)
 endif
 
 CFLAGS  += $(PLOT_CFLAGS)
@@ -183,9 +193,15 @@ directories:
 	@mkdir -p $(BUILD_DIR)/$(CORE_DIR)/special
 	@mkdir -p $(BUILD_DIR)/$(CORE_DIR)/fft
 	@mkdir -p $(BUILD_DIR)/$(PHYSICS_DIR)
-	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/gr
+	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)
+	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/gr/formats
 	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/gnuplot
+	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/matplotlib
 	@mkdir -p $(BUILD_DIR)/$(LATEX_DIR)
+# TODO: generic auto create target subdir for all .o instead of using `directories`
+# $(BUILD_DIR)/%.o: %.c
+# 	@mkdir -p $(dir $@)
+# 	$(CC) $(CFLAGS) -Icore -Iexport -I. -c $< -o $@
 
 $(OUTPUT_DIR):
 	@mkdir -p $(OUTPUT_DIR)
@@ -205,7 +221,7 @@ $(BUILD_DIR)/test_%: $(TESTS_DIR)/test_%.c $(ALL_OBJS)
 examples: directories $(OUTPUT_DIR) $(EXAMPLES)
 tests:    directories $(TESTS)
 
-test: tests
+run-test: tests
 	@echo "Running all tests..."
 	@passed=0; failed=0; \
 	for t in $(TESTS); do \
