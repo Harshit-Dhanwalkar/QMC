@@ -2,6 +2,7 @@
 #include "../core/constants.h"
 #include "../core/ode/numerov.h"
 #include "../core/utils.h"
+#include "../core/vector.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,22 +11,28 @@
 static int count_nodes_robust(const cvector_t *psi, int N, double dx) {
   (void)dx;
   double peak = 0.0;
-  for (int i = 0; i < N; i++)
-    if (fabs(psi->data[i].re) > peak)
+  for (int i = 0; i < N; i++) {
+    if (fabs(psi->data[i].re) > peak) {
       peak = fabs(psi->data[i].re);
+    }
+  }
+
   if (peak < 1e-300)
     return 0;
   double fl = peak * 1e-6;
+
   // Collect significant values
   double *sig = malloc(N * sizeof *sig);
   int nsig = 0;
   for (int i = 0; i < N; i++)
     if (fabs(psi->data[i].re) > fl)
       sig[nsig++] = psi->data[i].re;
+
   int nodes = 0;
   for (int i = 1; i < nsig; i++)
     if (sig[i - 1] * sig[i] < 0.0)
       nodes++;
+
   free(sig);
   return nodes;
 }
@@ -42,6 +49,7 @@ int main() {
     printf("FAIL: memory\n");
     return 1;
   }
+
   double *V = malloc(N * sizeof(double));
   for (int i = 0; i < N; i++)
     V[i] = 0.5 * x[i] * x[i];
@@ -82,14 +90,18 @@ int main() {
   for (int i = 0; i < N; i++) {
     if (fabs(x[i]) > 1.5)
       continue;
+
     double ana = pi_q * exp(-x[i] * x[i] / 2.0);
     if (fabs(ana) > 1e-3) {
       double err = fabs(sol->psi->data[i].re - ana) / fabs(ana);
-      if (err > max_err)
+      if (err > max_err) {
         max_err = err;
+      }
+
       nchk++;
     }
   }
+
   printf("   Max rel error vs analytic (|x|<1.5): %.2e (%d pts)\n", max_err,
          nchk);
   printf("   <x^2>: %f (expected 0.5)\n", x2);
@@ -119,5 +131,6 @@ int main() {
     return 0;
   }
   printf("FAIL\n");
+
   return 1;
 }

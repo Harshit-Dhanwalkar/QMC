@@ -25,6 +25,7 @@ static int check(const char *name, double got, double expected, double tol) {
   int pass = fabs(got - expected) < tol;
   printf("   %-30s got=%.6f  exp=%.6f  %s\n", name, got, expected,
          pass ? "PASS" : "FAIL");
+
   return pass;
 }
 
@@ -44,21 +45,21 @@ int main(void) {
   }
 
   // Bohr-Sommerfeld action integral
-  /* For HO at E=0.5: action = 2*integral_{-1}^{1} sqrt(2*(E-V)) dx
-   *                         = 2*integral_{-1}^{1} sqrt(1-x^2) dx = \pi
-   * Quantization: action/(2*\pi) = (n+1/2) -> n=0 at action = \pi */
+  /* For HO at E=0.5: action = 2 * integral_{-1}^{1} * sqrt(2*(E-V)) dx
+   *                         = 2 * integral_{-1}^{1} * sqrt(1-x^2) dx = \pi
+   * Quantization: action/(2 * \pi) = (n+1/2) -> n=0 at action = \pi
+   */
   printf("\n   Bohr-Sommerfeld action integral for HO at E=0.5:\n");
   double action = wkb_action_integral_harmonic(0.5, 1.0, 1.0);
-  /* Expected: \pi (= (n+1/2)*2 \pi * \hbar with n=0, \hbar=1) */
+  // Expected: \pi (= (n+1/2)* 2 * \pi * \hbar with n=0, \hbar=1)
   all_pass &=
       check("action/(2\\pi) at E=0.5", action / (2.0 * M_PI), 0.5, 0.01);
 
   // Tunneling probability through rectangular barrier
   printf("\n   WKB tunneling: rectangular barrier V0=2, width=1:\n");
-  /* T = exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E) /
-   hbar_sq_2m)
-   with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1):
-   kappa = \sqrt((2-1)/0.5) = \sqrt(2) ~= 1.41421356
+  /* T = \exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E)
+   / hbar_sq_2m) with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1): kappa =
+   \sqrt((2-1)/0.5) = \sqrt(2) ~= 1.41421356
   */
   double E = 1.0;
   double V0 = 2.0;
@@ -72,5 +73,6 @@ int main(void) {
   printf("\n");
   if (all_pass)
     printf("   WKB test passed.\n");
+
   return all_pass ? 0 : 1;
 }

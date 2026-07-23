@@ -31,6 +31,7 @@ int main(void) {
     printf("FAIL: memory\n");
     return 1;
   }
+
   for (int i = 0; i < N; i++)
     V[i] = 0.5 * x[i] * x[i];
 
@@ -44,6 +45,7 @@ int main(void) {
     if (i < N - 1)
       CMAT(H, i, i + 1) = c_real(-coeff);
   }
+
   eigen_t *eig = cmatrix_eigh(H);
   if (!eig) {
     printf("FAIL: eigensolver\n");
@@ -59,13 +61,17 @@ int main(void) {
 
   // Initial \phi = ground state eigenvector, continuum-normalized
   cvector_t *psi = cvector_alloc(N);
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     psi->data[i] = CMAT(eig->eigenvectors, i, 0);
+  }
+
   double norm0 = 0.0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     norm0 += (psi->data[i].re * psi->data[i].re +
               psi->data[i].im * psi->data[i].im) *
              dx;
+  }
+
   double inv = 1.0 / sqrt(norm0);
   for (int i = 0; i < N; i++) {
     psi->data[i].re *= inv;
@@ -87,16 +93,19 @@ int main(void) {
   for (int step = 0; step < n_steps; step++) {
     crank_nicolson_step(diag, offdiag, dt, psi);
     double norm = 0.0;
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N; i++) {
       norm += (psi->data[i].re * psi->data[i].re +
                psi->data[i].im * psi->data[i].im) *
               dx;
+    }
+
     if (fabs(norm - 1.0) > 1e-10) {
       printf("   FAIL: norm = %.10f at step %d\n", norm, step);
       norm_fail = 1;
       break;
     }
   }
+
   if (!norm_fail)
     printf("   Norm preserved to 1e-10 over %d steps: PASS\n", n_steps);
 
@@ -105,13 +114,17 @@ int main(void) {
 
   // Reset to ground state
   eigen_t *eig2 = cmatrix_eigh(H);
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     psi->data[i] = CMAT(eig2->eigenvectors, i, 0);
+  }
+
   norm0 = 0.0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     norm0 += (psi->data[i].re * psi->data[i].re +
               psi->data[i].im * psi->data[i].im) *
              dx;
+  }
+
   inv = 1.0 / sqrt(norm0);
   for (int i = 0; i < N; i++) {
     psi->data[i].re *= inv;
@@ -155,5 +168,6 @@ int main(void) {
   int all_pass = !norm_fail && prob_pass;
   if (all_pass)
     printf("   Crank-Nicolson test passed.\n");
+
   return all_pass ? 0 : 1;
 }

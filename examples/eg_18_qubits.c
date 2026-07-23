@@ -18,8 +18,9 @@ int main(void) {
 
   int n1 = 3;
   cvector_t *psi1 = qstate_alloc(n1);
-  for (int q = 0; q < n1; q++)
+  for (int q = 0; q < n1; q++) {
     qstate_apply_gate1(psi1, n1, q, hadamard_gate);
+  }
 
   printf("   3 qubits, Hadamard on each (no entangling gate):\n");
   for (int q = 0; q < n1; q++) {

@@ -6,9 +6,9 @@
  */
 
 #include "../core/constants.h"
+#include "../core/matrix.h"
 #include "../core/utils.h"
 #include "../core/vector.h"
-#include "../core/matrix.h"
 #include "../export/plot.h"
 #include "../physics/central_potential.h"
 #include "../physics/potentials.h"
@@ -21,7 +21,7 @@ int main(void) {
 
   // 1. 3D isotropic harmonic oscillator, l=0
   printf("   3D Isotropic Harmonic Oscillator (l=0)\n");
-  printf("   Exact: E_{n_r,0} = (2*n_r + 3/2) * \\hbar * \\omega\n\n");
+  printf("   Exact: E_{n_r,0} = (2 * n_r + 3/2) * \\hbar * \\omega\n\n");
 
   int N = 400;
   double r_min = 1e-3, r_max = 15.0;
@@ -52,7 +52,7 @@ int main(void) {
       opts.xlabel = "r";
       opts.ylabel = "u(r)";
 
-    // TODO: use save_wavefuntion
+      // TODO: use save_wavefuntion
       plot_line("central_potential_ho_ground", PLOT_FORMAT_PNG, r, y, N, &opts);
       printf("   Saved central_potential_ho_ground.png\n\n");
 
@@ -82,8 +82,9 @@ int main(void) {
       }
     }
 
-    if (n_bound == 0)
+    if (n_bound == 0) {
       printf("   (no bound states found for this depth/width)\n");
+    }
     eigen_free(eig_well);
   }
 

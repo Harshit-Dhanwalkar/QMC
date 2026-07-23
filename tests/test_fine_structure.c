@@ -23,6 +23,7 @@ static int check_close(double got, double expected, double tol,
                        const char *label) {
   double err = fabs(got - expected);
   printf("  %s: got=%.8f expected=%.8f err=%.2e\n", label, got, expected, err);
+
   return err > tol;
 }
 
@@ -33,6 +34,7 @@ static int test_ls_expect_matches_coupling(void) {
   for (int l = 0; l <= 3; l++) {
     int J2_list[4];
     int count = couple_allowed_J(2 * l, 1, J2_list);
+
     for (int idx = 0; idx < count; idx++) {
       int j_2 = J2_list[idx];
       double closed_form = spin_orbit_ls_expect(l, j_2);
@@ -46,6 +48,7 @@ static int test_ls_expect_matches_coupling(void) {
       }
     }
   }
+
   return fail;
 }
 
@@ -91,5 +94,6 @@ int main(void) {
     return 1;
   }
   printf("PASS\n");
+
   return 0;
 }

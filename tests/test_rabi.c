@@ -21,6 +21,7 @@ static int check_close(double got, double expected, double tol,
                        const char *label) {
   double err = fabs(got - expected);
   printf("  %s: got=%.6f expected=%.6f err=%.2e\n", label, got, expected, err);
+
   return err > tol;
 }
 
@@ -48,6 +49,7 @@ static int test_exact_matches_formula(void) {
       cvector_free(psi);
     }
   }
+
   return fail;
 }
 
@@ -69,12 +71,14 @@ static int test_resonant_pi_pulse(void) {
 
   int fail = check_close(P_excited, 1.0, 1e-10, "P_excited at pi-pulse");
   fail |= check_close(P_ground, 0.0, 1e-10, "P_ground at pi-pulse");
+
   return fail;
 }
 
 static int test_unitarity(void) {
   int fail = 0;
   double Omega = 1.3, Delta = 0.7;
+
   for (double t = 0.0; t < 6.0; t += 0.5) {
     cvector_t *psi = cvector_alloc(2);
     psi->data[0] = c_real(1.0);
@@ -86,6 +90,7 @@ static int test_unitarity(void) {
     snprintf(label, sizeof label, "t=%.2f norm", t);
     fail |= check_close(total, 1.0, 1e-10, label);
   }
+
   return fail;
 }
 
@@ -139,5 +144,6 @@ int main(void) {
     return 1;
   }
   printf("PASS (core exact-solution tests)\n");
+
   return 0;
 }

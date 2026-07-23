@@ -20,9 +20,11 @@ Test: complex-Hermitian eigensolver (cmatrix_eigh_complex).
 
 static int test_sigma_y(void) {
   cmatrix_t *H = cmatrix_alloc(2, 2);
-  for (int i = 0; i < 2; i++)
-    for (int j = 0; j < 2; j++)
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
       CMAT(H, i, j) = sigma_y[i * 2 + j];
+    }
+  }
 
   eigen_t *eig = cmatrix_eigh_complex(H);
   cmatrix_free(H);
@@ -42,11 +44,12 @@ static int test_sigma_y(void) {
   }
 
   // Eigenvector check up to phase: |v . conj(v_expected)| should be ~1.
-  // v_expected for lambda=-1 is (1,-i)/\sqrt(2), for \lambda=+1 is
-  // (1,i)/\sqrt(2).
+  // v_expected for \lambda=-1 is (1,-i)/\sqrt(2), for \lambda=+1 is
+  // (1,i) / \sqrt(2).
   double inv_sqrt2 = 1.0 / sqrt(2.0);
   complex_t v_exp[2][2] = {{c_real(inv_sqrt2), c_imag(-inv_sqrt2)},
                            {c_real(inv_sqrt2), c_imag(inv_sqrt2)}};
+
   for (int k = 0; k < 2; k++) {
     complex_t overlap = c_zero();
     for (int i = 0; i < 2; i++) {

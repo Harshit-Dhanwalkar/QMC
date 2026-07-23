@@ -64,12 +64,14 @@ static int test_hydrogen_regression(void) {
   double r_min = 1e-8 * AU_LENGTH;
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);
+
   for (int i = 0; i < N; i++)
     r[i] = r_min + i * dr;
 
   eigen_t *eig =
       hydrogen_radial_solve(r, N, 0, HBAR, M_ELECTRON, E_CHARGE, EPSILON_0);
   free(r);
+
   if (!eig) {
     printf("  FAIL: hydrogen_radial_solve returned NULL\n");
     return 1;
@@ -101,5 +103,6 @@ int main(void) {
     return 1;
   }
   printf("PASS\n");
+
   return 0;
 }

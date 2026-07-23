@@ -22,7 +22,7 @@
 int main(void) {
   printf(" > Infinite Square Well (Particle in a Box)\n\n");
 
-  // Parameters (natural units: m=1, hbar=1)
+  // Parameters (natural units: m=1, \hbar=1)
   double L = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -38,11 +38,11 @@ int main(void) {
     return 1;
   }
 
-  printf("     Parameters:   L = %.3f, m = %.3f, hbar = %.3f\n", L, m, hbar);
+  printf("     Parameters:   L = %.3f, m = %.3f, \\hbar = %.3f\n", L, m, hbar);
   printf("     Grid: %d interior points, dx=%.6f\n\n", n_interior, dx);
 
   // Analytical energies for first 5 states
-  printf("   Analytical energies (units hbar^2/(2mL^2)):\n");
+  printf("   Analytical energies (units \\hbar^2/(2mL^2)):\n");
   printf("   n   E_n\n");
   printf("  ---  -------\n");
   for (int n = 1; n <= 5; n++) {
@@ -79,7 +79,7 @@ int main(void) {
     return 1;
   }
 
-  printf("  Lowest 5 numerical eigenvalues (units hbar^2/(2mL^2)):\n");
+  printf("  Lowest 5 numerical eigenvalues (units \\hbar^2/(2mL^2)):\n");
   printf("   n    E_num    E_ana     error %%\n");
   printf("  ---  -------  -------   --------\n");
   for (int i = 0; i < 5 && i < eig->n; i++) {
@@ -98,23 +98,26 @@ int main(void) {
   // Save wavefunctions and plot
   for (int i = 0; i < 4 && i < eig->n; i++) {
     cvector_t *col = cvector_from_matrix_column(eig->eigenvectors, i);
-    if (!col)
+    if (!col) {
       continue;
+    }
 
     cvector_t *psi_full = cvector_alloc(n_grid);
     psi_full->data[0].re = 0.0;
     psi_full->data[0].im = 0.0;
     psi_full->data[n_grid - 1].re = 0.0;
     psi_full->data[n_grid - 1].im = 0.0;
-    for (int j = 0; j < n_interior; j++)
+    for (int j = 0; j < n_interior; j++) {
       psi_full->data[j + 1] = col->data[j];
+    }
 
     // Normalize on full grid
     double norm = 0.0;
-    for (int j = 0; j < n_grid; j++)
+    for (int j = 0; j < n_grid; j++) {
       norm += (psi_full->data[j].re * psi_full->data[j].re +
                psi_full->data[j].im * psi_full->data[j].im) *
               dx;
+    }
     double inv = (norm > 0.0) ? 1.0 / sqrt(norm) : 1.0;
 
     double *y = malloc(n_grid * sizeof *y);
@@ -147,8 +150,9 @@ int main(void) {
   // Save eigenvalues
   int n_save = (eig->n < 10) ? eig->n : 10;
   double *E_vals = malloc(n_save * sizeof *E_vals);
-  for (int i = 0; i < n_save; i++)
+  for (int i = 0; i < n_save; i++) {
     E_vals[i] = eig->eigenvalues[i];
+  }
   save_eigenvalues("infinite_well_energies.dat", E_vals, n_save);
   free(E_vals);
 

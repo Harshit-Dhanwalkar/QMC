@@ -39,11 +39,13 @@ static int test_hard_sphere_s_wave(void) {
 
   int fail = 0;
   double k_values[3] = {0.3, 0.5, 0.8};
+
   for (int i = 0; i < 3; i++) {
     double k = k_values[i];
     double delta = phase_shift(0, k, V_barrier, barrier_params, 0.01, 20.0,
                                2000, hbar_sq_2m);
     double delta_exact = -k * a;
+
     while (delta - delta_exact > M_PI)
       delta -= M_PI;
     while (delta - delta_exact < -M_PI)
@@ -66,6 +68,7 @@ static int test_born_yukawa(void) {
   int N = 20000;
 
   double theta_values[3] = {0.5, 1.0, 2.0};
+
   for (int i = 0; i < 3; i++) {
     double theta = theta_values[i];
     complex_t f = born_amplitude(V_yukawa, yukawa_params, k, theta, r_max, N);

@@ -39,6 +39,7 @@ int main(void) {
   if (!H_0) {
     fprintf(stderr, "FAIL: cmatrix_alloc\n");
     free(x);
+
     return 1;
   }
 
@@ -52,7 +53,7 @@ int main(void) {
       CMAT(H_0, i, i + 1) = c_real(coeff);
   }
 
-  printf("    Diagonalizing %dx%d Hamiltonian...\n", N, N);
+  printf("  Diagonalizing %dx%d Hamiltonian...\n", N, N);
 
   eigen_t *eig = cmatrix_eigh(H_0);
   // DEBUG:
@@ -60,8 +61,10 @@ int main(void) {
     fprintf(stderr, "FAIL: cmatrix_eigh returned NULL\n");
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
+
   if (eig->n < 1 || !eig->eigenvectors) {
     fprintf(stderr, "FAIL: eig invalid (n=%d, eigenvectors=%p)\n", eig->n,
             (void *)eig->eigenvectors);
@@ -72,12 +75,14 @@ int main(void) {
   }
 
   // Ground state energy
-  printf("    Ground state energy: %.6f (expected ~0.5)\n", eig->eigenvalues[0]);
+  printf("    Ground state energy: %.6f (expected ~0.5)\n",
+         eig->eigenvalues[0]);
   if (fabs(eig->eigenvalues[0] - 0.5) > 0.05) {
     fprintf(stderr, "FAIL: ground state energy too far from 0.5\n");
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
 
@@ -88,10 +93,11 @@ int main(void) {
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
 
-  // Renormalize from discrete (sum=1) to continuum (sum*dx=1) convention
+  // Renormalize from discrete (sum = 1) to continuum (sum * dx = 1) convention
   double norm_sq = 0.0;
   for (int i = 0; i < N; i++)
     norm_sq += c_abs2(psi0->data[i]);
@@ -112,7 +118,7 @@ int main(void) {
     psi0->data[i].im *= inv_norm;
   }
 
-  // Compute <x^4> = \int \phi_0*(x) x^4 \phi_0(x) dx
+  // Compute <x^4> = \int \phi_0^*(x) * x^4 * \phi_0(x) dx
   double x4_expect = 0.0;
   for (int i = 0; i < N; i++) {
     double xi2 = x[i] * x[i];
@@ -126,12 +132,13 @@ int main(void) {
   int passed = (fabs(x4_expect - 0.75) < 0.02);
   printf("    Test %s\n", passed ? "PASSED" : "FAILED");
   if (!passed)
-    printf("    Delta = %.6f (tolerance 0.02)\n", fabs(x4_expect - 0.75));
+    printf("    \\Delta = %.6f (tolerance 0.02)\n", fabs(x4_expect - 0.75));
 
   // Cleanup
   cvector_free(psi0);
   eigen_free(eig);
   cmatrix_free(H_0);
   free(x);
+
   return passed ? 0 : 1;
 }

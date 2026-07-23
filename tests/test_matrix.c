@@ -47,6 +47,7 @@ int main() {
     cmatrix_free(At);
     return 1;
   }
+
   if (B->nrows != 2 || B->ncols != 2) {
     printf("FAIL: multiplication dimensions\n");
     cmatrix_free(A);
@@ -54,6 +55,7 @@ int main() {
     cmatrix_free(B);
     return 1;
   }
+
   // Expected: [[14, 32], [32, 77]]
   if (c_abs(c_sub(CMAT(B, 0, 0), c_real(14.0))) > 1e-12) {
     printf("FAIL: multiplication result\n");

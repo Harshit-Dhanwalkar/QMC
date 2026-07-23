@@ -42,20 +42,23 @@ int main(void) {
     int J2_list[4];
     int count = couple_allowed_J(2 * l, 1, J2_list);
     printf("   l=%d: allowed J (doubled) =", l);
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < count; i++) {
       printf(" %d", J2_list[i]);
+    }
     printf("\n");
 
     for (int idx = 0; idx < count; idx++) {
       int J_2 = J2_list[idx];
       int M_2 = 1; // M=1/2, always valid for any half-integer J here
       cvector_t *v = couple_states(2 * l, 1, J_2, M_2);
-      if (!v)
+      if (!v) {
         continue;
+      }
 
       double norm_sq = 0.0;
-      for (int i = 0; i < v->n; i++)
+      for (int i = 0; i < v->n; i++) {
         norm_sq += v->data[i].re * v->data[i].re;
+      }
       printf("     J=%d/2, M=1/2: norm^2=%.6f (should be 1.0)\n", J_2, norm_sq);
 
       cvector_free(v);

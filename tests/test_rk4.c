@@ -7,7 +7,7 @@
 
 /*
  * A single complex phase oscillator
- * dy/dt = i* \omega *y   =>   y(t) = y0 * \exp(i* \omega* t)
+ * dy/dt = i * \omega * y => y(t) = y0 * \exp(i * \omega * t)
  */
 static void phase_rhs(double t, const cvector_t *y, cvector_t *dydt,
                       void *params) {
@@ -36,6 +36,7 @@ static double run_to(double T, double dt, double omega) {
   double dre = y->data[0].re - ana_re;
   double dim = y->data[0].im - ana_im;
   double err = sqrt(dre * dre + dim * dim);
+
   cvector_free(y);
   return err;
 }
@@ -77,17 +78,21 @@ int main(void) {
     double t = 0.0;
     double dtn = 0.02;
     int steps = (int)(T / dtn + 0.5);
+
     for (int i = 0; i < steps; i++) {
       rk4_step(t, dtn, y, phase_rhs, &omega);
       t += dtn;
     }
+
     double norm =
         sqrt(y->data[0].re * y->data[0].re + y->data[0].im * y->data[0].im);
     printf("   |y(T)| = %.6f (expected 1.0)\n", norm);
+
     if (fabs(norm - 1.0) > 1e-6) {
       printf("   FAIL: norm not conserved\n");
       pass = 0;
     }
+
     cvector_free(y);
   }
 
@@ -96,5 +101,6 @@ int main(void) {
     return 0;
   }
   printf("FAIL\n");
+
   return 1;
 }

@@ -28,12 +28,11 @@ static int check_close(double got, double expected, double tol,
                        const char *label) {
   double err = fabs(got - expected);
   printf("  %s: got=%.8f expected=%.8f err=%.2e\n", label, got, expected, err);
+
   return err > tol;
 }
 
-// Test 1: product state (single-qubit gates only) -> zero entanglement
-// entropy for every qubit, even though every qubit is individually in
-// superposition.
+// Test 1: product state
 static int test_product_state_no_entanglement(void) {
   int n_qubits = 4;
   cvector_t *psi = qstate_alloc(n_qubits);
@@ -92,9 +91,12 @@ static int test_ghz_state(void) {
   int fail = 0;
   fail |= check_close(qstate_probability(psi, 0), 0.5, 1e-10, "P(|000>)");
   fail |= check_close(qstate_probability(psi, 7), 0.5, 1e-10, "P(|111>)");
+
   double sum_middle = 0.0;
-  for (int i = 1; i < 7; i++)
+  for (int i = 1; i < 7; i++) {
     sum_middle += qstate_probability(psi, i);
+  }
+
   fail |= check_close(sum_middle, 0.0, 1e-10, "P(all other states)");
   fail |= check_close(psi->data[0].re, inv_sqrt2, 1e-10, "amp(|000>).re");
   fail |= check_close(psi->data[7].re, inv_sqrt2, 1e-10, "amp(|111>).re");
@@ -121,8 +123,6 @@ static void demo_exponential_cost(void) {
     double mb = (double)(dim * sizeof(complex_t)) / (1024.0 * 1024.0);
     printf("  %8d  %14lld  %8.4f\n", n, dim, mb);
   }
-  printf("  (linear in n_qubits would be ~constant here per qubit \n");
-  printf("   table is cost identical.c's permanent/Ryser)\n");
 }
 
 int main(void) {
@@ -145,5 +145,6 @@ int main(void) {
     return 1;
   }
   printf("PASS\n");
+
   return 0;
 }

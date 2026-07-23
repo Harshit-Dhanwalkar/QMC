@@ -24,15 +24,18 @@ int main(void) {
   int M = 50; // grid points
   double L = 1.0;
   double *x = linspace(0.0, L, M);
-  if (!x)
+  if (!x) {
     return 1;
+  }
 
   int n_orbitals = 3;
   cvector_t *orbitals[3];
   for (int k = 0; k < n_orbitals; k++) {
     orbitals[k] = cvector_alloc(M);
-    for (int i = 0; i < M; i++)
+
+    for (int i = 0; i < M; i++) {
       orbitals[k]->data[i] = c_real(sin((k + 1) * M_PI * x[i] / L));
+    }
   }
 
   printf("   Orbitals: particle-in-a-box states n=1,2,3, grid of %d points\n\n",
@@ -61,8 +64,11 @@ int main(void) {
   printf("     determinant (fermions) = %.6f\n", det3.re);
   printf("     permanent   (bosons)   = %.6f\n", perm3.re);
 
-  for (int k = 0; k < n_orbitals; k++)
+  for (int k = 0; k < n_orbitals; k++) {
     cvector_free(orbitals[k]);
+  }
+
   free(x);
+
   return 0;
 }

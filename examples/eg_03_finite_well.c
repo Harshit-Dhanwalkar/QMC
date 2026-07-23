@@ -33,8 +33,9 @@ int main(void) {
 
   double dx = 2.0 * L / (N - 1);
   double *x = linspace(-L, L, N);
-  if (!x)
+  if (!x) {
     return 1;
+  }
 
   double coeff = 0.5 / (dx * dx); // \hbar^2/2m = 0.5
 
@@ -51,12 +52,14 @@ int main(void) {
     free(n_bound);
     free(diag);
     free(offdiag);
+
     return 1;
   }
 
   // Off-diagonal is the same for every V_0, so build it once outside sweep
-  for (int i = 0; i < N - 1; i++)
+  for (int i = 0; i < N - 1; i++) {
     offdiag[i] = -coeff;
+  }
 
   // Analytic threshold: V0_n = (2n-1)^2 * \pi^2 / (8 * a^2)
   printf("   Analytic thresholds for new bound states:\n");
@@ -82,8 +85,10 @@ int main(void) {
     eigen_t *eig = tridiag_eigh(diag, offdiag, N);
     if (!eig) {
       n_bound[v] = 0;
-      for (int k = 0; k < n_states; k++)
+      for (int k = 0; k < n_states; k++) {
         E_arr[v * n_states + k] = 1.0;
+      }
+
       continue;
     }
 
@@ -92,8 +97,9 @@ int main(void) {
       double E = eig->eigenvalues[k];
       // Bound states have E < 0
       E_arr[v * n_states + k] = E;
-      if (E < 0.0)
+      if (E < 0.0) {
         nb++;
+      }
     }
     n_bound[v] = nb;
     eigen_free(eig);
@@ -113,9 +119,9 @@ int main(void) {
     printf("   %5.2f", V0_arr[v]);
     for (int k = 0; k < 3; k++) {
       double E = E_arr[v * n_states + k];
-      if (E < 0)
+      if (E < 0) {
         printf("  %9.4f", E);
-      else
+      } else
         printf("  %9s", "---");
     }
     printf("\n");
@@ -130,10 +136,12 @@ int main(void) {
       fprintf(f, "# V0  E1  E2  E3  E4  E5\n");
       for (int v = 0; v < n_V; v++) {
         fprintf(f, "%.6e", V0_arr[v]);
-        for (int k = 0; k < n_states; k++)
+        for (int k = 0; k < n_states; k++) {
           fprintf(f, "  %.6e", E_arr[v * n_states + k]);
+        }
         fprintf(f, "\n");
       }
+
       fclose(f);
       printf("\n   Saved finite_well_energies.dat\n");
     }
@@ -145,8 +153,9 @@ int main(void) {
     double **E_by_state = malloc(n_states * sizeof *E_by_state);
     for (int k = 0; k < n_states; k++) {
       E_by_state[k] = malloc(n_V * sizeof **E_by_state);
-      for (int v = 0; v < n_V; v++)
+      for (int v = 0; v < n_V; v++) {
         E_by_state[k][v] = E_arr[v * n_states + k];
+      }
     }
 
     const char *labels[] = {"n=1", "n=2", "n=3", "n=4", "n=5"};
@@ -163,8 +172,10 @@ int main(void) {
                (const double **)E_by_state, n_states, n_V, labels, &opts);
     printf("   Generated finite_well.png\n");
 
-    for (int k = 0; k < n_states; k++)
+    for (int k = 0; k < n_states; k++) {
       free(E_by_state[k]);
+    }
+
     free(E_by_state);
   }
 
@@ -174,5 +185,6 @@ int main(void) {
   free(diag);
   free(offdiag);
   free(x);
+
   return 0;
 }

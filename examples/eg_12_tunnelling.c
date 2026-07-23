@@ -31,16 +31,18 @@ int main(void) {
   double x_min = -10.0, x_max = 10.0;
   double dx = (x_max - x_min) / (N - 1);
   double *x = linspace(x_min, x_max, N);
-  if (!x)
+  if (!x) {
     return 1;
+  }
 
   // Potential: rectangular barrier
   double V0 = 1.5; // barrier height  (\hbar=m=1 units)
   double a = 1.0;  // barrier left edge
   double b = 2.0;  // barrier right edge
   double *V = calloc(N, sizeof *V);
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     V[i] = (x[i] >= a && x[i] <= b) ? V0 : 0.0;
+  }
 
   // Initial Gaussian wave packet
   double x0 = -4.0;   // centre
@@ -88,9 +90,10 @@ int main(void) {
   // Save initial snapshot
   {
     double *prob = malloc(N * sizeof *prob);
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N; i++) {
       prob[i] =
           psi->data[i].re * psi->data[i].re + psi->data[i].im * psi->data[i].im;
+    }
     save_wavefunction("tunnel_psi_t0.dat", x, psi, N);
 
     plot_opts_t opts = {0};
@@ -100,12 +103,14 @@ int main(void) {
 
     // Overlay barrier as second series
     double *Vscaled = malloc(N * sizeof *Vscaled);
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N; i++) {
       Vscaled[i] = V[i] * 0.3; // scale for vis
+    }
 
     const double *ys[2] = {prob, Vscaled};
     const char *lbs[2] = {"|\\psi|^2", "V(x)"};
     plot_lines("tunnel_t0", PLOT_FORMAT_PNG, x, ys, 2, N, lbs, &opts);
+
     free(prob);
     free(Vscaled);
   }
@@ -120,11 +125,11 @@ int main(void) {
 
       // Compute norm (should stay = 1)
       double n2 = 0.0;
-      for (int i = 0; i < N; i++)
+      for (int i = 0; i < N; i++) {
         n2 += (psi->data[i].re * psi->data[i].re +
                psi->data[i].im * psi->data[i].im) *
               dx;
-
+      }
       printf("   t=%.2f  norm=%.6f\n", t, n2);
 
       char fname[64], pname[64];
@@ -133,9 +138,10 @@ int main(void) {
       save_wavefunction(fname, x, psi, N);
 
       double *prob = malloc(N * sizeof *prob);
-      for (int i = 0; i < N; i++)
+      for (int i = 0; i < N; i++) {
         prob[i] = psi->data[i].re * psi->data[i].re +
                   psi->data[i].im * psi->data[i].im;
+      }
 
       char title[64];
       snprintf(title, sizeof title, "|\\psi(x,t=%.2f)|^2", t);
@@ -144,6 +150,7 @@ int main(void) {
       opts.xlabel = "x";
       opts.ylabel = "|\\psi|^2";
       plot_line(pname, PLOT_FORMAT_PNG, x, prob, N, &opts);
+
       free(prob);
     }
   }
@@ -154,17 +161,21 @@ int main(void) {
     double p = (psi->data[i].re * psi->data[i].re +
                 psi->data[i].im * psi->data[i].im) *
                dx;
-    if (x[i] > b)
+    if (x[i] > b) {
       T_coeff += p;
-    if (x[i] < a)
+    }
+
+    if (x[i] < a) {
       R_coeff += p;
+    }
   }
-  printf("\n   Transmission T = %.4f\n", T_coeff);
+  printf("\n");
+  printf("   Transmission T = %.4f\n", T_coeff);
   printf("   Reflection   R = %.4f\n", R_coeff);
-  printf("   T + R         = %.4f (should be ~1)\n", T_coeff + R_coeff);
+  printf("   T + R          = %.4f (should be ~1)\n", T_coeff + R_coeff);
 
   /* Analytic WKB transmission (thick barrier, E < V0):
-   * T_WKB = \exp(-2 * kappa * L)  where \kappa = \sqrt(2m(V0-E))/\hbar, L=b-a
+   * T_WKB = \exp(-2 * \kappa * L)  where \kappa = \sqrt(2m(V0-E))/\hbar, L=b-a
    */
   double E_kin = k0 * k0 / 2.0;
   if (E_kin < V0) {
@@ -178,5 +189,6 @@ int main(void) {
   free(offdiag);
   free(x);
   free(V);
+
   return 0;
 }

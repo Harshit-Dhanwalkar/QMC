@@ -20,6 +20,7 @@ static int check_close(double got, double expected, double tol,
                        const char *label) {
   double err = fabs(got - expected);
   printf("  %s: got=%.8f expected=%.8f err=%.2e\n", label, got, expected, err);
+
   return err > tol;
 }
 
@@ -48,6 +49,7 @@ static int test_solve_tise_matrix_vs_dense(void) {
       CMAT(H, i, i + 1) = c_real(-coeff);
   }
   eigen_t *eig_old = cmatrix_eigh_generic(H);
+
   cmatrix_free(H);
   free(x);
 
@@ -91,12 +93,14 @@ static int test_klein_gordon_vs_dense(void) {
     if (i < N - 1)
       CMAT(H, i, i + 1) = c_real(-coeff);
   }
+
   eigen_t *eig_old = cmatrix_eigh_generic(H);
   cmatrix_free(H);
   if (eig_old) {
     double V_avg = 0.0;
     for (int j = 0; j < N; j++)
       V_avg += V[j];
+
     V_avg /= N;
     for (int i = 0; i < eig_old->n; i++)
       eig_old->eigenvalues[i] = V_avg + sqrt(eig_old->eigenvalues[i]);
@@ -136,5 +140,6 @@ int main(void) {
     return 1;
   }
   printf("PASS\n");
+
   return 0;
 }

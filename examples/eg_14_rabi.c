@@ -22,8 +22,9 @@ int main(void) {
   int N = 300;
   double t_max = 4.0 * M_PI / Omega; // a few full resonant periods
   double *t = linspace(0.0, t_max, N);
-  if (!t)
+  if (!t) {
     return 1;
+  }
 
   double *P_resonant = malloc(N * sizeof *P_resonant);
   double *P_detuned = malloc(N * sizeof *P_detuned);
@@ -31,6 +32,7 @@ int main(void) {
     free(t);
     free(P_resonant);
     free(P_detuned);
+
     return 1;
   }
 
@@ -61,5 +63,6 @@ int main(void) {
   free(t);
   free(P_resonant);
   free(P_detuned);
+
   return 0;
 }

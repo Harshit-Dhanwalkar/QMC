@@ -13,6 +13,7 @@ int main() {
   cvector_t *x = cvector_alloc(N);
   if (!x)
     return 1;
+
   for (int i = 0; i < N; i++) {
     double t = 2.0 * M_PI * i / N;
     x->data[i] = c_new(cos(t), sin(t)); // e^{it}
@@ -37,5 +38,6 @@ int main() {
   else
     printf("   FFT test failed.\n");
   cvector_free(x);
+
   return 0;
 }

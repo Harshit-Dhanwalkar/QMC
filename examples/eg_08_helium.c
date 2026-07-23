@@ -60,5 +60,6 @@ int main(void) {
 
   free(Zeff);
   free(E);
+
   return 0;
 }

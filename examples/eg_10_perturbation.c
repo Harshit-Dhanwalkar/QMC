@@ -1,7 +1,7 @@
 /*
  * Non‑degenerate Perturbation Theory
  *
- * Unperturbed: 1D harmonic oscillator (m=1, \hbar=1,  \omega=1)
+ * Unperturbed: 1D harmonic oscillator (m=1, \hbar=1, \omega=1)
  * Perturbation: V' = \lambda x^4      (anharmonic term)
  * Computes first‑order correction using perturb_nondeg and compares
  * with numerical diagonalisation of full Hamiltonian.
@@ -33,6 +33,7 @@ int main(void) {
   double *x = linspace(x_min, x_max, N);
   if (!x) {
     fprintf(stderr, "Memory allocation failed\n");
+
     return 1;
   }
 
@@ -41,15 +42,21 @@ int main(void) {
   cmatrix_t *H_0 = cmatrix_alloc(N, N);
   if (!H_0) {
     free(x);
+
     return 1;
   }
+
   for (int i = 0; i < N; i++) {
     double V0 = 0.5 * m * omega * omega * x[i] * x[i];
     CMAT(H_0, i, i) = c_real(-2.0 * coeff + V0);
-    if (i > 0)
+
+    if (i > 0) {
       CMAT(H_0, i, i - 1) = c_real(coeff);
-    if (i < N - 1)
+    }
+
+    if (i < N - 1) {
       CMAT(H_0, i, i + 1) = c_real(coeff);
+    }
   }
 
   // Diagonalise H_0 to get unperturbed eigenstates
@@ -58,6 +65,7 @@ int main(void) {
     fprintf(stderr, "Eigen decomposition of H_0 failed\n");
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
 
@@ -77,12 +85,14 @@ int main(void) {
   for (int n = 0; n < 5 && n < eig0->n; n++) {
     // Extract eigenvector as cvector
     cvector_t *psi = cvector_from_matrix_column(eig0->eigenvectors, n);
-    if (!psi)
+    if (!psi) {
       continue;
+    }
 
     double norm_sq = 0.0;
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < N; i++) {
       norm_sq += c_abs2(psi->data[i]) * dx;
+    }
 
     if (norm_sq > 0.0) {
       double inv = 1.0 / sqrt(norm_sq);
@@ -111,10 +121,12 @@ int main(void) {
       cvector_free(psi);
       continue;
     }
+
     for (int i = 0; i < N; i++) {
       double Vp = lambda * x[i] * x[i] * x[i] * x[i];
       CMAT(H_full, i, i) = c_add(CMAT(H_full, i, i), c_real(Vp));
     }
+
     eigen_t *eig_full = cmatrix_eigh(H_full);
     if (!eig_full) {
       cmatrix_free(H_full);

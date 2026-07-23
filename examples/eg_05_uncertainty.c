@@ -40,15 +40,17 @@ int main(void) {
 
   printf("   <x> = %.6f  (expect 0)\n", u.mean_x);
   printf("   <p> = %.6f  (expect 0)\n", u.mean_p);
-  printf("   Delta_x = %.6f\n", u.delta_x);
-  printf("   Delta_p = %.6f\n", u.delta_p);
-  printf("   Delta_x * Delta_p = %.6f  (exact minimum: hbar/2 = %.6f)\n\n",
-         u.product, hbar / 2.0);
+  printf("   \\Delta_x = %.6f\n", u.delta_x);
+  printf("   \\Delta_p = %.6f\n", u.delta_p);
+  printf(
+      "   \\Delta_x * \\Delta_p = %.6f  (exact minimum: \\hbar/2 = %.6f)\n\n",
+      u.product, hbar / 2.0);
 
   double omega_param = omega;
   double E = compute_energy_expectation(wf, V_harmonic, &omega_param);
-  printf("   <H> = %.6f  (exact ground-state energy: hbar*omega/2 = %.6f)\n", E,
-         hbar * omega / 2.0);
+  printf(
+      "   <H> = %.6f  (exact ground-state energy: \\hbar * \\omega/2 = %.6f)\n",
+      E, hbar * omega / 2.0);
 
   wavefunction_free(wf);
 

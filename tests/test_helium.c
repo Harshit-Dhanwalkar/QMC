@@ -100,6 +100,8 @@ int main(void) {
     printf("FAILED (%d)\n", failed);
     return 1;
   }
+
   printf("PASS\n");
+
   return 0;
 }

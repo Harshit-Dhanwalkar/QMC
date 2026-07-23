@@ -30,27 +30,29 @@ int main(void) {
   if (!x || !V) {
     free(x);
     free(V);
+
     return 1;
   }
 
-  printf("   Grid: N=%d, dx=%.2f, m=c=hbar=1 (mc^2=%.2f)\n\n", N, dx, mc2);
+  printf("   Grid: N=%d, dx=%.2f, m=c=\\hbar=1 (mc^2=%.2f)\n\n", N, dx, mc2);
 
   eigen_t *eig = dirac_1d(x, N, V, m, hbar, c);
   if (!eig) {
     fprintf(stderr, "dirac_1d failed\n");
     free(x);
     free(V);
+
     return 1;
   }
 
   int n_pos = 0, n_neg = 0, n_gap = 0;
   for (int i = 0; i < eig->n; i++) {
     double E = eig->eigenvalues[i];
-    if (E >= mc2 - 1e-6)
+    if (E >= mc2 - 1e-6) {
       n_pos++;
-    else if (E <= -mc2 + 1e-6)
+    } else if (E <= -mc2 + 1e-6) {
       n_neg++;
-    else
+    } else
       n_gap++;
   }
   printf("   %d states >= +mc^2 (positive-energy branch)\n", n_pos);
@@ -64,8 +66,9 @@ int main(void) {
   int lowest_pos_idx = -1;
   for (int i = 0; i < eig->n && shown < 5; i++) {
     if (eig->eigenvalues[i] >= mc2 - 1e-6) {
-      if (lowest_pos_idx < 0)
+      if (lowest_pos_idx < 0) {
         lowest_pos_idx = i;
+      }
       printf("   %3d  %8.4f\n", i, eig->eigenvalues[i]);
       shown++;
     }
@@ -80,8 +83,10 @@ int main(void) {
         cvector_from_matrix_column(eig->eigenvectors, lowest_pos_idx);
     if (spinor) {
       double *upper_prob = malloc(N * sizeof *upper_prob);
-      for (int i = 0; i < N; i++)
+
+      for (int i = 0; i < N; i++) {
         upper_prob[i] = c_abs2(spinor->data[i]);
+      }
 
       plot_opts_t opts = {0};
       opts.title = "Dirac: lowest positive-energy state (upper component)";
@@ -99,5 +104,6 @@ int main(void) {
   eigen_free(eig);
   free(x);
   free(V);
+
   return 0;
 }

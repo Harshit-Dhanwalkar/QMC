@@ -23,7 +23,7 @@ int main() {
     return 1;
   }
 
-  // Check normalization (integral of |R|^2 r^2 dr should be 1)
+  // Check normalization (\int |R|^2 * r^ dr should be 1)
   double dr = (r_max - r_min) / (N - 1);
   double norm_sq = 0.0;
   for (int i = 0; i < N; i++) {
@@ -36,7 +36,9 @@ int main() {
   // Also test energy level: 1s = -13.6 eV
   double E1 = hydrogen_energy_level(1) / E_CHARGE;
   printf("   Hydrogen 1s energy: %f eV (expected -13.6)\n", E1);
+
   cvector_free(R);
   free(r);
+
   return 0;
 }

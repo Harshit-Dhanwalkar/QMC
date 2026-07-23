@@ -33,8 +33,9 @@ int main(void) {
   double dx = L / (N - 1);
 
   double *x = linspace(0.0, L, N);
-  if (!x)
+  if (!x) {
     return 1;
+  }
 
   // Analytic
   printf("   Analytic energies (atomic units, \\hbar=m=1):\n");
@@ -47,6 +48,7 @@ int main(void) {
   int M = N - 2; // points
   if (M < 2) {
     free(x);
+
     return 1;
   }
 
@@ -55,15 +57,20 @@ int main(void) {
   cmatrix_t *H = cmatrix_alloc(M, M);
   if (!H) {
     free(x);
+
     return 1;
   }
 
   for (int i = 0; i < M; i++) {
     CMAT(H, i, i) = c_real(2.0 * coeff);
-    if (i > 0)
+
+    if (i > 0) {
       CMAT(H, i, i - 1) = c_real(-coeff);
-    if (i < M - 1)
+    }
+
+    if (i < M - 1) {
       CMAT(H, i, i + 1) = c_real(-coeff);
+    }
   }
 
   eigen_t *eig = cmatrix_eigh(H);
@@ -71,6 +78,7 @@ int main(void) {
     fprintf(stderr, "  FAIL: eigensolver\n");
     cmatrix_free(H);
     free(x);
+
     return 1;
   }
 
@@ -86,5 +94,6 @@ int main(void) {
   eigen_free(eig);
   cmatrix_free(H);
   free(x);
+
   return 0;
 }

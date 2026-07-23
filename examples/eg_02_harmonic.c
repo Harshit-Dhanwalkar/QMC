@@ -35,6 +35,7 @@ int main(void) {
   double *x = linspace(x_min, x_max, n_grid);
   if (!x) {
     fprintf(stderr, "Memory allocation failed\n");
+
     return 1;
   }
 
@@ -63,15 +64,18 @@ int main(void) {
     free(x);
     free(diag);
     free(offdiag);
+
     return 1;
   }
   double coeff = -hbar * hbar / (2 * m * dx * dx);
   double mass_omega2 = 0.5 * m * omega * omega;
 
-  for (int i = 0; i < n_grid; i++)
+  for (int i = 0; i < n_grid; i++) {
     diag[i] = -2.0 * coeff + mass_omega2 * x[i] * x[i];
-  for (int i = 0; i < n_grid - 1; i++)
+  }
+  for (int i = 0; i < n_grid - 1; i++) {
     offdiag[i] = coeff;
+  }
 
   // Diagonalize
   eigen_t *eig = tridiag_eigh(diag, offdiag, n_grid);
@@ -80,10 +84,11 @@ int main(void) {
     free(x);
     free(diag);
     free(offdiag);
+
     return 1;
   }
 
-  printf("  Lowest 5 numerical eigenvalues (hbar omega units):\n");
+  printf("  Lowest 5 numerical eigenvalues (\\hbar\\omega units):\n");
   printf("   n   E_num   E_ana   error %%\n");
   printf("  ---  -----   -----   -------\n");
   for (int i = 0; i < 5 && i < eig->n; i++) {
@@ -103,12 +108,14 @@ int main(void) {
   // Save wavefunctions and plot
   for (int i = 0; i < 4 && i < eig->n; i++) {
     cvector_t *col = cvector_from_matrix_column(eig->eigenvectors, i);
-    if (!col)
+    if (!col) {
       continue;
+    }
 
     double *y = malloc(n_grid * sizeof(double));
-    for (int j = 0; j < n_grid; j++)
+    for (int j = 0; j < n_grid; j++) {
       y[j] = col->data[j].re; // real eigenfunctions
+    }
 
     // Save data file (real part)
     char fname[64];
@@ -120,7 +127,7 @@ int main(void) {
     plot_opts_t opts = {0};
     opts.title = "Harmonic Oscillator";
     opts.xlabel = "x";
-    opts.ylabel = "ψ(x)";
+    opts.ylabel = "\\phi(x)";
     opts.width = 800;
     opts.height = 600;
     plot_line(plot_name, PLOT_FORMAT_PNG, x, y, n_grid, &opts);
@@ -132,8 +139,9 @@ int main(void) {
 
   // Save eigenvalues
   double *E_vals = malloc(10 * sizeof(double));
-  for (int i = 0; i < 10 && i < eig->n; i++)
+  for (int i = 0; i < 10 && i < eig->n; i++) {
     E_vals[i] = eig->eigenvalues[i];
+  }
   save_eigenvalues("harmonic_energies.dat", E_vals,
                    (eig->n < 10) ? eig->n : 10);
   free(E_vals);
