@@ -9,7 +9,6 @@ CFLAGS     += -DQMC_OUTPUT_DIR=\"$(OUTPUT_DIR)\"
 
 # Plot backend selection: GR (default) -> GNUPLOT -> MATPLOTLIB -> NONE
 PLOT_BACKEND ?= GR
-# GR_PREFIX    ?= $(PWD)/third_party/gr
 GR_PREFIX    ?= $(PWD)/third_party/gr/install
 
 PLOT_SRC     =
@@ -126,7 +125,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/identical.c \
                $(PHYSICS_DIR)/relativistic.c \
                $(PHYSICS_DIR)/fine_structure.c \
-               $(PHYSICS_DIR)/qubits.c
+               $(PHYSICS_DIR)/qubits.c \
+               $(PHYSICS_DIR)/lindblad.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -154,7 +154,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_15_angular_coupling \
               $(BUILD_DIR)/eg_16_finestructure \
               $(BUILD_DIR)/eg_17_dirac \
-              $(BUILD_DIR)/eg_18_qubits
+              $(BUILD_DIR)/eg_18_qubits \
+              $(BUILD_DIR)/eg_19_lindblad
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -176,7 +177,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_dirac \
               $(BUILD_DIR)/test_qubits \
               $(BUILD_DIR)/test_scattering \
-              $(BUILD_DIR)/test_tridiag
+              $(BUILD_DIR)/test_tridiag \
+              $(BUILD_DIR)/test_lindblad
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
