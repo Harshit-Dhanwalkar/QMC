@@ -48,12 +48,13 @@ int main(void) {
   double E_analytic = helium_ground_state_energy_analytic(Z);
   printf("   Helium: E(Z') minimized at Z'=%.4f, E=%.6f Hartree\n",
          Zeff_analytic, E_analytic);
-  printf("   (textbook: Z'=1.6875, E=-2.84765625 Hartree ~ -77.5 eV)\n\n");
+  printf("   (theoritical: Z'=1.6875, E=-2.84765625 Hartree ~ -77.5 eV)\n\n");
 
   plot_opts_t opts = {0};
   opts.title = "Helium: E(Z') variational energy";
   opts.xlabel = "Z'";
   opts.ylabel = "E (Hartree)";
+  // TODO: use save_wavefunction
   plot_line("helium_energy_curve", PLOT_FORMAT_PNG, Zeff, E, N, &opts);
   printf("   Saved helium_energy_curve.png (minimum near Z'=1.6875)\n");
 

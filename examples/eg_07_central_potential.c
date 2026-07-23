@@ -52,6 +52,7 @@ int main(void) {
       opts.xlabel = "r";
       opts.ylabel = "u(r)";
 
+    // TODO: use save_wavefuntion
       plot_line("central_potential_ho_ground", PLOT_FORMAT_PNG, r, y, N, &opts);
       printf("   Saved central_potential_ho_ground.png\n\n");
 

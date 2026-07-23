@@ -1,7 +1,7 @@
 /*
  * Hydrogen Atom (radial equation)
  *
- * Solves the radial Schrödinger equation for hydrogen using finite differences.
+ * Solves radial Schrödinger equation for hydrogen using finite differences.
  * Compares numerical eigenvalues with analytic E_n = -13.6 eV / n^2.
  */
 
@@ -15,6 +15,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef QMC_OUTPUT_DIR
+#define QMC_OUTPUT_DIR "output"
+#endif
 
 int main(void) {
   printf(" > Hydrogen Atom (Radial Equation)\n\n");
@@ -37,8 +41,8 @@ int main(void) {
     return 1;
   }
 
-  printf("   Grid: %d points from %.3e to %.3e m, dr=%.3e m\n\n", N, r_min, r_max,
-         dr);
+  printf("   Grid: %d points from %.3e to %.3e m, dr=%.3e m\n\n", N, r_min,
+         r_max, dr);
 
   // Solve radial equation
   eigen_t *eig = hydrogen_radial_solve(r, N, l, hbar, mass, e_charge, eps0);
@@ -63,12 +67,16 @@ int main(void) {
 
   // Save radial probability densities for first 3 states
   for (int i = 0; i < 3 && i < eig->n; i++) {
+    // TODO: use save_wavefunction
     char fname[64];
     snprintf(fname, sizeof(fname), "hydrogen_radial_%d.dat", i + 1);
     cvector_t *col = cvector_from_matrix_column(eig->eigenvectors, i);
+
     if (col) {
       // Save r, R(r), |R(r)|^2, and probability density r^2 |R(r)|^2
-      FILE *f = fopen(fname, "w");
+      char path[512];
+      snprintf(path, sizeof(path), "%s/%s", QMC_OUTPUT_DIR, fname);
+      FILE *f = fopen(path, "w");
       if (f) {
         fprintf(f, "# r (m)  R(r)  |R|^2  r^2|R|^2\n");
         for (int j = 0; j < N; j++) {
@@ -77,9 +85,11 @@ int main(void) {
           fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", r[j], R, rho,
                   r[j] * r[j] * rho);
         }
+
         fclose(f);
         printf("    Saved %s\n", fname);
       }
+
       cvector_free(col);
     }
   }
