@@ -184,7 +184,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_scattering \
               $(BUILD_DIR)/test_tridiag \
               $(BUILD_DIR)/test_lindblad \
-              $(BUILD_DIR)/test_hartree_fock
+              $(BUILD_DIR)/test_hartree_fock \
+              $(BUILD_DIR)/test_soft
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
