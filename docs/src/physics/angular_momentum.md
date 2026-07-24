@@ -30,14 +30,14 @@ $$
 L_z|l,m\rangle = \hbar m|l,m\rangle
 $$
 
-where $l = 0, 1, 2, \ldots$ and $m = -l, -l+1, \ldots, l$.
+Where $l = 0, 1, 2, \ldots$ and $m = -l, -l+1, \ldots, l$.
 
 ## Spherical Harmonics
 
 The spherical harmonics are the eigenfunctions of $L^2$ and $L_z$:
 
 $$
-Y\_{lm}(\theta, \phi) = \sqrt{\frac{2l+1}{4\pi}\frac{(l-m)!}{(l+m)!}} P_l^m(\cos\theta) e^{i m \phi}
+Y_{lm}(\theta, \phi) = \sqrt{\frac{2l+1}{4\pi}\frac{(l-m)!}{(l+m)!}} P_l^m(\cos\theta) e^{i m \phi}
 $$
 
 ### Implementation

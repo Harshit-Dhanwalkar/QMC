@@ -19,7 +19,7 @@ $$
 ### Second Order Correction
 
 $$
-E*n^{(2)} = \sum*{k \neq n} \frac{|\langle k|V|n\rangle|^2}{E_n^{(0)} - E_k^{(0)}}
+E_n^{(2)} = \sum_{k \neq n} \frac{|\langle k|V|n\rangle|^2}{E_n^{(0)} - E_k^{(0)}}
 $$
 
 ## Implementation
@@ -96,7 +96,7 @@ eigen_t *perturb_degenerate(const double *energies, const cmatrix_t *V_pert,
 For time-dependent perturbations, the transition rate from state _i_ to _f_ is:
 
 $$
-W_{i \rightarrow f}=\frac{2\pi}{\hbar}|\langle f∣V∣i \rangle∣^2 \rho(E_f)
+W_{i \rightarrow f}=\frac{2\pi}{\hbar}\vert{}\langle f\vert{}V\vert{}i \rangle\vert{}^2 \rho(E_f)
 $$
 
 ```c

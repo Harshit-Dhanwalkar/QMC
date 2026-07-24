@@ -21,7 +21,7 @@ The time-independent Schrödinger equation must be solved separately in three re
 
 **Region III** ($x > L/2$): $\psi(x) = De^{-\kappa x}$
 
-where:
+Where:
 
 $$
 k = \frac{\sqrt{2m(E + V_0)}}{\hbar}, \quad \kappa = \frac{\sqrt{-2mE}}{\hbar}

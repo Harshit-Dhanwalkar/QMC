@@ -11,7 +11,7 @@ $$
 -\frac{\hbar^2}{2m} \frac{d^2\psi}{dx^2} = E\psi
 $$
 
-with boundary conditions $\psi(0) = \psi(L) = 0$.
+With boundary conditions $\psi(0) = \psi(L) = 0$.
 
 The solutions are standing waves:
 

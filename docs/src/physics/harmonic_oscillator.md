@@ -18,7 +18,7 @@ H_n\!\left(\sqrt{\frac{m\omega}{\hbar}}x\right)
 \exp\left(-\frac{m\omega x^2}{2\hbar}\right)
 $$
 
-where $H_n$ are the Hermite polynomials.
+Where $H_n$ are the Hermite polynomials.
 
 The energy levels are equally spaced:
 

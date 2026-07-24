@@ -10,7 +10,7 @@ $$
 \left(\Box + \frac{m^2c^2}{\hbar^2}\right)\psi = 0
 $$
 
-where $\Box = \frac{1}{c^2}\frac{\partial^2}{\partial t^2} - \nabla^2$.
+Where $\Box = \frac{1}{c^2}\frac{\partial^2}{\partial t^2} - \nabla^2$.
 
 In energy form: $E^2 = p^2 c^2 + m^2 c^4$.
 
@@ -24,7 +24,7 @@ $$
 i\hbar\frac{\partial\psi}{\partial t} = \left(c\boldsymbol{\alpha}\cdot\mathbf{p} + \beta mc^2\right)\psi
 $$
 
-where $\boldsymbol{\alpha}$ and $\beta$ are 4$\times$4 matrices:
+Where $\boldsymbol{\alpha}$ and $\beta$ are 4$\times$4 matrices:
 
 $$
 \alpha_i = \begin{pmatrix} 0 & \sigma_i \\ \sigma_i & 0 \end{pmatrix}, \quad
@@ -67,17 +67,20 @@ dirac_spinor_t dirac_plane_wave(double E, double p, double m, double c) {
 }
 ```
 
-
 ## Non-Relativistic Limit
+
 In the limit $v \ll c$, the Dirac equation reduces to the Schr$\"{o}$dinger equation with spin-orbit coupling.
 
 ### Applications
+
 1. Hydrogen Fine Structure
 
 The Dirac equation gives the fine structure of hydrogen:
 
 TODO:
-$$
 
 $$
-where $\alpha$ is the fine structure constant.
+E_{nj} = mc^2 \left[ 1 + \left( \frac{\alpha}{n - (j + 1/2) + \sqrt{(j + 1/2)^2 - \alpha^2}} \right)^2 \right]^{-1/2}
+$$
+
+Where $\alpha$ is the fine structure constant.

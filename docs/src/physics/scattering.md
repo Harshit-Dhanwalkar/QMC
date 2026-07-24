@@ -10,7 +10,7 @@ $$
 \psi(\mathbf{r}) \sim e^{ikz} + f(\theta,\phi)\frac{e^{ikr}}{r}
 $$
 
-where $f(\theta,\phi)$ is the scattering amplitude.
+Where $f(\theta,\phi)$ is the scattering amplitude.
 
 The differential cross section:
 
@@ -52,7 +52,7 @@ $$
 f(\mathbf{k}', \mathbf{k}) = -\frac{2m}{4\pi\hbar^2}\int e^{-i\mathbf{q}\cdot\mathbf{r}} V(\mathbf{r}) d^3r
 $$
 
-where $\mathbf{q} = \mathbf{k}' - \mathbf{k}$.
+Where $\mathbf{q} = \mathbf{k}' - \mathbf{k}$.
 
 ### Coulomb Scattering
 

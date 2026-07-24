@@ -8,7 +8,7 @@ $$
 \Delta x \cdot \Delta p \geq \frac{\hbar}{2}
 $$
 
-where $\Delta x = \sqrt{\langle x^2 \rangle - \langle x \rangle^2}$ and similarly for $p$.
+Where $\Delta x = \sqrt{\langle x^2 \rangle - \langle x \rangle^2}$ and similarly for $p$.
 
 ## Energy-Time Uncertainty
 
@@ -43,10 +43,10 @@ double momentum_uncertainty(const cvector_t *psi, const double *x,
 The Gaussian wavepacket saturates the inequality:
 
 $$
-\phi(x)=\frac{1}{(2\pi\sigma^2)^{1/4}}\exp\left(−\frac{(x−x_0)^2}{4 \sigma^2} + \frac{i p_0 x}{\hbar}\right)
+\phi(x)=\frac{1}{(2\pi\sigma^2)^{1/4}} * \exp\left(−\frac{(x−x_0)^2}{4 \sigma^2} + \frac{i p_0 x}{\hbar}\right)
 $$
 
-For this state, $\Delta x=\sigma \Delta x=\sigma$ and $\Delta p= \hbar/(2\sigma)$, so $\Delta x\Delta p= \hbar/2$.
+For this state, $\Delta x=\sigma$ and $\Delta p=\hbar/(2\sigma)$, so $\Delta x\Delta p=\hbar/2$.
 
 ### Examples
 

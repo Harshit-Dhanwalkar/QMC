@@ -1,6 +1,6 @@
 # Hydrogen Atom
 
-The hydrogen atom is the quantum mechanical solution of a Coulomb potential $V(r) = -e^2/(4\pi\varepsilon_0 r)$. It's the only atomic system with exact analytical solutions.
+The hydrogen atom is the quantum mechanical solution of a Coulomb potential $V(r) = -\exp^2/(4\pi\varepsilon_0 r)$. It's the only atomic system with exact analytical solutions.
 
 ## The Schr$\"{o}$dinger Equation
 
@@ -16,7 +16,7 @@ $$
 \psi_{nlm}(r, \theta, \phi) = R_{nl}(r) Y_{lm}(\theta, \phi)
 $$
 
-where $Y_{lm}$ are spherical harmonics and $R_{nl}$ are radial functions.
+Where $Y_{lm}$ are spherical harmonics and $R_{nl}$ are radial functions.
 
 ### Radial Equation
 
@@ -35,14 +35,14 @@ $$
 For $l = 0$ (s-states):
 
 $$
-R*{n0}(r) = 2\left(\frac{1}{na_0}\right)^{3/2} \sqrt{\frac{1}{n^2}}
-L*{n-1}^1(2r/na_0) e^{-r/na_0}
+R_{n0}(r) = 2\left(\frac{1}{na_0}\right)^{3/2} \sqrt{\frac{1}{n^2}}
+L_{n-1}^1(2r/na_0) e^{-r/na_0}
 $$
 
 For $l = 1$ (p-states):
 
 $$
-R\_{21}(r) = \frac{1}{2\sqrt{6}}\left(\frac{1}{a_0}\right)^{3/2}
+R_{21}(r) = \frac{1}{2\sqrt{6}}\left(\frac{1}{a_0}\right)^{3/2}
 \frac{r}{a_0} e^{-r/2a_0}
 $$
 

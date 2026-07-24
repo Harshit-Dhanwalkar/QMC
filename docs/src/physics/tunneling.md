@@ -49,7 +49,7 @@ $$
 T = \frac{1}{1 + \frac{V_0^2}{4E(V_0 - E)} \sinh^2(\kappa a)}
 $$
 
-where $\kappa = \sqrt{2m(V_0 - E)}/\hbar$.
+Where $\kappa = \sqrt{2m(V_0 - E)}/\hbar$.
 
 For $E > V_0$:
 

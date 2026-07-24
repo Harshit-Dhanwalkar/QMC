@@ -16,7 +16,7 @@ $$
 \psi(x) \approx \frac{C}{\sqrt{p(x)}} \exp\left(\pm \frac{i}{\hbar}\int^x p(x')dx'\right)
 $$
 
-where the classical momentum is:
+Where the classical momentum is:
 
 $$
 p(x) = \sqrt{2m(E - V(x))}
@@ -56,7 +56,7 @@ $$
 \int_{x_1}^{x_2} p(x) dx = \left(n + \frac{1}{2}\right)\pi\hbar
 $$
 
-where $x_1$ and $x_2$ are the turning points.
+Where $x_1$ and $x_2$ are the turning points.
 
 ## Implementation
 
@@ -104,7 +104,7 @@ For the harmonic oscillator, $p(x) = \sqrt{2m(E − \frac{1}{2}m\omega^2x^2)}$.
 The quantization condition gives:
 
 $$
-E_n=\hbar\omega\left(n+\frac{1}{2}\right)
+E_n = \hbar \omega \left(n+\frac{1}{2}\right)
 $$
 
 The WKB approximation is exact for the harmonic oscillator.
@@ -114,11 +114,11 @@ The WKB approximation is exact for the harmonic oscillator.
 The Morse potential:
 
 $$
-V(x)=D_e\left(1−\exp^{−a(x−x0)}\right)^2
+V(x) = D_e \left(1 - e^{-a(x-x_0)}\right)^2
 $$
 
 has WKB energy levels:
 
 $$
-E_n=\hbar \omega\left(n+\frac{1}{2}\right)−\frac{[\hbar \omega(n+1/2)]^2}{4D_e}
+E_n = \hbar \omega \left(n+\frac{1}{2}\right) − \frac{[\hbar \omega(n+1/2)]^2}{4D_e}
 $$
