@@ -160,7 +160,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_17_dirac \
               $(BUILD_DIR)/eg_18_qubits \
               $(BUILD_DIR)/eg_19_lindblad \
-              $(BUILD_DIR)/eg_20_hartree_fock
+              $(BUILD_DIR)/eg_20_hartree_fock \
+              $(BUILD_DIR)/eg_21_soft
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
