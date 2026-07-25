@@ -130,6 +130,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/qubits.c \
                $(PHYSICS_DIR)/lindblad.c \
                $(PHYSICS_DIR)/hartree_fock.c \
+               $(PHYSICS_DIR)/driven.c \
                $(PHYSICS_DIR)/soft.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
