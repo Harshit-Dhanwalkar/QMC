@@ -162,7 +162,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_18_qubits \
               $(BUILD_DIR)/eg_19_lindblad \
               $(BUILD_DIR)/eg_20_hartree_fock \
-              $(BUILD_DIR)/eg_21_soft
+              $(BUILD_DIR)/eg_21_driven \
+              $(BUILD_DIR)/eg_22_soft
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -187,6 +188,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_tridiag \
               $(BUILD_DIR)/test_lindblad \
               $(BUILD_DIR)/test_hartree_fock \
+              $(BUILD_DIR)/test_driven \
               $(BUILD_DIR)/test_soft
 
 ifeq ($(PLOT_BACKEND),GR)
