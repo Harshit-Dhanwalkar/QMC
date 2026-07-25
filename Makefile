@@ -164,7 +164,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_20_hartree_fock \
               $(BUILD_DIR)/eg_21_driven \
               $(BUILD_DIR)/eg_22_soft \
-              $(BUILD_DIR)/eg_23_fermi_golden_rule
+              $(BUILD_DIR)/eg_23_fermi_golden_rule \
+              $(BUILD_DIR)/eg_24_central_potential_3d
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -178,6 +179,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
               $(BUILD_DIR)/test_central_potential \
+              $(BUILD_DIR)/test_central_potential_3d \
               $(BUILD_DIR)/test_rabi \
               $(BUILD_DIR)/test_angular_coupling \
               $(BUILD_DIR)/test_fine_structure \

@@ -9,7 +9,7 @@
  * Lindblad (GKSL) equation for open quantum systems:
  *
  *   d\rho/dt = -i [H, \rho] + \sum_k D[L_k](\rho)
- *   D[L](rho) = L rho L^dag - 1/2 { L^dag L, rho }
+ *   D[L](\rho) = L \rho L^dag - 1/2 { L^dag L, \rho }
  *
  * Natural units (\hbar = m = 1)
  * \rho is an NxN Hermitian density matrix (cmatrix_t,
@@ -30,10 +30,10 @@ double density_purity(const cmatrix_t *rho);
 double density_von_neumann_entropy(cmatrix_t *rho);
 
 /*
- * Right-hand side of Lindblad equation at current rho:
- *   -i[H,\rho] + \sum_k(L_k rho L_k^\dagger - 1/2 {L_k^dagger L_k, \rho})
+ * Right-hand side of Lindblad equation at current \rho:
+ *   -i[H,\rho] + \sum_k(L_k \rho L_k^\dagger - 1/2 {L_k^\dagger L_k, \rho})
  *
- * L is an array of n_ops jump operators (each NxN, N = rho->nrows). Pass
+ * L is an array of n_ops jump operators (each NxN, N = \rho->nrows). Pass
  * n_ops = 0 (L may be NULL) for closed-system (unitary) evolution.
  * Returns allocated NxN cmatrix_t (caller frees), or NULL on dimension mismatch
  * / allocation failure.
@@ -50,7 +50,7 @@ int lindblad_step_rk4(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                       int n_ops, double dt);
 
 // Evolve \rho for `steps` of size dt via repeated lindblad_step_rk4.
-// Returns 0 on success, -1 on first failed step (rho may be partially
+// Returns 0 on success, -1 on first failed step (\rho may be partially
 // evolved up to that point).
 int lindblad_evolve(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                     int n_ops, double dt, int steps);
@@ -83,11 +83,11 @@ cmatrix_t *lindblad_bitflip_op(int n_qubits, int target, double gamma);
 
 /*
  * Projective measurement in computational basis.
- * Samples an outcome index in [0, rho->nrows) according to diagonal populations
- * rho[i][i].re, using caller-supplied uniform random number `u` in [0,1) (so
- * RNG/seeding stays under caller control) Collapses \rho in place to pure-state
- * projector |outcome><outcome| for sampled outcome.
- * Returns sampled outcome index, or -1 on invalid input (\rho not square).
+ * Samples an outcome index in [0, \rho->nrows) according to diagonal
+ * populations \rho[i][i].re, using caller-supplied uniform random number `u` in
+ * [0,1) (so RNG/seeding stays under caller control) Collapses \rho in place to
+ * pure-state projector |outcome><outcome| for sampled outcome. Returns sampled
+ * outcome index, or -1 on invalid input (\rho not square).
  */
 int density_measure_computational_basis(cmatrix_t *rho, double u);
 

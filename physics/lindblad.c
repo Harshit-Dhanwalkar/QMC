@@ -9,9 +9,18 @@ single-qubit noise channels:
 #include "lindblad.h"
 #include "../core/complex.h"
 #include "../core/matrix.h"
+#include "../core/ode/rk4.h"
 #include "../core/vector.h"
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+  const cmatrix_t *H;
+  cmatrix_t **L;
+  int n_ops;
+  int dim; // \rho is dim x dim
+} lindblad_ctx_t;
 
 cmatrix_t *density_from_pure_state(const cvector_t *psi) {
   if (!psi) {
@@ -67,6 +76,25 @@ double density_von_neumann_entropy(cmatrix_t *rho) {
 
   eigen_free(e);
   return entropy;
+}
+
+static void lindblad_ode_rhs(double t, const cvector_t *y, cvector_t *dydt,
+                             void *params) {
+  lindblad_ctx_t *ctx = (lindblad_ctx_t *)params;
+  int n = ctx->dim;
+
+  cmatrix_t rho_view = {.data = y->data, .nrows = n, .ncols = n};
+  cmatrix_t *result = lindblad_rhs(ctx->H, &rho_view, ctx->L, ctx->n_ops);
+
+  if (!result) {
+    for (int i = 0; i < n * n; i++) {
+      dydt->data[i] = c_zero();
+    }
+    return;
+  }
+
+  memcpy(dydt->data, result->data, (size_t)n * n * sizeof(complex_t));
+  cmatrix_free(result);
 }
 
 cmatrix_t *lindblad_rhs(const cmatrix_t *H, const cmatrix_t *rho, cmatrix_t **L,
@@ -163,70 +191,73 @@ int lindblad_step_rk4(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
     return -1;
   }
 
-  cmatrix_t *tmp = cmatrix_alloc(n, n);
-  if (!tmp) {
-    return -1;
-  }
+  cvector_t rho_flat = {.data = rho->data, .n = n * n};
+  lindblad_ctx_t ctx = {H, L, n_ops, n};
 
-  cmatrix_t *k1 = lindblad_rhs(H, rho, L, n_ops);
-  if (!k1) {
-    cmatrix_free(tmp);
-    return -1;
-  }
+  // cmatrix_t *tmp = cmatrix_alloc(n, n);
+  // if (!tmp) {
+  //   return -1;
+  // }
+  //
+  // cmatrix_t *k1 = lindblad_rhs(H, rho, L, n_ops);
+  // if (!k1) {
+  //   cmatrix_free(tmp);
+  //   return -1;
+  // }
+  //
+  // for (int i = 0; i < n * n; i++) {
+  //   tmp->data[i] = c_add(rho->data[i], c_scale(k1->data[i], dt * 0.5));
+  // }
+  //
+  // cmatrix_t *k2 = lindblad_rhs(H, tmp, L, n_ops);
+  // if (!k2) {
+  //   cmatrix_free(k1);
+  //   cmatrix_free(tmp);
+  //
+  //   return -1;
+  // }
+  //
+  // for (int i = 0; i < n * n; i++) {
+  //   tmp->data[i] = c_add(rho->data[i], c_scale(k2->data[i], dt * 0.5));
+  // }
+  //
+  // cmatrix_t *k3 = lindblad_rhs(H, tmp, L, n_ops);
+  // if (!k3) {
+  //   cmatrix_free(k1);
+  //   cmatrix_free(k2);
+  //   cmatrix_free(tmp);
+  //
+  //   return -1;
+  // }
+  //
+  // for (int i = 0; i < n * n; i++) {
+  //   tmp->data[i] = c_add(rho->data[i], c_scale(k3->data[i], dt));
+  // }
+  //
+  // cmatrix_t *k4 = lindblad_rhs(H, tmp, L, n_ops);
+  // if (!k4) {
+  //   cmatrix_free(k1);
+  //   cmatrix_free(k2);
+  //   cmatrix_free(k3);
+  //   cmatrix_free(tmp);
+  //
+  //   return -1;
+  // }
+  //
+  // for (int i = 0; i < n * n; i++) {
+  //   complex_t sum =
+  //       c_add(k1->data[i], c_scale(c_add(k2->data[i], k3->data[i]), 2.0));
+  //   sum = c_add(sum, k4->data[i]);
+  //   rho->data[i] = c_add(rho->data[i], c_scale(sum, dt / 6.0));
+  // }
+  //
+  // cmatrix_free(k1);
+  // cmatrix_free(k2);
+  // cmatrix_free(k3);
+  // cmatrix_free(k4);
+  // cmatrix_free(tmp);
 
-  for (int i = 0; i < n * n; i++) {
-    tmp->data[i] = c_add(rho->data[i], c_scale(k1->data[i], dt * 0.5));
-  }
-
-  cmatrix_t *k2 = lindblad_rhs(H, tmp, L, n_ops);
-  if (!k2) {
-    cmatrix_free(k1);
-    cmatrix_free(tmp);
-
-    return -1;
-  }
-
-  for (int i = 0; i < n * n; i++) {
-    tmp->data[i] = c_add(rho->data[i], c_scale(k2->data[i], dt * 0.5));
-  }
-
-  cmatrix_t *k3 = lindblad_rhs(H, tmp, L, n_ops);
-  if (!k3) {
-    cmatrix_free(k1);
-    cmatrix_free(k2);
-    cmatrix_free(tmp);
-
-    return -1;
-  }
-
-  for (int i = 0; i < n * n; i++) {
-    tmp->data[i] = c_add(rho->data[i], c_scale(k3->data[i], dt));
-  }
-
-  cmatrix_t *k4 = lindblad_rhs(H, tmp, L, n_ops);
-  if (!k4) {
-    cmatrix_free(k1);
-    cmatrix_free(k2);
-    cmatrix_free(k3);
-    cmatrix_free(tmp);
-
-    return -1;
-  }
-
-  for (int i = 0; i < n * n; i++) {
-    complex_t sum =
-        c_add(k1->data[i], c_scale(c_add(k2->data[i], k3->data[i]), 2.0));
-    sum = c_add(sum, k4->data[i]);
-    rho->data[i] = c_add(rho->data[i], c_scale(sum, dt / 6.0));
-  }
-
-  cmatrix_free(k1);
-  cmatrix_free(k2);
-  cmatrix_free(k3);
-  cmatrix_free(k4);
-  cmatrix_free(tmp);
-
-  return 0;
+  return rk4_step(0.0, dt, &rho_flat, lindblad_ode_rhs, &ctx);
 }
 
 int lindblad_evolve(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,

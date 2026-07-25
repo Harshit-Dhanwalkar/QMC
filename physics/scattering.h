@@ -22,11 +22,11 @@ double phase_shift(int l, double k, potential_fn V, void *params, double r_min,
                    double r_max, int N, double hbar_sq_2m);
 
 /* Born approximation scattering amplitude f(\theta):
-   f(θ) = - (2m / \hbar^2) (1/q) \int_0^\infty r * V(r) * \sin(q*r) dr,
-   q = 2k * \sin(\theta / 2)
+   f(θ) = - (1/hbar_sq_2m) (1/q) \int_0^\infty r * V(r) * \sin(q*r) dr,
+   q = 2k * \sin(\theta / 2), hbar_sq_2m = \hbar^2/(2m)
 */
 complex_t born_amplitude(potential_fn V, void *params, double k, double theta,
-                         double r_max, int N);
+                         double r_max, int N, double hbar_sq_2m);
 
 // Differential cross section: d\sigma/d\Omega = |f(\theta)|^2
 double born_cross_section(complex_t f_theta);

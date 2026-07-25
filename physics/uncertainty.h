@@ -16,8 +16,8 @@ typedef struct {
 /* Compute uncertainties for wavefunction */
 uncertainty_t compute_uncertainties(const wavefunction_t *wf);
 
-/* Energy expectation <H> for given potential */
+/* Energy expectation <H> for given potential and particle mass */
 double compute_energy_expectation(const wavefunction_t *wf, potential_fn V,
-                                  void *params);
+                                  void *params, double mass);
 
 #endif

@@ -2,17 +2,15 @@
 Test: scattering.c (phase_shift, born_amplitude, born_cross_section).
 
 1. s-wave hard-sphere-like scattering: exact result is \delta_0 = -k * a
-   for ANY energy.
+   for any energy.
 2. Born approximation for a Yukawa potential: f(theta) has closed form via
    standard Laplace transform
    \Int_0^\inf \exp^{-\mu * r} * \sin(qr)dr = q/(\mu^2 + q^2):
-     f_Born(\theta) = (2 * M_ELECTRON/ \hbar^2) * g/(\mu^2 + q^2),
-     q=2k * \sin(\theta / 2) checks born_amplitude's numerical integration
-   against an exact analytic result.
+     f_Born(\theta) =  (1 / hbar_sq_2m)* g/(\mu^2 + q^2), q=2k * \sin(\theta /
+     2)
+   checks born_amplitude's numerical integration against an exact analytic
+   result.
 3. born_cross_section = |f|^2, structural check.
-
-// HACK: born_amplitude hardcodes M_ELECTRON and HBAR internally rather than
-taking mass/hbar as parameters
 */
 
 #include "../core/complex.h"
@@ -52,7 +50,7 @@ static int test_hard_sphere_s_wave(void) {
       delta += M_PI;
 
     char label[32];
-    snprintf(label, sizeof label, "k=%.2f delta_0", k);
+    snprintf(label, sizeof label, "k=%.2f \\delta_0", k);
     fail |= check_close(delta, delta_exact, 0.15, label);
   }
 
@@ -71,13 +69,14 @@ static int test_born_yukawa(void) {
 
   for (int i = 0; i < 3; i++) {
     double theta = theta_values[i];
-    complex_t f = born_amplitude(V_yukawa, yukawa_params, k, theta, r_max, N);
+    complex_t f =
+        born_amplitude(V_yukawa, yukawa_params, k, theta, r_max, N, HBAR_2M);
 
     double q = 2.0 * k * sin(theta / 2.0);
-    double f_exact = (2.0 * M_ELECTRON / (HBAR * HBAR)) * g / (mu * mu + q * q);
+    double f_exact = (1.0 / HBAR_2M) * g / (mu * mu + q * q);
 
     char label[32];
-    snprintf(label, sizeof label, "theta=%.2f f_Born.re", theta);
+    snprintf(label, sizeof label, "\\theta=%.2f f_Born.re", theta);
     fail |= check_close(f.re, f_exact, fabs(f_exact) * 0.05 + 1e-30, label);
     fail |= check_close(f.im, 0.0, 1e-30, "f_Born.im (should be real)");
   }
@@ -96,7 +95,7 @@ static int test_cross_section_structural(void) {
 int main(void) {
   int failed = 0;
 
-  printf("s-wave hard-sphere-like phase shift (vs exact \\delta_0=-ka):\n");
+  printf("s-wave hard-sphere-like phase shift (vs exact \\delta_0 = -ka):\n");
   failed += test_hard_sphere_s_wave();
 
   printf("Born approximation, Yukawa potential (vs closed form):\n");

@@ -10,6 +10,7 @@ typedef struct {
   wavefunction_t *wf;
   potential_fn V;
   void *params;
+  double mass;
 } variational_closure_t;
 
 /*
@@ -22,15 +23,13 @@ double golden_section_minimize(double a, double b,
 
 /* Compute expectation value of Hamiltonian for trial wavefunction */
 double variational_energy(const wavefunction_t *wf, potential_fn V,
-                          void *params);
+                          void *params, double mass);
 
-/*
- * Minimize energy with respect to single parameter alpha
- */
+/* Minimize energy with respect to single parameter alpha */
 double variational_minimize(double alpha_min, double alpha_max,
                             void (*trial_func)(double alpha,
                                                wavefunction_t *wf),
                             wavefunction_t *wf, potential_fn V, void *params,
-                            double tol);
+                            double mass, double tol);
 
 #endif

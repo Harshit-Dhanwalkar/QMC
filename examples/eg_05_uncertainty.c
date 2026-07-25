@@ -47,7 +47,7 @@ int main(void) {
       u.product, hbar / 2.0);
 
   double omega_param = omega;
-  double E = compute_energy_expectation(wf, V_harmonic, &omega_param);
+  double E = compute_energy_expectation(wf, V_harmonic, &omega_param, m);
   printf(
       "   <H> = %.6f  (exact ground-state energy: \\hbar * \\omega/2 = %.6f)\n",
       E, hbar * omega / 2.0);

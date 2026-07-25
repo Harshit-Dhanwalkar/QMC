@@ -20,7 +20,7 @@ int main(void) {
 
   // 1. Landau-Zener: diabatic vs adiabatic passage through crossing
   printf("   Landau-Zener sweep \\Delta(t)=\\alpha*t through coupling "
-         "Omega=1.0:\n");
+         "\\Omega=1.0:\n");
   printf("   %10s  %14s  %14s\n", "\\alpha", "P(diabatic)", "formula");
   {
     double Omega = 1.0;
@@ -65,8 +65,7 @@ int main(void) {
       driven_two_level_evolve_lab_frame(psi, omega0, Omega0, omega_L, 0.0, 0.0,
                                         dt, steps);
       double p_lab = c_abs2(psi->data[1]);
-      // RWA-equivalent parameters for THIS convention: Omega_rwa = Omega0
-      // (no extra 1/2 -- see driven.h's docstring for why).
+      // RWA-equivalent parameters for THIS convention: \Omega_rwa = \Omega0
       double p_rwa = rabi_excited_probability(T, Omega0, omega_L - omega0);
       printf("   %10.2f  %14.6f  %14.6f  %10.2e\n", ratios[i], p_lab, p_rwa,
              fabs(p_lab - p_rwa));

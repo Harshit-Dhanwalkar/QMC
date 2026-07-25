@@ -86,13 +86,13 @@ double phase_shift(int l, double k, potential_fn V, void *params, double r_min,
 }
 
 complex_t born_amplitude(potential_fn V, void *params, double k, double theta,
-                         double r_max, int N) {
+                         double r_max, int N, double hbar_sq_2m) {
   // Born approximation: f(\theta) = - (2m)/(4 *\pi * \hbar^2) \int V(r) * e^{-i
   // q \cdot r} d^3r
   // For central potential: f(\theta) = - (2m/\hbar^2) (1/q)
   // \int_0^\intfy r * V(r) * \sin(q*r) dr where q = 2k * \sin(\theta/2).
   // Integrate numerically
-  if (!V || N < 2) {
+  if (!V || N < 2 || hbar_sq_2m <= 0.0) {
     return c_zero();
   }
 
@@ -108,7 +108,7 @@ complex_t born_amplitude(potential_fn V, void *params, double k, double theta,
     double Vr = V(r, params);
     integral += r * Vr * sin(q * r) * dr;
   }
-  complex_t f = c_real(-2.0 * M_ELECTRON / (HBAR * HBAR) * integral / q);
+  complex_t f = c_real(-integral / (hbar_sq_2m * q));
 
   return f;
 }
