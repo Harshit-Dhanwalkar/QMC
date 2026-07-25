@@ -163,7 +163,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_19_lindblad \
               $(BUILD_DIR)/eg_20_hartree_fock \
               $(BUILD_DIR)/eg_21_driven \
-              $(BUILD_DIR)/eg_22_soft
+              $(BUILD_DIR)/eg_22_soft \
+              $(BUILD_DIR)/eg_23_fermi_golden_rule
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -189,7 +190,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lindblad \
               $(BUILD_DIR)/test_hartree_fock \
               $(BUILD_DIR)/test_driven \
-              $(BUILD_DIR)/test_soft
+              $(BUILD_DIR)/test_soft \
+              $(BUILD_DIR)/test_fermi_golden_rule
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
