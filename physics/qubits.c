@@ -4,8 +4,8 @@ Minimal multi-qubit state vector substrate
 
 #include "qubits.h"
 #include "../core/complex.h"
-#include "../core/vector.h"
 #include "../core/matrix.h"
+#include "../core/vector.h"
 #include "angular.h"
 #include <math.h>
 #include <stdlib.h>
@@ -14,28 +14,39 @@ const complex_t hadamard_gate[4] = {
     {M_SQRT1_2, 0.0}, {M_SQRT1_2, 0.0}, {M_SQRT1_2, 0.0}, {-M_SQRT1_2, 0.0}};
 
 cvector_t *qstate_alloc(int n_qubits) {
-  if (n_qubits < 1)
+  if (n_qubits < 1) {
     return NULL;
+  }
+
   long long dim = 1LL << n_qubits;
   cvector_t *psi = cvector_alloc((int)dim);
-  if (!psi)
+  if (!psi) {
     return NULL;
-  for (long long i = 0; i < dim; i++)
+  }
+
+  for (long long i = 0; i < dim; i++) {
     psi->data[i] = c_zero();
+  }
+
   psi->data[0] = c_real(1.0);
+
   return psi;
 }
 
 double qstate_probability(const cvector_t *psi, int index) {
-  if (!psi || index < 0 || index >= psi->n)
+  if (!psi || index < 0 || index >= psi->n) {
     return 0.0;
+  }
+
   return c_abs2(psi->data[index]);
 }
 
 void qstate_apply_gate1(cvector_t *psi, int n_qubits, int target,
                         const complex_t gate[4]) {
-  if (!psi || target < 0 || target >= n_qubits)
+  if (!psi || target < 0 || target >= n_qubits) {
     return;
+  }
+
   long long n = 1LL << n_qubits;
   int bitpos = n_qubits - 1 - target; // qubit 0 = leftmost/MSB
   long long mask = 1LL << bitpos;
@@ -53,8 +64,10 @@ void qstate_apply_gate1(cvector_t *psi, int n_qubits, int target,
 void qstate_apply_controlled_u(cvector_t *psi, int n_qubits, int control,
                                int target, const complex_t U[4]) {
   if (!psi || control < 0 || control >= n_qubits || target < 0 ||
-      target >= n_qubits || control == target)
+      target >= n_qubits || control == target) {
     return;
+  }
+
   long long n = 1LL << n_qubits;
   int cbit = n_qubits - 1 - control;
   int tbit = n_qubits - 1 - target;
@@ -78,22 +91,30 @@ void qstate_apply_cnot(cvector_t *psi, int n_qubits, int control, int target) {
 
 cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
                                          int qubit) {
-  if (!psi || qubit < 0 || qubit >= n_qubits)
+  if (!psi || qubit < 0 || qubit >= n_qubits) {
     return NULL;
+  }
+
   cmatrix_t *rho = cmatrix_alloc(2, 2);
-  if (!rho)
+  if (!rho) {
     return NULL;
-  for (int a = 0; a < 2; a++)
-    for (int b = 0; b < 2; b++)
+  }
+
+  for (int a = 0; a < 2; a++) {
+    for (int b = 0; b < 2; b++) {
       CMAT(rho, a, b) = c_zero();
+    }
+  }
 
   long long n = 1LL << n_qubits;
   int bitpos = n_qubits - 1 - qubit;
   long long mask = 1LL << bitpos;
 
   for (long long i = 0; i < n; i++) {
-    if ((i & mask) != 0)
+    if ((i & mask) != 0) {
       continue; // process each "rest" configuration once, at qubit=0
+    }
+
     long long i0 = i;
     long long i1 = i | mask;
     complex_t p0 = psi->data[i0], p1 = psi->data[i1];
@@ -103,12 +124,15 @@ cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
     CMAT(rho, 1, 0) = c_add(CMAT(rho, 1, 0), c_mul(c_conj(p1), p0));
     CMAT(rho, 1, 1) = c_add(CMAT(rho, 1, 1), c_mul(c_conj(p1), p1));
   }
+
   return rho;
 }
 
 double von_neumann_entropy_2x2(cmatrix_t *rho) {
-  if (!rho)
+  if (!rho) {
     return 0.0;
+  }
+
   double a = CMAT(rho, 0, 0).re; // real: diagonal of a Hermitian matrix
   double d = CMAT(rho, 1, 1).re;
   complex_t b = CMAT(rho, 0, 1);
@@ -116,8 +140,10 @@ double von_neumann_entropy_2x2(cmatrix_t *rho) {
   double det = a * d - c_abs2(b); // real for Hermitian 2x2 (c = conj(b))
 
   double disc = tr * tr - 4.0 * det;
-  if (disc < 0.0)
+  if (disc < 0.0) {
     disc = 0.0; // numerical noise guard
+  }
+
   double sq = sqrt(disc);
   double lambda1 = 0.5 * (tr + sq);
   double lambda2 = 0.5 * (tr - sq);
@@ -125,8 +151,42 @@ double von_neumann_entropy_2x2(cmatrix_t *rho) {
   double entropy = 0.0;
   double eigs[2] = {lambda1, lambda2};
   for (int k = 0; k < 2; k++) {
-    if (eigs[k] > 1e-12)
+    if (eigs[k] > 1e-12) {
       entropy -= eigs[k] * log2(eigs[k]);
+    }
   }
+
   return entropy;
+}
+
+int qstate_measure(cvector_t *psi, double u) {
+  if (!psi || psi->n < 1) {
+    return -1;
+  }
+
+  if (u < 0.0) {
+    u = 0.0;
+  }
+  if (u >= 1.0) {
+    u = 1.0 - 1e-15;
+  }
+
+  double cumulative = 0.0;
+  int outcome = psi->n - 1; // fallback for floating-point round-off at u->1
+  for (int i = 0; i < psi->n; i++) {
+    cumulative += c_abs2(psi->data[i]);
+    if (u < cumulative) {
+      outcome = i;
+
+      break;
+    }
+  }
+
+  for (int i = 0; i < psi->n; i++) {
+    psi->data[i] = c_zero();
+  }
+
+  psi->data[outcome] = c_real(1.0);
+
+  return outcome;
 }

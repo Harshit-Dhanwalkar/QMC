@@ -10,6 +10,10 @@ void hermite_array(int n, double *x, int m, double *H);
 double hermite_deriv(int n, double x);
 double hermite_zeros(int n, int k);
 
+/* Numerically stable normalized Hermite function, via direct recurrence on
+ * normalized function */
+double hermite_function_stable(int n, double xi);
+
 /* Laguerre polynomials */
 double laguerre(int n, double alpha, double x);
 void laguerre_array(int n, double alpha, double *x, int N, double *L);
@@ -29,6 +33,11 @@ double sph_bessel_j(int l, double x);
 double sph_bessel_y(int l, double x);
 double sph_bessel_j_deriv(int l, double x);
 void sph_bessel_array(int lmax, double x, double *j, double *y);
+
+/* Riccati-Bessel functions */
+double riccati_bessel_j(int l, double x);
+double riccati_bessel_y(int l, double x);
+double riccati_bessel_j_deriv(int l, double x);
 
 /* Utilities */
 double factorial(int n);

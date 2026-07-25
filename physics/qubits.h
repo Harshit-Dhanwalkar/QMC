@@ -48,7 +48,7 @@ cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
 /*
  * Von Neumann entropy S = -\sum_i \lambda_i \log2(\lambda_i) of a 2x2
  * Hermitian density matrix, computed via closed-form eigenvalues of 2x2
- * Hermitian matrix (\lambda = (tr +- \sqrt(tr^2 - 4*det)) / 2)
+ * Hermitian matrix (\lambda = (tr \pm \sqrt(tr^2 - 4 * det)) / 2)
  *
  // NOTE: NOT solved via general eigensolver, so entropy has no dependency on
  // eigen_t's internal.
@@ -57,5 +57,15 @@ cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
  * pure/unentangled qubit, 1 for maximally mixed (maximally entangled) qubit.
  */
 double von_neumann_entropy_2x2(cmatrix_t *rho);
+
+/*
+ * Projective measurement in the computational basis, on pure state vector.
+ * Samples an outcome index in [0, \psi->n) with probability |\psi[outcome]|^2,
+ * using caller-supplied uniform random number u in [0,1) so RNG/seeding stays
+ * under caller control. Collapses \psi in place to pure basis state |outcome>
+ * (\psi[outcome] = 1, every other amplitude = 0). Returns sampled outcome
+ * index, or -1 on invalid input.
+ */
+int qstate_measure(cvector_t *psi, double u);
 
 #endif

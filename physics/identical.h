@@ -26,8 +26,11 @@ cmatrix_t *slater_matrix(cvector_t **orbitals, int N, const int *indices);
 complex_t slater_determinant_value(cvector_t **orbitals, int N,
                                    const int *indices);
 
-/* Bosons: \psi(x_1,...,x_N) = (1 / sqrt(N!)) * perm[\phi_i(x_j)]
- * is invariant under exchanging any two particles.
+/* Bosons: \psi(x_1,...,x_N) = (1 / \sqrt(N! * prod_k n_k!)) * perm[\phi_i(x_j)]
+ * is invariant under exchanging any two particles. n_k is the occupation number
+ * of each distinct orbital among orbitals[0..n-1]; this reduces to simpler
+ * 1/sqrt(N!) exactly when every orbital is distinct, but prod_k n_k! factor
+ * matters whenever multiple bosons share an orbital
  */
 complex_t bosonic_permanent_value(cvector_t **orbitals, int N,
                                   const int *indices);

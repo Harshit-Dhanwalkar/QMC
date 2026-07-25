@@ -11,23 +11,29 @@ Identical particles: Slater determinants and symmetrization.
 #include <string.h>
 
 cmatrix_t *slater_matrix(cvector_t **orbitals, int N, const int *indices) {
-  if (!orbitals || !indices || N < 1)
+  if (!orbitals || !indices || N < 1) {
     return NULL;
+  }
 
   cmatrix_t *M = cmatrix_alloc(N, N);
-  if (!M)
+  if (!M) {
     return NULL;
+  }
 
   for (int i = 0; i < N; i++) {
     if (!orbitals[i] || indices[i] < 0 || indices[i] >= orbitals[i]->n) {
       cmatrix_free(M);
+
       return NULL;
     }
   }
 
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
       CMAT(M, i, j) = orbitals[i]->data[indices[j]];
+    }
+  }
+
   return M;
 }
 
@@ -46,8 +52,10 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
         pivot = r;
       }
     }
-    if (best < 1e-300)
+
+    if (best < 1e-300) {
       return c_zero(); // singular matrix
+    }
 
     if (pivot != col) {
       for (int c = 0; c < n; c++) {
@@ -55,6 +63,7 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
         CMAT(M, col, c) = CMAT(M, pivot, c);
         CMAT(M, pivot, c) = tmp;
       }
+
       det = c_scale(det, -1.0); // row swap flips determinant's sign
     }
 
@@ -64,10 +73,12 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
 
     for (int r = col + 1; r < n; r++) {
       complex_t factor = c_mul(CMAT(M, r, col), piv_recip);
-      for (int c = col; c < n; c++)
+      for (int c = col; c < n; c++) {
         CMAT(M, r, c) = c_sub(CMAT(M, r, c), c_mul(factor, CMAT(M, col, c)));
+      }
     }
   }
+
   return det;
 }
 
@@ -78,14 +89,16 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
 // computational advantage (Aaronson & Arkhipov 2011)
 static complex_t permanent_ryser(cmatrix_t *A) {
   int n = A->nrows;
-  if (n == 0)
+  if (n == 0) {
     return c_real(1.0);
+  }
 
   double *row_sum_re = calloc(n, sizeof *row_sum_re);
   double *row_sum_im = calloc(n, sizeof *row_sum_im);
   if (!row_sum_re || !row_sum_im) {
     free(row_sum_re);
     free(row_sum_im);
+
     return c_zero();
   }
 
@@ -97,8 +110,11 @@ static complex_t permanent_ryser(cmatrix_t *A) {
     unsigned long long gray = k ^ (k >> 1);
     unsigned long long diff = gray ^ prev_gray;
     int col = 0;
-    while (!((diff >> col) & 1ULL))
+
+    while (!((diff >> col) & 1ULL)) {
       col++;
+    }
+
     int bit_turned_on = (gray >> col) & 1ULL;
     double s = bit_turned_on ? 1.0 : -1.0;
 
@@ -115,8 +131,8 @@ static complex_t permanent_ryser(cmatrix_t *A) {
       complex_t rs = {row_sum_re[i], row_sum_im[i]};
       prod = c_mul(prod, rs);
     }
-    perm = c_add(perm, c_scale(prod, term_sign));
 
+    perm = c_add(perm, c_scale(prod, term_sign));
     prev_gray = gray;
   }
 
@@ -130,16 +146,19 @@ static complex_t permanent_ryser(cmatrix_t *A) {
 
 static double factorial(int n) {
   double r = 1.0;
-  for (int i = 2; i <= n; i++)
+  for (int i = 2; i <= n; i++) {
     r *= i;
+  }
+
   return r;
 }
 
 complex_t slater_determinant_value(cvector_t **orbitals, int N,
                                    const int *indices) {
   cmatrix_t *M = slater_matrix(orbitals, N, indices);
-  if (!M)
+  if (!M) {
     return c_zero();
+  }
 
   complex_t det = determinant_gauss_destructive(M);
   cmatrix_free(M);
@@ -151,12 +170,39 @@ complex_t slater_determinant_value(cvector_t **orbitals, int N,
 complex_t bosonic_permanent_value(cvector_t **orbitals, int N,
                                   const int *indices) {
   cmatrix_t *M = slater_matrix(orbitals, N, indices);
-  if (!M)
+  if (!M) {
     return c_zero();
+  }
 
   complex_t perm = permanent_ryser(M);
   cmatrix_free(M);
-  double inv_sqrt_nfact = 1.0 / sqrt(factorial(N));
 
-  return c_scale(perm, inv_sqrt_nfact);
+  double mult_factor = 1.0;
+  for (int i = 0; i < N; i++) {
+    int already_counted = 0;
+    for (int k = 0; k < i; k++) {
+      if (orbitals[k] == orbitals[i]) {
+        already_counted = 1;
+
+        break;
+      }
+    }
+
+    if (already_counted) {
+      continue;
+    }
+
+    int count = 1;
+    for (int k = i + 1; k < N; k++) {
+      if (orbitals[k] == orbitals[i]) {
+        count++;
+      }
+    }
+
+    mult_factor *= factorial(count);
+  }
+
+  double inv_norm = 1.0 / sqrt(factorial(N) * mult_factor);
+
+  return c_scale(perm, inv_norm);
 }
