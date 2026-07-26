@@ -168,7 +168,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_22_soft \
               $(BUILD_DIR)/eg_23_fermi_golden_rule \
               $(BUILD_DIR)/eg_24_central_potential_3d \
-              $(BUILD_DIR)/eg_25_boson_sampling
+              $(BUILD_DIR)/eg_25_boson_sampling \
+              $(BUILD_DIR)/eg_26_zeeman
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -197,7 +198,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_driven \
               $(BUILD_DIR)/test_soft \
               $(BUILD_DIR)/test_fermi_golden_rule \
-              $(BUILD_DIR)/test_boson_sampling
+              $(BUILD_DIR)/test_boson_sampling \
+              $(BUILD_DIR)/test_zeeman
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
