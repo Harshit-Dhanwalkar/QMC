@@ -18,26 +18,8 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
 - ODE solvers: Numerov, RK4, Crank‑Nicolson.
 - 1D potentials: infinite well, harmonic, barrier, Coulomb.
 - Plotting via GR framework, GNUplot pipe and matplotlib pipe for python.
-
-## Planned / TODO
-
-- [ ] Full 1D TISE solver
-  - [x] Diagonalisation
-  - [ ] Shooting
-- [x] 2D/3D systems and density of states.
-- [x] Angular momentum (spherical harmonics, CG coefficients).
-- [x] Hydrogen atom (radial wavefunctions).
-- [x] Perturbation theory (static & time‑dependent).
-- [x] Scattering theory (phase shifts, Born).
-- [x] WKB approximation.
-- [x] Identical particles
-- [x] Slater determinants.
-- [ ] Relativistic quantum mechanics
-  - [ ] Dirac 1D : complex-Hermitian solver
-  - [ ] Klein‑Gordon
-- [ ] 3D plotting (via [GR](https://github.com/sciapp/gr.git)).
-- [ ] LaTeX annotation on plots (via Pango/GR or external generation).
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
+
 - <details>
   <summary>Unit examples for each topic.</summary>
   <ul>
@@ -108,7 +90,14 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
 - _Computational Physics_, Breuer & Petruccione, Feynman & Hibbs, Taylor's
 - _Scattering Theory_, Greiner's _Relativistic Quantum Mechanics_.
 
-# LICENSE
+# License and Commercial Use
 
-[QMC](https://github.com/Harshit-Dhanwalkar/QMC) currently is under [GNU General Public License v3.0](https://github.com/Harshit-Dhanwalkar/QMC/blob/main/LICENSE)
-// TODO: Update to 'non-commerial' License.
+This project is licensed under the **PolyForm Noncommercial License 1.0.0**. 
+It is free for personal use, education, research, and non-profit organizations.
+
+## Commercial Use Requires Permission
+If you wish to use this software, or any part of its source code, for commercial or  monetary purposes, you **must** obtain a commercial license. 
+
+To discuss commercial licensing, please contact me directly at:
+* **Email:** [Contact Me via Email](mailto:harshitpd1729@://gmail.com)
+* **GitHub:** [Open a Licensing Issue](https://github.com)

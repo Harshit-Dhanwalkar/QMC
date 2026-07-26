@@ -1,0 +1,47 @@
+
+name: Commercial Licensing Request
+description: Request a commercial exemption license for the QMC project.
+title: "[Licensing Inquiry] "
+labels: ["commercial-inquiry"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your interest in utilizing the QMC project commercially! Please fill out the form below to initiate the dual-licensing approval process.
+
+  - type: input
+    id: organization
+    attributes:
+      label: Company / Organization Name
+      placeholder: "e.g., Quantum Computing Corporation"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: company_size
+    attributes:
+      label: Company Size
+      options:
+        - "Solo Developer / Independent Contractor"
+        - "Startup (1-10 employees)"
+        - "Small/Medium Business (11-250 employees)"
+        - "Enterprise (250+ employees)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Intended Commercial Use Case
+      description: Provide a summary of how the QMC algorithm/code will be used or integrated within your monetized product.
+      placeholder: "Describe your product integration here..."
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Compliance & Acknowledgment
+      options:
+        - label: "I acknowledge that using this repository for commercial or monetary purposes without a signed exemption directly violates the PolyForm Noncommercial License 1.0.0."
+          required: true

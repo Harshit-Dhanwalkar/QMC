@@ -199,7 +199,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_soft \
               $(BUILD_DIR)/test_fermi_golden_rule \
               $(BUILD_DIR)/test_boson_sampling \
-              $(BUILD_DIR)/test_zeeman
+              $(BUILD_DIR)/test_zeeman \
+              $(BUILD_DIR)/test_klein_gordon
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
