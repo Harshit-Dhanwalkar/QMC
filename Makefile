@@ -131,7 +131,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/lindblad.c \
                $(PHYSICS_DIR)/hartree_fock.c \
                $(PHYSICS_DIR)/driven.c \
-               $(PHYSICS_DIR)/soft.c
+               $(PHYSICS_DIR)/soft.c \
+               $(PHYSICS_DIR)/boson_sampling.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
