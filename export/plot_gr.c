@@ -1,6 +1,6 @@
 /*
  * GR framework backend
- * Compiled when -DUSE_GR is set.
+ * NOTE: Compiled when -DUSE_GR is set.
  */
 
 #include "gr/gr_plot.h"
@@ -27,8 +27,9 @@ static gr_format_t to_gr_fmt(plot_format_t f) {
 
 static gr_plot_opt_t to_gr_opts(const plot_opts_t *o) {
   gr_plot_opt_t g = {0};
-  if (!o)
+  if (!o) {
     return g;
+  }
 
   g.xmin = o->xmin;
   g.xmax = o->xmax;
@@ -40,7 +41,8 @@ static gr_plot_opt_t to_gr_opts(const plot_opts_t *o) {
   g.width = o->width;
   g.height = o->height;
   g.line_width = o->line_width;
-  g.tex_labels = 1;
+  g.color = o->color;
+  g.tex_text = o->tex_text;
 
   return g;
 }
