@@ -19,7 +19,7 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     return NULL;
   }
 
-  // Discretize: ( -\hbar^2 c^2 d^2/dx^2 + m^2 c^4 ) \psi = (E - V)^2 \psi
+  // Discretize: ( -\hbar^2 * c^2 d^2/dx^2 + m^2 * c^4 ) \psi = (E - V)^2 \psi
   double dx = x[1] - x[0];
   double coeff = hbar * hbar * c * c / (dx * dx);
   double mc2 = m * c * c;
@@ -53,7 +53,7 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     return NULL;
   }
 
-  // E = V_avg + sqrt(lambda) (positive-energy branch)
+  // E = V_avg + \sqrt(\lambda) (positive-energy branch)
   for (int i = 0; i < eig->n; i++) {
     eig->eigenvalues[i] = V_avg + sqrt(eig->eigenvalues[i]);
   }
@@ -82,6 +82,7 @@ klein_gordon_1d_self_consistent(double *x, int N, double *V, double m,
 
     return NULL;
   }
+
   for (int i = 0; i < N - 1; i++) {
     offdiag[i] = -coeff;
   }
@@ -94,9 +95,9 @@ klein_gordon_1d_self_consistent(double *x, int N, double *V, double m,
   int iter;
 
   for (iter = 0; iter < max_iter; iter++) {
-    // H(E)_diag[i] = 2*coeff + m^2c^4 + V(x_i)^2 - 2*E*V(x_i)
+    // H(E)_diag[i] = 2 * coeff + m^2 * c^4 + V(x_i)^2 - 2 * E * V(x_i)
     for (int i = 0; i < N; i++) {
-      diag[i] = 2.0 * coeff + mc4 + V[i] * V[i] - 2.0 * E * V[i];
+      diag[i] = 2.0 * coeff + mc4 + 2.0 * E * V[i] - V[i] * V[i];
     }
 
     if (eig) {

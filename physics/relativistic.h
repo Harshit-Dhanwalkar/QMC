@@ -24,7 +24,7 @@ typedef struct {
  * fixed-point iteration:
  *   1. Guess E.
  *   2. Build Linear tridiagonal eigenvalue problem: H(E)\psi = \lambda \psi,
- *       H(E)_diag[i] = 2 * coeff + m^2 * c^4 + V(x_i)^2 - 2 * E * V(x_i)
+ *       H(E)_diag[i] = 2 * coeff + m^2 * c^4 + 2 * E * V(x_i) - V(x_i)^2
  *   3. Diagonalize, pick eigenvalue closest to previous E^2.
  *   4. E_new = sign(E_guess) * \sqrt(\lambda). Repeat until |E_new-E|<tol or
  *      max_iter is reached.
