@@ -19,7 +19,7 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     return NULL;
   }
 
-  // Discretize: ( -\hbar^2 * c^2 d^2/dx^2 + m^2 * c^4 ) \psi = (E - V)^2 \psi
+  // Discretize: (-\hbar^2 * c^2 d^2/dx^2 + m^2 * c^4 )\psi = ((E - V)^2)\psi
   double dx = x[1] - x[0];
   double coeff = hbar * hbar * c * c / (dx * dx);
   double mc2 = m * c * c;
@@ -46,7 +46,8 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     }
   }
 
-  eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+  // eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+  eigen_t *eig = tridiag_eigvals(diag, offdiag, N);
   free(diag);
   free(offdiag);
   if (!eig) {

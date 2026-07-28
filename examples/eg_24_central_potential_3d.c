@@ -33,6 +33,7 @@ int main(void) {
     for (int l = 0; l <= 2; l++) {
       eigen_t *eig =
           central_potential_radial_solve(r, N, l, 1.0, 1.0, V_harmonic, &omega);
+
       for (int n = 0; n < 3; n++) {
         printf("   %4d  %8d  %10.5f  %10.5f\n", l, n, eig->eigenvalues[n],
                2.0 * n + l + 1.5);
@@ -66,6 +67,7 @@ int main(void) {
           fabs(prevVal) < 100) {
         double lo = prevE, hi = E;
         double lo_sign = well_condition(lo, V0, a, 1.0, 1.0) > 0;
+
         for (int b = 0; b < 100; b++) {
           double mid = 0.5 * (lo + hi);
           if ((well_condition(mid, V0, a, 1.0, 1.0) > 0) == lo_sign) {
@@ -74,6 +76,7 @@ int main(void) {
             hi = mid;
           }
         }
+
         printf("   %8d  %10.5f  %10.5f\n", found, eig->eigenvalues[found],
                0.5 * (lo + hi));
         found++;

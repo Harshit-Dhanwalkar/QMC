@@ -1,7 +1,7 @@
 /*
  * Tridiagonal symmetric eigensolver:
  * Implicit QL algorithm with Wilkinson shift (EISPACK tql2 / Numerical Recipes
- * "tqli", adapted to 0-indexed C)
+ * "tqli", adapted to 0-indexed C).
  */
 
 #include "tridiag_eigh.h"
@@ -23,36 +23,32 @@ static double pythag(double a, double b) {
   }
 }
 
-eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
-  if (!diag || n < 1 || (n > 1 && !offdiag))
-    return NULL;
-
-  double *d = malloc((size_t)n * sizeof *d); // eigenvalues on exit
-  double *e = malloc((size_t)n * sizeof *e); // QL working array
+/*
+ * Shared QL sweep. Computes ascending eigenvalues into returned array.
+ * The per-rotation update loop below a stride-1 sweep over row, rather than
+ * stride-n sweep a row-major layout would give). If z is NULL, all eigenvector
+ * bookkeeping is skipped entirely.
+ *
+ * Returns NULL on allocation failure.
+ */
+static double *tridiag_eigh_core(const double *diag, const double *offdiag,
+                                 int n, double *z) {
+  double *d = malloc((size_t)n * sizeof *d);
+  double *e = malloc((size_t)n * sizeof *e);
   if (!d || !e) {
     free(d);
     free(e);
     return NULL;
   }
-  for (int i = 0; i < n; i++)
+
+  for (int i = 0; i < n; i++) {
     d[i] = diag[i];
-
-  // NOTE:
-  // e[i] holds subdiagonal for row i in QL sweep's convention;
-  // e[n-1] is 0 sentinel used by loop's boundary check.
-  for (int i = 0; i < n - 1; i++)
-    e[i] = offdiag[i];
-  e[n - 1] = 0.0;
-
-  double *z = malloc((size_t)n * n * sizeof *z); // row-major eigenvectors
-  if (!z) {
-    free(d);
-    free(e);
-    return NULL;
   }
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
-      z[i * n + j] = (i == j) ? 1.0 : 0.0;
+
+  for (int i = 0; i < n - 1; i++) {
+    e[i] = offdiag[i];
+  }
+  e[n - 1] = 0.0;
 
   for (int l = 0; l < n; l++) {
     int iter = 0;
@@ -61,11 +57,14 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
       for (m = l; m < n - 1; m++) {
         double dd = fabs(d[m]) + fabs(d[m + 1]);
         if (fabs(e[m]) <= dd * 1e-15)
+
           break;
       }
+
       if (m != l) {
-        if (++iter > 100)
+        if (++iter > 100) {
           break; // did not converge for eigenvalue
+        }
 
         double g = (d[l + 1] - d[l]) / (2.0 * e[l]);
         double r = pythag(g, 1.0);
@@ -80,8 +79,10 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
           if (r == 0.0) {
             d[i + 1] -= p;
             e[m] = 0.0;
+
             break;
           }
+
           s = f / r;
           c = g / r;
           g = d[i + 1] - p;
@@ -89,14 +90,22 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
-          for (int k = 0; k < n; k++) {
-            double f2 = z[k * n + (i + 1)];
-            z[k * n + (i + 1)] = s * z[k * n + i] + c * f2;
-            z[k * n + i] = c * z[k * n + i] - s * f2;
+
+          if (z) {
+            // Column-major (z[col*n+row]): sweep over row (k) is stride-1, not
+            // stride-n
+            for (int k = 0; k < n; k++) {
+              double f2 = z[(i + 1) * n + k];
+              z[(i + 1) * n + k] = s * z[i * n + k] + c * f2;
+              z[i * n + k] = c * z[i * n + k] - s * f2;
+            }
           }
         }
-        if (r == 0.0 && i >= l)
+
+        if (r == 0.0 && i >= l) {
           continue;
+        }
+
         d[l] -= p;
         e[l] = g;
         e[m] = 0.0;
@@ -104,49 +113,111 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
     } while (m != l);
   }
 
-  // Sort ascending, permuting eigenvector columns to match
+  // Sort ascending, permuting eigenvector columns to match (only if
+  // eigenvectors were requested).
   for (int i = 0; i < n - 1; i++) {
     int k = i;
     double p = d[i];
-    for (int j = i + 1; j < n; j++)
+    for (int j = i + 1; j < n; j++) {
       if (d[j] < p) {
         k = j;
         p = d[j];
       }
+    }
+
     if (k != i) {
       d[k] = d[i];
       d[i] = p;
-      for (int j = 0; j < n; j++) {
-        double tmp = z[j * n + i];
-        z[j * n + i] = z[j * n + k];
-        z[j * n + k] = tmp;
+      if (z) {
+        // Column-major: swap two contiguous n-length column blocks directly
+        // (also a cache-friendly sequential sweep).
+        for (int row = 0; row < n; row++) {
+          double tmp = z[i * n + row];
+          z[i * n + row] = z[k * n + row];
+          z[k * n + row] = tmp;
+        }
       }
     }
+  }
+
+  free(e);
+
+  return d;
+}
+
+eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
+  if (!diag || n < 1 || (n > 1 && !offdiag)) {
+    return NULL;
+  }
+
+  double *z = malloc((size_t)n * n * sizeof *z); // column-major
+  if (!z) {
+    return NULL;
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      z[i * n + j] = (i == j) ? 1.0 : 0.0; // identity is symmetric either way
+    }
+  }
+
+  double *d = tridiag_eigh_core(diag, offdiag, n, z);
+  if (!d) {
+    free(z);
+
+    return NULL;
   }
 
   cmatrix_t *Z = cmatrix_alloc(n, n);
   if (!Z) {
     free(d);
-    free(e);
     free(z);
+
     return NULL;
   }
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
-      CMAT(Z, i, j) = c_real(z[i * n + j]);
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      CMAT(Z, i, j) = c_real(z[j * n + i]); // column-major z -> row-major CMAT
+    }
+  }
   free(z);
 
   eigen_t *result = malloc(sizeof *result);
   if (!result) {
     free(d);
-    free(e);
     cmatrix_free(Z);
+
     return NULL;
   }
+
   result->n = n;
   result->eigenvalues = d;
   result->eigenvectors = Z;
 
-  free(e);
+  return result;
+}
+
+eigen_t *tridiag_eigvals(const double *diag, const double *offdiag, int n) {
+  if (!diag || n < 1 || (n > 1 && !offdiag)) {
+    return NULL;
+  }
+
+  double *d = tridiag_eigh_core(diag, offdiag, n, NULL);
+  if (!d) {
+    return NULL;
+  }
+
+  eigen_t *result = malloc(sizeof *result);
+  if (!result) {
+    free(d);
+
+    return NULL;
+  }
+
+  result->n = n;
+  result->eigenvalues = d;
+  result->eigenvectors = NULL; // no eigenvectors were computed
+
   return result;
 }

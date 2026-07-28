@@ -15,89 +15,98 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
 ## Features
 
 - Core: complex numbers, vectors, matrices, special functions (Hermite, Laguerre, Legendre, Bessel).
-- ODE solvers: Numerov, RK4, Crank‑Nicolson.
-- 1D potentials: infinite well, harmonic, barrier, Coulomb.
-- Plotting via GR framework, GNUplot pipe and matplotlib pipe for python.
+- ODE solvers: Numerov, RK4, Crank-Nicolson.
+- 1D potentials: infinite well, finite well, harmonic, step, barrier, Coulomb, Yukawa, Morse.
+- Plotting via GR framework, GNUplot pipe, and matplotlib pipe for Python.
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
 
-- <details>
-  <summary>Unit examples for each topic.</summary>
-  <ul>
-    <li>`eg_01_particle_box.c`</lo>
-    <li> `eg_02_harmonic.c`</li>
-    <li> `eg_03_finite_well.c` </li>
-    <li> `eg_04_infinite_well.c` </li>
-    <li> `eg_05_uncertainty.c` </li>
-    <li> `eg_06_hydrogen.c` </li>
-    <li> `eg_07_central_potential.c` </li>
-    <li> `eg_08_helium.c` </li>
-    <li> `eg_09_identical_particles.c` </li>
-    <li> `eg_10_perturbation.c` </li>
-    <li> `eg_11_wkb.c` </li>
-    <li> `eg_12_tunnelling.c` </li>
-    <li> `eg_13_scattering.c` </li>
-    <li> `eg_14_rabi.c` </li>
-    <li> `eg_15_angular_coupling.c` </li>
-    <li> `eg_16_finestructure.c` </li>
-    <li> `eg_17_dirac.c` </li>
-    <li> `eg_18_qubits.c` </li>
-    <li> `eg_19_lindblad.c` </li>
-    <li> `eg_20_hartree_fock.c` </li>
-    <li> `eg_21_driven.c` </li>
-    <li> `eg_22_soft.c` </li>
-    <li> `eg_23_fermi_golden_rule.c` </li>
-    <li> `eg_24_central_potential_3d.c` </li>
-    <li> `eg_25_boson_sampling.c` </li>
-  </ul>
-- <details>
-    <summary>Unit tests for each topic.</summary>
-    <ul>
-    <li> `test_angular_coupling.c`</li>
-    <li> `test_boson_sampling.c`</li>
-    <li> `test_central_potential.c`</li>
-    <li> `test_central_potential_3d.c`</li>
-    <li> `test_complex.c`</li>
-    <li> `test_complex_eigh.c`</li>
-    <li> `test_crank_nicolson.c`</li>
-    <li> `test_dirac.c`</li>
-    <li> `test_driven.c`</li>
-    <li> `test_fermi_golden_rule.c`</li>
-    <li> `test_fft.c`</li>
-    <li> `test_fine_structure.c`</li>
-    <li> `test_grplot.c`</li>
-    <li> `test_hartree_fock.c`</li>
-    <li> `test_helium.c`</li>
-    <li> `test_hydrogen.c`</li>
-    <li> `test_identical.c`</li>
-    <li> `test_lindblad.c`</li>
-    <li> `test_matrix.c`</li>
-    <li> `test_numerov.c`</li>
-    <li> `test_perturbation.c`</li>
-    <li> `test_potentials.c`</li>
-    <li> `test_qubits.c`</li>
-    <li> `test_rabi.c`</li>
-    <li> `test_rk4.c`</li>
-    <li> `test_scattering.c`</li>
-    <li> `test_soft.c`</li>
-    <li> `test_tridiag.c`</li>
-    <li> `test_wkb.c`</li>
-  </ul>
-  </details>
+<details>
+<summary>Examples for each topic.</summary>
+<ul>
+  <li><code>eg_01_particle_box.c</code></li>
+  <li><code>eg_02_harmonic.c</code></li>
+  <li><code>eg_03_finite_well.c</code></li>
+  <li><code>eg_04_infinite_well.c</code></li>
+  <li><code>eg_05_uncertainty.c</code></li>
+  <li><code>eg_06_hydrogen.c</code></li>
+  <li><code>eg_07_central_potential.c</code></li>
+  <li><code>eg_08_helium.c</code></li>
+  <li><code>eg_09_identical_particles.c</code></li>
+  <li><code>eg_10_perturbation.c</code></li>
+  <li><code>eg_11_wkb.c</code></li>
+  <li><code>eg_12_tunnelling.c</code></li>
+  <li><code>eg_13_scattering.c</code></li>
+  <li><code>eg_14_rabi.c</code></li>
+  <li><code>eg_15_angular_coupling.c</code></li>
+  <li><code>eg_16_finestructure.c</code></li>
+  <li><code>eg_17_dirac.c</code></li>
+  <li><code>eg_18_qubits.c</code></li>
+  <li><code>eg_19_lindblad.c</code></li>
+  <li><code>eg_20_hartree_fock.c</code></li>
+  <li><code>eg_21_driven.c</code></li>
+  <li><code>eg_22_soft.c</code></li>
+  <li><code>eg_23_fermi_golden_rule.c</code></li>
+  <li><code>eg_24_central_potential_3d.c</code></li>
+  <li><code>eg_25_boson_sampling.c</code></li>
+  <li><code>eg_26_zeeman.c</code></li>
+  <li><code>eg_27_cap_tdse.c</code></li>
+</ul>
+</details>
+
+<details>
+<summary>Unit tests for each topic.</summary>
+<ul>
+  <li><code>test_angular_coupling.c</code></li>
+  <li><code>test_boson_sampling.c</code></li>
+  <li><code>test_central_potential.c</code></li>
+  <li><code>test_central_potential_3d.c</code></li>
+  <li><code>test_complex.c</code></li>
+  <li><code>test_complex_eigh.c</code></li>
+  <li><code>test_crank_nicolson.c</code></li>
+  <li><code>test_dirac.c</code></li>
+  <li><code>test_driven.c</code></li>
+  <li><code>test_fermi_golden_rule.c</code></li>
+  <li><code>test_fft.c</code></li>
+  <li><code>test_fine_structure.c</code></li>
+  <li><code>test_grplot.c</code></li>
+  <li><code>test_hartree_fock.c</code></li>
+  <li><code>test_helium.c</code></li>
+  <li><code>test_hydrogen.c</code></li>
+  <li><code>test_identical.c</code></li>
+  <li><code>test_klein_gordon.c</code></li>
+  <li><code>test_lindblad.c</code></li>
+  <li><code>test_matrix.c</code></li>
+  <li><code>test_numerov.c</code></li>
+  <li><code>test_perturbation.c</code></li>
+  <li><code>test_potentials.c</code></li>
+  <li><code>test_qubits.c</code></li>
+  <li><code>test_rabi.c</code></li>
+  <li><code>test_rk4.c</code></li>
+  <li><code>test_scattering.c</code></li>
+  <li><code>test_soft.c</code></li>
+  <li><code>test_tridiag.c</code></li>
+  <li><code>test_wkb.c</code></li>
+  <li><code>test_zeeman.c</code></li>
+  <li><code>test_tridiag_eigvals.c</code></li>
+</ul>
+</details>
 
 ## Reference texts
 
 - Sakurai & Napolitano, Bransden & Joachain, Szabo & Ostlund, Thijssen's
-- _Computational Physics_, Breuer & Petruccione, Feynman & Hibbs, Taylor's
-- _Scattering Theory_, Greiner's _Relativistic Quantum Mechanics_.
+- Computational Physics, Breuer & Petruccione, Feynman & Hibbs, Taylor's
+- Scattering Theory, Greiner's Relativistic Quantum Mechanics.
 
 # License and Commercial Use
 
-This project is licensed under the **PolyForm Noncommercial License 1.0.0**. 
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
 It is free for personal use, education, research, and non-profit organizations.
 
 ## Commercial Use Requires Permission
-If you wish to use this software, or any part of its source code, for commercial or  monetary purposes, you **must** obtain a commercial license. 
+
+If you wish to use this software, or any part of its source code, for commercial or monetary purposes, you **must** obtain a commercial license.
 
 To discuss commercial licensing, please contact me directly at:
-* **Email:** [Contact Me via Email](mailto:harshitpd1729@://gmail.com)
-* **GitHub:** [Open a Licensing Issue](https://github.com)
+
+- **Email:** [Contact Me via Email](mailto:harshitpd1729@gmail.com)
+- **GitHub:** [Open a Licensing Issue](https://github.com/Harshit-Dhanwalkar/QMC/issues)

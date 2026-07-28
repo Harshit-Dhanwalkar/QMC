@@ -72,7 +72,7 @@ int main(void) {
   plot_opts_t opts = {0};
   opts.title = "2P_{3/2} Zeeman fan";
   opts.xlabel = "B (\\mu_B units)";
-  opts.ylabel = "\\Delta E / mu_B";
+  opts.ylabel = "\\Delta E / \\mu_B";
   opts.tex_text = 1;
 
   plot_lines("zeeman_fan_2p32", PLOT_FORMAT_PNG, B, E_const, n_mj, N,
