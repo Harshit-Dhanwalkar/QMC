@@ -9,6 +9,7 @@ Test: angular momentum coupling (couple_states / couple_allowed_J).
 */
 
 #include "../core/complex.h"
+#include "../core/special/special.h"
 #include "../core/vector.h"
 #include "../physics/angular.h"
 #include <math.h>
@@ -34,6 +35,7 @@ static int test_two_spin_half(void) {
   cvector_t *v = couple_states(1, 1, 2, 2);
   if (!v) {
     printf("  FAIL: couple_states(1,1,2,2) returned NULL\n");
+
     return 1;
   }
 
@@ -45,6 +47,7 @@ static int test_two_spin_half(void) {
   v = couple_states(1, 1, 2, 0);
   if (!v) {
     printf("  FAIL: couple_states(1,1,2,0) returned NULL\n");
+
     return 1;
   }
 
@@ -56,6 +59,7 @@ static int test_two_spin_half(void) {
   v = couple_states(1, 1, 0, 0);
   if (!v) {
     printf("  FAIL: couple_states(1,1,0,0) returned NULL\n");
+
     return 1;
   }
 
@@ -67,6 +71,7 @@ static int test_two_spin_half(void) {
   v = couple_states(1, 1, 2, -2);
   if (!v) {
     printf("  FAIL: couple_states(1,1,2,-2) returned NULL\n");
+
     return 1;
   }
 
@@ -85,12 +90,14 @@ static int test_l1_s_half(void) {
   int count = couple_allowed_J(2, 1, J2_list);
   printf("  allowed J (doubled) for j1=1,j2=1/2: count=%d ->", count);
 
-  for (int i = 0; i < count; i++)
+  for (int i = 0; i < count; i++) {
     printf(" %d", J2_list[i]);
+  }
   printf("\n");
 
   if (count != 2 || J2_list[0] != 1 || J2_list[1] != 3) {
     printf("  FAIL: expected J_2 in {1,3}\n");
+
     fail = 1;
   }
 
@@ -103,12 +110,14 @@ static int test_l1_s_half(void) {
     if (!v) {
       printf("  FAIL: couple_states(2,1,%d,%d) returned NULL\n", J2, M2);
       fail = 1;
+
       continue;
     }
 
     double norm_sq = 0.0;
-    for (int i = 0; i < v->n; i++)
+    for (int i = 0; i < v->n; i++) {
       norm_sq += v->data[i].re * v->data[i].re;
+    }
     fail |= check_close(norm_sq, 1.0, tol, "normalization");
 
     cvector_free(v);
@@ -133,6 +142,66 @@ static int test_l1_s_half(void) {
   return fail;
 }
 
+// Direct numerical quadrature of triple spherical-harmonic integral
+// (independent cross-check of gaunt_coefficient()'s CG-derived formula)
+static complex_t triple_harmonic_integral_numeric(int l, int m, int k, int q,
+                                                  int lp, int mp, int n_theta,
+                                                  int n_phi) {
+  double dtheta = M_PI / n_theta;
+  double dphi = 2.0 * M_PI / n_phi;
+  complex_t sum = c_zero();
+
+  for (int it = 0; it < n_theta; it++) {
+    double theta = (it + 0.5) * dtheta;
+    double sin_theta = sin(theta);
+    for (int ip = 0; ip < n_phi; ip++) {
+      double phi = (ip + 0.5) * dphi;
+
+      complex_t Ylm_conj = c_conj(spherical_harmonic(l, m, theta, phi));
+      complex_t Ykq = spherical_harmonic(k, q, theta, phi);
+      complex_t Ylpmp = spherical_harmonic(lp, mp, theta, phi);
+
+      complex_t prod = c_mul(c_mul(Ylm_conj, Ykq), Ylpmp);
+      sum = c_add(sum, c_scale(prod, sin_theta * dtheta * dphi));
+    }
+  }
+
+  return sum;
+}
+
+static int test_gaunt_coefficient(void) {
+  int fail = 0;
+  double tol = 5e-3; // quadrature grid
+  int n_theta = 60, n_phi = 60;
+
+  // {l, m, k, l', m'}
+  int cases[][5] = {
+      {0, 0, 0, 0, 0},  {1, 0, 0, 1, 0}, {1, 1, 0, 1, 1},
+      {2, 1, 2, 2, 1},  {1, 0, 2, 1, 0}, {2, -1, 2, 1, 0},
+      {1, -1, 2, 3, 0}, {2, 2, 4, 2, 2}, {1, 1, 2, 3, 1},
+  };
+  int n_cases = sizeof(cases) / sizeof(cases[0]);
+
+  for (int i = 0; i < n_cases; i++) {
+    int l = cases[i][0], m = cases[i][1], k = cases[i][2];
+    int lp = cases[i][3], mp = cases[i][4];
+    int q = m - mp;
+
+    double c_analytic = gaunt_coefficient(l, m, k, lp, mp);
+
+    complex_t integral =
+        triple_harmonic_integral_numeric(l, m, k, q, lp, mp, n_theta, n_phi);
+    double c_numeric = sqrt(4.0 * M_PI / (2.0 * k + 1.0)) * integral.re;
+
+    char label[64];
+    snprintf(label, sizeof label, "c^%d(l=%d,m=%d;l'=%d,m'=%d)", k, l, m, lp,
+             mp);
+    fail |= check_close(c_analytic, c_numeric, tol, label);
+  }
+
+  return fail;
+}
+
 int main(void) {
   int failed = 0;
 
@@ -141,6 +210,9 @@ int main(void) {
 
   printf("l=1 (x) s=1/2 (spin-orbit basis):\n");
   failed += test_l1_s_half();
+
+  printf("Gaunt coefficient:");
+  failed += test_gaunt_coefficient();
 
   if (failed) {
     printf("FAILED (%d)\n", failed);
