@@ -169,7 +169,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_23_fermi_golden_rule \
               $(BUILD_DIR)/eg_24_central_potential_3d \
               $(BUILD_DIR)/eg_25_boson_sampling \
-              $(BUILD_DIR)/eg_26_zeeman
+              $(BUILD_DIR)/eg_26_zeeman \
+              $(BUILD_DIR)/eg_27_cap_tdse
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -200,15 +201,23 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_fermi_golden_rule \
               $(BUILD_DIR)/test_boson_sampling \
               $(BUILD_DIR)/test_zeeman \
-              $(BUILD_DIR)/test_klein_gordon
+              $(BUILD_DIR)/test_klein_gordon \
+              $(BUILD_DIR)/test_tridiag_eigvals
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
 endif
 
+# Demo driver
+$(BUILD_DIR)/main: main.c config.h | directories
+	$(CC) $(CFLAGS) -I. main.c -o $@
+
+demo: $(BUILD_DIR)/main
+	@$(BUILD_DIR)/main
+
 .PHONY: all clean examples tests run-examples run-tests info
 
-all: directories $(OUTPUT_DIR) $(EXAMPLES) $(TESTS)
+all: directories $(OUTPUT_DIR) $(EXAMPLES) $(TESTS) $(BUILD_DIR)/main
 
 directories:
 	@mkdir -p $(BUILD_DIR)

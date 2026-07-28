@@ -7,6 +7,7 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
 ## Building
 
 - Build with `make`.
+- Run demo with `make demo`. Which will provide you with options for demo individual implementations.
 - Run all tests with `make run-tests`.
 - Run all examples with `make run-examples`.
   All example/test output is written under `output/` (`QMC_OUTPUT_DIR`);
