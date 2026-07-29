@@ -10,6 +10,7 @@ Relativistic QM: Klein-Gordon and Dirac 1D solvers.
 #include "../core/linalg/tridiag_eigh.h"
 #include "../core/matrix.h"
 #include "../core/vector.h"
+#include "potentials.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -241,4 +242,88 @@ eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar,
   cmatrix_free(H);
 
   return eig;
+}
+
+eigen_t *dirac_radial_solve(double *r, int N, int kappa, potential_fn V,
+                            void *params, double m, double hbar, double c) {
+  if (!r || N < 3 || !V || kappa == 0 || m <= 0.0 || hbar <= 0.0 || c <= 0.0) {
+    return NULL;
+  }
+
+  double dr = r[1] - r[0];
+  if (dr <= 0.0) {
+    return NULL;
+  }
+
+  double mc2 = m * c * c;
+  int M = 2 * N;
+  cmatrix_t *H = cmatrix_alloc(M, M);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int i = 0; i < M; i++) {
+    for (int j = 0; j < M; j++) {
+      CMAT(H, i, j) = c_zero();
+    }
+  }
+
+  for (int i = 0; i < N; i++) {
+    double Vi = V(r[i], params);
+    CMAT(H, i, i) = c_real(Vi + mc2);
+    CMAT(H, N + i, N + i) = c_real(Vi - mc2);
+
+    double kc = hbar * c * kappa / r[i];
+    CMAT(H, i, N + i) = c_add(CMAT(H, i, N + i), c_real(kc));
+    CMAT(H, N + i, i) = c_add(CMAT(H, N + i, i), c_real(kc));
+
+    if (i < N - 1) {
+      double val = -hbar * c / (2.0 * dr);
+      CMAT(H, i, N + i + 1) = c_add(CMAT(H, i, N + i + 1), c_real(val));
+      CMAT(H, N + i + 1, i) = c_add(CMAT(H, N + i + 1, i), c_real(val));
+    }
+    if (i > 0) {
+      double val = hbar * c / (2.0 * dr);
+      CMAT(H, i, N + i - 1) = c_add(CMAT(H, i, N + i - 1), c_real(val));
+      CMAT(H, N + i - 1, i) = c_add(CMAT(H, N + i - 1, i), c_real(val));
+    }
+  }
+
+  eigen_t *eig = cmatrix_eigh_complex(H);
+  cmatrix_free(H);
+
+  return eig;
+}
+
+double dirac_hydrogen_energy_level(int n, int kappa, double Z, double hbar,
+                                   double mass, double e_charge, double eps0,
+                                   double c) {
+  int abs_kappa = abs(kappa);
+  if (abs_kappa < 1) {
+    return NAN;
+  }
+  int n_r = n - abs_kappa; // radial quantum number
+  if (kappa > 0) {
+    if (n_r < 1) {
+      return NAN; // l=\kappa branch: n_r=0 not allowed, need n > |\kappa|
+    }
+  } else {
+    if (n_r < 0) {
+      return NAN; // l=|\kappa|-1 branch: n_r=0 allowed, n = |\kappa| valid
+                  // (ground state)
+    }
+  }
+
+  double alpha = (e_charge * e_charge) / (4.0 * M_PI * eps0 * hbar * c);
+  double Za = Z * alpha;
+  double kappa2 = (double)(kappa * kappa);
+
+  if (Za * Za >= kappa2) {
+    return NAN; // beyond point-charge Dirac breakdown (Z * \alpha >= |\kappa|)
+  }
+
+  double denom = (double)(n - abs_kappa) + sqrt(kappa2 - Za * Za);
+  double mc2 = mass * c * c;
+
+  return mc2 / sqrt(1.0 + (Za * Za) / (denom * denom));
 }

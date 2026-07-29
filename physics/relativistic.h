@@ -3,6 +3,7 @@
 
 #include "../core/matrix.h"
 #include "../core/vector.h"
+#include "potentials.h"
 
 /*
  * Solve 1D Klein-Gordon equation for scalar potential V(x), fast/bulk
@@ -55,5 +56,49 @@ void klein_gordon_solution_free(klein_gordon_solution_t *sol);
    Returns eigen_t with eigenvalues (energies) and eigenvectors (spinors).
 */
 eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar, double c);
+
+/*
+ * Radial Dirac equation for central potential V(r), fixed \kappa
+ * (relativistic angular quantum number: \kappa = -(l+1) for j=l+1/2,
+ * \kappa = +l for j=l-1/2). Solves coupled first-order radial equations
+ * for the "large"/"small" radial components G(r)=r*g(r), F(r)=r*f(r):
+ *   \hbar * c * (dG/dr) = -\hbar * c * (\kappa / r ) *G + (E - V + m * c^2) * F
+ *   \hbar * c * (dF/dr) =  \hbar * c * (\kappa / r ) *F - (E - V - m * c^2) * G
+ * discretized via central differences into a 2N x 2N matrix.
+ * Eigenvector columns are 2N-dimensional: rows [0,N) = G(r), rows [N,2N) =
+ * F(r).
+ *
+ * Where
+ * r     : uniform radial grid, r[0] > 0 (to avoids kappa/r singularity at
+ *         origin)
+ * \kappa: relativistic angular quantum number (nonzero integer).
+ *
+ * Returns eigen_t with 2N eigenvalues/eigenvectors spanning both
+ * positive-energy (E > 0) and negative-energy (E < -mc^2-ish) branches, plus
+ * grid-truncation artifacts near E=0. Bound states are eigenvalues in (0,
+ * m*c^2).
+ */
+eigen_t *dirac_radial_solve(double *r, int N, int kappa, potential_fn V,
+                            void *params, double m, double hbar, double c);
+
+/*
+ * Exact relativistic hydrogen/hydrogen-like energy level (Sommerfeld
+ * fine-structure formula), for principal quantum number n, relativistic
+ * angular quantum number kappa, and nuclear charge Z:
+ *   E_{n, \kappa} = m * c^2 * [1 + (Z * \alpha)^2 / (n - |\kappa| +
+ * \sqrt(\kappa^2 - (Z * \alpha)^2))^2]^{-1/2}
+ *
+ * Where
+ * \alpha = e_charge^2 / (4 * \pi * eps0* \hbar * c) (i.e. fine-structure
+ * constant)
+ *
+ * Requires n > |\kappa| >= 1 and Z * \alpha < |\kappa| (bound-state regime for
+ * point-charge Dirac equation)
+ *
+ * Returns NAN outside that range.
+ */
+double dirac_hydrogen_energy_level(int n, int kappa, double Z, double hbar,
+                                   double mass, double e_charge, double eps0,
+                                   double c);
 
 #endif

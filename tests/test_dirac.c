@@ -6,10 +6,14 @@ Test: dirac_1d complex-Hermitian eigensolver.
 2. Physical interpretation: for free particle (V=0), eigenvalue spectrum should
    mostly split into two branches separated by ~2mc^2 (positive-energy states
    near/above +mc^2, negative-energy states near/below -mc^2).
+3. dirac_radial_solve validated against exact closed-form relativistic hydrogen
+   spectrum (Sommerfeld formula)
 */
 
 #include "../core/complex.h"
+#include "../core/constants.h"
 #include "../core/matrix.h"
+#include "../physics/potentials.h"
 #include "../physics/relativistic.h"
 #include <math.h>
 #include <stdio.h>
@@ -56,9 +60,9 @@ static int test_hermiticity_of_construction(void) {
       complex_t hba = CMAT(H, b, a);
       double err = sqrt(pow(hab.re - hba.re, 2) + pow(hab.im + hba.im, 2));
       if (err > tol) {
-        printf("  FAIL: H[%d][%d]=(%.4f,%.4f) not conj of "
-               "H[%d][%d]=(%.4f,%.4f)\n",
-               a, b, hab.re, hab.im, b, a, hba.re, hba.im);
+        printf(
+            "  FAIL: H[%d][%d]=(%.4f,%.4f) not conj of H[%d][%d]=(%.4f,%.4f)\n",
+            a, b, hab.re, hab.im, b, a, hba.re, hba.im);
         fail = 1;
       }
     }
@@ -110,6 +114,96 @@ static int test_free_particle_branches(void) {
   return (n_gap > n_total / 4) ? 1 : 0;
 }
 
+static int test_dirac_hydrogen_sommerfeld(void) {
+  int fail = 0;
+  double tol_rel = 5e-6;
+
+  int N = 300;
+  double a0 = 4.0 * M_PI * EPSILON_0 * HBAR * HBAR /
+              (M_ELECTRON * E_CHARGE * E_CHARGE); // Bohr radius
+  double r_max = 40.0 * a0;
+  double r_min = 1e-4 * a0 / N;
+  double *r = malloc(N * sizeof *r);
+  double dr = (r_max - r_min) / (N - 1);
+  for (int i = 0; i < N; i++) {
+    r[i] = r_min + i * dr;
+  }
+
+  double Z_charge = 1.0; // nuclear charge
+  double k_coulomb = Z_charge * E_CHARGE * E_CHARGE / (4.0 * M_PI * EPSILON_0);
+
+  // {label, n, \kappa}
+  struct {
+    const char *label;
+    int n, kappa;
+  } states[] = {
+      {"1s_1/2", 1, -1},
+      {"2s_1/2", 2, -1},
+      {"2p_1/2", 2, 1},
+      {"2p_3/2", 2, -2},
+  };
+  int n_states = sizeof(states) / sizeof(states[0]);
+
+  for (int s = 0; s < n_states; s++) {
+    int n = states[s].n, kappa = states[s].kappa;
+
+    double E_exact = dirac_hydrogen_energy_level(
+        n, kappa, Z_charge, HBAR, M_ELECTRON, E_CHARGE, EPSILON_0, C_LIGHT);
+
+    eigen_t *eig = dirac_radial_solve(r, N, kappa, V_coulomb, &k_coulomb,
+                                      M_ELECTRON, HBAR, C_LIGHT);
+
+    if (!eig) {
+      printf("  FAIL: dirac_radial_solve returned NULL for %s\n",
+             states[s].label);
+      fail = 1;
+
+      continue;
+    }
+
+    double mc2 = M_ELECTRON * C_LIGHT * C_LIGHT;
+    double best = -1.0;
+    double best_diff = 1e300;
+    for (int i = 0; i < eig->n; i++) {
+      double E = eig->eigenvalues[i];
+      if (E > 0.0 && E < mc2) {
+        double diff = fabs(E - E_exact);
+        if (diff < best_diff) {
+          best_diff = diff;
+          best = E;
+        }
+      }
+    }
+
+    double rel_err = (best > 0.0) ? fabs(best - E_exact) / fabs(E_exact) : 1.0;
+    printf("  %s (n=%d, \\kappa=%d): E_num=%.10e J  E_exact=%.10e J "
+           "rel_err=%.2e\n",
+           states[s].label, n, kappa, best, E_exact, rel_err);
+    fail |= (rel_err > tol_rel);
+
+    eigen_free(eig);
+  }
+
+  free(r);
+
+  return fail;
+}
+
+// 2s_1/2 and 2p_1/2 should be exactly degenerate in point-charge Dirac spectrum
+// (both have n=2, |\kappa|=1)
+static int test_dirac_j_degeneracy(void) {
+  double Z_charge = 1.0; // nuclear charge
+  double E_2s = dirac_hydrogen_energy_level(2, -1, Z_charge, HBAR, M_ELECTRON,
+                                            E_CHARGE, EPSILON_0, C_LIGHT);
+  double E_2p = dirac_hydrogen_energy_level(2, 1, Z_charge, HBAR, M_ELECTRON,
+                                            E_CHARGE, EPSILON_0, C_LIGHT);
+
+  printf("  E(2s_1/2)=%.12e J  E(2p_1/2)=%.12e J  diff=%.3e\n", E_2s, E_2p,
+         fabs(E_2s - E_2p));
+
+  return fabs(E_2s - E_2p) > 1e-30 ? 1 : 0; // should be bit-identical
+}
+
 int main(void) {
   int failed = 0;
 
@@ -118,6 +212,12 @@ int main(void) {
 
   printf("Free particle +-mc^2 branch structure (qualitative):\n");
   failed += test_free_particle_branches();
+
+  printf("Dirac radial solve vs. exact Sommerfeld hydrogen spectrum:\n");
+  failed += test_dirac_hydrogen_sommerfeld();
+
+  printf("2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1):\n");
+  failed += test_dirac_j_degeneracy();
 
   if (failed) {
     printf("FAILED (%d)\n", failed);

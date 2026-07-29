@@ -6,7 +6,7 @@ typedef double (*potential_fn)(double x, void *params);
 
 /* Specific potentials */
 
-/* Infinite square well: V=0 for |x|<a, V=inf elsewhere */
+/* Infinite square well: V=0 for |x|<a, V=\infty elsewhere */
 double V_infinite_well(double x, void *params);
 /* params: double *a (half-width) */
 
@@ -14,7 +14,7 @@ double V_infinite_well(double x, void *params);
 double V_finite_well(double x, void *params);
 /* params: struct {double a, V0} */
 
-/* Harmonic oscillator: V = (1/2)*m*omega^2*x^2 */
+/* Harmonic oscillator: V = (1/2) * m * \omega^2 * x^2 */
 double V_harmonic(double x, void *params);
 /* params: double *omega */
 
@@ -26,13 +26,13 @@ double V_step(double x, void *params);
 double V_barrier(double x, void *params);
 /* params: struct {double a, V0} */
 
-/* Coulomb potential: V = -k*e^2/r (for hydrogen) */
+/* Coulomb potential: V = -k/r (for hydrogen) */
 double V_coulomb(double r, void *params);
 
-/* Yukawa potential: V = -g*exp(-mu*r)/r (screening) */
+/* Yukawa potential: V = -g * \exp(-\mu * r) / r (screening) */
 double V_yukawa(double r, void *params);
 
-/* Morse potential: V = D*[1 - exp(-a(x-x0))]^2 (molecules) */
+/* Morse potential: V = D*[1 - \exp(-a(x - x0))]^2 (molecules) */
 double V_morse(double x, void *params);
 
 /* Generic: evaluate array of V values */

@@ -1,24 +1,38 @@
 name: QMC CI Build
-
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
-
+    branches: ["main"]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential gnuplot
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake gnuplot
+
+      - name: Cache GR build
+        id: gr-cache
+        uses: actions/cache@v4
+        with:
+          path: third_party/gr/install
+          key: gr-${{ hashFiles('third_party/gr/**') }}
+
+      - name: Build GR
+        if: steps.gr-cache.outputs.cache-hit != 'true'
+        run: |
+          cmake -S third_party/gr -B third_party/gr/build \
+            -DCMAKE_INSTALL_PREFIX=third_party/gr/install \
+            -DGR_USE_QT=OFF
+          cmake --build third_party/gr/build --parallel
+          cmake --install third_party/gr/build
 
       - name: Build All
         run: make all PLOT_BACKEND=GR
-        # run: make all PLOT_BACKEND=GNUPLOT
 
       - name: Run Test Suite
         run: make run-tests PLOT_BACKEND=GR
-        # run: make run-tests PLOT_BACKEND=GNUPLOT

@@ -11,7 +11,7 @@ tridiagonal matrices.
 */
 
 #include "../core/linalg/tridiag_eigh.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
+#include "../core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

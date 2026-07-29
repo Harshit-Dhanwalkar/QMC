@@ -2,7 +2,6 @@ CC     = gcc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 CFLAGS += -fsanitize=address -g
 CFLAGS += -MMD -MP
--include $(ALL_OBJS:.o=.d)
 
 OUTPUT_DIR  = output
 CFLAGS     += -DQMC_OUTPUT_DIR=\"$(OUTPUT_DIR)\"
@@ -73,6 +72,8 @@ else
     $(warning No usable plotting backend found - building NO-OP backend)
 endif
 
+CFLAGS += -DQMC_PLOT_BACKEND_NAME=\"$(PLOT_BACKEND)\"
+BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
 LDFLAGS  = -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
 
@@ -143,6 +144,8 @@ PLOT_SRCS    = $(PLOT_SRC)
 ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC)
 ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
 
+-include $(ALL_OBJS:.o=.d)
+
 # Targets
 EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_02_harmonic \
@@ -209,13 +212,28 @@ ifeq ($(PLOT_BACKEND),GR)
 endif
 
 # Demo driver
-$(BUILD_DIR)/main: main.c config.h | directories
+# $(BUILD_DIR)/main: main.c config.h | directories
+$(BUILD_DIR)/main: main.c config.h $(BACKEND_SENTINEL) | directories
 	$(CC) $(CFLAGS) -I. main.c -o $@
 
 demo: $(BUILD_DIR)/main
 	@$(BUILD_DIR)/main
 
 .PHONY: all clean examples tests run-examples run-tests info
+
+# check-backend
+
+check-backend:
+	@mkdir -p $(BUILD_DIR)
+	@echo "$(PLOT_BACKEND)" > $(BUILD_DIR)/.plot_backend.new
+	@if ! cmp -s $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL) 2>/dev/null; then \
+		mv $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL); \
+	else \
+		rm -f $(BUILD_DIR)/.plot_backend.new; \
+	fi
+
+$(BACKEND_SENTINEL): check-backend
+	@:
 
 all: directories $(OUTPUT_DIR) $(EXAMPLES) $(TESTS) $(BUILD_DIR)/main
 
@@ -254,6 +272,7 @@ $(BUILD_DIR)/test_%: $(TESTS_DIR)/test_%.c $(ALL_OBJS)
 examples: directories $(OUTPUT_DIR) $(EXAMPLES)
 tests:    directories $(TESTS)
 
+# Run a all tests
 run-tests: tests
 	@echo "Running all tests..."
 	@passed=0; failed=0; \
@@ -275,8 +294,9 @@ run-tests: tests
 
 # Run a specific test
 test-%: $(BUILD_DIR)/test_%
-	@$<
+	@$
 
+# Run a all examples
 run-examples: examples $(OUTPUT_DIR)
 	@echo "    Running examples"
 	@for ex in $(EXAMPLES); do \
