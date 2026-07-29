@@ -206,7 +206,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_boson_sampling \
               $(BUILD_DIR)/test_zeeman \
               $(BUILD_DIR)/test_klein_gordon \
-              $(BUILD_DIR)/test_tridiag_eigvals
+              $(BUILD_DIR)/test_tridiag_eigvals \
+              $(BUILD_DIR)/test_random
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
