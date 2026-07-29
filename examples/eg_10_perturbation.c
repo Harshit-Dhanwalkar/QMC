@@ -21,7 +21,7 @@
 int main(void) {
   printf(" > Non‑degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
 
-  // Parameters (atomic units: m=1, \hbar=1,  \omega=1)
+  // Parameters (atomic units: \hbar=m=\omega=1)
   double omega = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -131,6 +131,7 @@ int main(void) {
     if (!eig_full) {
       cmatrix_free(H_full);
       cvector_free(psi);
+
       continue;
     }
 

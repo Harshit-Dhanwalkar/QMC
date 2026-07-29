@@ -38,11 +38,13 @@ int main(void) {
   if (!Zeff || !E) {
     free(Zeff);
     free(E);
+
     return 1;
   }
 
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     E[i] = helium_variational_energy(Zeff[i], Z);
+  }
 
   double Zeff_analytic = helium_optimal_zeff_analytic(Z);
   double E_analytic = helium_ground_state_energy_analytic(Z);

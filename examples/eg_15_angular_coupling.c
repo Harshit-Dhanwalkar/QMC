@@ -16,6 +16,7 @@ static void print_two_spin_half(int J_2, int M_2, const char *name) {
   cvector_t *v = couple_states(1, 1, J_2, M_2);
   if (!v) {
     printf("   (invalid state)\n");
+
     return;
   }
 

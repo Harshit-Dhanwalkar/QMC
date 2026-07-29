@@ -77,11 +77,11 @@ int main(void) {
 
   // Time evolution parameters
   double dt = 0.005;
-  int steps = 800;      // total time T = steps*dt = 4.0
+  int steps = 800;      // total time T = steps * dt = 4.0
   int snap = steps / 4; // save snapshot every T/4
 
-  printf("   Grid:    N=%d, x∈[%.1f,%.1f], dx=%.4f\n", N, x_min, x_max, dx);
-  printf("   Barrier: V_0=%.2f, x∈[%.1f,%.1f]\n", V0, a, b);
+  printf("   Grid:    N=%d, x\\in[%.1f,%.1f], dx=%.4f\n", N, x_min, x_max, dx);
+  printf("   Barrier: V_0=%.2f, x\\in[%.1f,%.1f]\n", V0, a, b);
   printf("   Packet:  k_0=%.2f, \\sigma=%.2f, x_0=%.2f\n", k0, sigma, x0);
   printf("   E_kin = k_0^2/2 = %.2f  (barrier height = %.2f)\n", k0 * k0 / 2.0,
          V0);
@@ -175,7 +175,8 @@ int main(void) {
   printf("   T + R          = %.4f (should be ~1)\n", T_coeff + R_coeff);
 
   /* Analytic WKB transmission (thick barrier, E < V0):
-   * T_WKB = \exp(-2 * \kappa * L)  where \kappa = \sqrt(2m(V0-E))/\hbar, L=b-a
+   * T_WKB = \exp(-2 * \kappa * L)
+   * Where \kappa = \sqrt(2m(V0-E))/\hbar, L=b-a
    */
   double E_kin = k0 * k0 / 2.0;
   if (E_kin < V0) {

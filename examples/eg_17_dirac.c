@@ -34,7 +34,7 @@ int main(void) {
     return 1;
   }
 
-  printf("   Grid: N=%d, dx=%.2f, m=c=\\hbar=1 (mc^2=%.2f)\n\n", N, dx, mc2);
+  printf("   Grid: N=%d, dx=%.2f, \\hbar=m=c=1 (mc^2=%.2f)\n\n", N, dx, mc2);
 
   eigen_t *eig = dirac_1d(x, N, V, m, hbar, c);
   if (!eig) {

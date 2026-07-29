@@ -44,8 +44,9 @@ int main(void) {
     cvector_t *psi0 = cvector_from_matrix_column(eig_ho->eigenvectors, 0);
     if (psi0) {
       double *y = malloc(N * sizeof *y);
-      for (int i = 0; i < N; i++)
+      for (int i = 0; i < N; i++) {
         y[i] = psi0->data[i].re;
+      }
 
       plot_opts_t opts = {0};
       opts.title = "3D Harmonic Oscillator: ground-state u(r)";

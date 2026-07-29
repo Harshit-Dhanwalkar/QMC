@@ -22,7 +22,7 @@
 int main(void) {
   printf(" > Quantum Harmonic Oscillator\n\n");
 
-  // Parameters (atomic units: m=1, \hbar=1, \omega=1)
+  // Parameters (atomic units: \hbar=m=\omega=1)
   double omega = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -39,13 +39,13 @@ int main(void) {
     return 1;
   }
 
-  printf("     Parameters:   omega = %.3f, m = %.3f, hbar = %.3f\n", omega, m,
-         hbar);
+  printf("     Parameters:   \\omega = %.3f, m = %.3f, \\hbar = %.3f\n", omega,
+         m, hbar);
   printf("     Grid: %d points from %.3f to %.3f, dx=%.6f\n\n", n_grid, x_min,
          x_max, dx);
 
   // Analytical energies for first 5 states
-  printf("   Analytical energies (\\hbar \\omega units):\n");
+  printf("   Analytical energies (\\hbar\\omega units):\n");
   printf("   n   E_n    <x^2>\n");
   printf("  ---  -----  -----\n");
   for (int n = 0; n < 5; n++) {
@@ -67,6 +67,7 @@ int main(void) {
 
     return 1;
   }
+
   double coeff = -hbar * hbar / (2 * m * dx * dx);
   double mass_omega2 = 0.5 * m * omega * omega;
 
@@ -101,8 +102,9 @@ int main(void) {
 
   // Save potential
   double *V = malloc(n_grid * sizeof(double));
-  for (int i = 0; i < n_grid; i++)
+  for (int i = 0; i < n_grid; i++) {
     V[i] = mass_omega2 * x[i] * x[i];
+  }
   save_potential("harmonic_potential.dat", x, V, n_grid);
 
   // Save wavefunctions and plot

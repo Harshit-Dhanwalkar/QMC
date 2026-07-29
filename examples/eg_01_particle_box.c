@@ -18,8 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Analytic energy for infinite square well: E_n = n^2 * π^2 * \hbar^2/ (2mL^2)
-In atomic units (\hbar = m=1): E_n = n^2 \pi^2/ (2L^2)
+/* Analytic energy for infinite square well: E_n = n^2 * \pi^2 * \hbar^2/ (2mL^2)
+In atomic units (\hbar=m=1): E_n = n^2 \pi^2/ (2L^2)
 */
 static double E_analytic(int n, double L) {
   return (double)(n * n) * M_PI * M_PI / (2.0 * L * L);
@@ -52,7 +52,7 @@ int main(void) {
     return 1;
   }
 
-  double coeff = 1.0 / (2.0 * dx * dx); // \hbar^2 / 2m = 0.5; 0.5/dx^2
+  double coeff = 1.0 / (2.0 * dx * dx); // \hbar^2 / 2 * m = 0.5; 0.5/dx^2
 
   cmatrix_t *H = cmatrix_alloc(M, M);
   if (!H) {

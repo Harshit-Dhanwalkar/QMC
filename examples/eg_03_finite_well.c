@@ -37,6 +37,7 @@ int main(void) {
     return 1;
   }
 
+  // (Using atmoic units \hbar=m=1)
   double coeff = 0.5 / (dx * dx); // \hbar^2/2m = 0.5
 
   // Store energy vs V0 for each state

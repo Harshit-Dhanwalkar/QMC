@@ -42,7 +42,7 @@ int main(void) {
     P_detuned[i] = rabi_excited_probability(t[i], Omega, Delta_detuned);
   }
 
-  printf("   \\Omega=%.2f, resonant Delta=0, detuned Delta=%.2f\n\n", Omega,
+  printf("   \\Omega=%.2f, resonant \\Delta=0, detuned Delta=%.2f\n\n", Omega,
          Delta_detuned);
 
   double t_pi = M_PI / Omega;

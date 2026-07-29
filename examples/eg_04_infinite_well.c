@@ -1,12 +1,10 @@
 /*
  * Infinite Square Well (Particle in a Box)
- *
- *   V(x) = 0      for 0 < x < L
- *        = \infty otherwise (hard walls: \psi(0) = \psi(L) = 0)
- *
+ *   V(x) = 0       for 0 < x < L
+ *        = \infty  otherwise (hard walls: \psi(0) = \psi(L) = 0)
  * Analytical:
  *   E_n = n^2 * \pi^2 * \hbar^2 / (2 * m * L^2), n = 1, 2, 3, ...
- *   \psi_n(x) = \sqrt(2/L) \sin(n * \pi * x / L)
+ *   \psi_n(x) = \sqrt(2/L) * \sin(n * \pi * x / L)
  */
 
 #include "../core/constants.h"
@@ -22,7 +20,7 @@
 int main(void) {
   printf(" > Infinite Square Well (Particle in a Box)\n\n");
 
-  // Parameters (natural units: m=1, \hbar=1)
+  // Parameters (Atomic units \hbar=m=1)
   double L = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -35,6 +33,7 @@ int main(void) {
   double *x = linspace(0.0, L, n_grid);
   if (!x) {
     fprintf(stderr, "Memory allocation failed\n");
+
     return 1;
   }
 
@@ -60,14 +59,17 @@ int main(void) {
     free(x);
     free(diag);
     free(offdiag);
+
     return 1;
   }
   double coeff = hbar * hbar / (2.0 * m * dx * dx);
 
-  for (int i = 0; i < n_interior; i++)
+  for (int i = 0; i < n_interior; i++) {
     diag[i] = 2.0 * coeff;
-  for (int i = 0; i < n_interior - 1; i++)
+  }
+  for (int i = 0; i < n_interior - 1; i++) {
     offdiag[i] = -coeff;
+  }
 
   // Diagonalize
   eigen_t *eig = tridiag_eigh(diag, offdiag, n_interior);
