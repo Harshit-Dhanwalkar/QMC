@@ -58,6 +58,9 @@ dkms.conf
 build/
 output/
 
+third_party/gr/build/
+third_party/gr/install/
+
 # Others
 mdbook
 mdbook-katex

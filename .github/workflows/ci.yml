@@ -13,7 +13,11 @@ jobs:
           submodules: recursive
 
       - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake gnuplot
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake gnuplot \
+            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev zlib1g-dev
+            # TODO: Add libx11-dev/OpenGL/Qt packages
 
       - name: Get GR submodule commit
         id: gr-sha
