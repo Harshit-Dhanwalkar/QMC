@@ -135,7 +135,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/driven.c \
                $(PHYSICS_DIR)/soft.c \
                $(PHYSICS_DIR)/boson_sampling.c \
-               $(PHYSICS_DIR)/zeeman.c
+               $(PHYSICS_DIR)/zeeman.c \
+               $(PHYSICS_DIR)/vmc.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -207,7 +208,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_zeeman \
               $(BUILD_DIR)/test_klein_gordon \
               $(BUILD_DIR)/test_tridiag_eigvals \
-              $(BUILD_DIR)/test_random
+              $(BUILD_DIR)/test_random \
+              $(BUILD_DIR)/test_vmc
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
