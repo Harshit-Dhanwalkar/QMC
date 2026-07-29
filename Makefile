@@ -90,6 +90,7 @@ BUILD_DIR    = build
 CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/matrix.c \
                $(CORE_DIR)/utils.c \
+               $(CORE_DIR)/random.c \
                $(CORE_DIR)/sparse.c \
                $(CORE_DIR)/fft/fft.c \
                $(CORE_DIR)/fft/fft2d.c \
@@ -212,8 +213,8 @@ ifeq ($(PLOT_BACKEND),GR)
 endif
 
 # Demo driver
-# $(BUILD_DIR)/main: main.c config.h | directories
-$(BUILD_DIR)/main: main.c config.h $(BACKEND_SENTINEL) | directories
+# $(BUILD_DIR)/main: main.c config.h $(BACKEND_SENTINEL) | directories
+$(BUILD_DIR)/main: main.c config.h | directories
 	$(CC) $(CFLAGS) -I. main.c -o $@
 
 demo: $(BUILD_DIR)/main
