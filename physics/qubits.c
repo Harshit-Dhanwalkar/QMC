@@ -190,3 +190,47 @@ int qstate_measure(cvector_t *psi, double u) {
 
   return outcome;
 }
+
+int qstate_measure_qubit(cvector_t *psi, int n_qubits, int target, double u) {
+  if (!psi || n_qubits < 1 || target < 0 || target >= n_qubits) {
+    return -1;
+  }
+
+  long long n = 1LL << n_qubits;
+  if (psi->n != (int)n) {
+    return -1;
+  }
+
+  int bitpos = n_qubits - 1 - target;
+  long long mask = 1LL << bitpos;
+
+  double p0 = 0.0;
+  for (long long i = 0; i < n; i++) {
+    if ((i & mask) == 0) {
+      p0 += c_abs2(psi->data[i]);
+    }
+  }
+
+  if (u < 0.0) {
+    u = 0.0;
+  }
+  if (u >= 1.0) {
+    u = 1.0 - 1e-15;
+  }
+
+  int outcome = (u < p0) ? 0 : 1;
+  double branch_prob = (outcome == 0) ? p0 : (1.0 - p0);
+
+  double inv_norm = (branch_prob > 1e-300) ? 1.0 / sqrt(branch_prob) : 0.0;
+
+  for (long long i = 0; i < n; i++) {
+    int bit = (i & mask) != 0;
+    if (bit == outcome) {
+      psi->data[i] = c_scale(psi->data[i], inv_norm);
+    } else {
+      psi->data[i] = c_zero();
+    }
+  }
+
+  return outcome;
+}

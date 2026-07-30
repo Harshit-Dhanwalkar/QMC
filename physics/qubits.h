@@ -40,6 +40,7 @@ extern const complex_t hadamard_gate[4];
 /*
  * Reduced density matrix of single qubit, tracing out all others:
  *   \rho_{ab} = \sum_{rest} conj(\psi[rest,qubit=a]) * \psi[rest,qubit=b]
+ *
  * Returns a 2x2 cmatrix_t.
  */
 cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
@@ -59,13 +60,33 @@ cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,
 double von_neumann_entropy_2x2(cmatrix_t *rho);
 
 /*
- * Projective measurement in the computational basis, on pure state vector.
+ * Projective measurement in computational basis, on pure state vector.
  * Samples an outcome index in [0, \psi->n) with probability |\psi[outcome]|^2,
  * using caller-supplied uniform random number u in [0,1) so RNG/seeding stays
  * under caller control. Collapses \psi in place to pure basis state |outcome>
- * (\psi[outcome] = 1, every other amplitude = 0). Returns sampled outcome
- * index, or -1 on invalid input.
+ * (\psi[outcome] = 1, every other amplitude = 0).
+ *
+ * Returns sampled outcome index, or -1 on invalid input.
  */
 int qstate_measure(cvector_t *psi, double u);
+
+/*
+ * Projective measurement of single qubit `target` (0-indexed, 0=leftmost)
+ * in the computational basis, leaving other n_qubits-1 qubits in renormalized
+ * superposition survives outcome
+ *
+ * P(outcome=0) = sum over all basis states i with bit `target` = 0 of
+ * |\psi[i]|^2. Samples outcome in {0,1} using caller-supplied uniform random u
+ * in [0,1). Collapses \psi in place: amplitudes inconsistent with sampled
+ * outcome are zeroed, survivors are rescaled by 1/\sqrt(P(outcome)) so state
+ * remains normalized.
+ *
+ * psi->n must equal 2^n_qubits (caller-supplied n_qubits, since state vector
+ * itself carries no qubit-count metadata).
+ *
+ * Returns sampled outcome (0 or 1), or -1 on invalid input (NULL psi, target
+ * out of [0, n_qubits), or psi->n != 2^n_qubits).
+ */
+int qstate_measure_qubit(cvector_t *psi, int n_qubits, int target, double u);
 
 #endif
