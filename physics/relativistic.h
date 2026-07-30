@@ -9,6 +9,23 @@
  * Solve 1D Klein-Gordon equation for scalar potential V(x), fast/bulk
  * approximate spectrum:
  *   ( -\hbar^2 * c^2 * d^2/dx^2 + m^2 * c^4 ) * \psi = (E - V)^2 * \psi
+ *
+ * NOTE: Approximation: diagonalizes the V-independent (free) operator above,
+ * then assigns each level n an energy
+ *   V_expect_n + \sqrt(\lambda_n),
+ *
+ * Where
+ * V_expect_n = <n|V|n> is computed from that level's own free-particle
+ * eigenvector (1st-order, non-degenerate-perturbation-theory style correction
+ * and not single uniform V_avg shift applied to every level).
+ *
+ * Exact when V(x) is constant (V_expect_n reduces to V_avg identically for
+ * every n). For spatially-varying V(x): real improvement over uniform shift for
+ * well-separated levels, but being non-degenerate PT can be worse than uniform
+ * shift at levels that are quasi-degenerate in free spectrum. Use
+ * klein_gordon_1d_self_consistent instead when needed reliable accuracy on V(x)
+ * with near-degenerate low-lying levels, or where correctness matters more than
+ * speed of single diagonalization.
  */
 eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
                          double c);

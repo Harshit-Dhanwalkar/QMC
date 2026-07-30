@@ -21,15 +21,31 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
   }
 
   // Discretize: (-\hbar^2 * c^2 d^2/dx^2 + m^2 * c^4 )\psi = ((E - V)^2)\psi
+  //
+  // The matrix below is the FREE (V-independent) operator -\hbar^2 c^2 d^2/dx^2
+  // + m^2 c^4; it does not itself encode any spatial structure of V(x). Each
+  // level n have expectation value :
+  //   <V>_n = sum_i |c_i^(n)|^2 * V(x_i)
+  // computed from level's (V-independent) eigenvector(i.e.1st-order
+  // perturbative correction using free-particle-like modes as 0th-order basis).
+  // Constant V(x) (every level reduces to <V>_n = V_avg identically, since
+  // \sum_i |c_i|^2 = 1), and V(x) has real spatial structure
+  //
+  // NOTE: Know limitation : This is plain non-degenerate perturbation theory,
+  // applied per level with no coupling between levels. For well-separated
+  // levels it is real improvement over old uniform shift. But at
+  // near-degeneracy, purely diagonal per-level correction can be worse than
+  // uniform shift, because it's missing off-diagonal coupling that resolves
+  // near-degenerate pair. On same test potential, ground state
+  // (quasi-degenerate with first excited state) got worse under fix (~0.16 vs
+  // ~0.05 Hartree-analog error vs. self-consistent reference) even though
+  // levels 1,2,3,5 improved.
+  // HACK:  If one need reliable ground-state accuracy on potential suspect has
+  // close-lying levels, use klein_gordon_1d_self_consistent directly rather
+  // than trusting this fast path's shift for that specific level.
   double dx = x[1] - x[0];
   double coeff = hbar * hbar * c * c / (dx * dx);
   double mc2 = m * c * c;
-
-  double V_avg = 0.0;
-  for (int j = 0; j < N; j++) {
-    V_avg += V[j];
-  }
-  V_avg /= N;
 
   double *diag = malloc(N * sizeof *diag);
   double *offdiag = malloc((N - 1) * sizeof *offdiag);
@@ -47,17 +63,23 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
     }
   }
 
-  // eigen_t *eig = tridiag_eigh(diag, offdiag, N);
-  eigen_t *eig = tridiag_eigvals(diag, offdiag, N);
+  // Need eigenvectors and eigenvalues to compute per-level <V>_n weighting
+  eigen_t *eig = tridiag_eigh(diag, offdiag, N);
   free(diag);
   free(offdiag);
   if (!eig) {
     return NULL;
   }
 
-  // E = V_avg + \sqrt(\lambda) (positive-energy branch)
-  for (int i = 0; i < eig->n; i++) {
-    eig->eigenvalues[i] = V_avg + sqrt(eig->eigenvalues[i]);
+  for (int n = 0; n < eig->n; n++) {
+    double V_expect = 0.0;
+    for (int i = 0; i < N; i++) {
+      double c_i = CMAT(eig->eigenvectors, i, n).re;
+      V_expect += c_i * c_i * V[i];
+    }
+
+    // E = <V>_n + \sqrt(\lambda_n) (positive-energy branch)
+    eig->eigenvalues[n] = V_expect + sqrt(eig->eigenvalues[n]);
   }
 
   return eig;
