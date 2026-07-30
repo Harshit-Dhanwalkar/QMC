@@ -20,8 +20,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      MDBOOK_VERSION: "0.4.40"
-      MDBOOK_KATEX_VERSION: "0.9.0"
+      MDBOOK_VERSION: "0.5.4"
+      MDBOOK_KATEX_VERSION: "0.10.0"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
 
       - name: Install mdbook-katex
         run: |
-          curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
+          curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/${MDBOOK_KATEX_VERSION}-binaries/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
           echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
       - name: Build Documentation

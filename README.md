@@ -1,6 +1,6 @@
 # Quantum Mechanics in C
 
-A pure-C library for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate topics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, and relativistic wave equations.
+A pure-C library for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate topics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and variational quantum Monte Carlo.
 
 > Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take `hbar`, `mass`, etc. as explicit parameters.
 
@@ -82,10 +82,12 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
   <li><code>test_potentials.c</code></li>
   <li><code>test_qubits.c</code></li>
   <li><code>test_rabi.c</code></li>
+  <li><code>test_random.c</code></li>
   <li><code>test_rk4.c</code></li>
   <li><code>test_scattering.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
+  <li><code>test_vmc.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
