@@ -2,9 +2,10 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
     paths:
       - "docs/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,30 +20,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      MDBOOK_VERSION: 0.5.3
-      MDBOOK_KATEX_VERSION: 0.10.0-alpha
+      MDBOOK_VERSION: "0.4.40"
+      MDBOOK_KATEX_VERSION: "0.9.0"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Install mdBook & mdbook-katex
+      - name: Install mdBook
         run: |
-          # Install mdBook
-          wget -q https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz
-          tar xzf mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz
-          sudo mv mdbook /usr/local/bin/
+          mkdir -p bin
+          curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
-          # Install mdbook-katex
-          wget -q https://github.com/lzanini/mdbook-katex/releases/download/${MDBOOK_KATEX_VERSION}-binaries/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz
-          tar xzf mdbook-katex-v${MDBOOK_KATEX_VERSION}-*-unknown-linux-gnu.tar.gz
-          sudo mv mdbook-katex /usr/local/bin/
+      - name: Install mdbook-katex
+        run: |
+          curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
+          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
-      - name: Build docs
+      - name: Build Documentation
         run: mdbook build docs/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/book
