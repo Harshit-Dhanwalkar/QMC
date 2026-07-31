@@ -210,7 +210,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_klein_gordon \
               $(BUILD_DIR)/test_tridiag_eigvals \
               $(BUILD_DIR)/test_random \
-              $(BUILD_DIR)/test_vmc
+              $(BUILD_DIR)/test_vmc \
+              $(BUILD_DIR)/test_dmc
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
