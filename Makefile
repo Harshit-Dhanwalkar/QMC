@@ -48,9 +48,9 @@ ifeq ($(PLOT_BACKEND),GR)
                    export/gr/formats/svg.c \
                    export/gr/formats/pdf.c \
                    export/gr/formats/interactive.c
-    PLOT_LIBS    = -lGR
+    PLOT_LIBS    = -lGR -lqhull_r
     PLOT_CFLAGS  = -DUSE_GR -I$(GR_INC) -Iexport
-    PLOT_LDFLAGS = -L$(GR_LIB) -Wl,-rpath,$(GR_LIB)
+    PLOT_LDFLAGS = -L$(GR_LIB) -Wl,-rpath,$(GR_LIB) -L/usr/lib/x86_64-linux-gnu
     $(info Plot backend: GR ($(GR_LIB)))
 else ifeq ($(PLOT_BACKEND),GNUPLOT)
     PLOT_SRC     = export/plot_gnuplot.c \
