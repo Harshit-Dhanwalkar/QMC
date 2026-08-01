@@ -23,8 +23,8 @@ int main(void) {
   double E_exact = -2.9037;
   double E_product_orbital = helium_ground_state_energy_analytic(Zeff);
 
-  printf("   Trial wavefunction: Psi_T = exp(-Z'(r1+r2)) * "
-         "exp(r12/(2(1+b*r12)))\n");
+  printf("   Trial wavefunction: \\Psi_T = \\exp(-Z' (r1 + r2)) * \\exp(r12 / "
+         "(2(1 + b * r12)))\n");
   printf("   Z' fixed at bare nuclear charge (%.1f); sweeping Jastrow b:\n\n",
          Zeff);
 
@@ -58,8 +58,8 @@ int main(void) {
          E_product_orbital);
   printf("     VMC with optimized Jastrow:         E=%.6f Hartree\n", E_opt);
   printf("     Exact:                              E=%.6f Hartree\n", E_exact);
-  printf("   Jastrow correlation recovers %.1f%% of the correlation energy "
-         "this ansatz can reach.\n\n",
+  printf("   Jastrow correlation recovers %.1f%% of correlation energy this "
+         "ansatz can reach.\n\n",
          100.0 * (E_product_orbital - E_opt) / (E_product_orbital - E_exact));
 
   plot_opts_t opts = {0};

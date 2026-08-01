@@ -1,6 +1,6 @@
 # Quantum Mechanics in C
 
-A pure-C library for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate topics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and variational quantum Monte Carlo.
+A pure-C library for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate topics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 
 > Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take `hbar`, `mass`, etc. as explicit parameters.
 
@@ -18,6 +18,7 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
 - Core: complex numbers, vectors, matrices, special functions (Hermite, Laguerre, Legendre, Bessel).
 - ODE solvers: Numerov, RK4, Crank-Nicolson.
 - 1D potentials: infinite well, finite well, harmonic, step, barrier, Coulomb, Yukawa, Morse.
+- Quantum Monte Carlo: Variational (VMC) and Diffusion (DMC) Monte Carlo for the helium ground state, Slater-Jastrow trial wavefunction.
 - Plotting via GR framework, GNUplot pipe, and matplotlib pipe for Python.
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
 
@@ -51,6 +52,8 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
   <li><code>eg_25_boson_sampling.c</code></li>
   <li><code>eg_26_zeeman.c</code></li>
   <li><code>eg_27_cap_tdse.c</code></li>
+  <li><code>eg_28_vmc_helium.c</code></li>
+  <li><code>eg_29_dmc_helium.c</code></li>
 </ul>
 </details>
 
@@ -65,6 +68,7 @@ A pure-C library for numerical and semi-analytic quantum mechanics, covering und
   <li><code>test_complex_eigh.c</code></li>
   <li><code>test_crank_nicolson.c</code></li>
   <li><code>test_dirac.c</code></li>
+  <li><code>test_dmc.c</code></li>
   <li><code>test_driven.c</code></li>
   <li><code>test_fermi_golden_rule.c</code></li>
   <li><code>test_fft.c</code></li>

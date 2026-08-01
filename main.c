@@ -45,7 +45,8 @@ static const demo_entry_t demos[] = {
     {"build/eg_26_zeeman", "Zeeman effect"},
     {"build/eg_27_cap_tdse",
      "Complex absorbing potential + time-dependent V(x,t)"},
-    {"build/eg_28_vmc_helium", "Variational Monte Carlo (helium)"}
+    {"build/eg_28_vmc_helium", "Variational Monte Carlo (helium)"},
+    {"build/eg_29_dmc_helium", "Diffusion Monte Carlo (helium)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
