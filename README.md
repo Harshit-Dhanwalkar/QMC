@@ -1,25 +1,60 @@
 # Quantum Mechanics in C
 
-A pure-C library for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate topics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
+[![SPDX-License-Identifier](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
-> Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take `hbar`, `mass`, etc. as explicit parameters.
+A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
+
+> **Units Convention:** Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take explicit physical parameters ($\hbar, m_e, e$, etc.).
+
+## Prerequisites
+
+- C compiler with C99 and OpenMP support (`gcc` or `clang`)
+- `make` and `cmake`
+- `grplot` : GR Framework (Default plot backend, built via Git submodule or system libs)
+- `gnuplot` : GNU plot (Optional, fallback plot backend)
 
 ## Building
 
-- Build with `make`.
-- Run demo with `make demo`. Which will provide you with options for demo individual implementations.
-- Run all tests with `make run-tests`.
-- Run all examples with `make run-examples`.
-  All example/test output is written under `output/` (`QMC_OUTPUT_DIR`);
-- `make clean` removes it.
+```bash
+# Clone repository with submodules
+git clone --recursive https://github.com/Harshit-Dhanwalkar/QMC.git
+cd QMC
 
-## Features
+# Build GR submodule (if not using system GR)
+cd third_party/gr
+cmake -B build -DGR_INSTALL=ON \
+  -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+  -DCMAKE_DISABLE_FIND_PACKAGE_Qt6=ON \
+  -DCMAKE_DISABLE_FIND_PACKAGE_Qt5=ON \
+  -DCMAKE_DISABLE_FIND_PACKAGE_Qt4=ON
+cmake --build build -j
+cmake --install build
+cd ../..
 
-- Core: complex numbers, vectors, matrices, special functions (Hermite, Laguerre, Legendre, Bessel).
-- ODE solvers: Numerov, RK4, Crank-Nicolson.
-- 1D potentials: infinite well, finite well, harmonic, step, barrier, Coulomb, Yukawa, Morse.
-- Quantum Monte Carlo: Variational (VMC) and Diffusion (DMC) Monte Carlo for the helium ground state, Slater-Jastrow trial wavefunction.
-- Plotting via GR framework, GNUplot pipe, and matplotlib pipe for Python.
+# Build QMC demo driver and binaries
+make all
+
+# Run interactive demo selector
+make demo
+
+# Run test suite
+make run-tests
+# All example/test output is written under `output/` (`QMC_OUTPUT_DIR`);
+
+# Cleanup
+make clean
+```
+
+## Features & Modules
+
+- Core Math : Complex vectors/matrices, special functions (Hermite, Laguerre, Legendre, Spherical Harmonics, Bessel)
+  - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
+- 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
+- Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
+- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for helium ground state with Slater-Jastrow ansatz).
+- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, and Boson sampling.
+- Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
+- Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
 
 <details>

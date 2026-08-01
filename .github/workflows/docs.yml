@@ -22,24 +22,44 @@ jobs:
     env:
       MDBOOK_VERSION: "0.5.4"
       MDBOOK_KATEX_VERSION: "0.10.0-alpha"
-      MDBOOK_KATEX_RELEASE_TAG: "0.10.0-alpha-binaries"
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Set up PATH
+        run: echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+
+      # Install and Cache mdBook
+      - name: Cache mdBook
+        id: cache-mdbook
+        uses: actions/cache@v4
+        with:
+          path: bin/mdbook
+          key: mdbook-v${{ env.MDBOOK_VERSION }}-${{ runner.os }}
+
       - name: Install mdBook
+        if: steps.cache-mdbook.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
           curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
-          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
-      - name: Install mdbook-katex
+      # Install and Cache mdbook-katex
+      - name: Cache mdbook-katex
+        id: cache-katex
+        uses: actions/cache@v4
+        with:
+          path: bin/mdbook-katex
+          key: mdbook-katex-v${{ env.MDBOOK_KATEX_VERSION }}-${{ runner.os }}
+
+      - name: Install mdbook-katex via Cargo
+        if: steps.cache-katex.outputs.cache-hit != 'true'
         run: |
-          curl -sSL "https://github.com/lzanini/mdbook-katex/releases/download/${MDBOOK_KATEX_RELEASE_TAG}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/mdbook-katex.tar.gz
-          file /tmp/mdbook-katex.tar.gz | grep -q gzip || { echo "::error::Downloaded file is not a gzip archive - check MDBOOK_KATEX_RELEASE_TAG and MDBOOK_KATEX_VERSION against https://github.com/lzanini/mdbook-katex/releases"; cat /tmp/mdbook-katex.tar.gz; exit 1; }
-          tar -xzf /tmp/mdbook-katex.tar.gz -C bin
-          echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+          mkdir -p bin
+          cargo install mdbook-katex --version "${MDBOOK_KATEX_VERSION}" --root .
+          # cargo install --root . puts binaries in ./bin/
 
+      # Build and Deploy Preparation
       - name: Build Documentation
         run: mdbook build docs/
 

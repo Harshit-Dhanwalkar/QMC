@@ -337,4 +337,4 @@ info:
 clean:
 	rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
 	rm -f *.png *.pdf *.svg *.jpg *.dat
-	rm -f *.aux *.log *.out *.toc *.tex       # LaTeX junk (if generated locally)
+	rm -f *.aux *.log *.out *.toc *.tex
