@@ -40,6 +40,16 @@ ifeq ($(PLOT_BACKEND),MATPLOTLIB)
     endif
 endif
 
+# TODO: define macro -DHAVE_LATEX to conditionally compile LaTeX features 
+LATEX_AVAIL := $(shell command -v pdflatex >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 && echo yes || echo no)
+ifeq ($(LATEX_AVAIL),no)
+    $(warning pdflatex or pdftoppm not found in PATH – LaTeX rendering will fail at runtime)
+endif
+
+# LaTeX backend selection : pdflatex and lualatex 
+LATEX_COMPILER ?= pdflatex
+
+
 ifeq ($(PLOT_BACKEND),GR)
     PLOT_SRC     = export/plot_gr.c \
                    export/gr/gr_plot.c \
@@ -73,6 +83,7 @@ else
 endif
 
 CFLAGS += -DQMC_PLOT_BACKEND_NAME=\"$(PLOT_BACKEND)\"
+CFLAGS += -DQMC_LATEX_COMPILER=\"$(LATEX_COMPILER)\"
 BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
 LDFLAGS  = -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
@@ -326,3 +337,4 @@ info:
 clean:
 	rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
 	rm -f *.png *.pdf *.svg *.jpg *.dat
+	rm -f *.aux *.log *.out *.toc *.tex       # LaTeX junk (if generated locally)
