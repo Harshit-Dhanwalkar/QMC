@@ -10,8 +10,6 @@ The unperturbed eigenstates: $H_0|n\rangle = E_n^{(0)}|n\rangle$
 
 ### First Order Correction
 
-The first-order energy correction:
-
 $$
 E_n^{(1)} = \langle n|V|n\rangle
 $$
@@ -24,84 +22,55 @@ $$
 
 ## Implementation
 
+`physics/perturbation.h`:
+
 ```c
+typedef struct {
+  double E0; // unperturbed energy
+  double E1; // first-order correction
+  double E2; // second-order correction
+} perturb_result_t;
+
 perturb_result_t perturb_nondeg(const eigen_t *unperturbed, int state_index,
-                                const cmatrix_t *V_pert, double tol) {
-    perturb_result_t res = {0.0, 0.0, 0.0};
+                                const cmatrix_t *V_pert, double tol);
+```
 
-    double E0 = unperturbed->eigenvalues[state_index];
-    res.E0 = E0;
+`tol` guards the second-order sum against near-degenerate denominators $E_n^{(0)} - E_k^{(0)} \approx 0$ - presumably skipping or otherwise handling terms below that threshold, though the exact behavior needs `perturbation.c` to confirm.
 
-    // First order
-    complex_t Vii = CMAT(V_pert, state_index, state_index);
-    res.E1 = Vii.re;
+```c
+eigen_t *unperturbed = /* solved H0 eigenstates, e.g. via tridiag_eigh */;
+cmatrix_t *V_pert = /* build <i|V|j> matrix in the unperturbed basis */;
 
-    // Second order
-    double E2 = 0.0;
-    for (int k = 0; k < n; k++) {
-        if (k == state_index) continue;
-        double denom = E0 - unperturbed->eigenvalues[k];
-        if (fabs(denom) < tol) continue;
-        complex_t Vki = CMAT(V_pert, k, state_index);
-        E2 += c_abs2(Vki) / denom;
-    }
-    res.E2 = E2;
-    return res;
-}
+perturb_result_t result = perturb_nondeg(unperturbed, n, V_pert, 1e-10);
+double E_total = result.E0 + lambda * result.E1 + lambda * lambda * result.E2;
 ```
 
 ## Example: Anharmonic Oscillator
 
-The anharmonic oscillator with perturbation $V=\lambda x^4$ :
-
-```c
-// Build perturbation matrix in harmonic oscillator basis
-cmatrix_t *V_pert = cmatrix_alloc(N, N);
-for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-        // Compute <i|x^4|j> using numerical integration
-        double integral = 0.0;
-        for (int k = 0; k < grid_N; k++) {
-            double x4 = x[k]*x[k]*x[k]*x[k];
-            integral += conj(psi_i[k]) * x4 * psi_j[k] * dx;
-        }
-        CMAT(V_pert, i, j) = c_real(lambda * integral);
-    }
-}
-
-// Apply perturbation theory
-perturb_result_t result = perturb_nondeg(eig0, n, V_pert, 1e-10);
-```
+For the anharmonic oscillator with perturbation $V = \lambda x^4$, `V_pert` is built as the matrix of $\langle i|x^4|j\rangle$ in the harmonic-oscillator eigenbasis (obtained from `tridiag_eigh`, see [Linear Algebra Core](../internals/linalg.md)), then passed to
+`perturb_nondeg` as above.
 
 ### Degenerate Perturbation Theory
 
-When two or more unperturbed states have the same energy, non-degenerate perturbation theory fails. The perturbation must be diagonalized within the degenerate subspace.
+When two or more unperturbed states share an energy, non-degenerate perturbation theory's second-order sum blows up ($E_n^{(0)} - E_k^{(0)} = 0$). The fix is to diagonalize the perturbation within the degenerate subspace first:
 
 ```c
 eigen_t *perturb_degenerate(const double *energies, const cmatrix_t *V_pert,
-                            const int *deg_indices, int deg_size) {
-    // Build effective Hamiltonian in degenerate subspace
-    cmatrix_t *H_eff = cmatrix_alloc(deg_size, deg_size);
-    for (int i = 0; i < deg_size; i++) {
-        for (int j = 0; j < deg_size; j++) {
-            CMAT(H_eff, i, j) = CMAT(V_pert, deg_indices[i], deg_indices[j]);
-        }
-    }
-    return cmatrix_eigh_generic(H_eff);
-}
+                            const int *degeneracy_indices, int deg_size);
 ```
+
+`degeneracy_indices` lists which indices (into `energies` and `V_pert`) belong to the degenerate subspace; the returned `eigen_t` has size `deg_size` and gives the correct zeroth-order states and first-order energy splittings within that subspace.
 
 ### Fermi's Golden Rule
 
-For time-dependent perturbations, the transition rate from state _i_ to _f_ is:
+For time-dependent perturbations, the transition rate from state $i$ to $f$ is:
 
 $$
 W_{i \rightarrow f}=\frac{2\pi}{\hbar}\vert{}\langle f\vert{}V\vert{}i \rangle\vert{}^2 \rho(E_f)
 $$
 
 ```c
-double fermi_golden_rate(const cmatrix_t *V_pert, int i, int f, double rho_E) {
-    complex_t Vfi = CMAT(V_pert, f, i);
-    return 2.0 * M_PI * c_abs2(Vfi) * rho_E;
-}
+double fermi_golden_rate(const cmatrix_t *V_pert, int i, int f, double rho_E);
 ```
+
+`V_pert` is the perturbation operator in the relevant basis; `rho_E` is the density of final states at $E_f \approx E_i$, computed separately and passed in rather than derived internally.

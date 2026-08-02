@@ -2,7 +2,7 @@
 
 Central potentials are spherically symmetric potentials $V(\mathbf{r}) = V(r)$ that depend only on the radial distance from the origin.
 
-## Radial Schrödinger Equation
+## Radial Schr$\ddot{o}$dinger Equation
 
 In three dimensions, the wave function separates into radial and angular parts:
 
