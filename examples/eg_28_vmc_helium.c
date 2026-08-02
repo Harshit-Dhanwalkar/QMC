@@ -19,12 +19,13 @@
 int main(void) {
   printf(" > Variational Monte Carlo: Helium Ground State\n\n");
 
+  double Z = 2.0;
   double Zeff = 2.0;
   double E_exact = -2.9037;
   double E_product_orbital = helium_ground_state_energy_analytic(Zeff);
 
   printf("   Trial wavefunction: \\Psi_T = \\exp(-Z' (r1 + r2)) * \\exp(r12 / "
-         "(2(1 + b * r12)))\n");
+         "(2 * (1 + b * r12)))\n");
   printf("   Z' fixed at bare nuclear charge (%.1f); sweeping Jastrow b:\n\n",
          Zeff);
 
@@ -41,7 +42,8 @@ int main(void) {
 
   for (int i = 0; i < N; i++) {
     double b = b_min + i * (b_max - b_min) / (N - 1);
-    vmc_result_t r = vmc_run(Zeff, b, 500, 20000, 200, 0.9, 0.9, 1000ULL + i);
+    vmc_result_t r =
+        vmc_run(Z, Zeff, b, 500, 20000, 200, 0.9, 0.9, 1000ULL + i);
     b_vals[i] = b;
     E_vals[i] = r.mean;
 
@@ -49,7 +51,7 @@ int main(void) {
   }
 
   double b_opt;
-  double E_opt = vmc_optimize_b(Zeff, b_min, b_max, 1000, 50000, 0.9, 0.9,
+  double E_opt = vmc_optimize_b(Z, Zeff, b_min, b_max, 1000, 50000, 0.9, 0.9,
                                 999ULL, 1e-3, &b_opt);
 
   printf("\n   Optimized: b_opt=%.4f   E=%.6f Hartree\n", b_opt, E_opt);

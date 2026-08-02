@@ -45,6 +45,7 @@ static void test_drift_velocity_fixtures(void) {
     vmc_walker_t w = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
     double b = 0.2;
     double d0[3], d1[3];
+
     dmc_drift_velocity(&w, 0, 2.0, b, d0);
     dmc_drift_velocity(&w, 1, 2.0, b, d1);
     check_close(d0[0], -1.7448979591836733, 1e-9, "drift0[0] case 1");
@@ -55,6 +56,7 @@ static void test_drift_velocity_fixtures(void) {
     vmc_walker_t w = {{0.5, 0.3, -0.2}, {-0.4, 0.6, 0.1}};
     double b = 0.15;
     double d0[3], d1[3];
+
     dmc_drift_velocity(&w, 0, 2.0, b, d0);
     dmc_drift_velocity(&w, 1, 2.0, b, d1);
     check_close(d0[0], -1.2797877515194125, 1e-9, "drift0[0] case 2");
@@ -80,8 +82,8 @@ static void test_degenerate_guard(void) {
 static void test_dmc_run_accuracy(void) {
   printf("test_dmc_run_accuracy:\n");
 
-  double Zeff = 2.0, b = 0.15;
-  dmc_result_t r = dmc_run(Zeff, b,
+  double Z = 2.0, Zeff = 2.0, b = 0.15;
+  dmc_result_t r = dmc_run(Z, Zeff, b,
                            /*target_population=*/200,
                            /*max_population=*/600,
                            /*\tau=*/0.01,
@@ -122,10 +124,40 @@ static void test_dmc_run_accuracy(void) {
              "population control holds near target (200 +/- 20)");
 }
 
+// DMC for a different two-electron ion (Li+, Z=3): must land closer to exact
+// reference than VMC's Li+ estimate does and must respect variational theorem.
+static void test_dmc_run_different_ion(void) {
+  printf("test_dmc_run_different_ion:\n");
+
+  double Z = 3.0, Zeff = 2.6, b = 0.12; // Li+
+  double E_exact_liplus = -7.2799133;
+
+  vmc_result_t vmc_r =
+      vmc_run(Z, Zeff, b, 1000, 100000, 200, 0.9, 0.9, 55221ULL);
+  dmc_result_t dmc_r = dmc_run(Z, Zeff, b,
+                               /*target_population=*/200,
+                               /*max_population=*/600,
+                               /*tau=*/0.01,
+                               /*n_equilibration=*/500,
+                               /*n_blocks=*/20,
+                               /*block_size=*/200,
+                               /*seed=*/55222ULL);
+
+  printf("  Li+ VMC: %.6f +- %.6f Hartree\n", vmc_r.mean, vmc_r.error);
+  printf("  Li+ DMC (mixed): %.6f +- %.6f Hartree\n", dmc_r.energy_mixed,
+         dmc_r.error_mixed);
+
+  check_true(dmc_r.energy_mixed >= E_exact_liplus - 3.0 * dmc_r.error_mixed,
+             "Li+ DMC respects the variational theorem");
+  check_true(dmc_r.energy_mixed < vmc_r.mean,
+             "Li+ DMC improves on Li+ VMC estimate (projects toward exact)");
+}
+
 int main(void) {
   test_drift_velocity_fixtures();
   test_degenerate_guard();
   test_dmc_run_accuracy();
+  test_dmc_run_different_ion();
 
   if (failures == 0) {
     printf("\nAll test_dmc checks passed.\n");

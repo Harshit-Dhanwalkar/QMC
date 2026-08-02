@@ -20,8 +20,9 @@ double spin_orbit_ls_expect(int l, int j_2) {
 
 double hydrogen_expect_inv_r3(int n, int l, double hbar, double mass,
                               double e_charge, double eps0) {
-  if (l < 1 || n < 1)
+  if (l < 1 || n < 1) {
     return 0.0; // diverges at l=0
+  }
 
   double a0 = 4.0 * M_PI * eps0 * hbar * hbar / (mass * e_charge * e_charge);
   double nn = (double)n, ll = (double)l;
@@ -32,8 +33,9 @@ double hydrogen_expect_inv_r3(int n, int l, double hbar, double mass,
 double hydrogen_spin_orbit_energy(int n, int l, int j_2, double hbar,
                                   double mass, double e_charge, double eps0,
                                   double c) {
-  if (l < 1)
+  if (l < 1) {
     return 0.0;
+  }
 
   double inv_r3 = hydrogen_expect_inv_r3(n, l, hbar, mass, e_charge, eps0);
   double LS = spin_orbit_ls_expect(l, j_2); // units of \hbar^2
@@ -45,8 +47,9 @@ double hydrogen_spin_orbit_energy(int n, int l, int j_2, double hbar,
 
 double hydrogen_fine_structure_shift(int n, int j_2, double hbar, double mass,
                                      double e_charge, double eps0, double c) {
-  if (n < 1)
+  if (n < 1) {
     return 0.0;
+  }
 
   double alpha = (e_charge * e_charge) / (4.0 * M_PI * eps0 * hbar * c);
   double E_n = hydrogen_energy_level(n);
@@ -59,8 +62,9 @@ double hydrogen_fine_structure_shift(int n, int j_2, double hbar, double mass,
 double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
   int j1_2 = 2 * l, j2_2 = 1; // orbital (doubled), spin-1/2 (doubled)
   cvector_t *v = couple_states(j1_2, j2_2, j_2, M_2);
-  if (!v)
+  if (!v) {
     return NAN;
+  }
 
   int dim1 = j1_2 + 1; // 2l+1
   int dim2 = j2_2 + 1; // 2
@@ -73,8 +77,9 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
       int m2_2 = -j2_2 + 2 * i2; // spin m, doubled: -1 (down) or +1 (up)
       double m2 = m2_2 / 2.0;
       double c_here = v->data[i1 * dim2 + i2].re;
-      if (c_here == 0.0)
+      if (c_here == 0.0) {
         continue;
+      }
 
       // Diagonal Lz*Sz
       energy += c_here * c_here * m1 * m2;
@@ -88,6 +93,7 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
           double Lplus = l_plus_op(l, m1, m1 + 1).re; // <l,m1+1|L+|l,m1>
           double Sminus =
               sqrt((0.5 + m2) * (0.5 - m2 + 1.0)); // <s,m2-1|S-|s,m2>
+
           energy += c_here * c_prime * 0.5 * Lplus * Sminus;
         }
       }
@@ -101,6 +107,7 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
           double Lminus = l_minus_op(l, m1, m1 - 1).re; // <l,m1-1|L-|l,m1>
           double Splus =
               sqrt((0.5 - m2) * (0.5 + m2 + 1.0)); // <s,m2+1|S+|s,m2>
+
           energy += c_here * c_prime * 0.5 * Lminus * Splus;
         }
       }
@@ -108,5 +115,6 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
   }
 
   cvector_free(v);
+
   return energy;
 }

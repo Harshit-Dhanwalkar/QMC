@@ -1,6 +1,18 @@
 # Quantum Mechanics in C
 
-[![SPDX-License-Identifier](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg" alt="License">
+  </a>
+  <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/docs.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/docs.yml?branch=main&label=docs" alt="Docs Deploy Status">
+  </a>
+  <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build%20%26%20tests" alt="CI Status">
+  </a>
+</p>
+
+[Documentation](https://harshit-dhanwalkar.github.io/QMC/)
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 

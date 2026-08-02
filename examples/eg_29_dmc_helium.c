@@ -16,6 +16,7 @@
 int main(void) {
   printf(" > Diffusion Monte Carlo: Helium Ground State\n\n");
 
+  double Z = 2.0;
   double Zeff = 2.0;
   double b = 0.15;
   double E_exact = -2.9037;
@@ -25,13 +26,14 @@ int main(void) {
          b);
 
   printf("   Running VMC (200000 samples)...\n");
-  vmc_result_t vmc_r = vmc_run(Zeff, b, 2000, 200000, 200, 0.9, 0.9, 1234ULL);
+  vmc_result_t vmc_r =
+      vmc_run(Z, Zeff, b, 2000, 200000, 200, 0.9, 0.9, 1234ULL);
   printf("     E = %.6f +- %.6f Hartree\n\n", vmc_r.mean, vmc_r.error);
 
   printf("   Running DMC (population ~500, \\tau=0.01, 30 blocks x 200 "
          "generations)...\n");
   dmc_result_t dmc_r =
-      dmc_run(Zeff, b, 500, 1500, 0.01, 1000, 30, 200, 5678ULL);
+      dmc_run(Z, Zeff, b, 500, 1500, 0.01, 1000, 30, 200, 5678ULL);
   printf("     mixed estimator:  E = %.6f +- %.6f Hartree\n",
          dmc_r.energy_mixed, dmc_r.error_mixed);
   printf("     growth estimator: E = %.6f +- %.6f Hartree\n",
@@ -49,11 +51,11 @@ int main(void) {
 
   double vmc_gap = vmc_r.mean - E_exact;
   double dmc_gap = dmc_r.energy_mixed - E_exact;
-  printf("   VMC is %.4f Hartree above exact; DMC is %.4f Hartree above "
-         "exact.\n",
-         vmc_gap, dmc_gap);
-  printf("   DMC recovers the correlation energy VMC's finite Jastrow "
-         "ansatz misses.\n");
+  printf(
+      "   VMC is %.4f Hartree above exact; DMC is %.4f Hartree above exact.\n",
+      vmc_gap, dmc_gap);
+  printf("   DMC recovers the correlation energy VMC's finite Jastrow ansatz "
+         "misses.\n");
 
   return 0;
 }
