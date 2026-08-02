@@ -22,6 +22,7 @@ cmatrix_t *cmatrix_multiply(const cmatrix_t *a, const cmatrix_t *b);
 cmatrix_t *cmatrix_transpose(const cmatrix_t *m);
 cmatrix_t *cmatrix_adjoint(const cmatrix_t *m); /* Conjugate transpose */
 void cmatrix_scale(cmatrix_t *m, complex_t s);
+cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x); /* y = A*x */
 
 /* Linear algebra */
 void cmatrix_lu_decomp(cmatrix_t *a, int *pivot);

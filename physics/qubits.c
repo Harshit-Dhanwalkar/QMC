@@ -13,6 +13,33 @@ Minimal multi-qubit state vector substrate
 const complex_t hadamard_gate[4] = {
     {M_SQRT1_2, 0.0}, {M_SQRT1_2, 0.0}, {M_SQRT1_2, 0.0}, {-M_SQRT1_2, 0.0}};
 
+void rx_gate(double theta, complex_t out[4]) {
+  double c = cos(theta / 2.0);
+  double s = sin(theta / 2.0);
+
+  out[0] = c_real(c);
+  out[1] = c_new(0.0, -s);
+  out[2] = c_new(0.0, -s);
+  out[3] = c_real(c);
+}
+
+void ry_gate(double theta, complex_t out[4]) {
+  double c = cos(theta / 2.0);
+  double s = sin(theta / 2.0);
+
+  out[0] = c_real(c);
+  out[1] = c_real(-s);
+  out[2] = c_real(s);
+  out[3] = c_real(c);
+}
+
+void rz_gate(double theta, complex_t out[4]) {
+  out[0] = c_new(cos(-theta / 2.0), sin(-theta / 2.0));
+  out[1] = c_zero();
+  out[2] = c_zero();
+  out[3] = c_new(cos(theta / 2.0), sin(theta / 2.0));
+}
+
 cvector_t *qstate_alloc(int n_qubits) {
   if (n_qubits < 1) {
     return NULL;

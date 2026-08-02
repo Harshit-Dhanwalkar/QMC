@@ -14,8 +14,9 @@
 
 double *linspace(double start, double end, int n) {
   double *arr = malloc(n * sizeof(double));
-  if (!arr)
+  if (!arr) {
     return NULL;
+  }
 
   for (int i = 0; i < n; i++) {
     arr[i] = start + i * (end - start) / (n - 1);
@@ -26,8 +27,9 @@ double *linspace(double start, double end, int n) {
 
 double *logspace(double start, double end, int n) {
   double *arr = malloc(n * sizeof(double));
-  if (!arr)
+  if (!arr) {
     return NULL;
+  }
 
   for (int i = 0; i < n; i++) {
     double ratio = i / (double)(n - 1);
@@ -40,8 +42,9 @@ double *logspace(double start, double end, int n) {
 int *range(int start, int end) {
   int n = end - start;
   int *arr = malloc(n * sizeof(int));
-  if (!arr)
+  if (!arr) {
     return NULL;
+  }
 
   for (int i = 0; i < n; i++) {
     arr[i] = start + i;
@@ -72,6 +75,7 @@ double expectation_value(const cvector_t *psi, const cvector_t *op_psi,
                          double dx) {
   if (psi->n != op_psi->n) {
     fprintf(stderr, "Error: vector size mismatch in expectation_value\n");
+
     return 0.0;
   }
 
@@ -105,8 +109,9 @@ double expectation_position_squared(const cvector_t *psi, const double *x,
 // Momentum expectation: given momentum-space wavefunction \psi_k and k grid
 double expectation_momentum(const cvector_t *psi_k, const double *k,
                             double dk) {
-  if (!psi_k || !k)
+  if (!psi_k || !k) {
     return 0.0;
+  }
 
   double sum = 0.0;
   for (int i = 0; i < psi_k->n; i++) {
@@ -159,6 +164,7 @@ void save_potential(const char *filename, const double *x, const double *V,
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
+
     return;
   }
 
@@ -172,8 +178,9 @@ void save_potential(const char *filename, const double *x, const double *V,
 
 cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
   cvector_t *psi_k = cvector_copy(psi_x);
-  if (!psi_k)
+  if (!psi_k) {
     return NULL;
+  }
 
   fft_normalized(psi_k);
   fft_shift(psi_k);
@@ -182,12 +189,14 @@ cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
 }
 
 cvector_t *cvector_from_matrix_column(const cmatrix_t *m, int col) {
-  if (!m || col < 0 || col >= m->ncols)
+  if (!m || col < 0 || col >= m->ncols) {
     return NULL;
+  }
 
   cvector_t *v = cvector_alloc(m->nrows);
-  if (!v)
+  if (!v) {
     return NULL;
+  }
 
   for (int i = 0; i < m->nrows; i++) {
     v->data[i] = CMAT(m, i, col);

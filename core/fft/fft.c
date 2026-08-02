@@ -2,6 +2,8 @@
 Fast Fourier transform
 */
 #include "fft.h"
+#include "../complex.h"
+#include "../vector.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +16,7 @@ static unsigned int bit_reverse(unsigned int x, int log2n) {
     y |= (x & 1);
     x >>= 1;
   }
+
   return y;
 }
 
@@ -48,8 +51,10 @@ void fft(cvector_t *x) {
   for (int len = 2; len <= n; len <<= 1) {
     double angle = -2.0 * M_PI / len;
     complex_t wlen = {cos(angle), sin(angle)};
+
     for (int i = 0; i < n; i += len) {
       complex_t w = {1.0, 0.0};
+
       for (int j = 0; j < len / 2; j++) {
         complex_t u = x->data[i + j];
         complex_t v = c_mul(x->data[i + j + len / 2], w);
@@ -68,6 +73,7 @@ void ifft(cvector_t *x) {
     x->data[i].im = -x->data[i].im;
   }
   fft(x);
+
   for (int i = 0; i < n; i++) {
     x->data[i].im = -x->data[i].im;
     x->data[i].re /= n;
@@ -78,6 +84,7 @@ void ifft(cvector_t *x) {
 void fft_normalized(cvector_t *x) {
   fft(x);
   double scale = 1.0 / sqrt(x->n);
+
   for (int i = 0; i < x->n; i++) {
     x->data[i] = c_scale(x->data[i], scale);
   }
@@ -86,6 +93,7 @@ void fft_normalized(cvector_t *x) {
 void ifft_normalized(cvector_t *x) {
   ifft(x);
   double scale = sqrt(x->n);
+
   for (int i = 0; i < x->n; i++) {
     x->data[i] = c_scale(x->data[i], scale);
   }
@@ -95,12 +103,16 @@ void fft_shift(cvector_t *x) {
   int n = x->n;
   int half = n / 2;
   cvector_t *tmp = cvector_alloc(n);
-  if (!tmp)
+
+  if (!tmp) {
     return;
+  }
+
   for (int i = 0; i < half; i++) {
     tmp->data[i] = x->data[i + half];
     tmp->data[i + half] = x->data[i];
   }
+
   memcpy(x->data, tmp->data, n * sizeof(complex_t));
   cvector_free(tmp);
 }

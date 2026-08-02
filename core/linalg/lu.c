@@ -10,14 +10,18 @@ LU decomposition
 #include <string.h>
 
 int *lu_decompose(cmatrix_t *A) {
-  if (!A || A->nrows != A->ncols)
+  if (!A || A->nrows != A->ncols) {
     return NULL;
+  }
+
   int n = A->nrows;
   int *pivot = malloc(n * sizeof(int));
-  if (!pivot)
+  if (!pivot) {
     return NULL;
-  for (int i = 0; i < n; i++)
+  }
+  for (int i = 0; i < n; i++) {
     pivot[i] = i;
+  }
 
   for (int k = 0; k < n; k++) {
     // Find pivot

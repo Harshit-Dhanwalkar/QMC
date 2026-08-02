@@ -2,6 +2,7 @@
 
 // eigen_generic.c
 #include "eigen_generic.h"
+#include "../matrix.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -42,6 +43,7 @@ eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) {
     free(eigvals);
     return NULL;
   }
+
   result->n = n;
   result->eigenvalues = eigvals;
   result->eigenvectors = malloc(n * sizeof(cvector_t));
@@ -51,7 +53,9 @@ eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) {
     for (int j = 0; j < n; j++)
       result->eigenvectors[i].data[j] = c_real(mat[i * n + j]);
   }
+
   free(mat);
+
   return result;
 }
 #endif
