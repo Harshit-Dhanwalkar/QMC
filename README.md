@@ -12,7 +12,7 @@
   </a>
 </p>
 
-[Documentation](https://harshit-dhanwalkar.github.io/QMC/)
+[![SPDX-License-Identifier](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 
@@ -63,8 +63,8 @@ make clean
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
 - 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
-- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for helium ground state with Slater-Jastrow ansatz).
-- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, and Boson sampling.
+- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
+- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
@@ -102,6 +102,7 @@ make clean
   <li><code>eg_28_vmc_helium.c</code></li>
   <li><code>eg_29_dmc_helium.c</code></li>
   <li><code>eg_30_pimc_helium.c</code></li>
+  <li><code>eg_31_vqe.c</code></li>
 </ul>
 </details>
 
@@ -143,6 +144,7 @@ make clean
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
   <li><code>test_vmc.c</code></li>
+  <li><code>test_vqe.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
 </ul>
