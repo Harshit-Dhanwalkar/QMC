@@ -149,7 +149,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/zeeman.c \
                $(PHYSICS_DIR)/vmc.c \
                $(PHYSICS_DIR)/dmc.c \
-               $(PHYSICS_DIR)/pimc.c
+               $(PHYSICS_DIR)/pimc.c \
+               $(PHYSICS_DIR)/vqe.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -225,10 +226,10 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_klein_gordon \
               $(BUILD_DIR)/test_tridiag_eigvals \
               $(BUILD_DIR)/test_random \
+              $(BUILD_DIR)/test_lanczos \
               $(BUILD_DIR)/test_vmc \
               $(BUILD_DIR)/test_dmc \
-              $(BUILD_DIR)/test_pimc \
-              $(BUILD_DIR)/test_lanczos
+              $(BUILD_DIR)/test_pimc
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
