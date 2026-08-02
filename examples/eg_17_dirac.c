@@ -69,6 +69,7 @@ int main(void) {
       if (lowest_pos_idx < 0) {
         lowest_pos_idx = i;
       }
+
       printf("   %3d  %8.4f\n", i, eig->eigenvalues[i]);
       shown++;
     }

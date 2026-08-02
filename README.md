@@ -101,6 +101,7 @@ make clean
   <li><code>eg_27_cap_tdse.c</code></li>
   <li><code>eg_28_vmc_helium.c</code></li>
   <li><code>eg_29_dmc_helium.c</code></li>
+  <li><code>eg_30_pimc_helium.c</code></li>
 </ul>
 </details>
 
@@ -130,6 +131,7 @@ make clean
   <li><code>test_matrix.c</code></li>
   <li><code>test_numerov.c</code></li>
   <li><code>test_perturbation.c</code></li>
+  <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qubits.c</code></li>
   <li><code>test_rabi.c</code></li>

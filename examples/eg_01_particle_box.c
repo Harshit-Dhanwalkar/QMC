@@ -18,8 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Analytic energy for infinite square well: E_n = n^2 * \pi^2 * \hbar^2/ (2mL^2)
-In atomic units (\hbar=m=1): E_n = n^2 \pi^2/ (2L^2)
+/* Analytic energy for infinite square well:
+   E_n = n^2 * \pi^2 * \hbar^2/ (2 * m * L^2)
+In atomic units (\hbar=m=1):
+   E_n = n^2 * \pi^2 / (2 * L^2)
 */
 static double E_analytic(int n, double L) {
   return (double)(n * n) * M_PI * M_PI / (2.0 * L * L);

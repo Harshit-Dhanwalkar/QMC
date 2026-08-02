@@ -38,6 +38,7 @@ int main(void) {
       double p_diabatic = c_abs2(psi->data[0]);
       printf("   %10.2f  %14.6f  %14.6e\n", alpha, p_diabatic,
              landau_zener_probability(Omega, alpha));
+
       cvector_free(psi);
     }
     printf("   (- Small \\alpha = slow/adiabatic sweep -> follows ground state "
@@ -65,14 +66,14 @@ int main(void) {
       driven_two_level_evolve_lab_frame(psi, omega0, Omega0, omega_L, 0.0, 0.0,
                                         dt, steps);
       double p_lab = c_abs2(psi->data[1]);
-      // RWA-equivalent parameters for THIS convention: \Omega_rwa = \Omega0
+      // RWA-equivalent parameters for this convention: \Omega_rwa = \Omega0
       double p_rwa = rabi_excited_probability(T, Omega0, omega_L - omega0);
       printf("   %10.2f  %14.6f  %14.6f  %10.2e\n", ratios[i], p_lab, p_rwa,
              fabs(p_lab - p_rwa));
       cvector_free(psi);
     }
     printf("   (RWA agrees closely while \\Omega0 << \\omega0, and visibly "
-           "drifts away. The Bloch-Siegert shift as drive gets strong enough "
+           "drifts away.\n The Bloch-Siegert shift as drive gets strong enough "
            "to make counter-rotating term matter)\n");
   }
 

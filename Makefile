@@ -148,7 +148,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/boson_sampling.c \
                $(PHYSICS_DIR)/zeeman.c \
                $(PHYSICS_DIR)/vmc.c \
-               $(PHYSICS_DIR)/dmc.c
+               $(PHYSICS_DIR)/dmc.c \
+               $(PHYSICS_DIR)/pimc.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -189,7 +190,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_26_zeeman \
               $(BUILD_DIR)/eg_27_cap_tdse \
               $(BUILD_DIR)/eg_28_vmc_helium \
-              $(BUILD_DIR)/eg_29_dmc_helium
+              $(BUILD_DIR)/eg_29_dmc_helium \
+              $(BUILD_DIR)/eg_30_pimc_helium
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \

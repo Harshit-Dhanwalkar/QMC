@@ -4,9 +4,10 @@
  *
  * Analytical:
  *   E_n = \hbar \omega (n + 1/2)
- *   \psi_n(x) = (1 / \sqrt(2^n n!)) * (m * \omega / \pi * \hbar)^(1/4)
- *              * H_n(\sqrt(m * \omega / \hbar) x)
- *              * \exp(-m * \omega x^2 / 2 * \hbar)
+ *   \psi_n(x) = (1 / \sqrt(2^n n!))
+ *               * (m * \omega / \pi * \hbar)^(1/4)
+ *               * H_n(\sqrt(m * \omega / \hbar) * x)
+ *               * \exp(-m * \omega x^2 / 2 * \hbar)
  */
 
 #include "../core/constants.h"

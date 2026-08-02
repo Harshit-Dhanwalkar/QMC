@@ -52,8 +52,8 @@ int main(void) {
   double Gamma = fermi_golden_rate(Vpert, 0, 1, rho);
   cmatrix_free(Vpert);
 
-  printf("   Manifold: %d final states over energy window W=%.1f "
-         "(\\rho=%.2f, V_0=%.3f)\n",
+  printf("   Manifold: %d final states over energy window W=%.1f (\\rho=%.2f, "
+         "V_0=%.3f)\n",
          M, W, rho, V0);
   printf("   Fermi's Golden Rule: \\Gamma = 2*\\pi * V_0^2 * \\rho = %.6f\n\n",
          Gamma);
@@ -66,7 +66,7 @@ int main(void) {
     c[k] = CMAT(eig->eigenvectors, 0, k).re;
   }
 
-  printf("   Survival probability P(t) = |<initial|psi(t)>|^2:\n");
+  printf("   Survival probability P(t) = |<initial|\\psi(t)>|^2:\n");
   printf("   %6s  %14s  %14s\n", "t", "exact P(t)", "\\exp(-\\Gamma*t)");
   for (double t = 0.25; t <= 5.0; t += 0.25) {
     double re = 0.0, im = 0.0;
@@ -78,8 +78,8 @@ int main(void) {
     double P = re * re + im * im;
     printf("   %6.2f  %14.6f  %14.6f\n", t, P, exp(-Gamma * t));
   }
-  printf("\n  (short t: quadratic/Zeno transient, not exponential : expected;\n"
-         "    t ~ 2-5: settles onto golden-rule exponential decay)\n");
+  printf("\n  (short t: quadratic/Zeno transient, not exponential : expected; "
+         "t ~ 2-5: settles onto golden-rule exponential decay)\n");
 
   free(c);
   eigen_free(eig);

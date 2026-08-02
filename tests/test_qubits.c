@@ -55,7 +55,7 @@ static int test_product_state_no_entanglement(void) {
   return fail;
 }
 
-// Test 2a: Bell state |Phi+> = (|00>+|11>)/sqrt2 via H(q0) + CNOT(0,1).
+// Test 2a: Bell state |\Phi+> = (|00>+|11>) / \sqrt2 via H(q0) + CNOT(0,1).
 static int test_bell_state(void) {
   int n_qubits = 2;
   cvector_t *psi = qstate_alloc(n_qubits);
@@ -74,13 +74,15 @@ static int test_bell_state(void) {
   cmatrix_t *rho = qstate_reduced_density_single(psi, n_qubits, 0);
   double S = von_neumann_entropy_2x2(rho);
   cmatrix_free(rho);
-  fail |= check_close(S, 1.0, 1e-9, "qubit 0 entanglement entropy (bits)");
 
+  fail |= check_close(S, 1.0, 1e-9, "qubit 0 entanglement entropy (bits)");
   cvector_free(psi);
+
   return fail;
 }
 
-// Test 2b: GHZ state (|000>+|111>)/sqrt2, n=3, via H(q0)+CNOT(0,1)+CNOT(0,2).
+// Test 2b: GHZ state (|000>+|111>) / \sqrt2, n=3, via
+// H(q0)+CNOT(0,1)+CNOT(0,2).
 static int test_ghz_state(void) {
   int n_qubits = 3;
   cvector_t *psi = qstate_alloc(n_qubits);
@@ -112,11 +114,12 @@ static int test_ghz_state(void) {
   }
 
   cvector_free(psi);
+
   return fail;
 }
 
-// Test 4a: deterministic case (product state |000>) : P(0)=1, any valid u must
-// always return outcome 0, and post-measurement state must be exactly same
+// Test 4a: deterministic case (product state |000>) : P(0)=1, any valid `u`
+// must always return outcome 0, and post-measurement state must be exactly same
 // basis state (nothing to collapse away)
 static int test_measure_deterministic_product_state(void) {
   int n_qubits = 3;
@@ -146,9 +149,9 @@ static int test_measure_deterministic_product_state(void) {
 }
 
 // Test 4b: statistical check against a known entangled state (Bell state).
-// Outcomes 1 and 2 have exactly zero amplitude and must NEVER occur; 0 and
-// 3 should split ~50/50 over many independent trials (fresh state rebuilt
-// each trial, since qstate_measure collapses in place).
+// Outcomes 1 and 2 have exactly zero amplitude and must NEVER occur; 0 and 3
+// should split ~50/50 over many independent trials (fresh state rebuilt each
+// trial, since qstate_measure collapses in place).
 static int test_measure_bell_state_statistics(void) {
   int n_qubits = 2;
   int N = 200000;
@@ -172,24 +175,24 @@ static int test_measure_bell_state_statistics(void) {
   double frac0 = (double)counts[0] / N;
   double frac3 = (double)counts[3] / N;
 
-  printf("  counts: [%d, %d, %d, %d]  (expect ~50/50 split on 0 and 3, "
-         "1 and 2 exactly 0)\n",
+  printf("  counts: [%d, %d, %d, %d]  (expect ~50/50 split on 0 and 3, 1 and 2 "
+         "exactly 0)\n",
          counts[0], counts[1], counts[2], counts[3]);
 
   int fail = 0;
   fail |= (counts[1] != 0);
   fail |= (counts[2] != 0);
-  // Binomial std err for N=200000, p=0.5 is ~0.00112; 5-sigma ~ 0.0056
+  // Binomial std err for N=200000, p=0.5 is ~0.00112; 5-\sigma ~ 0.0056
   fail |= check_close(frac0, 0.5, 0.01, "P(outcome=0) empirical frequency");
   fail |= check_close(frac3, 0.5, 0.01, "P(outcome=3) empirical frequency");
 
   return fail;
 }
 
-// Test 4c: collapse correctness on a 3-outcome-capable state (GHZ, n=3) --
-// after measuring, exactly one amplitude must be 1.0 and all others exactly
-// 0.0, and the returned outcome must be one of the two states with nonzero
-// amplitude in the original GHZ superposition (0 or 7).
+// Test 4c: collapse correctness on a 3-outcome-capable state (GHZ, n=3)
+// After measuring, exactly one amplitude must be 1.0 and all others exactly
+// 0.0, and returned outcome must be one of the two states with nonzero
+// amplitude in original GHZ superposition (0 or 7).
 static int test_measure_collapse_exact_ghz(void) {
   rng_state_t rng;
   rng_seed(&rng, 777ULL);
@@ -214,6 +217,7 @@ static int test_measure_collapse_exact_ghz(void) {
       double expected_re = (i == outcome) ? 1.0 : 0.0;
       if (psi->data[i].re != expected_re || psi->data[i].im != 0.0) {
         printf("  FAIL: post-measurement amplitude[%d] not exact\n", i);
+
         fail = 1;
       }
     }
@@ -232,11 +236,11 @@ static int test_measure_invalid_input(void) {
   return fail;
 }
 
-// Test 5a: single-qubit measurement on a product state (H on both qubits,
-// no entanglement). Measuring qubit 0 should give ~50/50, and qubit 1's
-// marginal should remain ~50/50 AFTER qubit 0 is measured, since there's
-// no correlation between them in a product state -- contrast with the
-// Bell-state case below.
+// Test 5a: single-qubit measurement on a product state (H on both qubits, no
+// entanglement).
+// Measuring qubit 0 should give ~50/50, and qubit 1's marginal should remain
+// ~50/50 after qubit 0 is measured, since there's no correlation between them
+// in a product state which is contrast with Bell-state case below.
 static int test_measure_qubit_product_state_uncorrelated(void) {
   int n_qubits = 2;
   int N = 100000;
@@ -272,10 +276,9 @@ static int test_measure_qubit_product_state_uncorrelated(void) {
   return fail;
 }
 
-// Test 5b: single-qubit measurement on a Bell state. Measuring qubit 0
-// forces qubit 1's subsequent measurement to match EXACTLY, every time --
-// this is the physically meaningful signature of entanglement, and the
-// main thing distinguishing this from the product-state test above.
+// Test 5b: single-qubit measurement on a Bell state.
+// Measuring qubit 0 forces qubit 1's subsequent measurement to match exactly,
+// every time.
 static int test_measure_qubit_bell_correlation(void) {
   int N = 5000;
   rng_state_t rng;
@@ -297,8 +300,8 @@ static int test_measure_qubit_bell_correlation(void) {
       mismatches++;
     }
 
-    // After both qubits are measured, the state must be exactly the
-    // corresponding basis state (norm 1, both amplitudes accounted for).
+    // After both qubits are measured, state must be exactly corresponding basis
+    // state (norm 1, both amplitudes accounted for).
     int expected_index = (o0 << 1) | o1; // qubit0=MSB per project convention
     for (int i = 0; i < psi->n; i++) {
       double expected_re = (i == expected_index) ? 1.0 : 0.0;
@@ -318,7 +321,55 @@ static int test_measure_qubit_bell_correlation(void) {
   return fail;
 }
 
-// Test 5c: invalid input handling
+// Test 5c: single-qubit measurement on a 3-qubit GHZ state.
+// Measuring all three qubits one at a time (via qstate_measure_qubit, not
+// full-register qstate_measure) must give same outcome for every qubit, every
+// trial.
+static int test_measure_qubit_ghz_correlation(void) {
+  int N = 5000;
+  rng_state_t rng;
+  rng_seed(&rng, 3333ULL);
+
+  int fail = 0;
+  int mismatches = 0;
+
+  for (int t = 0; t < N; t++) {
+    int n_qubits = 3;
+    cvector_t *psi = qstate_alloc(n_qubits);
+    qstate_apply_gate1(psi, n_qubits, 0, hadamard_gate);
+    qstate_apply_cnot(psi, n_qubits, 0, 1);
+    qstate_apply_cnot(psi, n_qubits, 0, 2);
+
+    int o0 = qstate_measure_qubit(psi, n_qubits, 0, rng_uniform(&rng));
+    int o1 = qstate_measure_qubit(psi, n_qubits, 1, rng_uniform(&rng));
+    int o2 = qstate_measure_qubit(psi, n_qubits, 2, rng_uniform(&rng));
+
+    if (o0 != o1 || o1 != o2) {
+      mismatches++;
+    }
+
+    // After all three qubits are measured, state must be exactly corresponding
+    // basis state.
+    int expected_index = (o0 << 2) | (o1 << 1) | o2;
+    for (int i = 0; i < psi->n; i++) {
+      double expected_re = (i == expected_index) ? 1.0 : 0.0;
+      if (fabs(psi->data[i].re - expected_re) > 1e-9 ||
+          fabs(psi->data[i].im) > 1e-9) {
+        fail = 1;
+      }
+    }
+
+    cvector_free(psi);
+  }
+
+  printf("  mismatches among q0/q1/q2 outcomes: %d / %d (expect 0)\n",
+         mismatches, N);
+  fail |= (mismatches != 0);
+
+  return fail;
+}
+
+// Test 5d: invalid input handling
 static int test_measure_qubit_invalid_input(void) {
   int fail = 0;
   fail |= (qstate_measure_qubit(NULL, 2, 0, 0.5) != -1);
@@ -326,8 +377,7 @@ static int test_measure_qubit_invalid_input(void) {
   cvector_t *psi = qstate_alloc(2);
   fail |= (qstate_measure_qubit(psi, 2, -1, 0.5) != -1); // target < 0
   fail |= (qstate_measure_qubit(psi, 2, 2, 0.5) != -1);  // target >= n_qubits
-  fail |= (qstate_measure_qubit(psi, 3, 0, 0.5) != -1);  // dimension mismatch
-                                                         // (psi->n=4 != 2^3)
+  fail |= (qstate_measure_qubit(psi, 3, 0, 0.5) !=-1);   // dimension mismatch (\psi->n=4 != 2^3)
   cvector_free(psi);
 
   return fail;
@@ -340,6 +390,7 @@ static void demo_exponential_cost(void) {
   for (int n = 2; n <= 14; n += 2) {
     long long dim = 1LL << n;
     double mb = (double)(dim * sizeof(complex_t)) / (1024.0 * 1024.0);
+
     printf("  %8d  %14lld  %8.4f\n", n, dim, mb);
   }
 }
@@ -373,6 +424,9 @@ int main(void) {
 
   printf("Single-qubit measurement: Bell state correlation:\n");
   failed += test_measure_qubit_bell_correlation();
+
+  printf("Single-qubit measurement: GHZ (3-qubit) correlation:\n");
+  failed += test_measure_qubit_ghz_correlation();
 
   printf("Single-qubit measurement: invalid input handling:\n");
   failed += test_measure_qubit_invalid_input();

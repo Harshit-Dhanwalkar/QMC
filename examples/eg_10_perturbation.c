@@ -19,7 +19,8 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Non‑degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
+  printf(
+      " > Non‑degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
 
   // Parameters (atomic units: \hbar=m=\omega=1)
   double omega = 1.0;
@@ -37,7 +38,8 @@ int main(void) {
     return 1;
   }
 
-  // Build unperturbed Hamiltonian: H_0 = -0.5 d^2/dx^2 + 0.5  \omega^2 x^2
+  // Build unperturbed Hamiltonian: H_0 = -(1/2) * d^2/dx^2 + (1/2) * \omega^2 *
+  // x^2
   double coeff = -hbar * hbar / (2.0 * m * dx * dx);
   cmatrix_t *H_0 = cmatrix_alloc(N, N);
   if (!H_0) {
@@ -69,10 +71,10 @@ int main(void) {
     return 1;
   }
 
-  // Build perturbation matrix V' = \lambda x^4 in the basis of H_0 eigenstates
-  // Compute <n|V'|n> by integrating
+  // Build perturbation matrix V' = \lambda * x^4 in the basis of H_0 eigenstates 
+  // Compute <n|V'|n> by integrating.
   // Compute first-order correction by numerical integration:
-  // E1 = <\phi_n|\lambda x^4|\phi_n>.
+  //    E1 = <\phi_n|\lambda x^4|\phi_n>.
   // TODO: Use perturb_nondeg which expects V matrix in eigenbasis.
   // HACK: For simplicity, compute directly.
 
@@ -113,8 +115,8 @@ int main(void) {
     double E1 = lambda * x4_expect;
     double E0_analytical = hbar * omega * (n + 0.5);
 
-    // Numerical solution: build H = H_0 + \lambda x^4 and diagonalise
-    // For each state by building full H and re-diagonalising
+    // Numerical solution: build H = H_0 + \lambda x^4 and diagonalise.
+    // For each state by building full H and re-diagonalising.
     // Reuse H_0 and add perturbation.
     cmatrix_t *H_full = cmatrix_copy(H_0);
     if (!H_full) {

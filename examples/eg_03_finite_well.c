@@ -1,12 +1,12 @@
 /*
  * Finite Square Well - Bound States vs Well Depth
  *
- * Sweeps V_0 from 0 to V_max and finds bound state energies numerically.
- * Shows how states appear as V_0 increases - each new bound state appears
- * when V_0 crosses threshold, visible as spike in E(V_0) curves.
- *
- *   V(x) = -V_0  for |x| <= a,   else 0
- *   Analytic threshold for n-th bound state: V_0^n = (2n-1)^2 * \pi^2 /(8 *
+ * Sweeps V_0 from 0 to V_max and finds bound state energies numerically. Shows
+ * how states appear as V_0 increases - each new bound state appears when V_0
+ * crosses threshold, visible as spike in E(V_0) curves.
+ *     V(x) = -V_0     for |x| <= a, else 0
+ * Analytic threshold for n-th bound state:
+ *     V_0^n = (2n-1)^2 * \pi^2 /(8 *
  *   a^2) (in natural units \hbar = 2m = 1)
  *
  * Method: finite-difference tridiagonal eigensolver on x \in [-L, L].

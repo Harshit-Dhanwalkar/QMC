@@ -47,7 +47,7 @@ int main(void) {
   // Initial Gaussian wave packet
   double x0 = -4.0;   // centre
   double sigma = 0.5; // width
-  double k0 = 3.0;    // mean momentum (E_kin = k0^2/2)
+  double k0 = 3.0;    // mean momentum (E_kin = k0^2 / 2)
 
   cvector_t *psi = cvector_alloc(N);
   double norm = 0.0;
@@ -176,7 +176,9 @@ int main(void) {
 
   /* Analytic WKB transmission (thick barrier, E < V0):
    * T_WKB = \exp(-2 * \kappa * L)
-   * Where \kappa = \sqrt(2m(V0-E))/\hbar, L=b-a
+   * Where
+   *  - \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar,
+   *  - L =b - a
    */
   double E_kin = k0 * k0 / 2.0;
   if (E_kin < V0) {

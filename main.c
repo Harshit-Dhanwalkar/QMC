@@ -47,6 +47,7 @@ static const demo_entry_t demos[] = {
      "Complex absorbing potential + time-dependent V(x,t)"},
     {"build/eg_28_vmc_helium", "Variational Monte Carlo (helium)"},
     {"build/eg_29_dmc_helium", "Diffusion Monte Carlo (helium)"},
+    {"build/eg_30_pimc_helium", "Path Integral Monte Carlo (helium)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

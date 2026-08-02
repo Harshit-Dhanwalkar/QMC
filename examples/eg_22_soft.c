@@ -1,9 +1,9 @@
 /*
  * Split-Operator Fourier Transform (SOFT) Method - 2D and 3D
  *
- * schrodinger.c's evolve_tdse_split_step handles 1D. Real wavepacket
- * dynamics, scattering off a 2D barrier, a particle in a 2D/3D trap
- * needs more than one dimension.
+ * schrodinger.c's evolve_tdse_split_step handles 1D. Real wavepacket dynamics,
+ * scattering off a 2D barrier, a particle in a 2D/3D trap needs more than one
+ * dimension.
  */
 
 #include "../core/complex.h"
@@ -87,8 +87,8 @@ int main(void) {
   printf("\n");
 
   // 2. HO coherent state: no spreading, exact classical orbit
-  printf("   2D harmonic-oscillator coherent state (exact Ehrenfest orbit, "
-         "no spreading):\n");
+  printf("   2D harmonic-oscillator coherent state (exact Ehrenfest orbit, no "
+         "spreading):\n");
   printf("   %6s  %10s  %10s  %10s  %10s\n", "t", "<x>",
          "x_0 * \\cos(\\omega * t)", "<y>", "y_0 * \\cos(\\omega * t)");
   {
@@ -151,6 +151,7 @@ int main(void) {
 
     printf("     (final norm: %.8f : should stay 1.0 throughout)\n",
            grid_norm(psi, dx * dy));
+
     cvector_free(psi);
     free(V);
     free(x);
