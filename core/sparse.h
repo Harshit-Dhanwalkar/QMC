@@ -30,13 +30,29 @@ static inline void sparse_mv_hermitian(const sparse_matrix_t *A,
 }
 
 /* Lanczos for lowest eigenvalues */
-// HACK: stub for now */
 typedef struct {
   int n;
   double *values;
   cmatrix_t *vectors;
 } lanczos_result_t;
 
+/*
+ * Lanczos iteration for k algebraically lowest eigenvalues/vectors of Hermitian
+ * sparse matrix A, via a real tridiagonal Krylov projection with full
+ * reorthogonalization.
+ *
+ * k       : number of lowest eigenvalues wanted.(1 <= k <= A->nrows)
+ * max_iter: Lanczos steps to run (>= k); internally capped at A->nrows, since
+ *           the Krylov subspace can't exceed problem dimension.
+ * tol     : breakdown threshold for residual norm \beta_j; if \beta_j falls
+ *           below this, invariant subspace found so far is used as-is.
+ *
+ * Returns NULL on invalid input, allocation failure, or if Krylov subspace
+ * collapses (invariant subspace found) before k directions have been generated.
+ * Otherwise returns a lanczos_result_t with k lowest eigenvalues (ascending)
+ * and their eigenvectors as columns of an n x k cmatrix_t. Free with
+ * lanczos_free.
+ */
 lanczos_result_t *lanczos_eigs(sparse_matrix_t *A, int k, int max_iter,
                                double tol);
 void lanczos_free(lanczos_result_t *res);

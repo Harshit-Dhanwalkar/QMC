@@ -127,6 +127,7 @@ make clean
   <li><code>test_hydrogen.c</code></li>
   <li><code>test_identical.c</code></li>
   <li><code>test_klein_gordon.c</code></li>
+  <li><code>test_lanczos.c</code></li>
   <li><code>test_lindblad.c</code></li>
   <li><code>test_matrix.c</code></li>
   <li><code>test_numerov.c</code></li>
@@ -140,10 +141,10 @@ make clean
   <li><code>test_scattering.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
+  <li><code>test_tridiag_eigvals.c</code></li>
   <li><code>test_vmc.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
-  <li><code>test_tridiag_eigvals.c</code></li>
 </ul>
 </details>
 
