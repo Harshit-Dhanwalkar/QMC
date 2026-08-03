@@ -49,6 +49,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_29_dmc_helium", "Diffusion Monte Carlo (helium)"},
     {"build/eg_30_pimc_helium", "Path Integral Monte Carlo (helium)"},
     {"build/eg_31_vqe", "Variational Quantum Eigensolver"},
+    {"build/eg_32_mp2", "MP2 correlation energy (beyond Hartree-Fock)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
