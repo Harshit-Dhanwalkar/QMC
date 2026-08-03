@@ -8,7 +8,7 @@ restricted.
 #include <math.h>
 #include <stdlib.h>
 
-// (ia|jb) = int u_i(r) u_a(r) Y0_jb(r) dr
+// (ia|jb) = \int u_i(r) u_a(r) Y0_jb(r) dr
 static double two_electron_integral(const double *r, int N, double dr,
                                     const double *ui, const double *ua,
                                     const double *uj, const double *ub,
