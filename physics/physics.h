@@ -35,6 +35,7 @@
 #include "hydrogen.h"
 #include "identical.h"
 #include "lindblad.h"
+#include "mp2.h"
 #include "perturbation.h"
 #include "pimc.h"
 #include "potentials.h"

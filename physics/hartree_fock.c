@@ -33,13 +33,14 @@ static void normalize_u(double *u, int N, double dr) {
  * a spherical charge density proportional to u_a(r)u_b(r), and (for a=b)
  * reduces to "charge enclosed / r + charge outside" shell-theorem formula.
  */
-static void compute_Y0(const double *r, int N, double dr, const double *ua,
-                       const double *ub, double *Y0_out) {
+void compute_Y0(const double *r, int N, double dr, const double *ua,
+                const double *ub, double *Y0_out) {
   double *inner = malloc(N * sizeof *inner);
   double *outer = malloc(N * sizeof *outer);
   if (!inner || !outer) {
     free(inner);
     free(outer);
+
     for (int i = 0; i < N; i++) {
       Y0_out[i] = 0.0;
     }
@@ -74,7 +75,8 @@ static void compute_Y0(const double *r, int N, double dr, const double *ua,
  * Dense real-symmetric (stored as complex-Hermitian, imaginary parts 0)
  * Fock matrix on the radial grid:
  *   F = T + V_nuc + \sum_k 2 * Y0_kk(r) * \delta_ab - \sum_k K_k(a,b)
- *       K_k(a,b) = dr * u_k(r_a) * u_k(r_b) / max(r_a, r_b)
+ *  Where
+ *   K_k(a,b) = dr * u_k(r_a) * u_k(r_b) / max(r_a, r_b)
  * with Dirichlet boundary conditions u(r[0]) = u(r[N-1]) = 0 enforced by fully
  * decoupling boundary rows/columns.
  */
@@ -104,11 +106,13 @@ static cmatrix_t *build_fock_matrix(const double *r, int N, double dr, double Z,
   double *Y0 = malloc(N * sizeof *Y0);
   if (!Y0) {
     cmatrix_free(F);
+
     return NULL;
   }
 
   for (int k = 0; k < n_orbitals; k++) {
     compute_Y0(r, N, dr, u[k], u[k], Y0);
+
     for (int i = 0; i < N; i++) {
       CMAT(F, i, i) = c_add(CMAT(F, i, i), c_real(2.0 * Y0[i]));
     }
@@ -188,6 +192,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
     if (eig0) {
       eigen_free(eig0);
     }
+
     free_orbital_arrays(u, n_orbitals);
 
     return NULL;
@@ -200,6 +205,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
 
     normalize_u(u[k], N, dr);
   }
+
   eigen_free(eig0);
 
   double *orbital_energies = malloc(n_orbitals * sizeof(double));
@@ -226,6 +232,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
       if (eig) {
         eigen_free(eig);
       }
+
       free_orbital_arrays(u, n_orbitals);
       free(orbital_energies);
 
@@ -238,6 +245,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
       for (int i = 0; i < N; i++) {
         u_new[i] = CMAT(eig->eigenvectors, i, k).re;
       }
+
       normalize_u(u_new, N, dr);
 
       // Fix arbitrary overall sign of eigenvector before mixing.
@@ -258,6 +266,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
         if (delta > max_delta) {
           max_delta = delta;
         }
+
         u[k][i] = mixed;
       }
 
@@ -266,6 +275,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
 
       free(u_new);
     }
+
     eigen_free(eig);
 
     if (max_delta < tol) {
@@ -288,6 +298,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
     if (eig_final) {
       eigen_free(eig_final);
     }
+
     free_orbital_arrays(u, n_orbitals);
     free(orbital_energies);
 
@@ -298,9 +309,45 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
     for (int i = 0; i < N; i++) {
       u[k][i] = CMAT(eig_final->eigenvectors, i, k).re;
     }
+
     normalize_u(u[k], N, dr);
     orbital_energies[k] = eig_final->eigenvalues[k];
   }
+
+  int n_virtual = N - n_orbitals;
+  double *virtual_energies =
+      malloc((size_t)n_virtual * sizeof *virtual_energies);
+  cvector_t **virtual_orbitals =
+      malloc((size_t)n_virtual * sizeof *virtual_orbitals);
+
+  if (!virtual_energies || !virtual_orbitals) {
+    free(virtual_energies);
+    free(virtual_orbitals);
+    eigen_free(eig_final);
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
+  for (int k = 0; k < n_virtual; k++) {
+    int col = n_orbitals + k;
+    double *uv = malloc((size_t)N * sizeof *uv);
+    for (int i = 0; i < N; i++) {
+      uv[i] = CMAT(eig_final->eigenvectors, i, col).re;
+    }
+
+    normalize_u(uv, N, dr);
+
+    virtual_orbitals[k] = cvector_alloc(N);
+    for (int i = 0; i < N; i++) {
+      virtual_orbitals[k]->data[i] = c_real(uv[i]);
+    }
+
+    free(uv);
+    virtual_energies[k] = eig_final->eigenvalues[col];
+  }
+
   eigen_free(eig_final);
 
   // Total electronic energy: E = \sum_k 2 * eps_k - \sum_{i,j} (2*J_ij - K_ij)
@@ -358,6 +405,10 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
   }
   free_orbital_arrays(u, n_orbitals);
 
+  res->n_virtual = n_virtual;
+  res->virtual_energies = virtual_energies;
+  res->virtual_orbitals = virtual_orbitals;
+
   return res;
 }
 
@@ -373,6 +424,15 @@ void hf_result_free(hf_result_t *res) {
     }
 
     free(res->orbitals);
+  }
+
+  free(res->virtual_energies);
+  if (res->virtual_orbitals) {
+    for (int k = 0; k < res->n_virtual; k++) {
+      cvector_free(res->virtual_orbitals[k]);
+    }
+
+    free(res->virtual_orbitals);
   }
 
   free(res);
