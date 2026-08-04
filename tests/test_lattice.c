@@ -21,7 +21,7 @@ topological edge states).
 #include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
 #include "../physics/lattice.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/vector.h"
+#include "../core/vector.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -58,6 +58,7 @@ static double *diagonalize_sorted(cmatrix_t *H, int n) {
   for (int i = 0; i < n; i++) {
     E[i] = eig->eigenvalues[i];
   }
+
   eigen_free(eig);
 
   return E;
@@ -132,6 +133,7 @@ static void test_ipr_deterministic(void) {
   for (int i = 0; i < n; i++) {
     delta->data[i] = c_zero();
   }
+
   delta->data[3] = c_real(1.0);
   check_close(lattice_ipr(delta), 1.0, 1e-12,
               "delta function: IPR = 1 (maximally localized)");
@@ -167,6 +169,7 @@ static void test_anderson_clean_limit(void) {
       max_err = err;
     }
   }
+
   check_close(max_err, 0.0, 1e-9,
               "disorder_W=0 Anderson chain matches clean open chain exactly");
 
@@ -238,6 +241,7 @@ static void test_ssh_topological_edge_states(void) {
         min_abs_E = fabs(E[i]);
       }
     }
+
     printf("  trivial (t1=1.0,t2=0.3): closest-to-zero |E| = %.6f\n",
            min_abs_E);
     check_true(min_abs_E > 0.3,

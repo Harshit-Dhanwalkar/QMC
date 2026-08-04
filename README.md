@@ -105,7 +105,8 @@ make clean
   <li><code>eg_31_vqe.c</code></li>
   <li><code>eg_32_mp2.c</code></li>
   <li><code>eg_33_lattice.c</code></li>
-  <li><code>eg_34_qec.c</code></li>
+  <li><code>eg_34_quantum_info.c</code></li>
+  <li><code>eg_35_qec.c</code></li>
 </ul>
 </details>
 
@@ -142,6 +143,7 @@ make clean
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>
   <li><code>test_qubits.c</code></li>
+  <li><code>test_quantum_info.c</code></li>
   <li><code>test_rabi.c</code></li>
   <li><code>test_random.c</code></li>
   <li><code>test_rk4.c</code></li>

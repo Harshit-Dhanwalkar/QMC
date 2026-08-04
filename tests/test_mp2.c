@@ -16,7 +16,7 @@ Test: MP2 (s-orbitals-only restricted) second-order perturbation theory.
 #include "../core/utils.h"
 #include "../physics/hartree_fock.h"
 #include "../physics/mp2.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/vector.h"
+#include "../core/vector.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +51,7 @@ static double *make_radial(const double *r, int N, double dr, double a,
     f[i] = r[i] * exp(-a * r[i]) + 0.3 * r[i] * r[i] * exp(-b * r[i]);
     norm_sq += f[i] * f[i] * dr;
   }
+
   double norm = sqrt(norm_sq);
   for (int i = 0; i < N; i++) {
     f[i] /= norm;
@@ -65,7 +66,7 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
 
   hf->n_orbitals = 2;
   hf->N = N;
-  hf->Z = 0.0; /* unused by mp2_correlation_energy */
+  hf->Z = 0.0; // unused by mp2_correlation_energy
   hf->total_energy = 0.0;
   hf->iterations = 0;
   hf->converged = 1;

@@ -51,7 +51,8 @@ static const demo_entry_t demos[] = {
     {"build/eg_31_vqe", "Variational Quantum Eigensolver"},
     {"build/eg_32_mp2", "MP2 correlation energy"},
     {"build/eg_33_lattice", "Tight-binding lattice models (bands, Anderson, SSH)"},
-    {"build/eg_34_qec", "3-qubit quantum error correction (bit-flip, phase-flip)"},
+    {"build/eg_34_quantum_info", "Teleportation, superdense coding, Bell's inequality"},
+    {"build/eg_35_qec", "3-qubit quantum error correction (bit-flip, phase-flip)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
