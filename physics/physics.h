@@ -34,6 +34,7 @@
 #include "helium.h"
 #include "hydrogen.h"
 #include "identical.h"
+#include "lattice.h"
 #include "lindblad.h"
 #include "mp2.h"
 #include "perturbation.h"
