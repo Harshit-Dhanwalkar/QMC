@@ -1,5 +1,17 @@
 # Quantum Mechanics in C
 
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg" alt="License">
+  </a>
+  <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/docs.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/docs.yml?branch=main&label=docs" alt="Docs Deploy Status">
+  </a>
+  <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build%20%26%20tests" alt="CI Status">
+  </a>
+</p>
+
 [![SPDX-License-Identifier](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](LICENSE)
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -51,10 +63,9 @@ make clean
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
 - 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
-- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, MP2 second-order correlation correction, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
-- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer), and quantum information protocols (teleportation, superdense coding, CHSH/Bell inequality violation).
+- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
+- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
-- Condensed Matter: 1D/2D tight-binding lattice models (validated against Bloch's theorem's exact dispersion), Anderson localization from on-site disorder, and the Su-Schrieffer-Heeger model's topological edge states.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - [ ] Optimised linear algebra (LAPACK/BLAS backend).
 
@@ -94,6 +105,7 @@ make clean
   <li><code>eg_31_vqe.c</code></li>
   <li><code>eg_32_mp2.c</code></li>
   <li><code>eg_33_lattice.c</code></li>
+  <li><code>eg_34_qec.c</code></li>
 </ul>
 </details>
 
@@ -128,6 +140,7 @@ make clean
   <li><code>test_perturbation.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
+  <li><code>test_qec.c</code></li>
   <li><code>test_qubits.c</code></li>
   <li><code>test_rabi.c</code></li>
   <li><code>test_random.c</code></li>

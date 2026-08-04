@@ -198,7 +198,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_30_pimc_helium \
               $(BUILD_DIR)/eg_31_vqe \
               $(BUILD_DIR)/eg_32_mp2 \
-              $(BUILD_DIR)/eg_33_lattice
+              $(BUILD_DIR)/eg_33_lattice \
+              $(BUILD_DIR)/eg_34_qec
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -238,7 +239,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_pimc \
               $(BUILD_DIR)/test_vqe \
               $(BUILD_DIR)/test_mp2 \
-              $(BUILD_DIR)/test_lattice
+              $(BUILD_DIR)/test_lattice \
+              $(BUILD_DIR)/test_qec
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
