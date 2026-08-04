@@ -1,5 +1,5 @@
 /*
-Diffusion Monte Carlo for helium ground state.
+Diffusion Monte Carlo for two-electron atoms/ions (He, H-, Li+, Be2+, ...).
 */
 
 #include "dmc.h"
@@ -53,7 +53,7 @@ void dmc_drift_velocity(const vmc_walker_t *w, int which, double Zeff, double b,
   }
 
   double one_plus_bs = 1.0 + b * s;
-  double up = 1.0 / (2.0 * one_plus_bs * one_plus_bs); /* u'(s) */
+  double up = 1.0 / (2.0 * one_plus_bs * one_plus_bs); // u'(s)
 
   if (which == 0) {
     for (int k = 0; k < 3; k++) {
@@ -234,31 +234,42 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
         next->data[next->count] = w;
         next->count++;
       }
-      /* If next->capacity is exhausted, further copies of walker are silently
-       * dropped rather than growing unbounded */
+      /* NOTE: If next->capacity is exhausted, further copies of walker are
+       * silently dropped rather than growing unbounded */
     }
   }
 
-  /* HACK: population control via uniform random subsampling back to
-   * target_population whenever post-branching count exceeds max_population,
-   * Uniform subsampling is simple and unbiased in expectation for
-   * well-equilibrated, reasonably homogeneous walker population, but can
-   * distort statistics if triggered very frequently (i.e. if max_population is
-   * set too close to target_population).*/
   /*
-   * TODO: implement comb/stochastic-reconfiguration resampling if subsampling
-   * frequency turns out to matter in practice for given (\tau,
-   * target_population) choice. A more statistically scheme (e.g. stochastic
-   * reconfiguration / "comb" resampling, which preserves local energy
-   * distribution's shape better than uniform subsampling does).
+   * Population control via comb (systematic) resampling back to
+   * target_population whenever post-branching count exceeds max_population.
    */
   if (next->count > max_population) {
-    for (int i = next->count - 1; i > target_population; i--) {
-      int j = (int)(rng_uniform(rng) * (i + 1));
-      vmc_walker_t tmp = next->data[i];
-      next->data[i] = next->data[j];
-      next->data[j] = tmp;
+    int n_pool = next->count;
+    double step = (double)n_pool / target_population;
+    double offset = rng_uniform(rng) * step;
+
+    vmc_walker_t *resampled =
+        malloc((size_t)target_population * sizeof *resampled);
+    if (resampled) {
+      for (int k = 0; k < target_population; k++) {
+        int idx = (int)(offset + k * step);
+        if (idx >= n_pool) {
+          idx = n_pool - 1; /* floating-point edge-case safety clamp */
+        }
+
+        resampled[k] = next->data[idx];
+      }
+
+      for (int k = 0; k < target_population; k++) {
+        next->data[k] = resampled[k];
+      }
+
+      free(resampled);
     }
+    /* NOTE: If the allocation failed, next->count is still forced down below so
+     * population stays bounded; (rare, transient) walkers left in
+     * data[0..target_population-1] from before this block are used as-is rather
+     * than leaving population control silently skipped. */
 
     next->count = target_population;
   }

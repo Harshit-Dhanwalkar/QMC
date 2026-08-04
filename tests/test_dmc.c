@@ -124,8 +124,9 @@ static void test_dmc_run_accuracy(void) {
              "population control holds near target (200 +/- 20)");
 }
 
-// DMC for a different two-electron ion (Li+, Z=3): must land closer to exact
-// reference than VMC's Li+ estimate does and must respect variational theorem.
+// DMC for a different two-electron ion (Li+, Z=3): must output closer to exact
+// reference than VMC's own Li+ estimate does, and must respect variational
+// theorem.
 static void test_dmc_run_different_ion(void) {
   printf("test_dmc_run_different_ion:\n");
 
@@ -153,10 +154,42 @@ static void test_dmc_run_different_ion(void) {
              "Li+ DMC improves on Li+ VMC estimate (projects toward exact)");
 }
 
+// Stress test for comb-resampling population control: with max_population set
+// close to target_population, population control triggers on nearly every
+// generation instead of occasionally
+static void test_dmc_frequent_resampling(void) {
+  printf("test_dmc_frequent_resampling:\n");
+
+  double Z = 2.0, Zeff = 2.0, b = 0.15;
+  dmc_result_t r = dmc_run(Z, Zeff, b,
+                           /*target_population=*/200,
+                           /*max_population=*/240,
+                           /*tau=*/0.01,
+                           /*n_equilibration=*/500,
+                           /*n_blocks=*/20,
+                           /*block_size=*/200,
+                           /*seed=*/20260803ULL);
+
+  printf("  mixed:  %.6f +- %.6f Hartree  (max_population=240, target=200)\n",
+         r.energy_mixed, r.error_mixed);
+  printf("  mean_population=%.2f  acceptance=%.4f\n", r.mean_population,
+         r.acceptance_rate);
+
+  double E_exact = -2.9037;
+
+  check_close(r.energy_mixed, E_exact, 0.03,
+              "DMC still lands close to exact under frequent population "
+              "control (max_population only 1.2x target)");
+  check_true(
+      fabs(r.mean_population - 200.0) < 15.0,
+      "population control still holds near target under frequent triggering");
+}
+
 int main(void) {
   test_drift_velocity_fixtures();
   test_degenerate_guard();
   test_dmc_run_accuracy();
+  test_dmc_frequent_resampling();
   test_dmc_run_different_ion();
 
   if (failures == 0) {
