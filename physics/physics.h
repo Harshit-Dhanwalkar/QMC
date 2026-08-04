@@ -42,6 +42,7 @@
 #include "potentials.h"
 #include "qec.h"
 #include "qubits.h"
+#include "quantum_info.h"
 #include "rabi.h"
 #include "relativistic.h"
 #include "scattering.h"
