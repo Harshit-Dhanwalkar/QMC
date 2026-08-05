@@ -41,6 +41,7 @@
 #include "pimc.h"
 #include "potentials.h"
 #include "qec.h"
+#include "quantum_algorithms.h"
 #include "qubits.h"
 #include "quantum_info.h"
 #include "rabi.h"
