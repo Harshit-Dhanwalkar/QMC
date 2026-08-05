@@ -107,6 +107,7 @@ make clean
   <li><code>eg_33_lattice.c</code></li>
   <li><code>eg_34_quantum_info.c</code></li>
   <li><code>eg_35_qec.c</code></li>
+  <li><code>eg_36_quantum_algorithms.c</code></li> </ul>
 </ul>
 </details>
 
@@ -141,6 +142,7 @@ make clean
   <li><code>test_perturbation.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
+  <li><code>test_quantum_algorithms.c</code></li>
   <li><code>test_qec.c</code></li>
   <li><code>test_qubits.c</code></li>
   <li><code>test_quantum_info.c</code></li>
