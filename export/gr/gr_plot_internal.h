@@ -3,6 +3,10 @@
 
 #include "gr_plot.h"
 #include <stddef.h>
+#include "../../third_party/gr/install/include/gr.h"
+#include "../../third_party/gr/install/include/gr3.h"
+#include "../../third_party/gr/install/include/gks.h"
+
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"

@@ -16,7 +16,7 @@ static void demo_code(qec_code_t code, const char *name,
   complex_t beta = c_new(0.7368487952023082, 0.31153467384692046);
 
   printf("   --- %s code ---\n", name);
-  printf("   Logical qubit: alpha=%.4f  beta=%.4f%+.4fi\n\n", alpha.re, beta.re,
+  printf("   Logical qubit: \\alpha=%.4f  \\beta=%.4f%+.4fi\n\n", alpha.re, beta.re,
          beta.im);
 
   for (int e = -1; e < 3; e++) {
@@ -34,7 +34,7 @@ static void demo_code(qec_code_t code, const char *name,
     } else {
       printf("corrected qubit %d      ", r.corrected_qubit);
     }
-    printf("recovered: alpha=%.4f beta=%.4f%+.4fi\n", r.recovered_alpha.re,
+    printf("recovered: \\alpha=%.4f \\beta=%.4f%+.4fi\n", r.recovered_alpha.re,
            r.recovered_beta.re, r.recovered_beta.im);
   }
 

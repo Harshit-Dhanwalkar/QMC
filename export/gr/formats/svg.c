@@ -3,6 +3,7 @@
  */
 
 #include "../gr_plot_internal.h"
+#include "../gr_plot.h"
 #include <stdlib.h>
 
 int gr_plot_svg(const char *filename, const double *x, const double **ys,

@@ -9,6 +9,7 @@
 
 #include "../gr_plot.h"
 #include "../gr_plot_internal.h"
+#include "../../../third_party/gr/install/include/gr.h"
 
 int gr_plot_interactive(const double *x, const double **ys, int n_series,
                         int n_pts, const char **labels,

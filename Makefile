@@ -1,5 +1,6 @@
-CC     = gcc
+CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
+# CFLAGS += -Wno-error=implicit-function-declaration
 CFLAGS += -fsanitize=address -g
 CFLAGS += -MMD -MP
 

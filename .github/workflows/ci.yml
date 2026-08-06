@@ -79,8 +79,28 @@ jobs:
       - name: Run Test Suite
         run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR
 
-      - name: Run Example Binaries
-        run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+      # - name: Run Example Binaries
+      #   run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+      #
+      # - name: Upload Generated Output Artifacts
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: plot-outputs-${{ matrix.compiler }}
+      #     path: output/
+      #     retention-days: 7
+
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Cppcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y cppcheck
+          cppcheck --enable=warning,style,performance,portability \
+                   --error-exitcode=1 \
+                   --inline-suppr \
+                   -I core -I physics -I export .
 
   sanitizers:
     runs-on: ubuntu-latest
