@@ -13,11 +13,11 @@
  * Coulomb singularity: bare Coulomb potential is singular at r=0, and naive
  * discretized (primitive or higher-order) action applied directly to it
  * produces a "path collapse" catastrophe when a bead's random walk brings two
- * charges close together. This module instead uses Kelbg pair potential (Kelbg
- * 1961; see e.g. Filinov et al., "Dynamical Properties and Plasmon Dispersion
- * of Weakly Degenerate Correlated One-Component Plasma", arXiv:physics/0012027,
- * eq. 10), which is finite at r=0 and reduces to bare Coulomb potential in
- * \tau->0 (high-temperature) limit.
+ * charges close together. This module instead uses Kelbg pair potential (
+ * Reference : Kelbg 1961; see e.g. Filinov et al., "Dynamical Properties and
+ * Plasmon Dispersion of Weakly Degenerate Correlated One-Component Plasma",
+ * arXiv:physics/0012027, eq. 10), which is finite at r=0 and reduces to bare
+ * Coulomb potential in \tau->0 (high-temperature) limit.
  *
  * Sampling: bisection moves (Ceperley 1995), A full-ring bisection resamples an
  * entire electron's P-bead path in one proposal, drawn exactly from
@@ -35,9 +35,10 @@ typedef struct {
 } pimc_walker_t;
 
 typedef struct {
-  double energy;          /* block-averaged thermodynamic energy estimator,
-                             Hartree */
-  double error;           /* standard error on energy */
+  double energy; /* block-averaged thermodynamic energy estimator, Hartree */
+  double error;  /* standard error on energy */
+  double energy_virial;   /* block-averaged virial energy estimator, Hartree */
+  double error_virial;    /* standard error on energy_virial */
   double acceptance_rate; /* fraction of bisection moves accepted */
   int n_blocks;           /* number of statistics blocks completed */
 } pimc_result_t;
@@ -52,8 +53,7 @@ typedef struct {
  *
  *   V_Kelbg(r) = (q/r) * (1 - \exp(-r^2 / \lambda^2)) + q * (\sqrt(\pi) /
  *   \lambda) * erfc(r / \lambda),
- *
- * q = q_a*q_b
+ *   q = q_a*q_b
  *
  * Finite at r=0 (V_Kelbg(0) = q * \sqrt(\pi) / \lambda) reduces to bare Coulomb
  * q/r as \lambda -> 0 (\tau -> 0).
@@ -96,6 +96,30 @@ int pimc_bisection_move(pimc_walker_t *w, int which, double Z, double tau,
  * configurations.
  */
 double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau);
+
+/*
+ * One instantaneous virial energy estimator sample (Hartree) at walker's
+ * current configuration.
+ *
+ * NOTE: An alternative to pimc_energy_estimator with the same expectation value
+ * but substantially lower variance (thermodynamic estimator's kinetic term is a
+ * difference of two large, nearly-cancelling quantities that grows noisier as P
+ * increases, virial estimator sidesteps this entirely by eliminating explicit
+ * kinetic-energy difference term).
+ *
+ * The ring-polymer partition function Z(\beta) is invariant under relabeling
+ * the beads' displacements from each particle's centroid R_c by any scale
+ * factor \lambda, differentiating both sides at \lambda=1 gives an exact
+ * relation between kinetic-energy term and potential-gradient term:
+ *
+ *   E_virial = dN/(2 * \beta)
+ *              + (1/P) \sum_i [ V(R_i, \tau) + \tau * dV / d\tau(R_i, \tau)
+ *                       + (1/2) \sum_p (r_i^p - r_c^p).grad_p V(R_i, \tau) ]
+ *
+ * (\tau-fixed) spatial gradient :
+ *   dV_Kelbg/dr = -q * (1 - \exp(-r^2 / \lambda^2)) / r^2
+ */
+double pimc_virial_estimator(const pimc_walker_t *w, double Z, double tau);
 
 /*
  * Run PIMC for two-electron atom/ion of nuclear charge Z: P beads,

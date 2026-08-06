@@ -83,10 +83,10 @@ void pimc_walker_init(pimc_walker_t *w, rng_state_t *rng, double Z) {
   }
 }
 
-/* Potential action over specific set of bead offsets (from `anchor`,
- * modulo P), for given pair of ring paths. Used to compute old-vs-new
- * potential-action difference for bisection segment without touching rest of
- * the ring. `offsets` has `n_offsets` entries.
+/* Potential action over specific set of bead offsets (from `anchor`, modulo P),
+ * for given pair of ring paths. Used to compute old-vs-new potential-action
+ * difference for bisection segment without touching rest of the ring. `offsets`
+ * has `n_offsets` entries.
  */
 static double segment_potential_action(double (*r1)[3], double (*r2)[3],
                                        const int *offsets, int n_offsets,
@@ -194,6 +194,11 @@ int pimc_bisection_move(pimc_walker_t *w, int which, double Z, double tau,
     }
   }
 
+  /* Potential action only needs the OTHER electron's beads at same * offsets
+   * (its beads don't move, but the e-e Kelbg term depends on both electrons'
+   * positions at each shared bead index). Build a matching "other" segment view
+   * (unchanged, same values for old and new).
+   */
   double (*other_seg)[3] = malloc((size_t)(seg + 1) * sizeof *other_seg);
   if (!other_seg) {
     free(new_seg);
@@ -280,6 +285,7 @@ double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau) {
 
     kinetic_term += (sq1 + sq2) / (2.0 * tau * tau);
   }
+
   kinetic_term /= P;
 
   double potential_term = 0.0;
@@ -294,12 +300,100 @@ double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau) {
     potential_term += kelbg_energy_correction(r2n, lambda_eN, -Z);
     potential_term += kelbg_energy_correction(s, lambda_ee, 1.0);
   }
+
   potential_term /= P;
 
-  /* Leading constant is d * N * P / (2 * \beta), which simplifies to d * N / (2
-   * * \tau) since \beta = P * \tau
+  /* Leading constant is d * N * P / (2 * \beta),
+   *  Which simplifies to d * N / (2 * \tau) since \beta = P * \tau
    */
   return (double)(d * N) / (2.0 * tau) - kinetic_term + potential_term;
+}
+
+/*
+ * dV_Kelbg/dr at fixed \lambda (\tau held fixed): derived term-by-term from
+ *   V_Kelbg(r) = (q/r) * (1 - \exp(-r^2 / \lambda^2))
+ *                  + q * (\sqrt(\pi) / \lambda) * erfc(r / \lambda)
+ */
+static double kelbg_dV_dr(double r, double lambda, double q) {
+  double x = r / lambda;
+
+  return -q * (1.0 - exp(-x * x)) / (r * r);
+}
+
+double pimc_virial_estimator(const pimc_walker_t *w, double Z, double tau) {
+  if (!w) {
+    return 0.0;
+  }
+
+  int P = w->P;
+  double beta = P * tau;
+  double lambda_eN = sqrt(tau);
+  double lambda_ee = sqrt(2.0 * tau);
+
+  const int d = 3;
+  const int N = 2;
+
+  // Each particle's centroid (mean position over its P beads)
+  double c1[3] = {0.0, 0.0, 0.0}, c2[3] = {0.0, 0.0, 0.0};
+  for (int i = 0; i < P; i++) {
+    for (int k = 0; k < 3; k++) {
+      c1[k] += w->r1[i][k];
+      c2[k] += w->r2[i][k];
+    }
+  }
+
+  for (int k = 0; k < 3; k++) {
+    c1[k] /= P;
+    c2[k] /= P;
+  }
+
+  double sum = 0.0;
+  for (int i = 0; i < P; i++) {
+    double r1n = norm3(w->r1[i]);
+    double r2n = norm3(w->r2[i]);
+    double r12v[3] = {w->r1[i][0] - w->r2[i][0], w->r1[i][1] - w->r2[i][1],
+                      w->r1[i][2] - w->r2[i][2]};
+    double s = norm3(r12v);
+
+    // Same (V + \tau * dV / d\tau) potential term the thermodynamic estimator
+    // uses
+    double vterm = kelbg_energy_correction(r1n, lambda_eN, -Z) +
+                   kelbg_energy_correction(r2n, lambda_eN, -Z) +
+                   kelbg_energy_correction(s, lambda_ee, 1.0);
+
+    // grad_1 V and grad_2 V of the total potential at this bead (plain spatial
+    // gradient, (\tau / \lambda) held fixed).
+    double dV_dr1 = kelbg_dV_dr(r1n, lambda_eN, -Z);
+    double dV_ds = kelbg_dV_dr(s, lambda_ee, 1.0);
+    double dV_dr2 = kelbg_dV_dr(r2n, lambda_eN, -Z);
+
+    double grad1[3], grad2[3];
+    for (int k = 0; k < 3; k++) {
+      double r1hat = w->r1[i][k] / r1n;
+      double shat = r12v[k] / s;
+      grad1[k] = dV_dr1 * r1hat + dV_ds * shat;
+    }
+
+    for (int k = 0; k < 3; k++) {
+      double r2hat = w->r2[i][k] / r2n;
+      double shat = r12v[k] / s; // d(s)/d(r2) = -shat, sign folded in below
+      grad2[k] = dV_dr2 * r2hat - dV_ds * shat;
+    }
+
+    double gterm = 0.0;
+    for (int k = 0; k < 3; k++) {
+      gterm += (w->r1[i][k] - c1[k]) * grad1[k];
+      gterm += (w->r2[i][k] - c2[k]) * grad2[k];
+    }
+
+    gterm *= 0.5;
+
+    sum += vterm + gterm;
+  }
+
+  sum /= P;
+
+  return (double)(d * N) / (2.0 * beta) + sum;
 }
 
 pimc_result_t pimc_run(double Z, int P, double tau, int level,
@@ -343,7 +437,10 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
   }
 
   double *block_means = malloc((size_t)n_blocks * sizeof(double));
-  if (!block_means) {
+  double *block_means_virial = malloc((size_t)n_blocks * sizeof(double));
+  if (!block_means || !block_means_virial) {
+    free(block_means);
+    free(block_means_virial);
     pimc_walker_free(w);
 
     return result;
@@ -351,47 +448,60 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
 
   for (int blk = 0; blk < n_blocks; blk++) {
     double sum_E = 0.0;
-
+    double sum_E_virial = 0.0;
+ 
     for (int s = 0; s < block_size; s++) {
       for (int m = 0; m < moves_per_sweep_per_electron; m++) {
         accept_sum += pimc_bisection_move(w, 0, Z, tau, level, &rng);
         accept_sum += pimc_bisection_move(w, 1, Z, tau, level, &rng);
         move_count += 2;
       }
-
+ 
       sum_E += pimc_energy_estimator(w, Z, tau);
+      sum_E_virial += pimc_virial_estimator(w, Z, tau);
     }
-
+ 
     block_means[blk] = sum_E / block_size;
+    block_means_virial[blk] = sum_E_virial / block_size;
   }
-
-  double mean = 0.0;
+ 
+  double mean = 0.0, mean_virial = 0.0;
   for (int blk = 0; blk < n_blocks; blk++) {
     mean += block_means[blk];
+    mean_virial += block_means_virial[blk];
   }
   mean /= n_blocks;
-
-  double err = 0.0;
+  mean_virial /= n_blocks;
+ 
+  double err = 0.0, err_virial = 0.0;
   if (n_blocks > 1) {
-    double var = 0.0;
+    double var = 0.0, var_virial = 0.0;
+
     for (int blk = 0; blk < n_blocks; blk++) {
       double d = block_means[blk] - mean;
       var += d * d;
+      double dv = block_means_virial[blk] - mean_virial;
+      var_virial += dv * dv;
     }
 
     var /= (n_blocks - 1);
+    var_virial /= (n_blocks - 1);
     err = sqrt(var / n_blocks);
+    err_virial = sqrt(var_virial / n_blocks);
   }
-
+ 
   free(block_means);
-
+  free(block_means_virial);
+ 
   result.energy = mean;
   result.error = err;
+  result.energy_virial = mean_virial;
+  result.error_virial = err_virial;
   result.n_blocks = n_blocks;
   result.acceptance_rate =
       (move_count > 0) ? (double)accept_sum / move_count : 0.0;
-
+ 
   pimc_walker_free(w);
-
+ 
   return result;
 }

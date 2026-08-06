@@ -3,14 +3,14 @@ Test: Path Integral Monte Carlo for helium ground state (Kelbg-regularized
 Coulomb, bisection sampling).
 
 1. kelbg_potential / kelbg_energy_correction at fixed (r, \lambda, q) must match
-independently-derived closed-form values - deterministic, no MC noise.
+   independently-derived closed-form values - deterministic, no MC noise.
 2. Kelbg potential must be finite at r=0 and must reduce to the bare Coulomb
-potential q/r as \lambda -> 0 (\tau -> 0 high-temperature limit).
+   potential q/r as \lambda -> 0 (\tau -> 0 high-temperature limit).
 3. Zero-charge sanity check: q=0 must give exactly V=0 for both functions, at
-any r and \lambda (confirms charge scaling isn't accidentally offset).
+   any r and \lambda (confirms charge scaling isn't accidentally offset).
 4. Invalid-input / edge-case handling for allocation and bisection moves.
 5. Full pimc_run output close to exact helium ground state energy (-2.9037
-Hartree) at validated (P, \tau, level) parameters, with reasonable acceptance
+   Hartree) at validated (P, \tau, level) parameters, with reasonable acceptance
 rate.
 */
 
@@ -115,6 +115,7 @@ static void test_walker_alloc_and_init(void) {
       }
     }
   }
+
   check_true(all_finite, "initialized walker has all-finite bead positions");
 
   pimc_walker_free(w);
@@ -140,7 +141,7 @@ static void test_bisection_invalid_input(void) {
   pimc_walker_free(w);
 }
 
-// Full run at validated (P, \\tau, level) parameters
+// Full run at validated (P, \tau, level) parameters
 static void test_pimc_run_helium_accuracy(void) {
   printf("test_pimc_run_helium_accuracy:\n");
 
@@ -152,19 +153,76 @@ static void test_pimc_run_helium_accuracy(void) {
 
   pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 909090ULL);
 
-  printf("  P=%d tau=%.5f beta=%.2f: E=%.6f +- %.6f  acceptance=%.4f  "
-         "n_blocks=%d\n",
-         P, tau, P * tau, r.energy, r.error, r.acceptance_rate, r.n_blocks);
+  printf("  P=%d \\tau=%.5f \\beta=%.2f: E=%.6f +- %.6f  E_virial=%.6f +- %.6f "
+         "acceptance=%.4f  n_blocks=%d\n",
+         P, tau, P * tau, r.energy, r.error, r.energy_virial, r.error_virial,
+         r.acceptance_rate, r.n_blocks);
 
   double E_exact = -2.9037;
 
   check_true(r.n_blocks == 40, "requested number of blocks completed");
   check_true(r.acceptance_rate > 0.3,
-             "bisection acceptance stays well above the near-zero "
-             "pathology a naive full-ring move shows at this P");
+             "bisection acceptance stays well above near-zero pathology a "
+             "naive full-ring move shows at this P");
 
   check_close(r.energy, E_exact, 0.4,
               "PIMC energy lands close to exact helium ground state");
+  check_close(r.energy_virial, E_exact, 0.4,
+              "PIMC virial energy lands close to exact helium ground state");
+}
+
+/* NOTE: The virial estimator (pimc_virial_estimator) is a different formula
+ * from the thermodynamic one (pimc_energy_estimator), derived independently via
+ * a coordinate-rescaling argument. Measured on the same sampled configurations,
+ * both must agree within their combined statistical error
+ */
+static void test_virial_matches_thermodynamic(void) {
+  printf("test_virial_matches_thermodynamic:\n");
+
+  double Z = 2.0;
+  double beta = 8.0;
+  int P = 256;
+  double tau = beta / P;
+  int level = 4;
+
+  pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 20260805ULL);
+
+  double diff = fabs(r.energy - r.energy_virial);
+  double combined_err =
+      sqrt(r.error * r.error + r.error_virial * r.error_virial);
+
+  printf("  thermodynamic: %.6f +- %.6f\n", r.energy, r.error);
+  printf("  virial:        %.6f +- %.6f\n", r.energy_virial, r.error_virial);
+  printf("  |diff|=%.6f  combined_err (1\\sigma)=%.6f\n", diff, combined_err);
+
+  check_true(diff < 4.0 * combined_err,
+             "thermodynamic and virial estimators agree within their combined "
+             "statistical error (cross-validation of the independently-derived "
+             "virial formula)");
+}
+
+/* NOTE: The motivation for virial estimator is lower variance than
+ * thermodynamic one at same sample size.
+ */
+static void test_virial_lower_variance(void) {
+  printf("test_virial_lower_variance:\n");
+
+  double Z = 2.0;
+  double beta = 8.0;
+  int P = 256;
+  double tau = beta / P;
+  int level = 4;
+
+  pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 777333ULL);
+
+  printf("  error (thermodynamic) = %.6f\n", r.error);
+  printf("  error (virial)        = %.6f\n", r.error_virial);
+  printf("  variance ratio (thermo/virial) = %.2f\n",
+         (r.error / r.error_virial) * (r.error / r.error_virial));
+
+  check_true(r.error_virial < r.error,
+             "virial estimator has lower standard error than the "
+             "thermodynamic estimator on the same run");
 }
 
 static void test_pimc_run_invalid_input(void) {
@@ -186,6 +244,8 @@ int main(void) {
   test_bisection_invalid_input();
   test_pimc_run_invalid_input();
   test_pimc_run_helium_accuracy();
+  test_virial_matches_thermodynamic();
+  test_virial_lower_variance();
 
   if (failures == 0) {
     printf("\nAll test_pimc checks passed.\n");
