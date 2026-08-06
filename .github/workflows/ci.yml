@@ -1,13 +1,12 @@
-name: QMC CI Build
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -17,7 +16,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential cmake gnuplot \
+            build-essential cmake gnuplot clang \
             libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
             libqhull-dev zlib1g-dev \
             libx11-dev libxt-dev libxrender-dev libxext-dev \
@@ -33,13 +32,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: third_party/gr/install
-          key: gr-${{ runner.os }}-${{ steps.gr-sha.outputs.sha }}
+          key: gr-${{ runner.os }}-${{ matrix.compiler }}-${{ steps.gr-sha.outputs.sha }}
 
       - name: Build GR
         if: steps.gr-cache.outputs.cache-hit != 'true'
         run: |
           cmake -S third_party/gr -B third_party/gr/build \
             -Wno-dev \
+            -DCMAKE_C_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc' && 'g++' || 'clang++' }} \
             -DCMAKE_C_FLAGS="-w" \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGR_INSTALL=ON \
@@ -71,7 +72,10 @@ jobs:
           done
 
       - name: Build All
-        run: make all PLOT_BACKEND=GR
+        run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
 
       - name: Run Test Suite
-        run: make run-tests PLOT_BACKEND=GR
+        run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+
+      - name: Run Example Binaries
+        run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR
