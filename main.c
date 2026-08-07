@@ -22,8 +22,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_06_hydrogen", "Hydrogen atom radial solve"},
     {"build/eg_07_central_potential", "General 3D central potential"},
     {"build/eg_08_helium", "Helium ground state (variational)"},
-    {"build/eg_09_identical_particles",
-     "Slater determinants / identical particles"},
+    {"build/eg_09_identical_particles", "Slater determinants / identical particles"},
     {"build/eg_10_perturbation", "Perturbation theory"},
     {"build/eg_11_wkb", "WKB approximation"},
     {"build/eg_12_tunnelling", "Barrier tunnelling"},
@@ -54,6 +53,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_34_quantum_info", "Teleportation, superdense coding, Bell's inequality"},
     {"build/eg_35_qec", "3-qubit quantum error correction (bit-flip, phase-flip)"},
     {"build/eg_36_quantum_algorithms", "Deutsch-Jozsa and Grover's search algorithm"},
+    {"build/eg_37_second_quant", "Second quantization and Jordan-Wigner transformation"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

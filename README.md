@@ -106,6 +106,7 @@ make clean
   <li><code>eg_34_quantum_info.c</code></li>
   <li><code>eg_35_qec.c</code></li>
   <li><code>eg_36_quantum_algorithms.c</code></li> </ul>
+  <li><code>eg_37_second_quant.c</code></li>
 </ul>
 </details>
 
@@ -148,6 +149,7 @@ make clean
   <li><code>test_random.c</code></li>
   <li><code>test_rk4.c</code></li>
   <li><code>test_scattering.c</code></li>
+  <li><code>test_second_quant.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
@@ -163,6 +165,7 @@ make clean
 - Sakurai & Napolitano, Bransden & Joachain, Szabo & Ostlund, Thijssen's
 - Computational Physics, Breuer & Petruccione, Feynman & Hibbs, Taylor's
 - Scattering Theory, Greiner's Relativistic Quantum Mechanics.
+- Quantum Theory of Many-Particle Systems, Fetter & Walecka.
 
 # License and Commercial Use
 
