@@ -125,8 +125,12 @@ void cmatrix_scale(cmatrix_t *m, complex_t s) {
   }
 }
 
-// Dense matrix-vector product y = A*x.
-// Returns a allocated vector, or NULL on dimension mismatch/allocation failure.
+/* Dense matrix-vector product y = A*x (matches sparse_mv's naming/convention
+ * for sparse case).
+ *
+ * Returns a allocated vector, or NULL on dimension  mismatch/allocation
+ * failure.
+ */
 cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x) {
   if (!a || !x || a->ncols != x->n) {
     return NULL;
@@ -139,6 +143,7 @@ cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x) {
 
   for (int i = 0; i < a->nrows; i++) {
     complex_t sum = c_zero();
+
     for (int j = 0; j < a->ncols; j++) {
       sum = c_add(sum, c_mul(CMAT(a, i, j), x->data[j]));
     }
@@ -147,6 +152,27 @@ cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x) {
   }
 
   return y;
+}
+
+/* Element-wise matrix sum c = a + b.
+ *
+ * Returns NULL on dimension mismatch or allocation failure.
+ */
+cmatrix_t *cmatrix_add(const cmatrix_t *a, const cmatrix_t *b) {
+  if (!a || !b || a->nrows != b->nrows || a->ncols != b->ncols) {
+    return NULL;
+  }
+
+  cmatrix_t *c = cmatrix_alloc(a->nrows, a->ncols);
+  if (!c) {
+    return NULL;
+  }
+
+  for (int i = 0; i < a->nrows * a->ncols; i++) {
+    c->data[i] = c_add(a->data[i], b->data[i]);
+  }
+
+  return c;
 }
 
 // LU decomposition (wrapper)
@@ -158,6 +184,7 @@ void cmatrix_lu_decomp(cmatrix_t *a, int *pivot) {
   int *p = lu_decompose(a);
   if (p) {
     memcpy(pivot, p, a->nrows * sizeof(int));
+
     free(p);
   }
 }

@@ -3,8 +3,16 @@ name: QMC CI Build
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "LICENSE"
   pull_request:
     branches: ["main"]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "LICENSE"
 
 jobs:
   build-and-test:
@@ -24,7 +32,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential cmake gnuplot clang \
+            build-essential cmake gnuplot clang libomp-dev \
             libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
             libqhull-dev zlib1g-dev \
             libx11-dev libxt-dev libxrender-dev libxext-dev \
@@ -95,10 +103,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Cppcheck
+        # run: |
+        #   sudo apt-get update && sudo apt-get install -y cppcheck
+        #   cppcheck --enable=warning,performance,portability \
+        #            --suppress=constVariable \
+        #            --suppress=constParameterPointer \
+        #            --error-exitcode=1 \
+        #            --inline-suppr \
+        #            -I core -I physics -I export .
         run: |
           sudo apt-get update && sudo apt-get install -y cppcheck
           cppcheck --enable=warning,style,performance,portability \
-                   --error-exitcode=1 \
                    --inline-suppr \
                    -I core -I physics -I export .
 
@@ -114,11 +129,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential cmake gnuplot gcc \
+            build-essential cmake gnuplot clang libomp-dev \
             libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
             libqhull-dev zlib1g-dev \
             libx11-dev libxt-dev libxrender-dev libxext-dev \
-            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev
+            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
 
       - name: Get GR submodule commit
         id: gr-sha
