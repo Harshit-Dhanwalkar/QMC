@@ -128,6 +128,7 @@ void save_wavefunction(const char *filename, const double *x,
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
+
     return;
   }
 
@@ -146,6 +147,7 @@ void save_eigenvalues(const char *filename, const double *eigenvals, int n) {
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
+
     return;
   }
 

@@ -32,4 +32,11 @@ double std_dev(const double *data, int n);
 /* Matrix column extraction */
 cvector_t *cvector_from_matrix_column(const cmatrix_t *m, int col);
 
+/* File I/O utilities */
+void save_wavefunction(const char *filename, const double *x,
+                       const cvector_t *psi, int n);
+void save_potential(const char *filename, const double *x, const double *V,
+                    int n);
+void save_eigenvalues(const char *filename, const double *eigenvals, int n);
+
 #endif
