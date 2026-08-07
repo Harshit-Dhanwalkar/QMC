@@ -41,15 +41,22 @@ static const char *mpl_ext(plot_format_t fmt) {
 // Builds Python single-quoted string literal
 static void py_repr(char *out, size_t out_size, const char *s) {
   size_t o = 0;
-  if (o + 1 < out_size)
+  if (o + 1 < out_size) {
     out[o++] = '\'';
+  }
+
   for (const char *p = s; *p && o + 2 < out_size; p++) {
-    if (*p == '\\' || *p == '\'')
+    if (*p == '\\' || *p == '\'') {
       out[o++] = '\\';
+    }
+
     out[o++] = *p;
   }
-  if (o + 1 < out_size)
+
+  if (o + 1 < out_size) {
     out[o++] = '\'';
+  }
+
   out[o] = '\0';
 }
 
@@ -64,14 +71,17 @@ static void apply_common_opts(matplotlib_t *mp, const plot_opts_t *opts) {
     py_repr(buf, sizeof buf, opts->title);
     matplotlib_cmd(mp, "plt.title(%s)", buf);
   }
+
   if (opts && opts->xlabel) {
     py_repr(buf, sizeof buf, opts->xlabel);
     matplotlib_cmd(mp, "plt.xlabel(%s)", buf);
   }
+
   if (opts && opts->ylabel) {
     py_repr(buf, sizeof buf, opts->ylabel);
     matplotlib_cmd(mp, "plt.ylabel(%s)", buf);
   }
+
   matplotlib_cmd(mp, "plt.grid(True)");
 }
 
@@ -81,11 +91,13 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
     // TODO: Implement GUI backend
     fprintf(stderr,
             "plot: matplotlib backend does not implement PLOT_FORMAT_WINDOW\n");
+
     return -1;
   }
 
   if (!python3_available()) {
     fprintf(stderr, "plot: python3 not found - skipping '%s'\n", filename);
+
     return -1;
   }
 
@@ -94,19 +106,22 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
             "plot: matplotlib module not importable - skipping '%s'\n"
             "      Install: pip install matplotlib\n",
             filename);
+
     return -1;
   }
 
   matplotlib_t *mp = matplotlib_open();
-  if (!mp)
+  if (!mp) {
     return -1;
+  }
 
   apply_common_opts(mp, opts);
 
   matplotlib_cmd(mp, "x = []");
   matplotlib_cmd(mp, "y = []");
-  for (int i = 0; i < n; i++)
+  for (int i = 0; i < n; i++) {
     matplotlib_cmd(mp, "x.append(%.10e); y.append(%.10e)", x[i], y[i]);
+  }
 
   double lw = (opts && opts->line_width > 0) ? opts->line_width : 2.0;
   if (opts && opts->color) {
@@ -125,6 +140,7 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
   matplotlib_cmd(mp, "plt.close(fig)");
 
   matplotlib_close(mp);
+
   return 0;
 }
 
@@ -137,6 +153,7 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
             "plot: matplotlib backend does not implement PLOT_FORMAT_WINDOW\n");
     return -1;
   }
+
   if (!python3_available() || !matplotlib_module_available()) {
     fprintf(stderr, "plot: python3/matplotlib not available - skipping '%s'\n",
             filename);
@@ -144,21 +161,24 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
   }
 
   matplotlib_t *mp = matplotlib_open();
-  if (!mp)
+  if (!mp) {
     return -1;
+  }
 
   apply_common_opts(mp, opts);
 
   double lw = (opts && opts->line_width > 0) ? opts->line_width : 2.0;
   matplotlib_cmd(mp, "xs = []");
-  for (int i = 0; i < n_pts; i++)
+  for (int i = 0; i < n_pts; i++) {
     matplotlib_cmd(mp, "xs.append(%.10e)", x[i]);
+  }
 
   int any_labels = 0;
   for (int s = 0; s < n_series; s++) {
     matplotlib_cmd(mp, "ys%d = []", s);
-    for (int i = 0; i < n_pts; i++)
+    for (int i = 0; i < n_pts; i++) {
       matplotlib_cmd(mp, "ys%d.append(%.10e)", s, ys[s][i]);
+    }
 
     if (labels && labels[s]) {
       char lbuf[128];
@@ -171,8 +191,9 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
     }
   }
 
-  if (any_labels)
+  if (any_labels) {
     matplotlib_cmd(mp, "plt.legend()");
+  }
 
   char path[512], pbuf[600];
   snprintf(path, sizeof path, "%s/%s.%s", QMC_OUTPUT_DIR, filename,

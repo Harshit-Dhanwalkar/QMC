@@ -21,5 +21,6 @@
 int hdf5_write_1d(const char *filename, const char *dataset, const double *data,
                   size_t len) {
   fprintf(stderr, "HDF5 not is not supported yet.\n");
+
   return -1;
 }

@@ -7,8 +7,8 @@
 
 #include "../gr_plot.h"
 #include "../gr_plot_internal.h"
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int gr_plot_pdf(const char *filename, const double *x, const double **ys,
                 int n_series, int n_pts, const char **labels,

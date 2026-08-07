@@ -24,7 +24,7 @@ typedef struct {
   const char *color; // NULL = default
   double line_width; // 0 = default
   int tex_text; // 1 = render (GR backend only) for title/xlabel/ylabel/legend
-                 // as TeX math 0 = plain text (default).
+                // as TeX math 0 = plain text (default).
 } plot_opts_t;
 
 /*
@@ -43,20 +43,20 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
                const double **ys, int n_series, int n_pts, const char **labels,
                const plot_opts_t *opts);
 
-/* Save x,Re(\psi),Im(\psi),|psi|^2 to CSV */
-#include "../core/vector.h"
-// Save x,V(x) to CSV
+// /* Save x,Re(\psi),Im(\psi),|psi|^2 to CSV */
+// #include "../core/vector.h"
+// // Save x,V(x) to CSV
+// // void save_potential(const char *filename, const double *x, const double *V,
+// //                    int n);
 // void save_potential(const char *filename, const double *x, const double *V,
-//                    int n);
-void save_potential(const char *filename, const double *x, const double *V,
-                    int n);
-
-/* Save eigenvalues to CSV */
-// void save_eigenvalues(const char *filename, const double *E, int n);
-void save_eigenvalues(const char *filename, const double *eigenvals, int n);
-
-/* File I/O - writes to QMC_OUTPUT_DIR/ */
-void save_wavefunction(const char *filename, const double *x,
-                       const cvector_t *psi, int n);
+//                     int n);
+//
+// /* Save eigenvalues to CSV */
+// // void save_eigenvalues(const char *filename, const double *E, int n);
+// void save_eigenvalues(const char *filename, const double *eigenvals, int n);
+//
+// /* File I/O - writes to QMC_OUTPUT_DIR/ */
+// void save_wavefunction(const char *filename, const double *x,
+//                        const cvector_t *psi, int n);
 
 #endif

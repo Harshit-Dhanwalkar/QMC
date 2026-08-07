@@ -2,8 +2,9 @@
  * JPEG output. Same screen-pixel default sizing as png.c.
  */
 
-#include "../gr_plot_internal.h"
 #include "../gr_plot.h"
+#include "../gr_plot_internal.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 int gr_plot_jpeg(const char *filename, const double *x, const double **ys,

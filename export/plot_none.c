@@ -19,6 +19,7 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
   (void)y;
   (void)n;
   (void)opts;
+
   return 0; // silent no-op
 }
 
@@ -33,5 +34,6 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
   (void)n_pts;
   (void)labels;
   (void)opts;
+
   return 0;
 }

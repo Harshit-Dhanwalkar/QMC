@@ -3,9 +3,9 @@
  */
 
 #include "gr_plot.h"
+#include "../../third_party/gr/install/include/gks.h"
+#include "../../third_party/gr/install/include/gr.h"
 #include "gr_plot_internal.h"
-#include <gks.h>
-#include <gr.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,6 +43,7 @@ void gr_auto_range(const double *v, int n, double *lo, double *hi,
     if (v[i] < *lo) {
       *lo = v[i];
     }
+
     if (v[i] > *hi) {
       *hi = v[i];
     }
@@ -52,6 +53,7 @@ void gr_auto_range(const double *v, int n, double *lo, double *hi,
   if (pad < 1e-12) {
     pad = 1.0;
   }
+
   *lo -= pad;
   *hi += pad;
 }
@@ -86,6 +88,7 @@ void gr_draw_labels(const gr_plot_opt_t *opts) {
     if (tex) {
       char buf[160];
       snprintf(buf, sizeof buf, "$%s$", opts->title);
+
       gr_text(0.5, 0.98, buf);
     } else {
       gr_text(0.5, 0.98, (char *)opts->title);
@@ -98,6 +101,7 @@ void gr_draw_labels(const gr_plot_opt_t *opts) {
     if (tex) {
       char buf[160];
       snprintf(buf, sizeof buf, "$%s$", opts->xlabel);
+
       gr_text(0.5, 0.02, buf);
     } else {
       gr_text(0.5, 0.02, (char *)opts->xlabel);
@@ -108,9 +112,11 @@ void gr_draw_labels(const gr_plot_opt_t *opts) {
     gr_setcharheight(0.022);
     gr_setcharup(-1.0, 0.0);
     gr_settextalign(GKS_K_TEXT_HALIGN_CENTER, GKS_K_TEXT_VALIGN_TOP);
+
     if (tex) {
       char buf[160];
       snprintf(buf, sizeof buf, "$%s$", opts->ylabel);
+
       gr_text(0.02, 0.5, buf);
     } else {
       gr_text(0.02, 0.5, (char *)opts->ylabel);
@@ -178,6 +184,7 @@ void gr_draw_series(const double *x, const double **ys, int n_series, int n_pts,
   int base_color = 4;
   if (opts && opts->color) {
     int mapped = gr_color_from_name(opts->color);
+
     if (mapped >= 0) {
       base_color = mapped;
     }
@@ -211,6 +218,7 @@ void gr_draw_series(const double *x, const double **ys, int n_series, int n_pts,
       } else {
         snprintf(lbl, sizeof lbl, "%s", labels[s]);
       }
+
       gr_text(lx + (xmax - xmin) * 0.07, ly, lbl);
     }
   }
@@ -223,7 +231,16 @@ void gr_build_sized_path(char *path, size_t path_size, const char *filename,
                          int default_w, int default_h) {
   int w = (opts && opts->width > 0) ? opts->width : default_w;
   int h = (opts && opts->height > 0) ? opts->height : default_h;
+
+  (void)opts;
+  (void)default_w;
+  (void)default_h;
   snprintf(path, path_size, "%s/%s%s", QMC_OUTPUT_DIR, filename, ext);
+
+  // TEST: For EPS, GR may not support the |WxH suffix; test it without suffix
+  // for EPS.
+  // snprintf(path, path_size, "%s/%s%s|x%d", QMC_OUTPUT_DIR, filename, ext, w,
+  // h);
 }
 
 int gr_emit_single_page(const char *path, const double *x, const double **ys,
@@ -295,6 +312,7 @@ int gr_plot_to_file(const char *filename, gr_format_t format, const double *x,
   if (!filename || !x || !y || n < 2) {
     return -1;
   }
+
   const double *ys[1] = {y};
 
   return dispatch(filename, format, x, ys, 1, n, NULL, opts);

@@ -41,7 +41,7 @@ ifeq ($(PLOT_BACKEND),MATPLOTLIB)
     endif
 endif
 
-# TODO: define macro -DHAVE_LATEX to conditionally compile LaTeX features 
+# TODO: define macro -DHAVE_LATEX to conditionally compile LaTeX features
 LATEX_AVAIL := $(shell command -v pdflatex >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 && echo yes || echo no)
 ifeq ($(LATEX_AVAIL),no)
     $(warning pdflatex or pdftoppm not found in PATH – LaTeX rendering will fail at runtime)
@@ -59,7 +59,7 @@ ifeq ($(PLOT_BACKEND),GR)
                    export/gr/formats/svg.c \
                    export/gr/formats/pdf.c \
                    export/gr/formats/interactive.c
-    PLOT_LIBS    = -lGR -lqhull_r
+    PLOT_LIBS    = -lGR -lGR3 -lqhull_r
     PLOT_CFLAGS  = -DUSE_GR -I$(GR_INC) -Iexport
     PLOT_LDFLAGS = -L$(GR_LIB) -Wl,-rpath,$(GR_LIB) -L/usr/lib/x86_64-linux-gnu
     $(info Plot backend: GR ($(GR_LIB)))

@@ -72,6 +72,8 @@ jobs:
           for file in \
             third_party/gr/install/lib/libGR.so \
             third_party/gr/install/include/gr.h \
+            third_party/gr/install/include/gks.h \
+            third_party/gr/install/include/gr3.h \
             third_party/gr/install/lib/libGR3.so \
             third_party/gr/install/lib/x11plugin.so; do
             if [ -f "$file" ]; then
