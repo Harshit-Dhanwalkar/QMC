@@ -206,7 +206,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_34_quantum_info \
               $(BUILD_DIR)/eg_35_qec \
               $(BUILD_DIR)/eg_36_quantum_algorithms \
-              $(BUILD_DIR)/eg_37_second_quant
+              $(BUILD_DIR)/eg_37_second_quant \
+              $(BUILD_DIR)/eg_38_landau_levels
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \

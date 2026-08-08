@@ -20,8 +20,8 @@ topological edge states).
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
-#include "../physics/lattice.h"
 #include "../core/vector.h"
+#include "../physics/lattice.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -295,6 +295,105 @@ static void test_ssh_topological_edge_states(void) {
   }
 }
 
+static void test_landau_zero_field_matches_plain_square(void) {
+  printf("test_landau_zero_field_matches_plain_square:\n");
+
+  int nx = 6, ny = 6, N = nx * ny;
+  double eps0 = 0.3, t = 1.1;
+
+  // NOTE: \alpha=0 must reduce lattice_build_2d_square_magnetic exactly to
+  // lattice_build_2d_square (all Peierls phases = \exp(0) = 1). Using
+  // LATTICE_OPEN on both sides for a like-for-like comparison: the magnetic
+  // builder is always open in x (required by the Landau gauge choice), so
+  // comparing against a plain square lattice that is periodic in x would differ
+  // by x-wraparound bonds alone
+  cmatrix_t *H_mag =
+      lattice_build_2d_square_magnetic(nx, ny, eps0, t, 0.0, LATTICE_OPEN);
+  cmatrix_t *H_plain = lattice_build_2d_square(nx, ny, eps0, t, LATTICE_OPEN);
+
+  double max_entry_err = 0.0;
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      complex_t a = CMAT(H_mag, i, j);
+      complex_t b = CMAT(H_plain, i, j);
+      double err = c_abs(c_sub(a, b));
+      if (err > max_entry_err) {
+        max_entry_err = err;
+      }
+    }
+  }
+  check_close(max_entry_err, 0.0, 1e-12,
+              "\\alpha=0 magnetic-lattice matrix == plain square-lattice "
+              "matrix, entrywise");
+
+  double *E_num = diagonalize_sorted(H_mag, N);
+  double *E_analytic = malloc((size_t)N * sizeof *E_analytic);
+  lattice_2d_square_analytic(nx, ny, eps0, t, LATTICE_OPEN, E_analytic);
+
+  double max_eig_err = 0.0;
+  for (int i = 0; i < N; i++) {
+    double err = fabs(E_num[i] - E_analytic[i]);
+    if (err > max_eig_err) {
+      max_eig_err = err;
+    }
+  }
+  check_close(max_eig_err, 0.0, 1e-8,
+              "\\alpha=0 eigenvalues match plain-square analytic dispersion");
+
+  free(E_num);
+  free(E_analytic);
+  cmatrix_free(H_mag);
+  cmatrix_free(H_plain);
+}
+
+static void test_landau_hermiticity(void) {
+  printf("test_landau_hermiticity:\n");
+
+  int nx = 10, ny = 10, N = nx * ny;
+  cmatrix_t *H = lattice_build_2d_square_magnetic(nx, ny, 0.0, 1.0, 0.037,
+                                                  LATTICE_PERIODIC);
+
+  double max_err = 0.0;
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      complex_t err = c_sub(CMAT(H, i, j), c_conj(CMAT(H, j, i)));
+      double e = c_abs(err);
+      if (e > max_err) {
+        max_err = e;
+      }
+    }
+  }
+  check_close(max_err, 0.0, 1e-12, "H == H^dagger entrywise (alpha != 0)");
+
+  cmatrix_free(H);
+}
+
+static void test_landau_continuum_limit(void) {
+  printf("test_landau_continuum_limit:\n");
+
+  // NOTE: Weak-field limit: ground Landau level should sit close to
+  // continuum-limit prediction on a lattice much larger than magnetic length ~
+  // 1/\sqrt(2 * \pi * \alpha), away from open-boundary edge-state
+  // contamination.
+  double t = 1.0, alpha = 0.05;
+  int nx = 10, ny = 10, N = nx * ny;
+
+  cmatrix_t *H =
+      lattice_build_2d_square_magnetic(nx, ny, 0.0, t, alpha, LATTICE_PERIODIC);
+  double *E = diagonalize_sorted(H, N);
+
+  double predicted_n0 = lattice_landau_level_energy(0, 0.0, t, alpha);
+  double rel_err = fabs(E[0] - predicted_n0) / fabs(predicted_n0);
+
+  printf("  n=0: numeric=%.6f predicted=%.6f rel_err=%.4f%%\n", E[0],
+         predicted_n0, rel_err * 100.0);
+  check_true(rel_err < 0.02,
+             "n=0 Landau level within 2% of continuum-limit prediction");
+
+  free(E);
+  cmatrix_free(H);
+}
+
 int main(void) {
   test_1d_chain_vs_analytic();
   test_2d_square_vs_analytic();
@@ -302,6 +401,9 @@ int main(void) {
   test_anderson_clean_limit();
   test_anderson_localization_trend();
   test_ssh_topological_edge_states();
+  test_landau_zero_field_matches_plain_square();
+  test_landau_hermiticity();
+  test_landau_continuum_limit();
 
   if (failures == 0) {
     printf("\nAll test_lattice checks passed.\n");

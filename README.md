@@ -107,6 +107,7 @@ make clean
   <li><code>eg_35_qec.c</code></li>
   <li><code>eg_36_quantum_algorithms.c</code></li> </ul>
   <li><code>eg_37_second_quant.c</code></li>
+  <li><code>eg_38_landau_levels.c</code></li>
 </ul>
 </details>
 
