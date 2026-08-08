@@ -46,6 +46,7 @@ int main(void) {
   printf("  ---  -------\n");
   for (int n = 1; n <= 5; n++) {
     double E = (n * n * M_PI * M_PI * hbar * hbar) / (2.0 * m * L * L);
+
     printf("   %2d  %7.4f\n", n, E);
   }
   printf("\n");
@@ -67,6 +68,7 @@ int main(void) {
   for (int i = 0; i < n_interior; i++) {
     diag[i] = 2.0 * coeff;
   }
+
   for (int i = 0; i < n_interior - 1; i++) {
     offdiag[i] = -coeff;
   }
@@ -75,9 +77,11 @@ int main(void) {
   eigen_t *eig = tridiag_eigh(diag, offdiag, n_interior);
   if (!eig) {
     fprintf(stderr, "Eigenvalue decomposition failed\n");
+
     free(x);
     free(diag);
     free(offdiag);
+
     return 1;
   }
 
@@ -89,6 +93,7 @@ int main(void) {
     double E_num = eig->eigenvalues[i];
     double E_ana = (n * n * M_PI * M_PI * hbar * hbar) / (2.0 * m * L * L);
     double err = fabs(E_num - E_ana) / E_ana * 100.0;
+
     printf("   %2d  %7.4f  %7.4f  %6.3f%%\n", n, E_num, E_ana, err);
   }
   printf("\n");
@@ -141,11 +146,13 @@ int main(void) {
     opts.ylabel = "\\psi(x)";
     opts.width = 800;
     opts.height = 600;
+
     plot_line(plot_name, PLOT_FORMAT_PNG, x, y, n_grid, &opts);
 
     free(y);
     cvector_free(psi_full);
     cvector_free(col);
+
     printf("    Saved %s and plot %s.png\n", fname, plot_name);
   }
 
@@ -155,7 +162,9 @@ int main(void) {
   for (int i = 0; i < n_save; i++) {
     E_vals[i] = eig->eigenvalues[i];
   }
+
   save_eigenvalues("infinite_well_energies.dat", E_vals, n_save);
+
   free(E_vals);
 
   // Cleanup

@@ -31,13 +31,15 @@ int main(void) {
 
   int l = 0;   // angular momentum (s-wave)
   int N = 501; // grid points
-  double r_min = 0.0;
+  // double r_min = 0.0;
+  double r_min = 1e-4 * AU_LENGTH; // avoid Coulomb singularity
   double r_max = 20.0 * AU_LENGTH; // 20 Bohr radii
   double dr = (r_max - r_min) / (N - 1);
 
   double *r = linspace(r_min, r_max, N);
   if (!r) {
     fprintf(stderr, "Memory allocation failed\n");
+
     return 1;
   }
 
@@ -48,6 +50,7 @@ int main(void) {
   eigen_t *eig = hydrogen_radial_solve(r, N, l, hbar, mass, e_charge, eps0);
   if (!eig) {
     fprintf(stderr, "Radial solve failed\n");
+
     free(r);
     return 1;
   }
@@ -67,7 +70,6 @@ int main(void) {
 
   // Save radial probability densities for first 3 states
   for (int i = 0; i < 3 && i < eig->n; i++) {
-    // TODO: use save_wavefunction
     char fname[64];
     snprintf(fname, sizeof(fname), "hydrogen_radial_%d.dat", i + 1);
     cvector_t *col = cvector_from_matrix_column(eig->eigenvectors, i);
@@ -82,6 +84,7 @@ int main(void) {
         for (int j = 0; j < N; j++) {
           double R = col->data[j].re; // real for bound states
           double rho = R * R;
+
           fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", r[j], R, rho,
                   r[j] * r[j] * rho);
         }
@@ -97,5 +100,6 @@ int main(void) {
   // Cleanup
   free(r);
   eigen_free(eig);
+
   return 0;
 }

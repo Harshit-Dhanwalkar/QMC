@@ -42,6 +42,7 @@ int main(void) {
   for (int l = 1; l <= 2; l++) {
     int J2_list[4];
     int count = couple_allowed_J(2 * l, 1, J2_list);
+
     printf("   l=%d: allowed J (doubled) =", l);
     for (int i = 0; i < count; i++) {
       printf(" %d", J2_list[i]);
@@ -51,6 +52,7 @@ int main(void) {
     for (int idx = 0; idx < count; idx++) {
       int J_2 = J2_list[idx];
       int M_2 = 1; // M=1/2, always valid for any half-integer J here
+
       cvector_t *v = couple_states(2 * l, 1, J_2, M_2);
       if (!v) {
         continue;

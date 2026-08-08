@@ -35,6 +35,7 @@ int main(void) {
       psi->data[0] = c_real(1.0);
       driven_two_level_evolve(psi, time_fn_linear_ramp, &alpha,
                               time_fn_constant, &Omega, -T, dt, steps);
+
       double p_diabatic = c_abs2(psi->data[0]);
       printf("   %10.2f  %14.6f  %14.6e\n", alpha, p_diabatic,
              landau_zener_probability(Omega, alpha));
@@ -65,6 +66,7 @@ int main(void) {
       psi->data[0] = c_real(1.0);
       driven_two_level_evolve_lab_frame(psi, omega0, Omega0, omega_L, 0.0, 0.0,
                                         dt, steps);
+
       double p_lab = c_abs2(psi->data[1]);
       // RWA-equivalent parameters for this convention: \Omega_rwa = \Omega0
       double p_rwa = rabi_excited_probability(T, Omega0, omega_L - omega0);

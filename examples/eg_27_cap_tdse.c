@@ -38,6 +38,7 @@ int main(void) {
   for (int i = 0; i < N; i++) {
     double dxg = x[i] - x0;
     double env = exp(-dxg * dxg / (4.0 * sigma0 * sigma0));
+
     psi->data[i].re = env * cos(k0 * x[i]);
     psi->data[i].im = env * sin(k0 * x[i]);
   }

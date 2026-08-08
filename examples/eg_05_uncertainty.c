@@ -3,9 +3,9 @@
  *
  * The harmonic-oscillator ground state:
  *   \psi(x) = (m * \omega/(\pi * \hbar))^(1/4) * \exp(-m * \omega * x^2/(2 *
- * \hbar))
- * is theoretical minimum-uncertainty state:
- * \Delta_x * \Delta_p = \hbar/2, and <H> = \hbar * \omega/2
+ *              \hbar))
+ * is theoretical minimum-uncertainty state :
+ *  \Delta_x * \Delta_p = \hbar/2, and <H> = \hbar * \omega/2
  */
 
 #include "../core/constants.h"

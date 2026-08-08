@@ -19,10 +19,9 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(
-      " > Non‑degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
+  printf(" > Non‑degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
 
-  // Parameters (atomic units: \hbar=m=\omega=1)
+  // Parameters (atomic units: \hbar = m = \omega = 1)
   double omega = 1.0;
   double m = 1.0;
   double hbar = 1.0;
@@ -71,9 +70,9 @@ int main(void) {
     return 1;
   }
 
-  // Build perturbation matrix V' = \lambda * x^4 in the basis of H_0 eigenstates 
-  // Compute <n|V'|n> by integrating.
-  // Compute first-order correction by numerical integration:
+  // Build perturbation matrix V' = \lambda * x^4 in the basis of H_0
+  // eigenstates Compute <n|V'|n> by integrating. Compute first-order correction
+  // by numerical integration:
   //    E1 = <\phi_n|\lambda x^4|\phi_n>.
   // TODO: Use perturb_nondeg which expects V matrix in eigenbasis.
   // HACK: For simplicity, compute directly.
@@ -115,17 +114,19 @@ int main(void) {
     double E1 = lambda * x4_expect;
     double E0_analytical = hbar * omega * (n + 0.5);
 
-    // Numerical solution: build H = H_0 + \lambda x^4 and diagonalise.
+    // NOTE: Numerical solution: build H = H_0 + \lambda x^4 and diagonalise.
     // For each state by building full H and re-diagonalising.
     // Reuse H_0 and add perturbation.
     cmatrix_t *H_full = cmatrix_copy(H_0);
     if (!H_full) {
       cvector_free(psi);
+
       continue;
     }
 
     for (int i = 0; i < N; i++) {
       double Vp = lambda * x[i] * x[i] * x[i] * x[i];
+
       CMAT(H_full, i, i) = c_add(CMAT(H_full, i, i), c_real(Vp));
     }
 

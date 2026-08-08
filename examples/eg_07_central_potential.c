@@ -44,6 +44,7 @@ int main(void) {
     cvector_t *psi0 = cvector_from_matrix_column(eig_ho->eigenvectors, 0);
     if (psi0) {
       double *y = malloc(N * sizeof *y);
+
       for (int i = 0; i < N; i++) {
         y[i] = psi0->data[i].re;
       }
@@ -53,7 +54,6 @@ int main(void) {
       opts.xlabel = "r";
       opts.ylabel = "u(r)";
 
-      // TODO: use save_wavefuntion
       plot_line("central_potential_ho_ground", PLOT_FORMAT_PNG, r, y, N, &opts);
       printf("   Saved central_potential_ho_ground.png\n\n");
 
@@ -76,6 +76,7 @@ int main(void) {
   if (eig_well) {
     printf("   Bound states (E < 0):\n");
     int n_bound = 0;
+
     for (int k = 0; k < eig_well->n && n_bound < 5; k++) {
       if (eig_well->eigenvalues[k] < 0.0) {
         printf("   E_%d = %.4f\n", n_bound, eig_well->eigenvalues[k]);
@@ -86,6 +87,7 @@ int main(void) {
     if (n_bound == 0) {
       printf("   (no bound states found for this depth/width)\n");
     }
+
     eigen_free(eig_well);
   }
 

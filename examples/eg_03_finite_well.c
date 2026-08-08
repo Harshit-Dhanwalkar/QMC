@@ -4,10 +4,10 @@
  * Sweeps V_0 from 0 to V_max and finds bound state energies numerically. Shows
  * how states appear as V_0 increases - each new bound state appears when V_0
  * crosses threshold, visible as spike in E(V_0) curves.
- *     V(x) = -V_0     for |x| <= a, else 0
+ *   V(x) = -V_0     for |x| <= a, else 0
  * Analytic threshold for n-th bound state:
- *     V_0^n = (2n-1)^2 * \pi^2 /(8 *
- *   a^2) (in natural units \hbar = 2m = 1)
+ *   V_0^n = (2n-1)^2 * \pi^2 /(8 * a^2)
+ * (in natural units \hbar = 2m = 1)
  *
  * Method: finite-difference tridiagonal eigensolver on x \in [-L, L].
  */
@@ -69,6 +69,7 @@ int main(void) {
     printf("   n=%d: V_0 > %.4f\n", n, V0_thresh);
   }
   printf("\n");
+
   printf("   Sweeping V_0 from 0 to %.1f...\n", V_max);
   fflush(stdout);
 
@@ -120,6 +121,7 @@ int main(void) {
     printf("   %5.2f", V0_arr[v]);
     for (int k = 0; k < 3; k++) {
       double E = E_arr[v * n_states + k];
+
       if (E < 0) {
         printf("  %9.4f", E);
       } else
@@ -137,9 +139,11 @@ int main(void) {
       fprintf(f, "# V0  E1  E2  E3  E4  E5\n");
       for (int v = 0; v < n_V; v++) {
         fprintf(f, "%.6e", V0_arr[v]);
+
         for (int k = 0; k < n_states; k++) {
           fprintf(f, "  %.6e", E_arr[v * n_states + k]);
         }
+
         fprintf(f, "\n");
       }
 

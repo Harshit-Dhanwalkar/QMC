@@ -53,8 +53,10 @@ int main(void) {
   for (int i = 0; i < (1 << n_qubits); i++) {
     order[i] = i;
   }
+
   for (int i = 0; i < 5; i++) {
     int best = i;
+
     for (int j = i + 1; j < (1 << n_qubits); j++) {
       if (r.probabilities[order[j]] > r.probabilities[order[best]]) {
         best = j;

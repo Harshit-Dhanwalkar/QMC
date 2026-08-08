@@ -20,6 +20,7 @@ static void print_term(const char *name, int l, int j_2) {
   for (int mj_2 = -j_2; mj_2 <= j_2; mj_2 += 2) {
     double sz_closed = (g - 1.0) * (mj_2 / 2.0);
     double sz_coupling = zeeman_sz_expect_from_coupling(l, j_2, mj_2);
+
     printf("      mj=%4.1f   <Sz> closed=%.6f  from-coupling=%.6f\n",
            mj_2 / 2.0, sz_closed, sz_coupling);
   }

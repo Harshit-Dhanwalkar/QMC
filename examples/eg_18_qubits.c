@@ -26,10 +26,13 @@ int main(void) {
   for (int q = 0; q < n1; q++) {
     cmatrix_t *rho = qstate_reduced_density_single(psi1, n1, q);
     double S = von_neumann_entropy_2x2(rho);
+
     cmatrix_free(rho);
+
     printf("     qubit %d entanglement entropy = %.6f bits (0 = unentangled)\n",
            q, S);
   }
+
   cvector_free(psi1);
   printf("\n");
 
@@ -44,9 +47,12 @@ int main(void) {
          qstate_probability(psi2, 2), qstate_probability(psi2, 3));
   cmatrix_t *rho_bell = qstate_reduced_density_single(psi2, n2, 0);
   double S_bell = von_neumann_entropy_2x2(rho_bell);
+
   cmatrix_free(rho_bell);
+
   printf("     entanglement entropy = %.6f bits (1 = maximally entangled)\n\n",
          S_bell);
+
   cvector_free(psi2);
 
   int n3 = 3;
@@ -58,6 +64,7 @@ int main(void) {
   printf("   GHZ state (H + CNOT(0,1) + CNOT(0,2), n=3):\n");
   printf("     P(|000>)=%.4f  P(|111>)=%.4f\n", qstate_probability(psi3, 0),
          qstate_probability(psi3, 7));
+
   cvector_free(psi3);
   printf("\n");
 
@@ -66,6 +73,7 @@ int main(void) {
   for (int n = 2; n <= 20; n += 4) {
     long long dim = 1LL << n;
     double mb = (double)(dim * sizeof(complex_t)) / (1024.0 * 1024.0);
+
     printf("   %8d  %9lld  %10.4f\n", n, dim, mb);
   }
 

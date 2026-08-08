@@ -4,10 +4,10 @@
  * A Gaussian wave packet hits a rectangular potential barrier.
  * Time evolution via Crank-Nicolson (unconditionally stable, norm-preserving).
  *
- * Initial state:             \phi(x,0) = (2 * \pi * \sigma^2)^(-1/4) *
- * \exp(-(x-x_0)^2/4 * \sigma^2) * \exp(i * k_0x)
- * Barrier:                    V(x) = V_0  for  a <= x <= b,  else 0
- * Transmission probability:   T = \int_{x>b} |\phi(x,T)|^2 dx
+ * Initial state:            \phi(x,0) = (2 * \pi * \sigma^2)^(-1/4) *
+ *                           \exp(-(x-x_0)^2/4 * \sigma^2) * \exp(i * k_0x)
+ * Barrier:                  V(x) = V_0  for  a <= x <= b,  else 0
+ * Transmission probability: T = \int_{x>b} |\phi(x,T)|^2 dx
  * (In natural units \hbar = m = 1)
  */
 
@@ -176,6 +176,7 @@ int main(void) {
 
   /* Analytic WKB transmission (thick barrier, E < V0):
    * T_WKB = \exp(-2 * \kappa * L)
+   *
    * Where
    *  - \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar,
    *  - L =b - a

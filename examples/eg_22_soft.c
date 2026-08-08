@@ -31,6 +31,7 @@ int main(void) {
     for (int i = 0; i < Nx; i++) {
       x[i] = -Lx / 2 + i * dx;
     }
+
     for (int i = 0; i < Ny; i++) {
       y[i] = -Ly / 2 + i * dy;
     }
@@ -42,6 +43,7 @@ int main(void) {
         double gx = exp(-(x[ix] - x0) * (x[ix] - x0) / (4 * sigma0 * sigma0));
         double gy = exp(-(y[iy] - y0) * (y[iy] - y0) / (4 * sigma0 * sigma0));
         double phase = kx0 * x[ix] + ky0 * y[iy];
+
         psi->data[ix * Ny + iy] =
             c_scale(c_new(cos(phase), sin(phase)), gx * gy);
       }
@@ -103,6 +105,7 @@ int main(void) {
     for (int i = 0; i < Nx; i++) {
       x[i] = -Lx / 2 + i * dx;
     }
+
     for (int i = 0; i < Ny; i++) {
       y[i] = -Ly / 2 + i * dy;
     }

@@ -75,6 +75,7 @@ int main(void) {
   for (int i = 0; i < n_grid; i++) {
     diag[i] = -2.0 * coeff + mass_omega2 * x[i] * x[i];
   }
+
   for (int i = 0; i < n_grid - 1; i++) {
     offdiag[i] = coeff;
   }
@@ -97,6 +98,7 @@ int main(void) {
     double E_num = eig->eigenvalues[i];
     double E_ana = hbar * omega * (i + 0.5);
     double err = fabs(E_num - E_ana) / E_ana * 100.0;
+
     printf("   %2d  %5.3f   %5.3f   %5.2f%%\n", i, E_num, E_ana, err);
   }
   printf("\n");
@@ -133,10 +135,12 @@ int main(void) {
     opts.ylabel = "\\phi(x)";
     opts.width = 800;
     opts.height = 600;
+
     plot_line(plot_name, PLOT_FORMAT_PNG, x, y, n_grid, &opts);
 
     free(y);
     cvector_free(col);
+
     printf("    Saved %s and plot %s.png\n", fname, plot_name);
   }
 
@@ -145,6 +149,7 @@ int main(void) {
   for (int i = 0; i < 10 && i < eig->n; i++) {
     E_vals[i] = eig->eigenvalues[i];
   }
+
   save_eigenvalues("harmonic_energies.dat", E_vals,
                    (eig->n < 10) ? eig->n : 10);
   free(E_vals);

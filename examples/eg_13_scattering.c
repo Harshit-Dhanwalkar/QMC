@@ -46,6 +46,7 @@ int main(void) {
     complex_t f =
         born_amplitude(V_yukawa, yukawa_params, k, theta, 50.0, 5000, HBAR_2M);
     double sigma = born_cross_section(f);
+
     printf("   %5.2f   %13.6e   %13.6e\n", theta, f.re, sigma);
   }
 
