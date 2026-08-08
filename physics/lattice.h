@@ -90,7 +90,7 @@ cmatrix_t *lattice_build_anderson_1d(int n_sites, double t, double disorder_W,
  * on single site. Qualitative signature used to distinguish extended from
  * localized states. Normalizes internally.
  *
- * Returns 0.0 if psi is NULL or has zero norm.
+ * Returns 0.0 if \psi is NULL or has zero norm.
  */
 double lattice_ipr(const cvector_t *psi);
 
@@ -115,10 +115,70 @@ double lattice_ipr(const cvector_t *psi);
  *       regardless of t1 vs t2 (topological invariant then only shows up in
  *       bulk band structure/Zak phase, not as edge states).
  *
- * Returns a (2*n_cells) x (2*n_cells) dense Hermitian cmatrix_t, or NULL if
+ * Returns a (2 * n_cells) x (2 * n_cells) dense Hermitian cmatrix_t, or NULL if
  * n_cells < 1.
  */
 cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
                              lattice_bc_t bc);
+
+/*
+ * Landau levels on a 2D square lattice via Peierls substitution (Hofstadter /
+ * Harper model): a uniform perpendicular magnetic field is introduced by
+ * multiplying hopping amplitudes by phase factors:
+ *   \exp(i * e/\hbar * \integral of A.dl along the bond),
+ * rather than adding any new on-site term.
+ *
+ * Landau gauge A = (0, B * x, 0): bonds along x are unaffected (amplitude -t,
+ * real), bonds along y acquire a position-dependent phase set by site's x
+ * index:
+ *   H_{(ix, iy),(ix, iy + 1)} = -t * \exp(i * 2 * \pi * \alpha * ix),
+ * h.c. for the reverse bond
+ *
+ * Where
+ *  \alpha = flux through one plaquette / flux quantum = B * a^2 / (2 * \pi) in
+ * natural units (\hbar = e = 1, lattice constant a).
+ *  NOTE: \alpha is the Hofstadter-model flux parameter (\alpha = p/q rational
+ * reproduces the Hofstadter butterfly at that flux fraction; \alpha to be
+ * rational since it builds a finite open lattice, not a magnetic-unit-cell
+ * Bloch Hamiltonian).
+ *
+ * NOTE: On boundary conditions: Landau gauge above breaks translational
+ * symmetry along x (y-hopping phase depends explicitly on ix), so a naive
+ * periodic wraparound bond in x would not be gauge-consistent on a finite
+ * lattice; only bc_y controls periodicity along y (wraparound y-bonds carry
+ * same phase rule, which is consistent). Therefore  x is always open boundary.
+ *
+ * Returns an (nx * ny) x (nx * ny) dense Hermitian cmatrix_t, or NULL if nx<1
+ * or ny<1.
+ */
+cmatrix_t *lattice_build_2d_square_magnetic(int nx, int ny, double epsilon0,
+                                            double t, double alpha,
+                                            lattice_bc_t bc_y);
+
+/*
+ * Continuum-limit (weak-field, alpha << 1) approximation to n-th Landau level
+ * of lattice_build_2d_square_magnetic, measured from the zero-field band bottom
+ * \epsilon_0 - 4 * t:
+ *  E_n ~= \epsilon_0 - 4 * t + \omega_c * (n + 1/2),
+ *
+ * Where:
+ *   \omega_c = 4 * \pi * t * \alpha
+ *
+ * NOTE: Derivation: expanding tight-binding dispersion near k=0 gives an
+ * isotropic effective mass m* = 1 / (2 * t * a^2), the Peierls phase on y-bonds
+ * expanded near a bond's x=0 gives a harmonic confining potential in x with
+ * frequency :
+ *  \omega_c = 2 * t * a^2 * B = 4 * pi * t * \alpha
+ * (using \alpha = B * a^2 / (2 * \pi)).
+ * This is 2D magneto-tight-binding effective-mass result (Refences : Hofstadter
+ * 1976; MacDonald 1983); each level is macroscopically degenerate in \alpha<<1
+ * limit (one state per flux quantum through the sample).
+ *
+ * Deviations at larger alpha come from lattice curvature (dispersion is not
+ * perfectly parabolic) and, on a finite lattice, from edge effects once the
+ * magnetic length ~1/\sqrt(\alpha) becomes comparable to nx or ny.
+ */
+double lattice_landau_level_energy(int n, double epsilon0, double t,
+                                   double alpha);
 
 #endif

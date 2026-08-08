@@ -251,3 +251,71 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
 
   return H;
 }
+
+cmatrix_t *lattice_build_2d_square_magnetic(int nx, int ny, double epsilon0,
+                                            double t, double alpha,
+                                            lattice_bc_t bc_y) {
+  if (nx < 1 || ny < 1) {
+    return NULL;
+  }
+
+  int N = nx * ny;
+  cmatrix_t *H = cmatrix_alloc(N, N);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      CMAT(H, i, j) = c_zero();
+    }
+  }
+
+#define IDXM(ix, iy) ((ix) * ny + (iy))
+
+  for (int ix = 0; ix < nx; ix++) {
+    // Peierls phase for a y-bond at current x column :
+    //   \exp(i * 2 * \pi * \alpha * ix)
+    complex_t phase = c_exp(c_new(0.0, 2.0 * M_PI * alpha * (double)ix));
+    complex_t hop_y = c_scale(phase, -t); // forward bond amplitude
+    complex_t hop_y_conj = c_conj(hop_y); // reverse (h.c.) bond
+
+    for (int iy = 0; iy < ny; iy++) {
+      int i = IDXM(ix, iy);
+
+      CMAT(H, i, i) = c_real(epsilon0);
+
+      // x-bonds: unaffected by current gauge choice (real, always open in x)
+      if (ix + 1 < nx) {
+        int j = IDXM(ix + 1, iy);
+
+        CMAT(H, i, j) = c_real(-t);
+        CMAT(H, j, i) = c_real(-t);
+      }
+
+      // y-bonds: Peierls phase set by column ix
+      if (iy + 1 < ny) {
+        int j = IDXM(ix, iy + 1);
+
+        CMAT(H, i, j) = hop_y;
+        CMAT(H, j, i) = hop_y_conj;
+      } else if (bc_y == LATTICE_PERIODIC && ny > 1) {
+        int j = IDXM(ix, 0);
+
+        CMAT(H, i, j) = c_add(CMAT(H, i, j), hop_y);
+        CMAT(H, j, i) = c_add(CMAT(H, j, i), hop_y_conj);
+      }
+    }
+  }
+
+#undef IDXM
+
+  return H;
+}
+
+double lattice_landau_level_energy(int n, double epsilon0, double t,
+                                   double alpha) {
+  double omega_c = 4.0 * M_PI * t * alpha;
+
+  return epsilon0 - 4.0 * t + omega_c * ((double)n + 0.5);
+}
