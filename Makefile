@@ -89,6 +89,12 @@ BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
 LDFLAGS  = -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
 
+# Additive-only hooks for CI/ad-hoc flag injection
+EXTRA_CFLAGS  ?=
+EXTRA_LDFLAGS ?=
+CFLAGS  += $(EXTRA_CFLAGS)
+LDFLAGS += $(EXTRA_LDFLAGS)
+
 # Directories
 CORE_DIR     = core
 PHYSICS_DIR  = physics

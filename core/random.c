@@ -29,6 +29,9 @@ void rng_seed(rng_state_t *rng, uint64_t seed) {
   for (int i = 0; i < 4; i++) {
     rng->s[i] = splitmix64_next(&sm_state);
   }
+
+  rng->has_cached_gaussian = 0;
+  rng->cached_gaussian = 0.0;
 }
 
 uint64_t rng_next_u64(rng_state_t *rng) {
@@ -55,13 +58,10 @@ double rng_uniform_range(rng_state_t *rng, double a, double b) {
 }
 
 double rng_gaussian(rng_state_t *rng) {
-  static _Thread_local int have_cached = 0;
-  static _Thread_local double cached = 0.0;
+  if (rng->has_cached_gaussian) {
+    rng->has_cached_gaussian = 0;
 
-  if (have_cached) {
-    have_cached = 0;
-
-    return cached;
+    return rng->cached_gaussian;
   }
 
   double u1, u2;
@@ -73,12 +73,64 @@ double rng_gaussian(rng_state_t *rng) {
   double r = sqrt(-2.0 * log(u1));
   double theta = 2.0 * M_PI * u2;
 
-  cached = r * sin(theta);
-  have_cached = 1;
+  rng->cached_gaussian = r * sin(theta);
+  rng->has_cached_gaussian = 1;
 
   return r * cos(theta);
 }
 
 double rng_gaussian_scaled(rng_state_t *rng, double mean, double sigma) {
   return mean + sigma * rng_gaussian(rng);
+}
+
+void rng_jump(rng_state_t *rng) {
+  static const uint64_t JUMP[] = {0x180ec6d33cfd0aba, 0xd5a61266f0c9392c,
+                                  0xa9582618e03fc9aa, 0x39abdc4529b1661c};
+
+  uint64_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+  for (int i = 0; i < 4; i++) {
+    for (int b = 0; b < 64; b++) {
+      if (JUMP[i] & (UINT64_C(1) << b)) {
+        s0 ^= rng->s[0];
+        s1 ^= rng->s[1];
+        s2 ^= rng->s[2];
+        s3 ^= rng->s[3];
+      }
+      rng_next_u64(rng);
+    }
+  }
+
+  rng->s[0] = s0;
+  rng->s[1] = s1;
+  rng->s[2] = s2;
+  rng->s[3] = s3;
+
+  /* NOTE: A stream that gets jumped mid-sequence should not carry a Box-Muller
+   * spare deviate computed from pre-jump stream into the post-jump stream. */
+  rng->has_cached_gaussian = 0;
+}
+
+void rng_long_jump(rng_state_t *rng) {
+  static const uint64_t LONG_JUMP[] = {0x76e15d3efefdcbbf, 0xc5004e441c522fb3,
+                                       0x77710069854ee241, 0x39109bb02acbe635};
+
+  uint64_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+  for (int i = 0; i < 4; i++) {
+    for (int b = 0; b < 64; b++) {
+      if (LONG_JUMP[i] & (UINT64_C(1) << b)) {
+        s0 ^= rng->s[0];
+        s1 ^= rng->s[1];
+        s2 ^= rng->s[2];
+        s3 ^= rng->s[3];
+      }
+      rng_next_u64(rng);
+    }
+  }
+
+  rng->s[0] = s0;
+  rng->s[1] = s1;
+  rng->s[2] = s2;
+  rng->s[3] = s3;
+
+  rng->has_cached_gaussian = 0;
 }

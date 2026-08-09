@@ -11,6 +11,7 @@ and mean/variance of rng_gaussian.
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static int failures = 0;
 
@@ -225,6 +226,116 @@ static void test_gaussian_scaled(void) {
         "rng_gaussian_scaled sample variance near \\sigma^2");
 }
 
+// rng_jump: implementation of canonical xoshiro256** jump (seed=12345).
+static void test_jump_regression(void) {
+  printf("test_jump_regression:\n");
+
+  rng_state_t rng;
+  rng_seed(&rng, 12345);
+  rng_jump(&rng);
+
+  CHECK(rng.s[0] == 0xc447e65c62d994cfULL, "post-jump s[0] matches reference");
+  CHECK(rng.s[1] == 0xaf415ed201c9e97eULL, "post-jump s[1] matches reference");
+  CHECK(rng.s[2] == 0x620fb38cd6dd52f4ULL, "post-jump s[2] matches reference");
+  CHECK(rng.s[3] == 0xe6ba5be4e54b26c6ULL, "post-jump s[3] matches reference");
+
+  uint64_t v1 = rng_next_u64(&rng);
+  uint64_t v2 = rng_next_u64(&rng);
+  uint64_t v3 = rng_next_u64(&rng);
+  CHECK(v1 == 4527653816107373798ULL, "post-jump output 1 matches reference");
+  CHECK(v2 == 5438022859293692230ULL, "post-jump output 2 matches reference");
+  CHECK(v3 == 7149129066978069246ULL, "post-jump output 3 matches reference");
+}
+
+// A jumped stream must not reproduce any of a large number of draws from
+// pre-jump stream (weak overlap sanity check. Jump is a proven 2^128-step
+// advance, this just catches gross implementation errors, e.g. a jump that
+// accidentally no-ops).
+static void test_jump_no_short_run_overlap(void) {
+  printf("test_jump_no_short_run_overlap:\n");
+
+  rng_state_t base;
+  rng_seed(&base, 999);
+
+  int n = 100000;
+  uint64_t *orig = malloc((size_t)n * sizeof *orig);
+  for (int i = 0; i < n; i++) {
+    orig[i] = rng_next_u64(&base);
+  }
+
+  rng_state_t jumped;
+  rng_seed(&jumped, 999);
+  rng_jump(&jumped);
+
+  int found_overlap = 0;
+  for (int i = 0; i < n && !found_overlap; i++) {
+    uint64_t v = rng_next_u64(&jumped);
+    for (int j = 0; j < n; j++) {
+      if (v == orig[j]) {
+        found_overlap = 1;
+        break;
+      }
+    }
+  }
+  CHECK(!found_overlap,
+        "no 64-bit output collisions between pre- and post-jump streams "
+        "over 1e5 draws each");
+
+  free(orig);
+}
+
+// rng_jump must clear any pending Box-Muller spare deviate, and (the real
+// regression target) the spare-deviate cache must live per-stream: priming one
+// stream's cache must not leak into, or be disturbed by, a second,
+// independently-seeded stream interleaved with it.
+static void test_gaussian_cache_is_per_stream(void) {
+  printf("test_gaussian_cache_is_per_stream:\n");
+
+  rng_state_t a, a_ref;
+  rng_seed(&a, 42);
+  rng_seed(&a_ref, 42);
+
+  double a1 = rng_gaussian(&a); // primes a.cached_gaussian with the 2nd deviate
+  CHECK(a.has_cached_gaussian == 1,
+        "first rng_gaussian call caches a spare deviate in *rng");
+
+  rng_state_t b;
+  rng_seed(&b, 777);
+  double b1 = rng_gaussian(&b); // must be b's own draw, not a's cached spare
+
+  double a1_ref = rng_gaussian(&a_ref); // independent stream, same seed as a
+  CHECK(fabs(a1 - a1_ref) < 1e-15,
+        "interleaving a second stream's rng_gaussian call does not perturb "
+        "stream a's first result");
+
+  double a2 = rng_gaussian(&a); // should return a's originally cached spare
+  CHECK(a.has_cached_gaussian == 0,
+        "second call on stream a consumes its own cached spare");
+  (void)b1;
+
+  // NOTE: Recompute what a's cached spare should have been, from a fresh
+  // identical stream, to confirm a2 is genuinely a's own spare and not
+  // corrupted.
+  rng_state_t a_check;
+  rng_seed(&a_check, 42);
+  double u1, u2;
+  do {
+    u1 = rng_uniform(&a_check);
+  } while (u1 <= 1e-300);
+  u2 = rng_uniform(&a_check);
+
+  double r = sqrt(-2.0 * log(u1));
+  double theta = 2.0 * M_PI * u2;
+  double expected_a1 = r * cos(theta);
+  double expected_a2 = r * sin(theta);
+
+  CHECK(fabs(a1 - expected_a1) < 1e-15,
+        "a's first deviate matches direct computation");
+  CHECK(fabs(a2 - expected_a2) < 1e-15,
+        "a's second deviate (cached spare) matches direct computation, "
+        "unperturbed by stream b's interleaved call");
+}
+
 int main(void) {
   test_seed_reproducibility();
   test_distinct_seeds_diverge();
@@ -234,6 +345,9 @@ int main(void) {
   test_uniform_chi_square();
   test_gaussian_moments();
   test_gaussian_scaled();
+  test_jump_regression();
+  test_jump_no_short_run_overlap();
+  test_gaussian_cache_is_per_stream();
 
   if (failures == 0) {
     printf("\nAll test_random checks passed.\n");

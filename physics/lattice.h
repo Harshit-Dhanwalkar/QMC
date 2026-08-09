@@ -137,7 +137,7 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
  * Where
  *  \alpha = flux through one plaquette / flux quantum = B * a^2 / (2 * \pi) in
  * natural units (\hbar = e = 1, lattice constant a).
- *  NOTE: \alpha is the Hofstadter-model flux parameter (\alpha = p/q rational
+ * NOTE: \alpha is the Hofstadter-model flux parameter (\alpha = p/q rational
  * reproduces the Hofstadter butterfly at that flux fraction; \alpha to be
  * rational since it builds a finite open lattice, not a magnetic-unit-cell
  * Bloch Hamiltonian).
@@ -146,7 +146,7 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
  * symmetry along x (y-hopping phase depends explicitly on ix), so a naive
  * periodic wraparound bond in x would not be gauge-consistent on a finite
  * lattice; only bc_y controls periodicity along y (wraparound y-bonds carry
- * same phase rule, which is consistent). Therefore  x is always open boundary.
+ * same phase rule, which is consistent). Therefore x is always open boundary.
  *
  * Returns an (nx * ny) x (nx * ny) dense Hermitian cmatrix_t, or NULL if nx<1
  * or ny<1.
@@ -169,7 +169,7 @@ cmatrix_t *lattice_build_2d_square_magnetic(int nx, int ny, double epsilon0,
  * expanded near a bond's x=0 gives a harmonic confining potential in x with
  * frequency :
  *  \omega_c = 2 * t * a^2 * B = 4 * pi * t * \alpha
- * (using \alpha = B * a^2 / (2 * \pi)).
+ * (using \alpha = B * a^2 / (2 * \pi))
  * This is 2D magneto-tight-binding effective-mass result (Refences : Hofstadter
  * 1976; MacDonald 1983); each level is macroscopically degenerate in \alpha<<1
  * limit (one state per flux quantum through the sample).

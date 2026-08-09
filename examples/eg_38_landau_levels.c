@@ -7,7 +7,7 @@
  * Hofstadter/Harper model.
  * In the weak-field (continuum) limit this reproduces harmonic-oscillator-like
  * Landau level ladder :
- *  E_n = -4t + \omega_c * (n + 1/2),
+ *  E_n = -4 * t + \omega_c * (n + 1/2),
  *
  * Where:
  *  \omega_c = 4 * \pi * t * \alpha,
