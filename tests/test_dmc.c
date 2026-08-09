@@ -185,12 +185,59 @@ static void test_dmc_frequent_resampling(void) {
       "population control still holds near target under frequent triggering");
 }
 
+// n_replicas=1 must reproduce dmc_run exactly, same reason being as analogous
+// VMC regression test: stream 0 has zero rng_jump() calls applied, and both
+// route through same dmc_run_with_rng() population loop.
+static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
+  printf("test_dmc_run_parallel_matches_serial_at_one_replica:\n");
+
+  double Z = 2.0, Zeff = 2.0, b = 0.15;
+  dmc_result_t serial = dmc_run(Z, Zeff, b, 100, 300, 0.01, 200, 5, 100, 55ULL);
+  dmc_result_t parallel =
+      dmc_run_parallel(1, Z, Zeff, b, 100, 300, 0.01, 200, 5, 100, 55ULL);
+
+  check_close(parallel.energy_mixed, serial.energy_mixed, 1e-12,
+              "n_replicas=1 energy_mixed bit-identical to dmc_run");
+  check_close(parallel.mean_population, serial.mean_population, 1e-12,
+              "n_replicas=1 mean_population bit-identical to dmc_run");
+}
+
+// Multiple independent DMC populations combined must still land close to the
+// exact helium ground state, with a sane nonzero inter-replica error bar.
+static void test_dmc_run_parallel_helium(void) {
+  printf("test_dmc_run_parallel_helium:\n");
+
+  int n_replicas = 6;
+  double Z = 2.0, Zeff = 2.0, b = 0.15;
+  dmc_result_t r = dmc_run_parallel(n_replicas, Z, Zeff, b,
+                                    /*target_population=*/150,
+                                    /*max_population=*/450,
+                                    /*tau=*/0.01,
+                                    /*n_equilibration=*/400,
+                                    /*n_blocks=*/15,
+                                    /*block_size=*/150,
+                                    /*master_seed=*/31415ULL);
+
+  printf("  parallel He (n_replicas=%d): mixed=%.6f +- %.6f Hartree\n",
+         n_replicas, r.energy_mixed, r.error_mixed);
+
+  double E_exact = -2.9037;
+  check_close(r.energy_mixed, E_exact, 0.03,
+              "parallel DMC lands close to exact helium ground state");
+  check_true(r.error_mixed > 0.0 && r.error_mixed < 0.05,
+             "parallel DMC inter-replica error is a sane, nonzero magnitude");
+  check_true(r.n_blocks == 15 * n_replicas,
+             "n_blocks reports n_blocks_per_replica * n_replicas");
+}
+
 int main(void) {
   test_drift_velocity_fixtures();
   test_degenerate_guard();
   test_dmc_run_accuracy();
   test_dmc_frequent_resampling();
   test_dmc_run_different_ion();
+  test_dmc_run_parallel_matches_serial_at_one_replica();
+  test_dmc_run_parallel_helium();
 
   if (failures == 0) {
     printf("\nAll test_dmc checks passed.\n");

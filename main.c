@@ -55,6 +55,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_36_quantum_algorithms", "Deutsch-Jozsa and Grover's search algorithm"},
     {"build/eg_37_second_quant", "Second quantization and Jordan-Wigner transformation"},
     {"build/eg_38_landau_levels", "Landau levels on a lattice via Peierls substitution (Hofstadter model)"},
+    {"build/eg_39_openmp_qmc", "OpenMP-parallel VMC/DMC/PIMC replica runners (wall-clock speedup)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

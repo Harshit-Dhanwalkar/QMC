@@ -168,6 +168,51 @@ static void test_vmc_run_different_ion(void) {
   check_true(r.mean < 0.0, "Li+ energy is a sane bound state (negative)");
 }
 
+// n_replicas=1 must reproduce vmc_run exactly: vmc_run_parallel's stream 0 is
+// rng_seed(master_seed) with zero rng_jump() calls applied, identical to what
+// vmc_run does internally, and both route through same vmc_run_with_rng()
+// sampling loop.
+static void test_vmc_run_parallel_matches_serial_at_one_replica(void) {
+  printf("test_vmc_run_parallel_matches_serial_at_one_replica:\n");
+
+  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  vmc_result_t serial = vmc_run(Z, Zeff, b, 1000, 50000, 100, 0.9, 0.9, 42ULL);
+  vmc_result_t parallel =
+      vmc_run_parallel(1, Z, Zeff, b, 1000, 50000, 100, 0.9, 0.9, 42ULL);
+
+  check_close(parallel.mean, serial.mean, 1e-12,
+              "n_replicas=1 mean bit-identical to vmc_run");
+  check_close(parallel.acceptance_rate1, serial.acceptance_rate1, 1e-12,
+              "n_replicas=1 acceptance_rate1 bit-identical to vmc_run");
+}
+
+// Multiple replicas must be genuinely independent samples (not silently same
+// chain replayed): total n_samples should be n_replicas * n_samples, and
+// combined mean should still satisfy He's variational theorem.
+static void test_vmc_run_parallel_helium(void) {
+  printf("test_vmc_run_parallel_helium:\n");
+
+  int n_replicas = 8;
+  int n_samples = 40000;
+  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  vmc_result_t r = vmc_run_parallel(n_replicas, Z, Zeff, b, 1000, n_samples,
+                                    100, 0.9, 0.9, 777ULL);
+
+  printf("  parallel He (n_replicas=%d): E = %.6f +- %.6f Hartree, "
+         "n_samples=%d\n",
+         n_replicas, r.mean, r.error, r.n_samples);
+
+  check_true(r.n_samples == n_replicas * n_samples,
+             "n_samples = n_replicas * n_samples");
+
+  double E_exact_helium = -2.9037;
+  check_true(r.mean >= E_exact_helium - 3.0 * r.error,
+             "parallel He variational theorem: E >= exact ground state "
+             "(within 3 \\sigma)");
+  check_true(r.error > 0.0 && r.error < 0.05,
+             "parallel He inter-replica error is a sane, nonzero magnitude");
+}
+
 int main(void) {
   test_local_energy_fixtures();
   test_local_energy_z_neq_zeff_fixture();
@@ -175,6 +220,8 @@ int main(void) {
   test_vmc_run_bounds();
   test_vmc_run_different_ion();
   test_optimize_b();
+  test_vmc_run_parallel_matches_serial_at_one_replica();
+  test_vmc_run_parallel_helium();
 
   if (failures == 0) {
     printf("\nAll test_vmc checks passed.\n");

@@ -237,6 +237,56 @@ static void test_pimc_run_invalid_input(void) {
   check_true(r2.n_blocks == 0, "level > log2(P) rejected");
 }
 
+// n_replicas=1 must reproduce pimc_run exactly, same reasoning as analogous
+// VMC/DMC regression tests: stream 0 has zero rng_jump() calls applied, and
+// both route through same pimc_run_with_rng() sampling loop.
+static void test_pimc_run_parallel_matches_serial_at_one_replica(void) {
+  printf("test_pimc_run_parallel_matches_serial_at_one_replica:\n");
+
+  double Z = 2.0;
+  int P = 64;
+  double tau = 8.0 / P;
+  int level = 3;
+
+  pimc_result_t serial = pimc_run(Z, P, tau, level, 100, 10, 100, 606ULL);
+  pimc_result_t parallel =
+      pimc_run_parallel(1, Z, P, tau, level, 100, 10, 100, 606ULL);
+
+  check_close(parallel.energy, serial.energy, 1e-12,
+              "n_replicas=1 energy bit-identical to pimc_run");
+  check_close(parallel.energy_virial, serial.energy_virial, 1e-12,
+              "n_replicas=1 energy_virial bit-identical to pimc_run");
+}
+
+// Multiple independent PIMC ring-polymer walkers combined must still land close
+// to exact helium ground state, with a sane nonzero inter-replica error bar.
+// Lighter (P, n_blocks) than test_pimc_run_helium_accuracy to keep n_replicas *
+// work bounded.
+static void test_pimc_run_parallel_helium(void) {
+  printf("test_pimc_run_parallel_helium:\n");
+
+  int n_replicas = 6;
+  double Z = 2.0;
+  int P = 256;
+  double tau = 8.0 / P;
+  int level = 4;
+
+  pimc_result_t r =
+      pimc_run_parallel(n_replicas, Z, P, tau, level, 400, 20, 200, 24601ULL);
+
+  printf("  parallel He (n_replicas=%d): E=%.6f +- %.6f  E_virial=%.6f +- %.6f "
+         " n_blocks=%d\n",
+         n_replicas, r.energy, r.error, r.energy_virial, r.error_virial,
+         r.n_blocks);
+
+  double E_exact = -2.9037;
+  check_close(r.energy, E_exact, 0.5,
+              "parallel PIMC energy lands close to exact helium ground state");
+  check_true(r.error > 0.0, "parallel PIMC inter-replica error is nonzero");
+  check_true(r.n_blocks == 20 * n_replicas,
+             "n_blocks reports n_blocks_per_replica * n_replicas");
+}
+
 int main(void) {
   test_kelbg_fixtures();
   test_kelbg_limits();
@@ -246,6 +296,8 @@ int main(void) {
   test_pimc_run_helium_accuracy();
   test_virial_matches_thermodynamic();
   test_virial_lower_variance();
+  test_pimc_run_parallel_matches_serial_at_one_replica();
+  test_pimc_run_parallel_helium();
 
   if (failures == 0) {
     printf("\nAll test_pimc checks passed.\n");
