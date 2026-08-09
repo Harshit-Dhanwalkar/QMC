@@ -59,7 +59,7 @@ void dmc_drift_velocity(const vmc_walker_t *w, int which, double Zeff, double b,
  * Where
  *   G is drift-diffusion Green's function. Mutates *w on acceptance.
  *
- *Returns 1 if accepted, 0 if rejected.
+ * Returns 1 if accepted, 0 if rejected.
  */
 int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
                       double tau, rng_state_t *rng);
@@ -95,5 +95,27 @@ int dmc_branch_walker(vmc_walker_t *w, double Z, double Zeff, double b,
 dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
                      int max_population, double tau, int n_equilibration,
                      int n_blocks, int block_size, uint64_t seed);
+
+/*
+ * Same physics as dmc_run, but runs n_replicas fully independent DMC
+ * populations (each with its own walker population, own equilibration, own
+ * branching/E_T feedback) and combines them, parallelized over OpenMP threads
+ * when built with -fopenmp.
+ *
+ * Replica i's stream is master_seed's rng_jump()'d i times, giving exact
+ * independence between replicas. Both error_mixed and error_growth are
+ * *inter-replica* standard error (std of the n_replicas independent replica
+ * energies, divided by \sqrt(n_replicas)), which does not depend on
+ * n_blocks/block_size being large enough to average out a population's
+ * branching-correlation time, unlike dmc_run's single-population block error.
+ *
+ * Result result.n_blocks = n_blocks * n_replicas (informational total). Falls
+ * back to an all-zero result if n_replicas < 1 or the usual dmc_run validity
+ * conditions fail, or on allocation failure.
+ */
+dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
+                              int target_population, int max_population,
+                              double tau, int n_equilibration, int n_blocks,
+                              int block_size, uint64_t master_seed);
 
 #endif

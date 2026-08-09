@@ -277,18 +277,17 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   return (total_copies > 0) ? E_L_weighted_sum / total_copies : E_T;
 }
 
-dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
-                     int max_population, double tau, int n_equilibration,
-                     int n_blocks, int block_size, uint64_t seed) {
+static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
+                                     double b, int target_population,
+                                     int max_population, double tau,
+                                     int n_equilibration, int n_blocks,
+                                     int block_size) {
   dmc_result_t result = {0};
 
   if (target_population < 1 || max_population < target_population ||
       tau <= 0.0 || n_blocks < 1 || block_size < 1) {
     return result;
   }
-
-  rng_state_t rng;
-  rng_seed(&rng, seed);
 
   dmc_population_t *pop_a = dmc_population_alloc(max_population);
   dmc_population_t *pop_b = dmc_population_alloc(max_population);
@@ -299,7 +298,7 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
     return result;
   }
 
-  dmc_population_init(pop_a, target_population, Zeff, &rng);
+  dmc_population_init(pop_a, target_population, Zeff, rng);
 
   /* E_T feedback gain. kappa~0.1-1 is standard (Umrigar, Nightingale & Runge
    * 1993); 0.1 is chosen here.
@@ -321,7 +320,7 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
   for (int gen = 0; gen < n_equilibration; gen++) {
     double mean_E_L =
         run_one_generation(cur, next, Z, Zeff, b, tau, E_T, target_population,
-                           max_population, &rng, &accept_sum, &move_count);
+                           max_population, rng, &accept_sum, &move_count);
     int N = next->count;
     E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
 
@@ -350,7 +349,7 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
     for (int s = 0; s < block_size; s++) {
       double mean_E_L =
           run_one_generation(cur, next, Z, Zeff, b, tau, E_T, target_population,
-                             max_population, &rng, &accept_sum, &move_count);
+                             max_population, rng, &accept_sum, &move_count);
       int N = next->count;
       E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
 
@@ -408,6 +407,112 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
 
   dmc_population_free(pop_a);
   dmc_population_free(pop_b);
+
+  return result;
+}
+
+dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
+                     int max_population, double tau, int n_equilibration,
+                     int n_blocks, int block_size, uint64_t seed) {
+  rng_state_t rng;
+  rng_seed(&rng, seed);
+
+  return dmc_run_with_rng(&rng, Z, Zeff, b, target_population, max_population,
+                          tau, n_equilibration, n_blocks, block_size);
+}
+
+dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
+                              int target_population, int max_population,
+                              double tau, int n_equilibration, int n_blocks,
+                              int block_size, uint64_t master_seed) {
+  dmc_result_t result = {0};
+
+  if (n_replicas < 1 || target_population < 1 ||
+      max_population < target_population || tau <= 0.0 || n_blocks < 1 ||
+      block_size < 1) {
+    return result;
+  }
+
+  // One independent DMC population per replica (one population per MPI
+  // rank/thread, statistics combined across independent populations at end)
+  rng_state_t *streams = malloc((size_t)n_replicas * sizeof(rng_state_t));
+  dmc_result_t *replica_results =
+      malloc((size_t)n_replicas * sizeof(dmc_result_t));
+  if (!streams || !replica_results) {
+    free(streams);
+    free(replica_results);
+
+    return result;
+  }
+
+  rng_seed(&streams[0], master_seed);
+  for (int i = 1; i < n_replicas; i++) {
+    streams[i] = streams[i - 1];
+    rng_jump(&streams[i]);
+  }
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < n_replicas; i++) {
+    replica_results[i] = dmc_run_with_rng(
+        &streams[i], Z, Zeff, b, target_population, max_population, tau,
+        n_equilibration, n_blocks, block_size);
+  }
+
+  double sum_mixed = 0.0, sum_growth = 0.0, sum_pop = 0.0, sum_acc = 0.0;
+  int valid_replicas = 0;
+
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_blocks <= 0) {
+      continue;
+    }
+
+    sum_mixed += replica_results[i].energy_mixed;
+    sum_growth += replica_results[i].energy_growth;
+    sum_pop += replica_results[i].mean_population;
+    sum_acc += replica_results[i].acceptance_rate;
+    valid_replicas++;
+  }
+
+  if (valid_replicas == 0) {
+    free(streams);
+    free(replica_results);
+
+    return result;
+  }
+
+  double grand_mixed = sum_mixed / valid_replicas;
+  double grand_growth = sum_growth / valid_replicas;
+
+  double var_mixed = 0.0, var_growth = 0.0;
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_blocks <= 0) {
+      continue;
+    }
+
+    double dm = replica_results[i].energy_mixed - grand_mixed;
+    double dg = replica_results[i].energy_growth - grand_growth;
+    var_mixed += dm * dm;
+    var_growth += dg * dg;
+  }
+
+  double err_mixed = 0.0, err_growth = 0.0;
+  if (valid_replicas > 1) {
+    var_mixed /= (valid_replicas - 1);
+    var_growth /= (valid_replicas - 1);
+    err_mixed = sqrt(var_mixed / valid_replicas);
+    err_growth = sqrt(var_growth / valid_replicas);
+  }
+
+  result.energy_mixed = grand_mixed;
+  result.error_mixed = err_mixed;
+  result.energy_growth = grand_growth;
+  result.error_growth = err_growth;
+  result.n_blocks = n_blocks * valid_replicas;
+  result.mean_population = sum_pop / valid_replicas;
+  result.acceptance_rate = sum_acc / valid_replicas;
+
+  free(streams);
+  free(replica_results);
 
   return result;
 }

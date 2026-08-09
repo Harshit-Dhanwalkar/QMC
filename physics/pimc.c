@@ -396,9 +396,10 @@ double pimc_virial_estimator(const pimc_walker_t *w, double Z, double tau) {
   return (double)(d * N) / (2.0 * beta) + sum;
 }
 
-pimc_result_t pimc_run(double Z, int P, double tau, int level,
-                       int n_equilibration, int n_blocks, int block_size,
-                       uint64_t seed) {
+static pimc_result_t pimc_run_with_rng(rng_state_t *rng, double Z, int P,
+                                       double tau, int level,
+                                       int n_equilibration, int n_blocks,
+                                       int block_size) {
   pimc_result_t result = {0};
 
   int L = 0;
@@ -417,21 +418,18 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
     moves_per_sweep_per_electron = 1;
   }
 
-  rng_state_t rng;
-  rng_seed(&rng, seed);
-
   pimc_walker_t *w = pimc_walker_alloc(P);
   if (!w) {
     return result;
   }
-  pimc_walker_init(w, &rng, Z);
+  pimc_walker_init(w, rng, Z);
 
   long accept_sum = 0, move_count = 0;
 
   for (int sweep = 0; sweep < n_equilibration; sweep++) {
     for (int m = 0; m < moves_per_sweep_per_electron; m++) {
-      accept_sum += pimc_bisection_move(w, 0, Z, tau, level, &rng);
-      accept_sum += pimc_bisection_move(w, 1, Z, tau, level, &rng);
+      accept_sum += pimc_bisection_move(w, 0, Z, tau, level, rng);
+      accept_sum += pimc_bisection_move(w, 1, Z, tau, level, rng);
       move_count += 2;
     }
   }
@@ -449,22 +447,22 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
   for (int blk = 0; blk < n_blocks; blk++) {
     double sum_E = 0.0;
     double sum_E_virial = 0.0;
- 
+
     for (int s = 0; s < block_size; s++) {
       for (int m = 0; m < moves_per_sweep_per_electron; m++) {
-        accept_sum += pimc_bisection_move(w, 0, Z, tau, level, &rng);
-        accept_sum += pimc_bisection_move(w, 1, Z, tau, level, &rng);
+        accept_sum += pimc_bisection_move(w, 0, Z, tau, level, rng);
+        accept_sum += pimc_bisection_move(w, 1, Z, tau, level, rng);
         move_count += 2;
       }
- 
+
       sum_E += pimc_energy_estimator(w, Z, tau);
       sum_E_virial += pimc_virial_estimator(w, Z, tau);
     }
- 
+
     block_means[blk] = sum_E / block_size;
     block_means_virial[blk] = sum_E_virial / block_size;
   }
- 
+
   double mean = 0.0, mean_virial = 0.0;
   for (int blk = 0; blk < n_blocks; blk++) {
     mean += block_means[blk];
@@ -472,7 +470,7 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
   }
   mean /= n_blocks;
   mean_virial /= n_blocks;
- 
+
   double err = 0.0, err_virial = 0.0;
   if (n_blocks > 1) {
     double var = 0.0, var_virial = 0.0;
@@ -489,10 +487,10 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
     err = sqrt(var / n_blocks);
     err_virial = sqrt(var_virial / n_blocks);
   }
- 
+
   free(block_means);
   free(block_means_virial);
- 
+
   result.energy = mean;
   result.error = err;
   result.energy_virial = mean_virial;
@@ -500,8 +498,107 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
   result.n_blocks = n_blocks;
   result.acceptance_rate =
       (move_count > 0) ? (double)accept_sum / move_count : 0.0;
- 
+
   pimc_walker_free(w);
- 
+
+  return result;
+}
+
+pimc_result_t pimc_run(double Z, int P, double tau, int level,
+                       int n_equilibration, int n_blocks, int block_size,
+                       uint64_t seed) {
+  rng_state_t rng;
+  rng_seed(&rng, seed);
+
+  return pimc_run_with_rng(&rng, Z, P, tau, level, n_equilibration, n_blocks,
+                           block_size);
+}
+
+pimc_result_t pimc_run_parallel(int n_replicas, double Z, int P, double tau,
+                                int level, int n_equilibration, int n_blocks,
+                                int block_size, uint64_t master_seed) {
+  pimc_result_t result = {0};
+
+  if (n_replicas < 1) {
+    return result;
+  }
+
+  rng_state_t *streams = malloc((size_t)n_replicas * sizeof(rng_state_t));
+  pimc_result_t *replica_results =
+      malloc((size_t)n_replicas * sizeof(pimc_result_t));
+
+  if (!streams || !replica_results) {
+    free(streams);
+    free(replica_results);
+
+    return result;
+  }
+
+  rng_seed(&streams[0], master_seed);
+  for (int i = 1; i < n_replicas; i++) {
+    streams[i] = streams[i - 1];
+    rng_jump(&streams[i]);
+  }
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < n_replicas; i++) {
+    replica_results[i] = pimc_run_with_rng(
+        &streams[i], Z, P, tau, level, n_equilibration, n_blocks, block_size);
+  }
+
+  double sum_E = 0.0, sum_E_virial = 0.0, sum_acc = 0.0;
+  int valid_replicas = 0;
+
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_blocks <= 0) {
+      continue;
+    }
+
+    sum_E += replica_results[i].energy;
+    sum_E_virial += replica_results[i].energy_virial;
+    sum_acc += replica_results[i].acceptance_rate;
+    valid_replicas++;
+  }
+
+  if (valid_replicas == 0) {
+    free(streams);
+    free(replica_results);
+
+    return result;
+  }
+
+  double grand_E = sum_E / valid_replicas;
+  double grand_E_virial = sum_E_virial / valid_replicas;
+
+  double var_E = 0.0, var_E_virial = 0.0;
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_blocks <= 0) {
+      continue;
+    }
+
+    double d = replica_results[i].energy - grand_E;
+    double dv = replica_results[i].energy_virial - grand_E_virial;
+    var_E += d * d;
+    var_E_virial += dv * dv;
+  }
+
+  double err_E = 0.0, err_E_virial = 0.0;
+  if (valid_replicas > 1) {
+    var_E /= (valid_replicas - 1);
+    var_E_virial /= (valid_replicas - 1);
+    err_E = sqrt(var_E / valid_replicas);
+    err_E_virial = sqrt(var_E_virial / valid_replicas);
+  }
+
+  result.energy = grand_E;
+  result.error = err_E;
+  result.energy_virial = grand_E_virial;
+  result.error_virial = err_E_virial;
+  result.n_blocks = n_blocks * valid_replicas;
+  result.acceptance_rate = sum_acc / valid_replicas;
+
+  free(streams);
+  free(replica_results);
+
   return result;
 }

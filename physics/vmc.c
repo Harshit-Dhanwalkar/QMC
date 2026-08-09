@@ -152,24 +152,27 @@ void vmc_metropolis_sweep(vmc_walker_t *w, double Zeff, double b,
   }
 }
 
-vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
-                     int n_samples, int block_size, double step_size1,
-                     double step_size2, uint64_t seed) {
+/* Shared implementation: runs one full VMC chain against an already-seeded
+ * rng_state_t. */
+// NOTE: vmc_run() seeds a fresh rng and calls this; vmc_run_parallel() calls
+// this once per replica, each replica given its own  rng_jump()-derived stream,
+// so this is only place the sampling loop is written.
+static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
+                                     double b, int n_equilibration,
+                                     int n_samples, int block_size,
+                                     double step_size1, double step_size2) {
   vmc_result_t result = {0};
 
   if (n_samples <= 0 || block_size <= 0) {
     return result;
   }
 
-  rng_state_t rng;
-  rng_seed(&rng, seed);
-
   vmc_walker_t w;
-  vmc_walker_init(&w, &rng, Zeff);
+  vmc_walker_init(&w, rng, Zeff);
 
   for (int i = 0; i < n_equilibration; i++) {
     int a1, a2;
-    vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, &rng, &a1, &a2);
+    vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, rng, &a1, &a2);
   }
 
   int n_blocks = n_samples / block_size;
@@ -190,7 +193,7 @@ vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
 
     for (int s = 0; s < block_size; s++) {
       int a1, a2;
-      vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, &rng, &a1, &a2);
+      vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, rng, &a1, &a2);
       acc1_total += a1;
       acc2_total += a2;
 
@@ -200,6 +203,7 @@ vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
       sum_E2 += E * E;
       sample_count++;
     }
+
     block_means[blk] = block_sum / block_size;
   }
 
@@ -230,6 +234,110 @@ vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
       (sample_count > 0) ? (double)acc1_total / sample_count : 0.0;
   result.acceptance_rate2 =
       (sample_count > 0) ? (double)acc2_total / sample_count : 0.0;
+
+  return result;
+}
+
+vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
+                     int n_samples, int block_size, double step_size1,
+                     double step_size2, uint64_t seed) {
+  rng_state_t rng;
+  rng_seed(&rng, seed);
+
+  return vmc_run_with_rng(&rng, Z, Zeff, b, n_equilibration, n_samples,
+                          block_size, step_size1, step_size2);
+}
+
+vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
+                              int n_equilibration, int n_samples,
+                              int block_size, double step_size1,
+                              double step_size2, uint64_t master_seed) {
+  vmc_result_t result = {0};
+
+  if (n_replicas < 1 || n_samples <= 0 || block_size <= 0) {
+    return result;
+  }
+
+  // Derive n_replicas provably-independent streams from one master seed,
+  // serially (jump is cheap: 4*64 xoshiro steps), before opening parallel
+  // region : avoids any race on shared RNG state.
+  rng_state_t *streams = malloc((size_t)n_replicas * sizeof(rng_state_t));
+  vmc_result_t *replica_results =
+      malloc((size_t)n_replicas * sizeof(vmc_result_t));
+  if (!streams || !replica_results) {
+    free(streams);
+    free(replica_results);
+
+    return result;
+  }
+
+  rng_seed(&streams[0], master_seed);
+  for (int i = 1; i < n_replicas; i++) {
+    streams[i] = streams[i - 1];
+
+    rng_jump(&streams[i]);
+  }
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < n_replicas; i++) {
+    replica_results[i] =
+        vmc_run_with_rng(&streams[i], Z, Zeff, b, n_equilibration, n_samples,
+                         block_size, step_size1, step_size2);
+  }
+
+  // Combine: pooled mean/variance over all samples (equal n_samples per
+  // replica, by construction), and statistically stronger estimate the
+  // *inter-replica* standard error, since the replicas are exactly independent
+  // (jump-guaranteed), unlike single-chain block-averaging whose validity
+  // depends on block_size safely exceeding an unmeasured autocorrelation time.
+  double sum_mean = 0.0, sum_var = 0.0, sum_acc1 = 0.0, sum_acc2 = 0.0;
+  long total_samples = 0;
+  int valid_replicas = 0;
+
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_samples <= 0) {
+      continue;
+    }
+    sum_mean += replica_results[i].mean;
+    sum_var += replica_results[i].variance;
+    sum_acc1 += replica_results[i].acceptance_rate1;
+    sum_acc2 += replica_results[i].acceptance_rate2;
+    total_samples += replica_results[i].n_samples;
+    valid_replicas++;
+  }
+
+  if (valid_replicas == 0) {
+    free(streams);
+    free(replica_results);
+    return result;
+  }
+
+  double grand_mean = sum_mean / valid_replicas;
+
+  double between_var = 0.0;
+  for (int i = 0; i < n_replicas; i++) {
+    if (replica_results[i].n_samples <= 0) {
+      continue;
+    }
+    double d = replica_results[i].mean - grand_mean;
+    between_var += d * d;
+  }
+
+  double inter_replica_error = 0.0;
+  if (valid_replicas > 1) {
+    between_var /= (valid_replicas - 1);
+    inter_replica_error = sqrt(between_var / valid_replicas);
+  }
+
+  result.mean = grand_mean;
+  result.error = inter_replica_error;
+  result.variance = sum_var / valid_replicas;
+  result.n_samples = (int)total_samples;
+  result.acceptance_rate1 = sum_acc1 / valid_replicas;
+  result.acceptance_rate2 = sum_acc2 / valid_replicas;
+
+  free(streams);
+  free(replica_results);
 
   return result;
 }

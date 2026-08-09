@@ -141,4 +141,18 @@ pimc_result_t pimc_run(double Z, int P, double tau, int level,
                        int n_equilibration, int n_blocks, int block_size,
                        uint64_t seed);
 
+/*
+ * Same physics as pimc_run, but runs n_replicas fully independent PIMC walkers
+ * (each its own P-bead ring polymer, own equilibration, own block-averaged
+ * sampling) and combines them, parallelized over OpenMP threads when built with
+ * -fopenmp.
+ *
+ * result.n_blocks = n_blocks * n_replicas (informational total). Falls back
+ * to an all-zero result if n_replicas < 1, the usual pimc_run validity
+ * conditions fail for every replica, or on allocation failure.
+ */
+pimc_result_t pimc_run_parallel(int n_replicas, double Z, int P, double tau,
+                                int level, int n_equilibration, int n_blocks,
+                                int block_size, uint64_t master_seed);
+
 #endif

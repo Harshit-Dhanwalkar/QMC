@@ -2,13 +2,13 @@
 
 <p align="center">
   <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/License-PolyForm__Noncommercial__1.0.0-blue.svg" alt="License">
   </a>
   <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/docs.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/docs.yml?branch=main&label=docs" alt="Docs Deploy Status">
   </a>
   <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build%20%26%20tests" alt="CI Status">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build_and_tests" alt="CI Status">
   </a>
 </p>
 

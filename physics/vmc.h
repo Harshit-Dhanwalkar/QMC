@@ -78,6 +78,21 @@ vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
                      double step_size2, uint64_t seed);
 
 /*
+ * Same physics and statistics as vmc_run, but runs n_replicas fully independent
+ * VMC chains (each its own walker, own equilibration, own block-averaged
+ * sampling) and combines them, parallelized over OpenMP threads when built with
+ * -fopenmp.
+ *
+ * result.n_samples = n_replicas * n_samples (total across all replicas).
+ * Falls back to a single all-zero result if n_replicas < 1, n_samples <= 0,
+ * block_size <= 0, or allocation fails.
+ */
+vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
+                              int n_equilibration, int n_samples,
+                              int block_size, double step_size1,
+                              double step_size2, uint64_t master_seed);
+
+/*
  * Optimize b in [b_min, b_max] via golden_section_minimize over
  * vmc_run(...).mean, for fixed nuclear charge Z and trial orbital exponent
  * Zeff.
