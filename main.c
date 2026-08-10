@@ -56,6 +56,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_37_second_quant", "Second quantization and Jordan-Wigner transformation"},
     {"build/eg_38_landau_levels", "Landau levels on a lattice via Peierls substitution (Hofstadter model)"},
     {"build/eg_39_openmp_qmc", "OpenMP-parallel VMC/DMC/PIMC replica runners (wall-clock speedup)"},
+    {"build/eg_40_molecular_integrals", "General molecular integrals (McMurchie-Davidson): H2/STO-3G restricted Hartree-Fock"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
