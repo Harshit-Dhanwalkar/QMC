@@ -47,7 +47,7 @@ ifeq ($(LATEX_AVAIL),no)
     $(warning pdflatex or pdftoppm not found in PATH – LaTeX rendering will fail at runtime)
 endif
 
-# LaTeX backend selection : pdflatex and lualatex 
+# LaTeX backend selection : pdflatex and lualatex
 LATEX_COMPILER ?= pdflatex
 
 
@@ -350,6 +350,22 @@ run-tests: tests
 	echo ""; \
 	echo "Results: $$passed passed, $$failed failed"; \
 	[ $$failed -eq 0 ]
+
+# Coverage
+LCOV_AVAIL := $(shell command -v lcov >/dev/null 2>&1 && echo yes || echo no)
+
+coverage: CFLAGS += -fprofile-arcs -ftest-coverage
+coverage: LDFLAGS += -lgcov
+coverage: clean run-tests
+ifeq ($(LCOV_AVAIL),no)
+	$(error "lcov is not installed. Install lcov (e.g., 'sudo apt install lcov') to generate coverage reports.")
+else
+	@mkdir -p coverage
+	lcov --capture --directory . --output-file coverage/coverage.info --ignore-errors gcov,gcov
+	lcov --remove coverage/coverage.info '/usr/*' '*/third_party/*' '*/tests/*' --output-file coverage/coverage.info
+	genhtml coverage/coverage.info --output-directory coverage/html
+	@echo "Coverage report generated at coverage/html/index.html"
+endif
 
 # Run a specific test
 test-%: $(BUILD_DIR)/test_%

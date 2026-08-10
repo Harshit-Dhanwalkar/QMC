@@ -104,9 +104,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Install Analysis Tools
+        run: |
+          sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy
+
       - name: Run Cppcheck
         # run: |
-        #   sudo apt-get update && sudo apt-get install -y cppcheck
         #   cppcheck --enable=warning,performance,portability \
         #            --suppress=constVariable \
         #            --suppress=constParameterPointer \
@@ -114,10 +118,33 @@ jobs:
         #            --inline-suppr \
         #            -I core -I physics -I export .
         run: |
-          sudo apt-get update && sudo apt-get install -y cppcheck
           cppcheck --enable=warning,style,performance,portability \
+                   --error-exitcode=1 \
                    --inline-suppr \
                    -I core -I physics -I export .
+
+      - name: Run Clang-Tidy
+        run: |
+          clang-tidy core/*.c physics/*.c -- -Icore -Iphysics -Iexport
+
+  valgrind-check:
+      runs-on: ubuntu-latest
+      needs: build-and-test
+      steps:
+        - uses: actions/checkout@v5
+          with:
+            submodules: recursive
+
+        - name: Install Dependencies & Valgrind
+          run: |
+            sudo apt-get update && sudo apt-get install -y build-essential valgrind gnuplot
+
+        - name: Run Tests under Valgrind
+          run: |
+            make tests
+            for t in build/test_*; do
+              valgrind --leak-check=full --error-exitcode=1 "$t" || exit 1
+            done
 
   sanitizers:
     runs-on: ubuntu-latest

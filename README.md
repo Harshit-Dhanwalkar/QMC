@@ -10,6 +10,10 @@
   <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build_and_tests" alt="CI Status">
   </a>
+  <img src="https://img.shields.io/badge/c-C99-blue.svg" alt="C Standard">
+  <img src="https://img.shields.io/badge/parallel-OpenMP-informational.svg" alt="OpenMP">
+  <img src="https://img.shields.io/badge/sanitizers-ASan%20%7C%20UBSan-green.svg" alt="Sanitizers">
+  <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="OS Linux">
 </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -49,7 +53,7 @@ make demo
 
 # Run test suite
 make run-tests
-# All example/test output is written under `output/` (`QMC_OUTPUT_DIR`);
+# All example/test output is written under `output/` (`QMC_OUTPUT_DIR`)
 
 # Cleanup
 make clean
@@ -105,7 +109,7 @@ make clean
   <li><code>eg_33_lattice.c</code></li>
   <li><code>eg_34_quantum_info.c</code></li>
   <li><code>eg_35_qec.c</code></li>
-  <li><code>eg_36_quantum_algorithms.c</code></li> </ul>
+  <li><code>eg_36_quantum_algorithms.c</code></li>
   <li><code>eg_37_second_quant.c</code></li>
   <li><code>eg_38_landau_levels.c</code></li>
   <li><code>eg_39_openmp_qmc</code></li>

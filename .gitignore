@@ -67,3 +67,9 @@ mdbook
 mdbook-katex
 # mdBook generated output
 docs/book/
+
+# Code coverage reports and data
+coverage/
+*.gcda
+*.gcno
+*.gcov
