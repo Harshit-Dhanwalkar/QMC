@@ -50,6 +50,7 @@
 #include "schrodinger.h"
 #include "second_quant.h"
 #include "molecular_integrals.h"
+#include "dft.h"
 #include "soft.h"
 #include "uncertainty.h"
 #include "variational.h"

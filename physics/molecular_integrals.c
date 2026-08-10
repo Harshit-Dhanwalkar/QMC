@@ -1,6 +1,6 @@
 #include "molecular_integrals.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/complex.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
+#include "../core/complex.h"
+#include "../core/matrix.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
