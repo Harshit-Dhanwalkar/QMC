@@ -11,9 +11,10 @@
 
 static int check(const char *name, double got, double expected, double tol) {
   int pass = fabs(got - expected) < tol;
-  if (!pass)
+  if (!pass) {
     printf("   FAIL %s: got %.6e expected %.6e (tol %.1e)\n", name, got,
            expected, tol);
+  }
 
   return pass;
 }
@@ -56,7 +57,8 @@ int main(void) {
   int idx2 = (int)((2.0 - (-L)) / dx);
   pass &= check("V_HO(1.0)", V[idx1], 0.5, 0.01);
   pass &= check("V_HO(2.0)", V[idx2], 2.0, 0.01);
-  printf("   V(1.0)=%.4f (\\exp 0.5), V(2.0)=%.4f (\\exp 2.0)\n", V[idx1], V[idx2]);
+  printf("   V(1.0)=%.4f (\\exp 0.5), V(2.0)=%.4f (\\exp 2.0)\n", V[idx1],
+         V[idx2]);
 
   // Step potential: V=0 for x<0, V=V0 for x>=0
   printf("   Step potential (V0=5):\n");
@@ -70,7 +72,7 @@ int main(void) {
 
   // Rectangular barrier: V=V0 for 0<x<a, V=0 elsewhere
   printf("   Rectangular barrier (a=1.0, V0=3.0):\n");
-  double barrier_params[2] = {1.0, 3.0}; // {a, V0}
+  const double barrier_params[2] = {1.0, 3.0}; // {a, V0}
   potential_array(x, N, V_barrier, barrier_params, V);
 
   int i_in = (int)((0.5 - (-L)) / dx);  // inside (0, a)
@@ -83,13 +85,13 @@ int main(void) {
   // Analytic energy levels
   printf("   Analytic energy levels (\\hbar=m=1):\n");
 
-  // Infinite well of half-width a: E_n = n^2 \pi^2 / (8 a^2)
+  // Infinite well of half-width a: E_n = n^2 * \pi^2 / (8 * a^2)
   double a_energy = 1.0;
   double E1_well = (1.0 * M_PI * M_PI) / (8.0 * a_energy * a_energy);
   double E1_expected = M_PI * M_PI / 8.0;
   pass &= check("E1_infinite_well", E1_well, E1_expected, 1e-10);
 
-  // Harmonic oscillator: E_n = (n + 1/2) \hbar \omega
+  // Harmonic oscillator: E_n = (n + 1/2) * \hbar * \omega
   double E0_ho = (0 + 0.5) * omega;
   double E1_ho = (1 + 0.5) * omega;
   pass &= check("E0_harmonic", E0_ho, 0.5, 1e-10);
@@ -99,6 +101,7 @@ int main(void) {
 
   free(x);
   free(V);
+
   if (pass)
     printf("   Potentials test passed.\n");
   else

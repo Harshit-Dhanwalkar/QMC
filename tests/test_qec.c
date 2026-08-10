@@ -41,7 +41,7 @@ static void run_code_all_errors(qec_code_t code, const char *name) {
   complex_t alpha = c_real(0.6);
   complex_t beta = c_new(0.7368487952023082, 0.31153467384692046);
 
-  int expected_syndrome[4][2] = {
+  const int expected_syndrome[4][2] = {
       {0, 0}, // no error
       {1, 0}, // qubit 0
       {1, 1}, // qubit 1

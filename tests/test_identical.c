@@ -17,30 +17,39 @@ formula permanent)
 // Not using Ryser formula for permanent
 static complex_t cofactor_expand_reference(cmatrix_t *A, int use_sign) {
   int n = A->nrows;
-  if (n == 1)
+  if (n == 1) {
     return CMAT(A, 0, 0);
+  }
 
   complex_t sum = c_zero();
   double sign = 1.0;
   for (int j = 0; j < n; j++) {
     cmatrix_t *minor = cmatrix_alloc(n - 1, n - 1);
+
     for (int r = 1; r < n; r++) {
       int mc = 0;
+
       for (int c = 0; c < n; c++) {
-        if (c == j)
+        if (c == j) {
           continue;
+        }
+
         CMAT(minor, r - 1, mc) = CMAT(A, r, c);
         mc++;
       }
     }
+
     complex_t sub = cofactor_expand_reference(minor, use_sign);
     complex_t term = c_mul(CMAT(A, 0, j), sub);
-    if (use_sign)
+    if (use_sign) {
       term = c_scale(term, sign);
+    }
+
     sum = c_add(sum, term);
     cmatrix_free(minor);
     sign = -sign;
   }
+
   return sum;
 }
 
@@ -50,6 +59,7 @@ static int check_close_complex(complex_t got, complex_t expected, double tol,
       sqrt(pow(got.re - expected.re, 2) + pow(got.im - expected.im, 2));
   printf("  %s: got=(%.6f,%.6f) expected=(%.6f,%.6f) err=%.2e\n", label, got.re,
          got.im, expected.re, expected.im, err);
+
   return err > tol;
 }
 
@@ -59,29 +69,36 @@ static cvector_t **matrix_to_orbitals(cmatrix_t *M, int N) {
   cvector_t **orbitals = malloc(N * sizeof *orbitals);
   for (int i = 0; i < N; i++) {
     orbitals[i] = cvector_alloc(N);
+
     for (int j = 0; j < N; j++) {
       orbitals[i]->data[j] = CMAT(M, i, j);
     }
   }
+
   return orbitals;
 }
 
 static void free_orbitals(cvector_t **orbitals, int N) {
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     cvector_free(orbitals[i]);
+  }
+
   free(orbitals);
 }
 
 static double factorial_local(int n) {
   double r = 1.0;
-  for (int i = 2; i <= n; i++)
+  for (int i = 2; i <= n; i++) {
     r *= i;
+  }
+
   return r;
 }
 
 static int test_against_reference(int N, unsigned int seed) {
   srand(seed);
   cmatrix_t *M = cmatrix_alloc(N, N);
+
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       double re = (double)rand() / RAND_MAX - 0.5;
@@ -99,8 +116,9 @@ static int test_against_reference(int N, unsigned int seed) {
   cvector_t **orbitals = matrix_to_orbitals(M, N);
   cmatrix_free(M);
   int *indices = malloc(N * sizeof *indices);
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     indices[i] = i;
+  }
 
   complex_t det_new = slater_determinant_value(orbitals, N, indices);
   complex_t perm_new = bosonic_permanent_value(orbitals, N, indices);
@@ -122,13 +140,15 @@ static int test_against_reference(int N, unsigned int seed) {
 static int test_diagonal_case(void) {
   int N = 4;
   cmatrix_t *M = cmatrix_alloc(N, N);
-  for (int i = 0; i < N; i++)
-    for (int j = 0; j < N; j++)
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
       CMAT(M, i, j) = (i == j) ? c_real(2.0 + i) : c_zero();
+    }
+  }
 
   cvector_t **orbitals = matrix_to_orbitals(M, N);
   cmatrix_free(M);
-  int indices[4] = {0, 1, 2, 3};
+  const int indices[4] = {0, 1, 2, 3};
 
   complex_t det = slater_determinant_value(orbitals, N, indices);
   complex_t perm = bosonic_permanent_value(orbitals, N, indices);
@@ -150,8 +170,9 @@ int main(void) {
   int failed = 0;
 
   printf("Random matrices vs. O(N!) reference implementation:\n");
-  for (int N = 2; N <= 6; N++)
+  for (int N = 2; N <= 6; N++) {
     failed += test_against_reference(N, 100 + N);
+  }
 
   printf("Diagonal matrix (hand-checkable):\n");
   failed += test_diagonal_case();

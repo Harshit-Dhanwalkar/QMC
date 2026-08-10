@@ -41,12 +41,12 @@ int main(void) {
   printf("   Orbitals: particle-in-a-box states n=1,2,3, grid of %d points\n\n",
          M);
 
-  int idx_diff[2] = {10, 30};
+  const int idx_diff[2] = {10, 30};
   complex_t det_diff = slater_determinant_value(orbitals, 2, idx_diff);
   printf("   Fermions, orbitals {1,2}, distinct positions: det=%.6f\n",
          det_diff.re);
 
-  int idx_same[2] = {20, 20};
+  const int idx_same[2] = {20, 20};
   complex_t det_same = slater_determinant_value(orbitals, 2, idx_same);
   printf("   Fermions, orbitals {1,2}, same position: det=%.2e "
          "(should be 0, Pauli exclusion)\n",
@@ -57,7 +57,7 @@ int main(void) {
          "(nonzero - no exclusion for bosons)\n\n",
          perm_same.re);
 
-  int idx3[3] = {8, 22, 41};
+  const int idx3[3] = {8, 22, 41};
   complex_t det3 = slater_determinant_value(orbitals, 3, idx3);
   complex_t perm3 = bosonic_permanent_value(orbitals, 3, idx3);
   printf("   3 particles, orbitals {1,2,3}, distinct positions:\n");

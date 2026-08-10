@@ -27,8 +27,8 @@
  * with near-degenerate low-lying levels, or where correctness matters more than
  * speed of single diagonalization.
  */
-eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
-                         double c);
+eigen_t *klein_gordon_1d(const double *x, int N, const double *V, double m,
+                         double hbar, double c);
 
 typedef struct {
   double energy;
@@ -61,8 +61,8 @@ typedef struct {
  * last-iterate values regardless.
  */
 klein_gordon_solution_t *
-klein_gordon_1d_self_consistent(double *x, int N, double *V, double m,
-                                double hbar, double c, double E_guess,
+klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
+                                double m, double hbar, double c, double E_guess,
                                 double tol, int max_iter);
 
 void klein_gordon_solution_free(klein_gordon_solution_t *sol);
@@ -72,18 +72,23 @@ void klein_gordon_solution_free(klein_gordon_solution_t *sol);
    Where \sigma_x, \sigma_z are Pauli matrices.
    Returns eigen_t with eigenvalues (energies) and eigenvectors (spinors).
 */
-eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar, double c);
+eigen_t *dirac_1d(const double *x, int N, const double *V, double m,
+                  double hbar, double c);
 
 /*
  * Radial Dirac equation for central potential V(r), fixed \kappa
- * (relativistic angular quantum number: \kappa = -(l+1) for j=l+1/2,
- * \kappa = +l for j=l-1/2). Solves coupled first-order radial equations
- * for the "large"/"small" radial components G(r)=r*g(r), F(r)=r*f(r):
- *   \hbar * c * (dG/dr) = -\hbar * c * (\kappa / r ) *G + (E - V + m * c^2) * F
- *   \hbar * c * (dF/dr) =  \hbar * c * (\kappa / r ) *F - (E - V - m * c^2) * G
+ * (relativistic angular quantum number:
+ * \kappa = -(l+1) for j=l+1/2,
+ * \kappa = +l for j=l-1/2).
+ * Solves coupled first-order radial equations
+ * for the "large"/"small" radial components :
+ *  G(r)= r * g(r),
+ *  F(r)= r * f(r):
+ *  \hbar * c * (dG/dr) = -\hbar * c * (\kappa / r ) *G + (E - V + m * c^2) * F
+ *  \hbar * c * (dF/dr) =  \hbar * c * (\kappa / r ) *F - (E - V - m * c^2) * G
  * discretized via central differences into a 2N x 2N matrix.
- * Eigenvector columns are 2N-dimensional: rows [0,N) = G(r), rows [N,2N) =
- * F(r).
+ * Eigenvector columns are 2N-dimensional:
+ *  rows [0,N) = G(r), rows [N,2N) = F(r).
  *
  * Where
  * r     : uniform radial grid, r[0] > 0 (to avoids kappa/r singularity at

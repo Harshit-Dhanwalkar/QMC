@@ -19,8 +19,9 @@ int main(void) {
          alpha.re, beta.re, beta.im);
   printf("   across all 4 possible Bell-measurement outcomes:\n\n");
 
-  double u_for[2] = {0.1,
-                     0.9}; // forces measurement outcome 0 or 1, respectively
+  // forces measurement outcome 0 or 1, respectively
+  const double u_for[2] = {0.1, 0.9};
+
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       qi_teleport_result_t r = qi_teleport(alpha, beta, u_for[i], u_for[j]);
@@ -59,7 +60,7 @@ int main(void) {
          "%.6f\n\n",
          2.0 * sqrt(2.0));
   printf("   The Bell state violates the classical bound by %.4f. No local "
-         "hidden-variable theory can reproduce quantum mechanics  predictions",
+         "hidden-variable theory can reproduce quantum mechanics predictions",
          S - 2.0);
 
   return 0;

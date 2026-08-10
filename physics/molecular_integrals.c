@@ -11,8 +11,8 @@
 
 static double boys_series(int n, double x, int nterms) {
   /* F_n(x) = \exp(-x) * \sum_{k = 0}^\inf [(2n-1)!! / (2n+2k+1)!!] (2x)^k
-   * NOTE: All terms in the sum are positive, factoring out \exp(-x) makes this stable
-   * for large x too. */
+   * NOTE: All terms in the sum are positive, factoring out \exp(-x) makes this
+   * stable for large x too. */
   double s = 1.0 / (2 * n + 1);
   double term = s;
 
@@ -231,12 +231,12 @@ static double prim_eri(const gto_primitive_t *A, const double Ac[3],
                        const gto_primitive_t *D, const double Dc[3]) {
   double a = A->alpha, b = B->alpha, c = Cp->alpha, d = D->alpha;
   double p = a + b, q = c + d;
-  double P[3] = {(a * Ac[0] + b * Bc[0]) / p, (a * Ac[1] + b * Bc[1]) / p,
-                 (a * Ac[2] + b * Bc[2]) / p};
-  double Q[3] = {(c * Cc[0] + d * Dc[0]) / q, (c * Cc[1] + d * Dc[1]) / q,
-                 (c * Cc[2] + d * Dc[2]) / q};
+  const double P[3] = {(a * Ac[0] + b * Bc[0]) / p, (a * Ac[1] + b * Bc[1]) / p,
+                       (a * Ac[2] + b * Bc[2]) / p};
+  const double Q[3] = {(c * Cc[0] + d * Dc[0]) / q, (c * Cc[1] + d * Dc[1]) / q,
+                       (c * Cc[2] + d * Dc[2]) / q};
   double alpha = p * q / (p + q);
-  double PQ[3] = {P[0] - Q[0], P[1] - Q[1], P[2] - Q[2]};
+  const double PQ[3] = {P[0] - Q[0], P[1] - Q[1], P[2] - Q[2]};
   double RPQ2 = PQ[0] * PQ[0] + PQ[1] * PQ[1] + PQ[2] * PQ[2];
 
   int Lmax = (A->l + B->l + A->m + B->m + A->n + B->n) +
@@ -361,12 +361,16 @@ double gto_eri(const basis_function_t *A, const basis_function_t *B,
   double s = 0.0;
   for (int i = 0; i < A->n_primitives; i++) {
     gto_primitive_t pa = {A->l, A->m, A->n, A->exponents[i]};
+
     for (int j = 0; j < B->n_primitives; j++) {
       gto_primitive_t pb = {B->l, B->m, B->n, B->exponents[j]};
+
       for (int k = 0; k < C->n_primitives; k++) {
         gto_primitive_t pc = {C->l, C->m, C->n, C->exponents[k]};
+
         for (int m = 0; m < D->n_primitives; m++) {
           gto_primitive_t pd = {D->l, D->m, D->n, D->exponents[m]};
+
           s += A->coefficients[i] * B->coefficients[j] * C->coefficients[k] *
                D->coefficients[m] *
                prim_eri(&pa, A->center, &pb, B->center, &pc, C->center, &pd,
@@ -627,10 +631,10 @@ double *molecular_eri_tensor(basis_function_t **basis, int n_basis) {
           }
 
           double val = gto_eri(basis[i], basis[j], basis[k], basis[l]);
-          int idx_i[8] = {i, j, i, j, k, l, k, l};
-          int idx_j[8] = {j, i, j, i, l, k, l, k};
-          int idx_k[8] = {k, k, l, l, i, i, j, j};
-          int idx_l[8] = {l, l, k, k, j, j, i, i};
+          const int idx_i[8] = {i, j, i, j, k, l, k, l};
+          const int idx_j[8] = {j, i, j, i, l, k, l, k};
+          const int idx_k[8] = {k, k, l, l, i, i, j, j};
+          const int idx_l[8] = {l, l, k, k, j, j, i, i};
           for (int s = 0; s < 8; s++) {
             MOLINT_ERI(eri, n_basis, idx_i[s], idx_j[s], idx_k[s], idx_l[s]) =
                 val;

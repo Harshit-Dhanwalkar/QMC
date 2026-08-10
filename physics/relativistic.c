@@ -14,8 +14,8 @@ Relativistic QM: Klein-Gordon and Dirac 1D solvers.
 #include <math.h>
 #include <stdlib.h>
 
-eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
-                         double c) {
+eigen_t *klein_gordon_1d(const double *x, int N, const double *V, double m,
+                         double hbar, double c) {
   if (!x || !V || N < 2) {
     return NULL;
   }
@@ -58,6 +58,7 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
 
   for (int i = 0; i < N; i++) {
     diag[i] = 2.0 * coeff + mc2 * mc2;
+
     if (i < N - 1) {
       offdiag[i] = -coeff;
     }
@@ -86,8 +87,8 @@ eigen_t *klein_gordon_1d(double *x, int N, double *V, double m, double hbar,
 }
 
 klein_gordon_solution_t *
-klein_gordon_1d_self_consistent(double *x, int N, double *V, double m,
-                                double hbar, double c, double E_guess,
+klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
+                                double m, double hbar, double c, double E_guess,
                                 double tol, int max_iter) {
   if (!x || !V || N < 3 || max_iter < 1) {
     return NULL;
@@ -224,7 +225,7 @@ void klein_gordon_solution_free(klein_gordon_solution_t *sol) {
   free(sol);
 }
 
-eigen_t *dirac_1d(double *x, int N, double *V, double m, double hbar,
+eigen_t *dirac_1d(const double *x, int N, const double *V, double m, double hbar,
                   double c) {
   // Build 2N x 2N Hermitian matrix:
   // [ V(x) + mc^2,          -i * \hbar * c d/dx ]

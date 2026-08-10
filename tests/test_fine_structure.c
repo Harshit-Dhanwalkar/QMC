@@ -54,6 +54,7 @@ static int test_ls_expect_matches_coupling(void) {
 
 static int test_l0_zero(void) {
   double val = spin_orbit_ls_expect(0, 1); // l=0, j=1/2 only possibility
+
   return check_close(val, 0.0, 1e-12, "l=0 <L.S>");
 }
 
@@ -74,6 +75,7 @@ static int test_2p_splitting(void) {
   // Loose tolerance
   int fail = fabs(split_eV - 4.5e-5) / 4.5e-5 > 0.1;
   fail |= fabs(split_GHz - 10.97) / 10.97 > 0.1;
+
   return fail;
 }
 

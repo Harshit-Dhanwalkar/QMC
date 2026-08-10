@@ -33,7 +33,7 @@ int main(void) {
          "\\beta / P):\n\n",
          beta);
 
-  int Ps[] = {64, 128, 256, 512};
+  const int Ps[] = {64, 128, 256, 512};
   int n = 4;
   double *tau_vals = malloc(n * sizeof *tau_vals);
   double *E_vals = malloc(n * sizeof *E_vals);

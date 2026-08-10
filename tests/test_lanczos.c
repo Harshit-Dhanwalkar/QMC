@@ -34,7 +34,6 @@ static void check_close(double got, double expected, double tol,
 
   if (err > tol) {
     printf("  FAIL: %s\n", label);
-
     failures++;
   }
 }
@@ -70,10 +69,11 @@ static void test_diagonal_matrix(void) {
   check_true(res != NULL, "lanczos_eigs succeeds on diagonal matrix");
   if (res) {
     // sorted smallest diagonal entries: 0.5, 1.0, 2.0
-    double expected[3] = {0.5, 1.0, 2.0};
+    const double expected[3] = {0.5, 1.0, 2.0};
     for (int i = 0; i < k; i++) {
       char label[32];
       snprintf(label, sizeof label, "eigenvalue[%d]", i);
+
       check_close(res->values[i], expected[i], 1e-8, label);
     }
 
@@ -158,12 +158,13 @@ static void test_random_hermitian_vs_dense(void) {
     for (int i = 0; i < k; i++) {
       for (int j = 0; j < k; j++) {
         complex_t dot = c_zero();
+
         for (int row = 0; row < n; row++) {
           dot = c_add(dot, c_mul(c_conj(CMAT(res->vectors, row, i)),
                                  CMAT(res->vectors, row, j)));
         }
 
-        double expected_re = (i == j) ? 1.0 : 0.0;
+        const double expected_re = (i == j) ? 1.0 : 0.0;
         char label[48];
         snprintf(label, sizeof label, "<v[%d],v[%d]>.re", i, j);
         check_close(dot.re, expected_re, 1e-6, label);
@@ -193,8 +194,10 @@ static void test_invalid_input(void) {
     for (int j = 0; j < 3; j++) {
       CMAT(dense, i, j) = c_zero();
     }
+
     CMAT(dense, i, i) = c_real(1.0 + i);
   }
+
   sparse_matrix_t *A = sparse_from_dense(dense, 1e-12);
   cmatrix_free(dense);
 

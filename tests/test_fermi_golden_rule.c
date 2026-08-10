@@ -2,13 +2,13 @@
 Test + demonstration: Fermi's Golden Rule, validated against
 diagonalization-based time evolution
 
-Setup: couple one initial state |0> (energy 0) to M "quasi-continuum"
-final states spread uniformly over an energy window W (so the density of
-states rho = M/W = 1/dE, dE = level spacing), each with same coupling
-V0 and no coupling among the final states themselves (a "star" / Fano-
-Friedrichs-model Hamiltonian).
+Setup: couple one initial state |0> (energy 0) to M "quasi-continuum" final
+states spread uniformly over an energy window W (so the density of states \rho =
+M/W = 1/dE, dE = level spacing), each with same coupling V0 and no coupling
+among final states themselves (a "star" / Fano-Friedrichs-model Hamiltonian).
 
-Fermi's Golden Rule predicts P(t) ~ \exp(-\Gamma*t), \Gamma = 2 * \pi * V0^2 *
+Fermi's Golden Rule predicts :
+  P(t) ~ \exp(-\Gamma*t), \Gamma = 2 * \pi * V0^2 *
 \rho, valid at intermediate times: t >> 1/W (needed for golden-rule energy
 coarse-graining to apply, at very short times decay is quadratic/Zeno-like, not
 exponential) and t << 1/dE (before finite-size recurrences from discrete
@@ -47,6 +47,7 @@ int main(void) {
   for (int i = 0; i < dim * dim; i++) {
     H->data[i] = c_zero();
   }
+
   for (int k = 1; k <= M; k++) {
     double Ek = -W / 2.0 + (k - 1) * dE;
     CMAT(H, k, k) = c_real(Ek);
@@ -59,6 +60,7 @@ int main(void) {
   for (int i = 0; i < dim * dim; i++) {
     Vpert->data[i] = c_zero();
   }
+
   CMAT(Vpert, 1, 0) = c_real(V0);
   double Gamma = fermi_golden_rate(Vpert, 0, 1, rho);
 
@@ -84,7 +86,7 @@ int main(void) {
   printf("  Gamma (golden rule) = %.6f\n", Gamma);
   printf("  Survival probability vs exp(-Gamma*t), intermediate-time "
          "window:\n");
-  double test_times[] = {2.0, 2.5, 3.0, 3.5, 4.0};
+  const double test_times[] = {2.0, 2.5, 3.0, 3.5, 4.0};
 
   for (int ti = 0; ti < 5; ti++) {
     double t = test_times[ti];

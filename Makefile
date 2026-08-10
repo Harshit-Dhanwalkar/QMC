@@ -50,7 +50,6 @@ endif
 # LaTeX backend selection : pdflatex and lualatex
 LATEX_COMPILER ?= pdflatex
 
-
 ifeq ($(PLOT_BACKEND),GR)
     PLOT_SRC     = export/plot_gr.c \
                    export/gr/gr_plot.c \

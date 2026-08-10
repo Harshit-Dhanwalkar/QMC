@@ -141,7 +141,8 @@ jobs:
 
         - name: Run Tests under Valgrind
           run: |
-            make tests
+            make clean
+            make tests EXTRA_CFLAGS=""
             for t in build/test_*; do
               valgrind --leak-check=full --error-exitcode=1 "$t" || exit 1
             done

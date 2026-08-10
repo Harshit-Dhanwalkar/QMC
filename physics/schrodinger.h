@@ -29,8 +29,8 @@ numerov_solution_t *solve_tise_shoot(numerov_params_t *params, double E_guess,
    dt is time step; steps is number of steps.
    Returns 0 on success.
 */
-int evolve_tdse_crank(double *diag, double *offdiag, int n, cvector_t *psi,
-                      double dt, int steps);
+int evolve_tdse_crank(const double *diag, const double *offdiag, int n,
+                      cvector_t *psi, double dt, int steps);
 
 /* Split-step Fourier method (for potentials that are functions of x only).
    Uses FFT to propagate in momentum space.
@@ -41,8 +41,8 @@ int evolve_tdse_crank(double *diag, double *offdiag, int n, cvector_t *psi,
    dt: time step; steps: number of steps.
    Returns 0 on success.
 */
-int evolve_tdse_split_step(cvector_t *psi, double *x, double *V, int n,
-                           double dx, double dt, int steps, double hbar,
+int evolve_tdse_split_step(cvector_t *psi, const double *x, const double *V,
+                           int n, double dx, double dt, int steps, double hbar,
                            double mass);
 
 #endif

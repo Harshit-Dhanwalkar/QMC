@@ -176,7 +176,7 @@ double von_neumann_entropy_2x2(cmatrix_t *rho) {
   double lambda2 = 0.5 * (tr - sq);
 
   double entropy = 0.0;
-  double eigs[2] = {lambda1, lambda2};
+  const double eigs[2] = {lambda1, lambda2};
   for (int k = 0; k < 2; k++) {
     if (eigs[k] > 1e-12) {
       entropy -= eigs[k] * log2(eigs[k]);
@@ -202,6 +202,7 @@ int qstate_measure(cvector_t *psi, double u) {
   int outcome = psi->n - 1; // fallback for floating-point round-off at u->1
   for (int i = 0; i < psi->n; i++) {
     cumulative += c_abs2(psi->data[i]);
+
     if (u < cumulative) {
       outcome = i;
 
@@ -252,6 +253,7 @@ int qstate_measure_qubit(cvector_t *psi, int n_qubits, int target, double u) {
 
   for (long long i = 0; i < n; i++) {
     int bit = (i & mask) != 0;
+
     if (bit == outcome) {
       psi->data[i] = c_scale(psi->data[i], inv_norm);
     } else {

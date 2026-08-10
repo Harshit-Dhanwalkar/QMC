@@ -16,15 +16,15 @@ int main(void) {
   printf(" > Boson Sampling: Hong-Ou-Mandel Interference\n\n");
 
   cmatrix_t *U = beam_splitter_50_50();
-  int input_modes[2] = {0, 1};
+  const int input_modes[2] = {0, 1};
 
   printf("   Two photons into a 50:50 beam splitter (modes 0,1):\n");
   printf("   output      P\n");
   printf("   --------   --------\n");
 
-  int out_00[2] = {0, 0};
-  int out_11[2] = {1, 1};
-  int out_01[2] = {0, 1};
+  const int out_00[2] = {0, 0};
+  const int out_11[2] = {1, 1};
+  const int out_01[2] = {0, 1};
 
   double p00 = boson_sampling_probability(U, 2, input_modes, out_00, 2);
   double p11 = boson_sampling_probability(U, 2, input_modes, out_11, 2);
@@ -46,13 +46,14 @@ int main(void) {
   printf("   --------   --------\n");
 
   cmatrix_t *D = dft_unitary(3);
-  int dft_input[2] = {0, 1};
+  const int dft_input[2] = {0, 1};
   double total = 0.0;
 
   for (int a = 0; a < 3; a++) {
     for (int b = a; b < 3; b++) {
-      int out[2] = {a, b};
+      const int out[2] = {a, b};
       double p = boson_sampling_probability(D, 3, dft_input, out, 2);
+
       printf("   (%d,%d)      %.6f\n", a, b, p);
       total += p;
     }

@@ -55,6 +55,7 @@ int main(void) {
     double xi = x[i];
     double env = exp(-(xi - x0) * (xi - x0) / (4.0 * sigma * sigma));
     double pre = pow(2.0 * M_PI * sigma * sigma, -0.25);
+
     psi->data[i].re = pre * env * cos(k0 * xi);
     psi->data[i].im = pre * env * sin(k0 * xi);
     norm += (psi->data[i].re * psi->data[i].re +
@@ -178,13 +179,15 @@ int main(void) {
    * T_WKB = \exp(-2 * \kappa * L)
    *
    * Where
-   *  - \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar,
-   *  - L =b - a
+   *  \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar,
+   *  L      = b - a
    */
   double E_kin = k0 * k0 / 2.0;
   if (E_kin < V0) {
-    double kappa = sqrt(2.0 * (V0 - E_kin));
+    double diff = V0 - E_kin;
+    double kappa = sqrt(2.0 * (diff > 0.0 ? diff : 0.0));
     double T_wkb = exp(-2.0 * kappa * (b - a));
+
     printf("   WKB approx    = %.4f\n", T_wkb);
   }
 

@@ -19,7 +19,7 @@ int main(void) {
   printf(" > Second Quantization and the Jordan-Wigner Transformation\n\n");
 
   int n_modes = 4;
-  int dim = 1 << n_modes;
+  // int dim = 1 << n_modes;
 
   printf("   Fermionic modes map to qubits (mode j occupied <-> qubit j "
          "= |1>).\n");
@@ -32,7 +32,7 @@ int main(void) {
   printf("   <n_2> for basis state |0011> (modes 2,3 occupied): %.4f "
          "(expect 1.0)\n",
          CMAT(n2, 3, 3).re);
-  printf("   <n_2> for basis state |0000> (vacuum):              %.4f "
+  printf("   <n_2> for basis state |0000> (vacuum):             %.4f "
          "(expect 0.0)\n\n",
          CMAT(n2, 0, 0).re);
 
@@ -43,7 +43,7 @@ int main(void) {
   printf("   --- Toy spinless Hubbard chain: H = \\sum(eps_i n_i) - "
          "t * \\sum(hopping) + U * \\sum(n_i n_i+1), n_modes=%d ---\n\n",
          n_modes);
-  double epsilon[4] = {0.3, -0.1, 0.5, 0.2};
+  const double epsilon[4] = {0.3, -0.1, 0.5, 0.2};
   double t = 1.0, U = 0.7;
 
   cmatrix_t *H = second_quant_build_hopping_hamiltonian(n_modes, epsilon, t, U);
@@ -52,7 +52,8 @@ int main(void) {
   cmatrix_free(H_copy);
 
   printf("   Lowest 5 eigenvalues:\n");
-  for (int i = 0; i < 5 && i < dim; i++) {
+  // for (int i = 0; i < 5 && i < dim; i++) NOTE: i < dim is always true
+  for (int i = 0; i < 5; i++) {
     printf("     E_%d = %.6f\n", i, eig->eigenvalues[i]);
   }
 

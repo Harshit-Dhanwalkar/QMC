@@ -41,7 +41,7 @@ int main(void) {
   printf("  ---  ---   ------------\n");
   struct {
     int n, j_2;
-  } states[] = {{2, 1}, {2, 3}, {3, 1}, {3, 3}, {3, 5}};
+  } const states[] = {{2, 1}, {2, 3}, {3, 1}, {3, 3}, {3, 5}};
 
   for (int i = 0; i < 5; i++) {
     double dE =

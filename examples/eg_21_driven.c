@@ -24,9 +24,9 @@ int main(void) {
   printf("   %10s  %14s  %14s\n", "\\alpha", "P(diabatic)", "formula");
   {
     double Omega = 1.0;
-    double alphas[] = {0.1, 0.3, 1.0, 3.0, 20.0};
-    double Ts[] = {200.0, 40.0, 20.0, 15.0, 10.0};
-    double dts[] = {2e-3, 2e-3, 5e-4, 2e-4, 1e-4};
+    const double alphas[] = {0.1, 0.3, 1.0, 3.0, 20.0};
+    const double Ts[] = {200.0, 40.0, 20.0, 15.0, 10.0};
+    const double dts[] = {2e-3, 2e-3, 5e-4, 2e-4, 1e-4};
 
     for (int i = 0; i < 5; i++) {
       double alpha = alphas[i], T = Ts[i], dt = dts[i];
@@ -58,7 +58,7 @@ int main(void) {
   {
     double omega0 = 50.0, omega_L = 50.0, T = 3.0, dt = 1e-4;
     int steps = (int)(T / dt);
-    double ratios[] = {0.02, 0.1, 0.3, 0.6};
+    const double ratios[] = {0.02, 0.1, 0.3, 0.6};
 
     for (int i = 0; i < 4; i++) {
       double Omega0 = ratios[i] * omega0;

@@ -23,6 +23,7 @@ static int failures = 0;
 
 static int check_range(double got, double lo, double hi, const char *label) {
   printf("  %s: got=%.6f  expected range=[%.6f, %.6f]\n", label, got, lo, hi);
+
   return (got < lo || got > hi);
 }
 
@@ -50,7 +51,7 @@ static void check_close(double got, double expected, double tol,
 static void test_xc_potential_matches_finite_difference(void) {
   printf("test_xc_potential_matches_finite_difference:\n");
 
-  double densities[] = {0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0};
+  const double densities[] = {0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0};
   for (int i = 0; i < 7; i++) {
     double n = densities[i];
     double h = n * 1e-6;
@@ -110,12 +111,12 @@ static void test_helium_ks_lda(void) {
 
   check_true(res->converged, "He SCF converges within max_iter");
 
-  /* Ordering established in literature for this system: exact energy is the
-   * most negative, HF less so, converged-basis LDA less still (LDA underbinds
+  /* Ordering established in literature for this system: exact energy is most
+   * negative, HF less so, converged-basis LDA less still (LDA underbinds
    * relative to HF).
-   * This coarse grid (N=160) will be less bound again than
-   * converged-grid LDA reference, so ckeck is a wide but meaningful range
-   * rather than a tight pin (same convention as test_hartree_fock.c). */
+   * This coarse grid (N=160) will be less bound again than converged-grid LDA
+   * reference, so ckeck is a wide but meaningful range rather than a tight pin
+   * (same convention as test_hartree_fock.c). */
   check_true(!check_range(res->total_energy, -2.87, -2.70,
                           "He total_energy in physically sane range"),
              "He total_energy in physically sane range");

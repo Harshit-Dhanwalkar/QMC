@@ -57,6 +57,7 @@ static void test_boys_function(void) {
     double x = (double[]){0.5, 2.0, 8.0}[i];
     double closed = sqrt(M_PI / (4.0 * x)) * erf(sqrt(x));
     char label[64];
+
     snprintf(label, sizeof(label), "F_0(%.1f) matches closed form", x);
     check_close(boys_function(0, x), closed, 1e-10, label);
   }
@@ -73,7 +74,9 @@ static void test_ss_overlap_and_nuclear_closed_form(void) {
 
   double a = 1.2, b = 0.8;
   double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
-  double alphas_a[1] = {a}, alphas_b[1] = {b}, coeff[1] = {1.0};
+  const double alphas_a[1] = {a};
+  const double alphas_b[1] = {b};
+  const double coeff[1] = {1.0};
   basis_function_t *fa = basis_function_alloc(0, 0, 0, A, 1, alphas_a, coeff);
   basis_function_t *fb = basis_function_alloc(0, 0, 0, B, 1, alphas_b, coeff);
 
@@ -82,10 +85,10 @@ static void test_ss_overlap_and_nuclear_closed_form(void) {
   double S_closed = pow(M_PI / p, 1.5) * exp(-a * b / p * R2);
   check_close(S, S_closed, 1e-12, "s-s overlap matches closed form");
 
-  double C[3] = {0, 0, 0.7};
+  const double C[3] = {0, 0, 0.7};
   double V = gto_nuclear_attraction(fa, fb, C);
-  double P[3] = {(a * A[0] + b * B[0]) / p, (a * A[1] + b * B[1]) / p,
-                 (a * A[2] + b * B[2]) / p};
+  const double P[3] = {(a * A[0] + b * B[0]) / p, (a * A[1] + b * B[1]) / p,
+                       (a * A[2] + b * B[2]) / p};
   double RPC2 = (P[0] - C[0]) * (P[0] - C[0]) + (P[1] - C[1]) * (P[1] - C[1]) +
                 (P[2] - C[2]) * (P[2] - C[2]);
   double V_closed =
@@ -99,7 +102,7 @@ static void test_ss_overlap_and_nuclear_closed_form(void) {
 static void test_normalization(void) {
   printf("test_normalization:\n");
 
-  double center[3] = {0, 0, 0};
+  const double center[3] = {0, 0, 0};
   basis_function_t *bf = molint_basis_sto3g_h(center);
   check_true(bf != NULL, "molint_basis_sto3g_h allocates");
   double self_overlap = gto_overlap(bf, bf);
@@ -111,7 +114,7 @@ static void test_normalization(void) {
 static void test_eri_permutational_symmetry(void) {
   printf("test_eri_permutational_symmetry:\n");
 
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
+  const double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
   basis_function_t *fa = molint_basis_sto3g_h(A);
   basis_function_t *fb = molint_basis_sto3g_h(B);
 
@@ -131,7 +134,7 @@ static void test_eri_permutational_symmetry(void) {
 static void test_molecular_eri_tensor_symmetry(void) {
   printf("test_molecular_eri_tensor_symmetry:\n");
 
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
+  const double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
   double *eri = molecular_eri_tensor(funcs, 2);
@@ -146,18 +149,19 @@ static void test_molecular_eri_tensor_symmetry(void) {
               "tensor: (01|10) matches direct gto_eri call");
 
   free(eri);
+
   basis_function_free(funcs[0]);
   basis_function_free(funcs[1]);
 }
 
 /* Minimal RHF SCF for a 2-basis-function closed-shell (2 electron) molecule */
 static double h2_sto3g_rhf_energy(double R_bond) {
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
+  const double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
 
-  double charge[2] = {1.0, 1.0};
-  double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
+  const double charge[2] = {1.0, 1.0};
+  const double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 
   cmatrix_t *S = molecular_overlap_matrix(funcs, 2);
@@ -170,10 +174,12 @@ static double h2_sto3g_rhf_energy(double R_bond) {
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       complex_t sum = {0, 0};
+
       for (int k = 0; k < 2; k++) {
         double inv_sqrt = 1.0 / sqrt(eig_S->eigenvalues[k]);
         complex_t cik = CMAT(eig_S->eigenvectors, i, k);
         complex_t cjk = CMAT(eig_S->eigenvectors, j, k);
+
         sum.re += cik.re * inv_sqrt * cjk.re;
       }
 
@@ -186,9 +192,11 @@ static double h2_sto3g_rhf_energy(double R_bond) {
 
   for (int it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
+
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         double v = CMAT(Hcore, i, j).re;
+
         for (int k = 0; k < 2; k++) {
           for (int m = 0; m < 2; m++) {
             v += D[k][m] * (MOLINT_ERI(eri, 2, i, j, m, k) -
@@ -205,11 +213,13 @@ static double h2_sto3g_rhf_energy(double R_bond) {
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         double v = 0.0;
+
         for (int p = 0; p < 2; p++) {
           for (int q = 0; q < 2; q++) {
             v += CMAT(Shalf, p, i).re * CMAT(F, p, q).re * CMAT(Shalf, q, j).re;
           }
         }
+
         CMAT(Fp, i, j) = (complex_t){v, 0.0};
       }
     }
@@ -220,9 +230,11 @@ static double h2_sto3g_rhf_energy(double R_bond) {
     for (int i = 0; i < 2; i++) {
       for (int k = 0; k < 2; k++) {
         double v = 0.0;
+
         for (int p = 0; p < 2; p++) {
           v += CMAT(Shalf, i, p).re * CMAT(eig_F->eigenvectors, p, k).re;
         }
+
         C[i][k] = v;
       }
     }

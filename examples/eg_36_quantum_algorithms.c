@@ -26,12 +26,12 @@ int main(void) {
   printf("   f(x)=1 for all x:              P(all-zero)=%.4f -> %s\n",
          r1.p_all_zero, r1.is_constant ? "CONSTANT" : "balanced");
 
-  int p1[1] = {0};
+  const int p1[1] = {0};
   dj_result_t rb1 = deutsch_jozsa(4, DJ_BALANCED, p1, 1);
   printf("   f(x)=x0 (single-bit parity):   P(all-zero)=%.4f -> %s\n",
          rb1.p_all_zero, rb1.is_constant ? "constant" : "BALANCED");
 
-  int p2[3] = {0, 1, 2};
+  const int p2[3] = {0, 1, 2};
   dj_result_t rb2 = deutsch_jozsa(4, DJ_BALANCED, p2, 3);
   printf("   f(x)=x0 xor x1 xor x2:         P(all-zero)=%.4f -> %s\n\n",
          rb2.p_all_zero, rb2.is_constant ? "constant" : "BALANCED");

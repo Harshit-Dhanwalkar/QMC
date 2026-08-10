@@ -31,6 +31,7 @@ eigen_t *solve_tise_matrix(double *x, int n, double dx, double hbar_sq_2m,
   for (int i = 0; i < n; i++) {
     double V_i = V(x[i], params);
     CMAT(H, i, i) = c_real(2.0 * coeff + V_i);
+
     if (i > 0) {
       CMAT(H, i, i - 1) = c_real(-coeff);
     }
@@ -42,6 +43,7 @@ eigen_t *solve_tise_matrix(double *x, int n, double dx, double hbar_sq_2m,
   // Solve eigenproblem
   eigen_t *eig = cmatrix_eigh_generic(H);
   cmatrix_free(H);
+
   return eig;
 }
 
@@ -52,8 +54,8 @@ numerov_solution_t *solve_tise_shoot(numerov_params_t *params, double E_guess,
 }
 
 // Crank-Nicolson time evolution
-int evolve_tdse_crank(double *diag, double *offdiag, int n, cvector_t *psi,
-                      double dt, int steps) {
+int evolve_tdse_crank(const double *diag, const double *offdiag, int n,
+                      cvector_t *psi, double dt, int steps) {
   if (!diag || !offdiag || !psi || n < 2 || steps < 1) {
     return -1;
   }
@@ -68,8 +70,8 @@ int evolve_tdse_crank(double *diag, double *offdiag, int n, cvector_t *psi,
 }
 
 // Split-step Fourier
-int evolve_tdse_split_step(cvector_t *psi, double *x, double *V, int n,
-                           double dx, double dt, int steps, double hbar,
+int evolve_tdse_split_step(cvector_t *psi, const double *x, const double *V,
+                           int n, double dx, double dt, int steps, double hbar,
                            double mass) {
   if (!psi || !x || !V || n < 2 || steps < 1) {
     return -1;
@@ -83,6 +85,7 @@ int evolve_tdse_split_step(cvector_t *psi, double *x, double *V, int n,
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
       complex_t exp_factor = c_exp(c_imag(phase));
+
       psi->data[i] = c_mul(psi->data[i], exp_factor);
     }
 
@@ -92,6 +95,7 @@ int evolve_tdse_split_step(cvector_t *psi, double *x, double *V, int n,
       double k = (i < n / 2) ? i * dk : (i - n) * dk;
       double phase = -hbar_over_2m * k * k * dt;
       complex_t exp_factor = c_exp(c_imag(phase));
+
       psi->data[i] = c_mul(psi->data[i], exp_factor);
     }
     ifft(psi); // inverse FFT (with normalization)
@@ -100,8 +104,10 @@ int evolve_tdse_split_step(cvector_t *psi, double *x, double *V, int n,
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
       complex_t exp_factor = c_exp(c_imag(phase));
+
       psi->data[i] = c_mul(psi->data[i], exp_factor);
     }
   }
+
   return 0;
 }

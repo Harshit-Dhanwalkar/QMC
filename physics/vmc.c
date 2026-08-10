@@ -72,8 +72,8 @@ double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff,
     return 0.0; // degenerate configuration
   }
 
-  double r1hat[3] = {w->r1[0] / r1, w->r1[1] / r1, w->r1[2] / r1};
-  double r2hat[3] = {w->r2[0] / r2, w->r2[1] / r2, w->r2[2] / r2};
+  const double r1hat[3] = {w->r1[0] / r1, w->r1[1] / r1, w->r1[2] / r1};
+  const double r2hat[3] = {w->r2[0] / r2, w->r2[1] / r2, w->r2[2] / r2};
   double r12hat[3] = {r12v[0] / s, r12v[1] / s, r12v[2] / s};
   double dot_diff[3] = {r1hat[0] - r2hat[0], r1hat[1] - r2hat[1],
                         r1hat[2] - r2hat[2]};
@@ -111,7 +111,7 @@ int vmc_metropolis_move_electron(vmc_walker_t *w, int which, double Zeff,
   }
 
   double *moving = (which == 0) ? w->r1 : w->r2;
-  double old_pos[3] = {moving[0], moving[1], moving[2]};
+  const double old_pos[3] = {moving[0], moving[1], moving[2]};
   double old_ln = ln_trial_wavefunction(w, Zeff, b);
 
   for (int k = 0; k < 3; k++) {
@@ -354,7 +354,7 @@ typedef struct {
 } vmc_optimize_closure_t;
 
 static double vmc_optimize_eval(double b, void *params) {
-  vmc_optimize_closure_t *c = (vmc_optimize_closure_t *)params;
+  const vmc_optimize_closure_t *c = (vmc_optimize_closure_t *)params;
   vmc_result_t r =
       vmc_run(c->Z, c->Zeff, b, c->n_equilibration, c->n_samples, c->block_size,
               c->step_size1, c->step_size2, c->seed);

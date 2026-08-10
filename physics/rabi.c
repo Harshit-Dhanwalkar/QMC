@@ -10,16 +10,19 @@ Two-level Rabi oscillations (rotating-wave approximation).
 
 double rabi_excited_probability(double t, double Omega, double Delta) {
   double Omega_R = sqrt(Omega * Omega + Delta * Delta);
-  if (Omega_R < 1e-300)
+  if (Omega_R < 1e-300) {
     return 0.0; // no coupling and no detuning: nothing happens
+  }
+
   double s = sin(0.5 * Omega_R * t);
 
   return (Omega * Omega / (Omega_R * Omega_R)) * s * s;
 }
 
 int rabi_evolve_exact(cvector_t *psi, double t, double Omega, double Delta) {
-  if (!psi || psi->n != 2)
+  if (!psi || psi->n != 2) {
     return -1;
+  }
 
   double Omega_R = sqrt(Omega * Omega + Delta * Delta);
   double half = 0.5 * Omega_R * t;
@@ -46,12 +49,13 @@ int rabi_evolve_numerical(cvector_t *psi, double hbar, double Omega,
   if (!psi || psi->n != 2 || steps < 1)
     return -1;
 
-  double diag[2] = {0.5 * hbar * Delta, -0.5 * hbar * Delta};
-  double offdiag[1] = {0.5 * hbar * Omega};
+  const double diag[2] = {0.5 * hbar * Delta, -0.5 * hbar * Delta};
+  const double offdiag[1] = {0.5 * hbar * Omega};
 
   for (int s = 0; s < steps; s++) {
-    if (crank_nicolson_step(diag, offdiag, dt, psi) != 0)
+    if (crank_nicolson_step(diag, offdiag, dt, psi) != 0) {
       return -1;
+    }
   }
 
   return 0;

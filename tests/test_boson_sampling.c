@@ -27,10 +27,10 @@ static int check_close(double got, double expected, double tol,
 
 static int test_hom_dip(void) {
   cmatrix_t *U = beam_splitter_50_50();
-  int in[2] = {0, 1};
-  int out_20[2] = {0, 0};
-  int out_02[2] = {1, 1};
-  int out_11[2] = {0, 1};
+  const int in[2] = {0, 1};
+  const int out_20[2] = {0, 0};
+  const int out_02[2] = {1, 1};
+  const int out_11[2] = {0, 1};
 
   double p20 = boson_sampling_probability(U, 2, in, out_20, 2);
   double p02 = boson_sampling_probability(U, 2, in, out_02, 2);
@@ -48,12 +48,13 @@ static int test_hom_dip(void) {
 
 static int test_unitarity_dft(void) {
   cmatrix_t *D = dft_unitary(3);
-  int in[2] = {0, 1};
+  const int in[2] = {0, 1};
   double total = 0.0;
 
   for (int a = 0; a < 3; a++) {
     for (int b = a; b < 3; b++) {
       int out[2] = {a, b};
+
       total += boson_sampling_probability(D, 3, in, out, 2);
     }
   }
@@ -65,9 +66,9 @@ static int test_unitarity_dft(void) {
 
 static int test_permutation_invariance(void) {
   cmatrix_t *D = dft_unitary(3);
-  int in_a[2] = {0, 1};
-  int in_b[2] = {1, 0}; // same input multiset, different order
-  int out[2] = {2, 2};
+  const int in_a[2] = {0, 1};
+  const int in_b[2] = {1, 0}; // same input multiset, different order
+  const int out[2] = {2, 2};
 
   double pa = boson_sampling_probability(D, 3, in_a, out, 2);
   double pb = boson_sampling_probability(D, 3, in_b, out, 2);

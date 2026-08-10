@@ -11,8 +11,9 @@ int main() {
 
   int N = 16;
   cvector_t *x = cvector_alloc(N);
-  if (!x)
+  if (!x) {
     return 1;
+  }
 
   for (int i = 0; i < N; i++) {
     double t = 2.0 * M_PI * i / N;
@@ -33,10 +34,11 @@ int main() {
   }
 
   printf("   Max peak at index %d with abs %f\n", max_idx, max_abs);
-  if (max_idx == 1)
+  if (max_idx == 1) {
     printf("   FFT test passed.\n");
-  else
+  } else {
     printf("   FFT test failed.\n");
+  }
   cvector_free(x);
 
   return 0;

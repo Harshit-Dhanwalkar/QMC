@@ -49,8 +49,8 @@ static void test_teleport_all_outcomes(void) {
   // picks outcome 0 if u < p0, else 1; Bell measurement here gives p0=0.5 for
   // both bits, so u=0.1 forces 0 and u=0.9 forces 1.
   double u_for_0 = 0.1, u_for_1 = 0.9;
-  double u1_vals[2] = {u_for_0, u_for_1};
-  double u2_vals[2] = {u_for_0, u_for_1};
+  const double u1_vals[2] = {u_for_0, u_for_1};
+  const double u2_vals[2] = {u_for_0, u_for_1};
 
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
@@ -62,11 +62,11 @@ static void test_teleport_all_outcomes(void) {
       check_true(r.m1 == i && r.m2 == j, label_m);
 
       char label_a[64], label_b[64];
-      snprintf(label_a, sizeof label_a, "m1=%d m2=%d: Bob alpha.re", i, j);
-      snprintf(label_b, sizeof label_b, "m1=%d m2=%d: Bob beta.re", i, j);
+      snprintf(label_a, sizeof label_a, "m1=%d m2=%d: Bob \\alpha.re", i, j);
+      snprintf(label_b, sizeof label_b, "m1=%d m2=%d: Bob \\beta.re", i, j);
       check_close(r.bob_alpha.re, alpha.re, 1e-9, label_a);
       check_close(r.bob_beta.re, beta.re, 1e-9, label_b);
-      check_close(r.bob_beta.im, beta.im, 1e-9, "Bob beta.im");
+      check_close(r.bob_beta.im, beta.im, 1e-9, "Bob \\beta.im");
     }
   }
 }
@@ -88,7 +88,7 @@ static void test_superdense_all_messages(void) {
 static void test_chsh_correlator_closed_form(void) {
   printf("test_chsh_correlator_closed_form:\n");
 
-  double pairs[4][2] = {
+  const double pairs[4][2] = {
       {0.0, 0.0}, {0.3, 0.7}, {1.2, -0.5}, {M_PI / 4, -M_PI / 4}};
 
   for (int i = 0; i < 4; i++) {
@@ -97,8 +97,8 @@ static void test_chsh_correlator_closed_form(void) {
     double expected = cos(theta - phi);
 
     char label[64];
-    snprintf(label, sizeof label, "E(%.2f,%.2f) matches cos(theta-phi)", theta,
-             phi);
+    snprintf(label, sizeof label, "E(%.2f,%.2f) matches cos(\\theta - \\phi)",
+             theta, phi);
     check_close(e, expected, 1e-9, label);
   }
 }

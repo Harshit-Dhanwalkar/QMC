@@ -86,7 +86,7 @@ int main(void) {
   int failed = 0;
 
   printf("Numeric golden-section vs analytic closed form (several Z):\n");
-  double Z_values[4] = {1.0, 2.0, 3.0, 4.0}; // H-, He, Li+, Be2+
+  const double Z_values[4] = {1.0, 2.0, 3.0, 4.0}; // H-, He, Li+, Be2+
   for (int i = 0; i < 4; i++)
     failed += test_numeric_matches_analytic(Z_values[i]);
 
@@ -100,7 +100,6 @@ int main(void) {
     printf("FAILED (%d)\n", failed);
     return 1;
   }
-
   printf("PASS\n");
 
   return 0;

@@ -2,20 +2,20 @@
 Test: Variational Monte Carlo for helium ground state.
 
 1. vmc_trial_wavefunction / vmc_local_energy at fixed configurations must match
-  independently-computed (Python/sympy-derived, then finite-difference
-  cross-checked) reference values -> these are deterministic, no Monte Carlo
-  noise involved.
+   independently-computed (Python/sympy-derived, then finite-difference
+   cross-checked) reference values -> these are deterministic, no Monte Carlo
+   noise involved.
 2. vmc_run at a reasonable fixed b must satisfy variational theorem (E >=
-  -2.9037 Hartree, experimental ground state) and fall below plain
-  product-orbital result (-2.84765625 Hartree, from
-  helium_ground_state_energy_analytic(2.0)) since Jastrow factor recovers some
-  correlation energy.
+   -2.9037 Hartree, experimental ground state) and fall below plain
+   product-orbital result (-2.84765625 Hartree, from
+   helium_ground_state_energy_analytic(2.0)) since Jastrow factor recovers some
+   correlation energy.
 3. Acceptance rates from vmc_run must be in a sane range (order 30-60%),
-  confirming step sizes are reasonably tuned and sampler isn't degenerate
-  (always/never accepting).
+   confirming step sizes are reasonably tuned and sampler isn't degenerate
+   (always/never accepting).
 4. vmc_optimize_b must find a minimum energy at or below the b=0 (pure
-  product-orbital) energy, with b_opt in physically expected range for this
-  ansatz.
+   product-orbital) energy, with b_opt in physically expected range for this
+   ansatz.
 */
 
 #include "../core/random.h"
@@ -33,7 +33,6 @@ static void check_close(double got, double expected, double tol,
          err);
   if (err > tol) {
     printf("  FAIL: %s\n", label);
-
     failures++;
   }
 }

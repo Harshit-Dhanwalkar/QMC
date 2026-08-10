@@ -14,9 +14,9 @@ Test: MP2 (s-orbitals-only restricted) second-order perturbation theory.
 
 #include "../core/complex.h"
 #include "../core/utils.h"
+#include "../core/vector.h"
 #include "../physics/hartree_fock.h"
 #include "../physics/mp2.h"
-#include "../core/vector.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,7 +144,7 @@ static void test_helium_mp2_physical_sanity(void) {
   if (hf) {
     double E_exact = -2.9037;
     double prev_mp2_magnitude = 0.0;
-    int nv_list[4] = {2, 5, 10, 20};
+    const int nv_list[4] = {2, 5, 10, 20};
 
     for (int t = 0; t < 4; t++) {
       mp2_result_t res = mp2_correlation_energy(hf, r, N, nv_list[t]);
@@ -166,7 +166,8 @@ static void test_helium_mp2_physical_sanity(void) {
       // HF+MP2 should move toward exact, not overshoot past it
       /* NOTE: s-only restriction recovers only part of true correlation energy
        * so this should still be a variational-ish upper-ish bound in practice,
-       * not exactly guaranteed but a ture check for this system/basis). */
+       * not exactly guaranteed but a ture check for this system/basis).
+       */
       snprintf(label, sizeof label,
                "n_virtual=%d: E_HF+MP2 closer to exact than E_HF alone",
                nv_list[t]);

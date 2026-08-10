@@ -185,7 +185,7 @@ static void test_anderson_localization_trend(void) {
   double t = 1.0;
   int n_realizations = 15;
 
-  double W_values[2] = {0.2, 6.0}; // weak vs strong disorder
+  const double W_values[2] = {0.2, 6.0}; // weak vs strong disorder
   double avg_ipr[2] = {0.0, 0.0};
 
   for (int w = 0; w < 2; w++) {
@@ -316,6 +316,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
     for (int j = 0; j < N; j++) {
       complex_t a = CMAT(H_mag, i, j);
       complex_t b = CMAT(H_plain, i, j);
+
       double err = c_abs(c_sub(a, b));
       if (err > max_entry_err) {
         max_entry_err = err;
@@ -333,6 +334,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
   double max_eig_err = 0.0;
   for (int i = 0; i < N; i++) {
     double err = fabs(E_num[i] - E_analytic[i]);
+
     if (err > max_eig_err) {
       max_eig_err = err;
     }
@@ -357,6 +359,7 @@ static void test_landau_hermiticity(void) {
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       complex_t err = c_sub(CMAT(H, i, j), c_conj(CMAT(H, j, i)));
+
       double e = c_abs(err);
       if (e > max_err) {
         max_err = e;

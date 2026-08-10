@@ -54,14 +54,14 @@ static void test_deutsch_jozsa(void) {
   check_true(r1.is_constant == 1,
              "CONSTANT_1: correctly identified as constant");
 
-  int parity1[1] = {0};
+  const int parity1[1] = {0};
   dj_result_t rb1 = deutsch_jozsa(3, DJ_BALANCED, parity1, 1);
   check_close(rb1.p_all_zero, 0.0, 1e-9,
               "BALANCED (single-bit parity): P(all-zero) = 0");
   check_true(rb1.is_constant == 0,
              "BALANCED (single-bit): correctly identified as balanced");
 
-  int parity2[2] = {0, 1};
+  const int parity2[2] = {0, 1};
   dj_result_t rb2 = deutsch_jozsa(3, DJ_BALANCED, parity2, 2);
   check_close(rb2.p_all_zero, 0.0, 1e-9,
               "BALANCED (2-bit parity): P(all-zero) = 0");

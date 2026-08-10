@@ -72,8 +72,8 @@ void pimc_walker_init(pimc_walker_t *w, rng_state_t *rng, double Z) {
   }
 
   double scale = (Z > 0.0) ? 1.0 / Z : 1.0;
-  double c1[3] = {0.5, 0.0, 0.0};
-  double c2[3] = {-0.5, 0.0, 0.0};
+  const double c1[3] = {0.5, 0.0, 0.0};
+  const double c2[3] = {-0.5, 0.0, 0.0};
 
   for (int i = 0; i < w->P; i++) {
     for (int k = 0; k < 3; k++) {
@@ -275,10 +275,12 @@ double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau) {
   for (int i = 0; i < P; i++) {
     int ip1 = (i + 1) % P;
 
-    double d1[3] = {w->r1[ip1][0] - w->r1[i][0], w->r1[ip1][1] - w->r1[i][1],
-                    w->r1[ip1][2] - w->r1[i][2]};
-    double d2[3] = {w->r2[ip1][0] - w->r2[i][0], w->r2[ip1][1] - w->r2[i][1],
-                    w->r2[ip1][2] - w->r2[i][2]};
+    const double d1[3] = {w->r1[ip1][0] - w->r1[i][0],
+                          w->r1[ip1][1] - w->r1[i][1],
+                          w->r1[ip1][2] - w->r1[i][2]};
+    const double d2[3] = {w->r2[ip1][0] - w->r2[i][0],
+                          w->r2[ip1][1] - w->r2[i][1],
+                          w->r2[ip1][2] - w->r2[i][2]};
 
     double sq1 = d1[0] * d1[0] + d1[1] * d1[1] + d1[2] * d1[2];
     double sq2 = d2[0] * d2[0] + d2[1] * d2[1] + d2[2] * d2[2];

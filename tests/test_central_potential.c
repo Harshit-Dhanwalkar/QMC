@@ -2,9 +2,9 @@
 Test: general central-potential radial solver.
 
 1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum
-E_{n_r,l} = hbar*omega*(2*n_r + l + 3/2).
+  E_{n_r,l} = hbar*omega*(2 * n_r + l + 3/2).
 2. Hydrogen regression: hydrogen_radial_solve must reproduce
-hydrogen_energy_level(1) to same accuracy as before the refactor.
+  hydrogen_energy_level(1) to same accuracy as before the refactor.
 */
 
 #include "../core/constants.h"
@@ -24,8 +24,9 @@ static int test_harmonic_3d(void) {
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);
 
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     r[i] = r_min + i * dr;
+  }
 
   double hbar = 1.0, mass = 1.0, omega = 1.0;
   int l = 0;
@@ -40,7 +41,7 @@ static int test_harmonic_3d(void) {
 
   // Expected: E_{n_r,0} = (2 * n_r + 3/2) * \hbar * \omega -> 1.5, 3.5, 5.5,
   // ...
-  double expected[3] = {1.5, 3.5, 5.5};
+  const double expected[3] = {1.5, 3.5, 5.5};
   int fail = 0;
 
   // Skip 2 boundary-penalty eigenvalues
@@ -50,8 +51,9 @@ static int test_harmonic_3d(void) {
     printf("  n_r=%d: got=%.6f expected=%.6f err=%.2e\n", k, got, expected[k],
            err);
 
-    if (err > 5e-2) // FD grid coarseness at N=300
+    if (err > 5e-2) { // FD grid coarseness at N=300
       fail = 1;
+    }
   }
 
   eigen_free(eig);
@@ -65,8 +67,9 @@ static int test_hydrogen_regression(void) {
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);
 
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     r[i] = r_min + i * dr;
+  }
 
   eigen_t *eig =
       hydrogen_radial_solve(r, N, 0, HBAR, M_ELECTRON, E_CHARGE, EPSILON_0);

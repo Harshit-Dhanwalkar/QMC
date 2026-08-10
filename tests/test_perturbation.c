@@ -32,7 +32,8 @@ int main(void) {
   }
 
   // Build H_0 (finite-difference harmonic oscillator)
-  // H = -\hbar^2/2m \nabla^2 + 1/2 * x^2,  \hbar=m=1 -> coeff = -1/(2dx^2)
+  //  H = -\hbar^2/2m \nabla^2 + 1/2 * x^2,
+  //  \hbar=m=1 -> coeff = -1 / (2 * dx^2)
   double coeff = -0.5 / (dx * dx);
 
   cmatrix_t *H_0 = cmatrix_alloc(N, N);
@@ -47,16 +48,18 @@ int main(void) {
     double V0 = 0.5 * x[i] * x[i];
     // diagonal: kinetic (-2 * coeff > 0) + potential
     CMAT(H_0, i, i) = c_real(-2.0 * coeff + V0);
-    if (i > 0)
+
+    if (i > 0) {
       CMAT(H_0, i, i - 1) = c_real(coeff);
-    if (i < N - 1)
+    }
+    if (i < N - 1) {
       CMAT(H_0, i, i + 1) = c_real(coeff);
+    }
   }
 
   printf("  Diagonalizing %dx%d Hamiltonian...\n", N, N);
 
   eigen_t *eig = cmatrix_eigh(H_0);
-  // DEBUG:
   if (!eig) {
     fprintf(stderr, "FAIL: cmatrix_eigh returned NULL\n");
     cmatrix_free(H_0);
@@ -86,7 +89,7 @@ int main(void) {
     return 1;
   }
 
-  // Extract ground state psi_0 (discrete-normalized: sum|\psi_i|^2 = 1)
+  // Extract ground state \psi_0 (discrete-normalized: \sum|\psi_i|^2 = 1)
   cvector_t *psi0 = cvector_from_matrix_column(eig->eigenvectors, 0);
   if (!psi0) {
     fprintf(stderr, "FAIL: cvector_from_matrix_column returned NULL\n");
@@ -99,8 +102,9 @@ int main(void) {
 
   // Renormalize from discrete (sum = 1) to continuum (sum * dx = 1) convention
   double norm_sq = 0.0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     norm_sq += c_abs2(psi0->data[i]);
+  }
   norm_sq *= dx;
 
   if (norm_sq < 1e-30) {
@@ -109,6 +113,7 @@ int main(void) {
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
 
@@ -128,11 +133,12 @@ int main(void) {
   printf("    <x^4> = %.6f  (analytic: 0.75)\n", x4_expect);
 
   // First-order perturbation: \lambda<x^4> comparison
-  // For H = H_0 + \lambdax^4, E_0^(1) = \lambda<0|x^4|0> = 0.75\lambda
+  // For H = H_0 + \lambdax^4, E_0^(1) = \lambda<0|x^4|0> = 0.75 * \lambda
   int passed = (fabs(x4_expect - 0.75) < 0.02);
   printf("    Test %s\n", passed ? "PASSED" : "FAILED");
-  if (!passed)
+  if (!passed) {
     printf("    \\Delta = %.6f (tolerance 0.02)\n", fabs(x4_expect - 0.75));
+  }
 
   // Cleanup
   cvector_free(psi0);

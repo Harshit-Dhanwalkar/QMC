@@ -48,7 +48,7 @@ int main(void) {
   printf("   --- Anderson localization, n=60 sites, t=1.0 ---\n");
   printf("   Ground-state IPR (inverse participation ratio) averaged over 15 "
          "disorder realizations: larger IPR = more localized.\n\n");
-  double W_values[3] = {0.2, 2.0, 6.0};
+  const double W_values[3] = {0.2, 2.0, 6.0};
 
   for (int w = 0; w < 3; w++) {
     double sum_ipr = 0.0;

@@ -8,7 +8,7 @@ against two closed-form/independently-computed 3D quantum systems.
   (different centrifugal barriers).
 2. 3D finite spherical well (l=0): bound-state energies satisfy transcendental
   condition k * \cot(k * a) = -\kappa (k=\sqrt(2m * (E+V0))/\hbar,
-  \kappa=\sqrt(-2m * E)/\hbar, E<0), found here via independent bisection
+  \kappa = \sqrt(-2m * E) / \hbar, E<0), found here via independent bisection
   root-finding (NOT using central_potential_radial_solve itself) before
   comparing to the solver's output.
 */
@@ -81,12 +81,15 @@ static int find_well_bound_states(double V0, double a, double m, double hbar,
   for (int i = 1; i < npts && found < max_states; i++) {
     double E = -V0 + (double)i / npts * V0;
     double val = well_condition(E, V0, a, m, hbar);
+
     if ((val > 0) != (prevVal > 0) && fabs(val) < 100 && fabs(prevVal) < 100) {
       double lo = prevE, hi = E;
       double lo_sign = well_condition(lo, V0, a, m, hbar) > 0;
+
       for (int b = 0; b < 100; b++) {
         double mid = 0.5 * (lo + hi);
         double vmid = well_condition(mid, V0, a, m, hbar);
+
         if ((vmid > 0) == lo_sign) {
           lo = mid;
         } else

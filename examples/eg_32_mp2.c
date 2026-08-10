@@ -36,7 +36,7 @@ int main(void) {
   printf("   orbitals are included:\n\n");
   printf("   n_virtual   E_MP2          E_HF+MP2      gap to exact\n");
 
-  int nv_list[6] = {2, 5, 10, 15, 20, 30};
+  const int nv_list[6] = {2, 5, 10, 15, 20, 30};
   for (int t = 0; t < 6; t++) {
     mp2_result_t res = mp2_correlation_energy(hf, r, N, nv_list[t]);
     printf("   %8d   %+.8f   %+.6f   %.6f\n", nv_list[t], res.e_mp2,

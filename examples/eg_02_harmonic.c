@@ -40,10 +40,10 @@ int main(void) {
     return 1;
   }
 
-  printf("     Parameters:   \\omega = %.3f, m = %.3f, \\hbar = %.3f\n", omega,
-         m, hbar);
-  printf("     Grid: %d points from %.3f to %.3f, dx=%.6f\n\n", n_grid, x_min,
-         x_max, dx);
+  printf("     Parameters: \\omega = %.3f, m = %.3f, \\hbar = %.3f\n", omega, m,
+         hbar);
+  printf("     Grid      : %d points from %.3f to %.3f, dx = %.6f\n\n", n_grid,
+         x_min, x_max, dx);
 
   // Analytical energies for first 5 states
   printf("   Analytical energies (\\hbar\\omega units):\n");
