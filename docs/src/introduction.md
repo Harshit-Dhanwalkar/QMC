@@ -1,4 +1,4 @@
-# qmc
+# QMC
 
 Quantum mechanics simulation and visualization engine written in pure C.
 
@@ -13,8 +13,7 @@ not ASCII approximations.
 The physics spans a standard graduate QM curriculum:
 
 - Wave functions, normalization, expectation values
-- 1D, 2D, and 3D potentials - infinite well, finite well, harmonic oscillator,
-  tunneling barriers, Kronig-Penney, Morse, double well
+- 1D, 2D, and 3D potentials - infinite well, finite well, harmonic oscillator, tunneling barriers, Kronig-Penney, Morse, double well
 - Time evolution via Crank-Nicolson (TDSE)
 - Angular momentum, spin, spherical harmonics
 - Hydrogen atom - radial wave functions, energy levels, orbital plots
@@ -26,16 +25,6 @@ The physics spans a standard graduate QM curriculum:
 
 ## How this book is organized
 
-**Physics** sections derive the equations first, then show the C code that
-implements them and the plots it produces. Each section corresponds directly
-to a module in `src/physics/`.
+**Physics** sections derive the equations first, then show the C code that implements them and the plots it produces. Each section corresponds directly to a module in `src/physics/`.
 
-**Internals** sections cover the numerical methods in isolation - the
-Numerov integrator, tridiagonal eigensolver, Crank-Nicolson propagator,
-and GR plotting wrapper. These are the building blocks reused across every
-physics module.
-
-## Status
-
-Early stage. Foundation is being laid. Pages will be filled in as each
-module is implemented.
+**Internals** sections cover the numerical methods in isolation - the Numerov integrator, tridiagonal eigensolver, Crank-Nicolson propagator, and GR plotting wrapper. These are the building blocks reused across every physics module.

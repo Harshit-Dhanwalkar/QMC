@@ -18,25 +18,51 @@ $$
 
 This governs the lifetime of quantum states and the natural linewidth.
 
-## Numerical Verification
+## Implementation
 
-For a given wavefunction, we can compute $\Delta x$ and $\Delta p$ numerically:
+`physics/uncertainty.h` computes everything in one call against a
+[`wavefunction_t`](wavefunctions.md), rather than separate position/momentum
+functions:
 
 ```c
-double position_uncertainty(const cvector_t *psi, const double *x,
-                            int N, double dx) {
-    double mean_x = expectation_position(psi, x, N, dx);
-    double mean_x2 = expectation_x2(psi, x, N, dx);
-    return sqrt(mean_x2 - mean_x*mean_x);
-}
+typedef struct {
+  double mean_x;
+  double mean_p;
+  double delta_x;
+  double delta_p;
+  double product; // \Delta x * \Delta p
+} uncertainty_t;
 
-double momentum_uncertainty(const cvector_t *psi, const double *x,
-                            int N, double dx, double hbar) {
-    complex_t mean_p = expectation_momentum(psi, x, N, dx, hbar);
-    // Compute <p^2> similarly...
-    return sqrt(mean_p2 - c_abs2(mean_p));
-}
+uncertainty_t compute_uncertainties(const wavefunction_t *wf);
 ```
+
+```c
+wavefunction_t *wf = /* build and normalize */;
+uncertainty_t u = compute_uncertainties(wf);
+
+printf("<x>=%g  <p>=%g  dx=%g  dp=%g  dx*dp=%g\n",
+       u.mean_x, u.mean_p, u.delta_x, u.delta_p, u.product);
+```
+
+Internally this is presumably built from `wavefunction_expect_x`,
+`wavefunction_expect_x2`, `wavefunction_expect_p`, and `wavefunction_expect_p2`
+(see [Wave Functions](wavefunctions.md)), though the exact implementation
+would need `uncertainty.c` to confirm.
+
+### Energy expectation
+
+The same header also provides the energy expectation value for a given
+potential and mass, independent of the uncertainty struct above:
+
+```c
+double compute_energy_expectation(const wavefunction_t *wf, potential_fn V,
+                                  void *params, double mass);
+```
+
+Takes a `potential_fn` in the same point-evaluator form as
+[1D Potentials](potentials_1d.md) (e.g. `V_harmonic`), plus its `params`, and
+the particle mass explicitly - since `wavefunction_t` itself carries no mass
+information.
 
 ## Minimum Uncertainty States
 

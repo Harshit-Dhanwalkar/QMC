@@ -1,84 +1,98 @@
 # Hydrogen Atom
 
-The hydrogen atom is the quantum mechanical solution of a Coulomb potential $V(r) = -\exp^2/(4\pi\varepsilon_0 r)$. It's the only atomic system with exact analytical solutions.
+The hydrogen atom is the simplest atomic system with an exact analytical solution. This module provides both a numerical solver for the radial Schrödinger equation and closed‑form wavefunctions and energies.
 
-## The Schr$\"{o}$dinger Equation
+The code is in `physics/hydrogen.h` and `physics/hydrogen.c`. **All quantities are in SI units** (`hbar`, `mass`, `e_charge`, `eps0` are explicit parameters) - this is one of the few modules that does **not** use atomic units.
 
-The time-independent Schr$\"{o}$dinger equation in spherical coordinates:
+## Radial Schrödinger Equation
 
-$$
-\left[-\frac{\hbar^2}{2m}\nabla^2 - \frac{e^2}{4\pi\varepsilon_0 r}\right]\psi = E\psi
-$$
-
-The wavefunction separates:
+For a central potential $V(r)$, the radial equation for the reduced wavefunction $u(r) = r R(r)$ is
 
 $$
-\psi_{nlm}(r, \theta, \phi) = R_{nl}(r) Y_{lm}(\theta, \phi)
+\left[ -\frac{\hbar^2}{2m} \frac{d^2}{dr^2}
++ \frac{\hbar^2 l(l+1)}{2m r^2}
++ V(r) \right] u(r) = E\, u(r),
 $$
 
-Where $Y_{lm}$ are spherical harmonics and $R_{nl}$ are radial functions.
+With $V(r) = -\dfrac{e^2}{4\pi\varepsilon_0 r}$ for hydrogen.
 
-### Radial Equation
+## Implementation Overview
 
-$$
--\frac{\hbar^2}{2m}\frac{d^2R}{dr^2} - \frac{\hbar^2}{mr}\frac{dR}{dr} + \left[\frac{\hbar^2 l(l+1)}{2mr^2} - \frac{e^2}{4\pi\varepsilon_0 r}\right]R = ER
-$$
-
-The bound state energies are:
-
-$$
-E_n = -\frac{m e^4}{2(4\pi\varepsilon_0)^2\hbar^2}\frac{1}{n^2} = -13.6\,\text{eV}\frac{1}{n^2}
-$$
-
-### Radial Wavefunctions
-
-For $l = 0$ (s-states):
-
-$$
-R_{n0}(r) = 2\left(\frac{1}{na_0}\right)^{3/2} \sqrt{\frac{1}{n^2}}
-L_{n-1}^1(2r/na_0) e^{-r/na_0}
-$$
-
-For $l = 1$ (p-states):
-
-$$
-R_{21}(r) = \frac{1}{2\sqrt{6}}\left(\frac{1}{a_0}\right)^{3/2}
-\frac{r}{a_0} e^{-r/2a_0}
-$$
-
-## Numerical Solution
-
-The radial equation is solved in `src/physics/hydrogen.c`:
+Three functions are provided:
 
 ```c
 eigen_t *hydrogen_radial_solve(double *r, int N, int l,
-                              double hbar, double m, double e, double eps0) {
-    // Build Hamiltonian matrix for radial equation
-    cmatrix_t *H = cmatrix_alloc(N, N);
+                               double hbar, double mass,
+                               double e_charge, double eps0);
 
-    double coeff = hbar*hbar / (2*m*dr*dr);
+double hydrogen_energy_level(int n);
 
-    for (int i = 0; i < N; i++) {
-        double V_coulomb = -e*e / (4*M_PI*eps0*r[i]);
-        double V_centrifugal = hbar*hbar * l*(l+1) / (2*m*r[i]*r[i]);
-
-        CMAT(H, i, i) = c_real(2*coeff + V_coulomb + V_centrifugal);
-        if (i > 0) CMAT(H, i, i-1) = c_real(-coeff);
-        if (i < N-1) CMAT(H, i, i+1) = c_real(-coeff);
-    }
-
-    return cmatrix_eigh(H);
-}
+cvector_t *hydrogen_radial_wavefunction(double *r, int N, int n, int l);
 ```
 
-### Running the Example
+1. Numerical solver
 
-```sh
-./build/eg_03_hydrogen
+`hydrogen_radial_solve` builds the finite‑difference Hamiltonian for the given angular momentum ll on the radial grid `r[0..N-1]` (which can be uniform or logarithmic) and returns an `eigen_t` with eigenvalues (energies in Joules) and eigenvectors (the radial functions $u(r)$).
+
+```c
+int N = 500;
+double r_min = 0.0, r_max = 20.0 * AU_LENGTH;
+double *r = linspace(r_min, r_max, N);
+
+eigen_t *sol = hydrogen_radial_solve(r, N, /*l=*/0,
+                                     HBAR, M_ELECTRON,
+                                     E_CHARGE, EPSILON_0);
+// sol->eigenvalues[0] is the 1s energy (~ -2.18e-18 J)
 ```
 
-### Output
+The solver uses the generic `central_potential_radial_solve` (from `physics/central_potential.h`) with the Coulomb potential - so it can be easily adapted to other central potentials by changing the potential function.
 
-// TODO
+2. Analytical energy levels
 
-The radial probability density $r^2∣R_{nl}(r)∣^2$ is saved to `hydrogen_radial_*.dat`.
+```c
+double E_eV = hydrogen_energy_level(1) / E_CHARGE;   // -13.6 eV
+double E_J  = hydrogen_energy_level(2);              // -5.44e-19 J
+```
+
+3. Analytical radial wavefunction
+
+`hydrogen_radial_wavefunction` returns the **normalised radial** function $R_{nl}(r)$ (not $u(r)$) sampled on the grid $r$. It is built from associated Laguerre polynomials (`core/special/laguerre.c`).
+
+```c
+cvector_t *R_10 = hydrogen_radial_wavefunction(r, N, /*n=*/1, /*l=*/0);
+// R_10->data[i] = R_{10}(r_i)
+```
+
+## Example: Solving and Comparing with Theory
+
+The example `eg_06_hydrogen.c` solves for the lowest s‑states and prints the numerical energies alongside the analytic $E_n=−13.6 \text{eV}/n^2$. It also saves radial probability densities `hydrogen_radial_1.dat`, `hydrogen_radial_2.dat`, etc.
+
+```c
+./build/eg_06_hydrogen
+```
+
+Typical output (errors < 0.1% for a fine grid):
+
+```
+Lowest 5 s-states (l=0):
+ n   Numerical E (eV)   Analytical E (eV)   Error (%)
+  1   -1.360000e+01      -1.360000e+01       0.00%
+  2   -3.400000e+00      -3.400000e+00       0.00%
+  3   -1.511111e+00      -1.511111e+00       0.00%
+ ...
+```
+
+The saved files contain columns: `r (m)`, `R(r)`, `|R|^2`, and `r^2|R|^2` (the radial probability density).
+
+## Validation
+
+The numerical solver is cross‑checked against the analytic energies and wavefunctions in `test_hydrogen.c`. The test confirms:
+
+- Normalisation of the analytic $R_{10}(r) (integral $\int ∣R∣^2 r^2 dr = 1$).
+- The 1s energy matches $−13.6$ eV.
+
+## See Also
+
+- [Central Potentials](central_potential.md) - the generic radial solver used underneath.
+- [Special Functions](../internals/special.md) - Laguerre polynomials used for analytic wavefunctions.
+- [Fine Structure](fine_structure.md/) - adds relativistic corrections to the hydrogen spectrum.

@@ -1,5 +1,5 @@
 [book]
-title = "qmc : Quantum Mechanics implementations in C"
+title = "QMC : Quantum Mechanics implementations in C"
 authors = ["Harshit Dhanwalkar"]
 description = "Quantum Mechanics implementations in C."
 language = "en"
@@ -12,12 +12,15 @@ smart-punctuation = true
 definition-lists = true
 admonitions = true
 mathjax-support = false
-git-repository-url = "https://github.com/Harshit-Dhanwalkar/qmc"
+git-repository-url = "https://github.com/Harshit-Dhanwalkar/QMC"
 git-repository-icon = "fab-github"
-edit-url-template = "https://github.com/Harshit-Dhanwalkar/qmc/edit/main/docs/src/{path}"
+edit-url-template = "https://github.com/Harshit-Dhanwalkar/QMC/edit/main/docs/src/{path}"
 # additional-css = ["custom.css"]
-# default-theme = "navy" 
+# default-theme = "navy"
 # preferred-dark-theme = "navy"
+
+[output.linkcheck]
+follow-web-links = false
 
 [output.html.search]
 enable = true

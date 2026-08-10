@@ -1,79 +1,68 @@
 # Crank-Nicolson Solver
 
-The Crank-Nicolson method is an unconditionally stable and unitary time propagator for the time-dependent Schrödinger equation (TDSE).
-
-## Method
-
-The TDSE: $i\hbar \frac{\partial\psi}{\partial t} = H\psi$.
-
-Discretize time with step $\Delta t$:
+Time evolution of the 1D time-dependent Schrödinger equation for a tridiagonal Hamiltonian (finite-difference kinetic term plus a diagonal potential, optionally with a complex absorbing potential). Crank-Nicolson is unconditionally stable and unitary (to numerical precision) for real potentials, since it applies the Cayley form of the propagator:
 
 $$
-\frac{\psi^{n+1} - \psi^n}{\Delta t} = -\frac{i}{\hbar} H \frac{\psi^{n+1} + \psi^n}{2}
+\left(I + \frac{i\,dt}{2}H\right)\psi_{n+1} = \left(I - \frac{i\,dt}{2}H\right)\psi_n
 $$
 
-Rearranging gives:
+Solved at each step via a complex tridiagonal Thomas algorithm - $O(N)$ per
+step rather than $O(N^3)$ for a general linear solve.
 
-$$
-\left(I + \frac{i\Delta t}{2\hbar}H\right)\psi^{n+1} = \left(I - \frac{i\Delta t}{2\hbar}H\right)\psi^n
-$$
-
-For a 1D system with tridiagonal Hamiltonian, this becomes a complex tridiagonal system solvable by the Thomas algorithm.
-
-## Implementation
-
-The core function is `crank_nicolson_step()` in `src/core/ode/crank_nicolson.c`:
-
-```c
-int crank_nicolson_step(const double *diag, const double *offdiag, double dt,
-                        cvector_t *psi) {
-    int N = psi->n;
-    // Build A = I + i*dt/2*H (tridiagonal)
-    complex_t *a = malloc(...); // lower
-    complex_t *b = malloc(...); // diagonal
-    complex_t *c = malloc(...); // upper
-    // Compute RHS = (I - i*dt/2*H) * psi
-    // Solve A * psi_new = RHS using Thomas algorithm
-    // Overwrite psi with solution
-}
-```
-
-The Thomas algorithm for complex tridiagonal systems is implemented internally.
+Defined in `core/ode/crank_nicolson.h`.
 
 ## Building the Hamiltonian
 
-The function `build_tridiagonal_hamiltonian` constructs the diagonal and off-diagonal arrays:
-
 ```c
 void build_tridiagonal_hamiltonian(const double *x, const double *V, int N,
-                                   double dx, double hbar_sq_2m,
-                                   double *diag, double *offdiag) {
-    double coeff = hbar_sq_2m / (dx*dx);
-    for (int i = 0; i < N; i++) {
-        diag[i] = 2.0*coeff + V[i];
-        if (i < N-1) offdiag[i] = -coeff;
-    }
-}
+                                   double dx, double hbar_sq_2m, double *diag,
+                                   double *offdiag);
 ```
 
-### Usage Example
+Discretizes $H = -\frac{\hbar^2}{2m}\frac{d^2}{dx^2} + V(x)$ into `diag[i] = 2 * coeff + V[i]`, `offdiag[i] = -coeff`, where `coeff = hbar_sq_2m / dx^2`. This builder is shared with static diagonalization (see [Linear Algebra Core](linalg.md) - `tridiag_eigh` takes exactly this `diag`/`offdiag` pair), so the same discretization is used when finding eigenstates or propagating in time.
+
+## Time-independent step
 
 ```c
-double *x = linspace(0, L, N);
-double *V = calloc(N, sizeof(double));
-double *diag = malloc(N * sizeof(double));
-double *offdiag = malloc((N-1) * sizeof(double));
-build_tridiagonal_hamiltonian(x, V, N, dx, HBAR_2M, diag, offdiag);
-
-cvector_t *psi = initial_wavepacket(...);
-for (int step = 0; step < n_steps; step++) {
-    crank_nicolson_step(diag, offdiag, dt, psi);
-    // save or plot psi at desired times
-}
+int crank_nicolson_step(const double *diag, const double *offdiag, double dt,
+                        cvector_t *psi);
 ```
 
-## Properties
+One step of unitary evolution for a real, time-independent, diagonal-plus-offdiagonal Hamiltonian (no CAP).
 
-- Unitary: preserves norm (probability) exactly.
-- Unconditionally stable: no restriction on $\Delta t$ (though accuracy improves with smaller steps).
-- Second-order accurate in time and space (when used with second-order spatial discretization).
+## General step (complex diagonal / CAP)
+
+```c
+int crank_nicolson_step_general(const complex_t *diag, const double *offdiag,
+                                double dt, cvector_t *psi);
+```
+
+Allows a complex diagonal, `diag[i] = V(x_i) [+ kinetic on-site term] - iΓ(x_i)`, where $\Gamma \geq 0$ is an optional complex absorbing potential (CAP). Pass an all-zero imaginary part to recover ordinary unitary evolution. The off-diagonal stays real, since CAP and any local potential only ever enter the Hamiltonian diagonally.
+
+## Time-dependent potentials
+
+```c
+typedef double (*potential_time_fn)(double x, double t, void *params);
+
+void build_tridiagonal_hamiltonian_time_dependent(
+    const double *x, int N, double dx, double hbar_sq_2m, potential_time_fn V,
+    void *params, double t, const double *absorb, complex_t *diag_out,
+    double *offdiag_out);
+
+int crank_nicolson_evolve_time_dependent(const double *x, int N, double dx,
+                                         double hbar_sq_2m, potential_time_fn V,
+                                         void *params, const double *absorb,
+                                         cvector_t *psi, double t0, double dt,
+                                         int steps);
+```
+
+`crank_nicolson_evolve_time_dependent` is the convenience driver: it steps `psi` forward `steps` times from `t0`, rebuilding $H$ at each step's **midpoint** time for second-order accuracy (rather than evaluating $V$ only at the step's start), and layering in `absorb` (maybe `NULL`) as a CAP.
+
+## Complex absorbing potentials
+
+```c
+void cap_build_monomial(const double *x, int N, double width, double eta,
+                        int power, double *absorb_out);
+```
+
+Riess-Meyer-style monomial CAP: $\Gamma$ ramps smoothly from 0 to `eta` over an absorbing layer of the given `width` at each edge of the grid ($\Gamma(x) = \eta \cdot ((x - x_{\text{layer start}})/\text{width})^{\text{power}}$), and is exactly 0 in the interior. `power` is typically 2 or 3. Used to prevent unphysical reflection off the grid boundary in scattering/tunneling simulations (see `eg_27_cap_tdse.c`).

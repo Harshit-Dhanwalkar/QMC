@@ -2,7 +2,7 @@
 
 A particle trapped in a finite potential well: $V(x) = -V_0$ for $|x| < L/2$ and $V(x) = 0$ outside. Unlike the infinite well, the wavefunction can tunnel into the classically forbidden regions.
 
-## The Schrödinger Equation
+## The Schr$\ddot{o}$dinger Equation
 
 The finite square well potential:
 
@@ -41,16 +41,23 @@ $$
 
 ## Numerical Solution
 
-The finite well is implemented in `src/physics/potentials.c`:
+The potential is defined as a point evaluator (see
+[1D Potentials](potentials_1d.md)):
 
 ```c
-void potential_finite_well(double *V, const double *x, int N,
-                          double V0, double L) {
-    for (int i = 0; i < N; i++) {
-        V[i] = (fabs(x[i]) < L/2.0) ? -V0 : 0.0;
-    }
-}
+double V_finite_well(double x, void *params); // params: struct { double a, V0; }
 ```
+
+Here `a` is the **half-width** (well spans `|x| < a`, so `a = L/2` in the
+notation above):
+
+```c
+struct { double a, V0; } params = { .a = L / 2.0, .V0 = V0 };
+double *V = malloc(N * sizeof(double));
+potential_array(x, N, V_finite_well, &params, V);
+```
+
+Because the wavefunction has non-trivial amplitude in the classically forbidden regions outside the well, this is exactly the case `numerov_shoot_matching` (bidirectional shooting with log-derivative matching, see [Numerov Integrator](../internals/numerov.md)) exists for - the single-direction / matrix-diagonalization approach used for the infinite well isn't the right tool here.
 
 ## Running the Example
 

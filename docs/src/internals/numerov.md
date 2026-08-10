@@ -1,68 +1,68 @@
 # Numerov Integrator
 
-The Numerov method is a fourth-order integrator for second-order ODEs of the form $y'' = f(x)y$ without first derivative terms - exactly the form of the 1D Schr$\"{o}$dinger equation.
-
-## The Algorithm
-
-For the Schr$\"{o}$dinger equation:
+The Numerov method solves the 1D time-independent Schr$\ddot{o}$dinger equation
 
 $$
--\frac{\hbar^2}{2m}\frac{d^2\psi}{dx^2} + V(x)\psi = E\psi
+-\frac{\hbar^2}{2m}\frac{d^2\phi}{dx^2} + V(x)\phi = E\phi
 $$
 
-rearrange as $\psi'' = f(x)\psi$ with $f(x) = \frac{2m}{\hbar^2}\left(V(x) - E\right)$.
+By exploiting the absence of a first-derivative term: for an ODE of the form $\phi''(x) = f(x)\phi(x)$, Numerov gives $O(h^4)$ local accuracy from a three-point recurrence, better than the $O(h^2)$ of a generic finite-difference scheme at the same cost.
 
-Numerov's discretization (order $h^4$):
+Defined in `core/ode/numerov.h`.
 
-$$
-\psi_{n+1} = \frac{2\psi_n(1 - 5h^2 f_n/12) - \psi_{n-1}(1 + h^2 f_{n-1}/12)}{1 + h^2 f_{n+1}/12}
-$$
-
-## Shooting Method
-
-To find eigenvalues, we use the shooting method:
-
-1. Guess energy $E$.
-2. Integrate from left boundary ($\psi(0)=0$) to the right using Numerov.
-3. The solution at the right boundary will be zero only if $E$ is an eigenvalue.
-4. Use bisection to bracket and refine.
-
-## Implementation
-
-The core integrator is in `src/core/ode/numerov.c`:
+## Grid & Parameters
 
 ```c
-static double integrate_once(const numerov_params_t *p, double E,
-                             cvector_t *psi) {
-    int N = p->n;
-    double h2 = p->dx * p->dx;
-    double *f = malloc(N * sizeof *f);
-    for (int i = 0; i < N; i++)
-        f[i] = (p->V[i] - E) / p->hbar_sq_2m;
+typedef struct {
+  double *x;         // Position grid
+  double *V;         // Potential array V(x)
+  int n;             // Grid points
+  double dx;         // Grid spacing
+  double hbar_sq_2m; // \hbar^2/(2m) in problem units
+} numerov_params_t;
 
-    psi->data[0].re = 0.0;
-    psi->data[1].re = 1e-6;   // small initial slope
-    for (int i = 1; i < N-1; i++) {
-        double num = 2.0 * (1.0 - (5.0/12.0)*h2*f[i]) * psi->data[i].re
-                   - (1.0 + (1.0/12.0)*h2*f[i-1]) * psi->data[i-1].re;
-        double denom = 1.0 + (1.0/12.0)*h2*f[i+1];
-        psi->data[i+1].re = num / denom;
-    }
-    free(f);
-    return psi->data[N-1].re;   // value at right boundary
-}
+typedef struct {
+  double energy;
+  cvector_t *psi;
+} numerov_solution_t;
 ```
 
-The bisection routine `numerov_shoot()` finds the energy where the boundary value crosses zero.
+## Two solvers, two purposes
 
-## Usage
+QMC exposes two entry points that both produce a `numerov_solution_t`, but they work in fundamentally different ways:
+
+### `numerov_shoot` - matrix diagonalization
 
 ```c
-numerov_params_t p = { .x = x, .V = V, .n = N, .dx = dx, .hbar_sq_2m = 0.5 };
-numerov_solution_t *sol = numerov_shoot(&p, 0.5, 1e-10);
-printf("Energy: %f\n", sol->energy);
+numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
+                                  double E_tol);
 ```
 
-## Accuracy
+`E_guess` is used only to pick a target level index (`level = round(E_guess - V_min - 0.5)`, clamped to ≥ 0); the eigenvalue and eigenvector are then obtained by discretizing the Hamiltonian into `diag`/`offdiag` arrays and calling `tridiag_eigh` (see [Linear Algebra Core](linalg.md)). This is the default, reliable path for problems without classically forbidden regions to match across - e.g. the infinite square well.
 
-Numerov is $O(h^4)$, so for typical grids (N \~ 1000) it gives $10^{−12}$ accuracy for eigenvalues.
+### `numerov_shoot_matching` - true shooting
+
+```c
+numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
+                                           double E_min, double E_max,
+                                           int n_scan, double tol);
+```
+
+Bidirectional Numerov integration with log-derivative matching at the outer classical turning point, bracketed on `[E_min, E_max]` and refined by bisection (`n_scan` points used to find a sign change before bisecting). Validated to roughly $10^{-9}$–$10^{-11}$ against the harmonic oscillator's known spectrum.
+
+This exists because naive single-direction shooting - integrate outward from one boundary and look for a zero-crossing at some matching point - cannot detect eigenvalues in a classically-allowed region: a Taylor-series analysis of the recurrence shows the characteristic ratio stays above 1, so the trial solution never changes sign there regardless of step size or grid resolution. Bidirectional matching (integrate from both ends and match log-derivatives at a turning point) sidesteps the problem entirely.
+
+## Raw integration
+
+```c
+void numerov_integrate(const numerov_params_t *params, double E,
+                       cvector_t *psi);
+```
+
+Forward Numerov integration at a fixed energy, seeded with $\psi_0 = 0$ (Dirichlet), $\psi_1 = 10^{-8}$. Used internally by both solvers above; also useful standalone for plotting a trial wavefunction at an arbitrary (possibly non-eigen) energy.
+
+## Cleanup
+
+```c
+void numerov_solution_free(numerov_solution_t *sol);
+```

@@ -33,25 +33,42 @@ Key properties:
 - **Parity**: Alternates between even ($n$ even) and odd ($n$ odd)
 - **Number of nodes**: $n$ nodes
 
-## Numerical Solution (Matrix Diagonalization)
+## Numerical Solution (Tridiagonal Diagonalization)
 
-The Hamiltonian is discretized on a grid using finite differences:
+The finite-difference Hamiltonian for a 1D potential is real, symmetric, and tridiagonal - building a full dense `cmatrix_t` for it is wasted work. `core/ode/crank_nicolson.h` provides a shared builder for the `diag`/`offdiag` arrays, and `core/linalg/tridiag_eigh.h` diagonalizes them directly in $O(N^2)$ via the implicit QL algorithm (Wilkinson shift):
 
 ```c
-// Build Hamiltonian matrix
-double coeff = -hbar*hbar / (2*m*dx*dx);
-for (int i = 0; i < N; i++) {
-    double V = 0.5 * m * omega * omega * x[i] * x[i];
-    CMAT(H, i, i) = c_real(-2.0*coeff + V);
-    if (i > 0) CMAT(H, i, i-1) = c_real(coeff);
-    if (i < N-1) CMAT(H, i, i+1) = c_real(coeff);
-}
+void build_tridiagonal_hamiltonian(const double *x, const double *V, int N,
+                                   double dx, double hbar_sq_2m, double *diag,
+                                   double *offdiag);
 
-// Diagonalize
-eigen_t *eig = cmatrix_eigh(H);
+eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n);
 ```
 
-The eigenstates are obtained by diagonalizing the tridiagonal matrix.
+```c
+double V[N];
+for (int i = 0; i < N; i++)
+    V[i] = 0.5 * m * omega * omega * x[i] * x[i];
+```
+
+> `physics/potentials.h` also provides `V_harmonic(x, params)` with `params: double *omega` - but note it has **no mass term**, computing `0.5*omega^2*x^2` directly (consistent with this project's natural-units convention, $\hbar=m=1$). If `m` isn't 1 in your setup, build the array manually as above rather than going through `V_harmonic` + `potential_array`. See [1D Potentials](potentials_1d.md).
+
+```c
+double diag[N], offdiag[N - 1];
+build_tridiagonal_hamiltonian(x, V, N, dx, HBAR_SQ / (2.0 * m), diag, offdiag);
+
+eigen_t *eig = tridiag_eigh(diag, offdiag, N);
+```
+
+`eig->eigenvalues` is ascending; `eig->eigenvectors` holds each eigenstate as a column of an $N \times N$ `cmatrix_t`. Extract an individual state with `core/utils.h`'s column helper:
+
+```c
+cvector_t *cvector_from_matrix_column(const cmatrix_t *m, int col);
+
+cvector_t *psi_0 = cvector_from_matrix_column(eig->eigenvectors, 0);
+```
+
+This replaced an earlier dense-Jacobi approach (`cmatrix_eigh` on a full complex `cmatrix_t`) that ignored the matrix's tridiagonal structure - a meaningful correctness/performance change for every 1D potential module, not just the harmonic oscillator.
 
 ## Running the Example
 
@@ -68,7 +85,7 @@ This generates:
 
 ### Verification
 
-// TODO
+> Pending: needs actual numerical output compared against the analytic $E_n = \hbar\omega(n+1/2)$ spectrum to fill in properly - happy to add this once you share the test output or `test_tridiag.c` results.
 
 The wavefunctions match the Hermite-Gauss form. The ground state is a Gaussian, while the first excited state is the odd-parity function $x\exp(−x^2/2)$.
 

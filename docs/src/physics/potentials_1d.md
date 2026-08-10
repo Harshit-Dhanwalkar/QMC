@@ -1,28 +1,59 @@
 # 1D Potentials
 
-Common 1D potentials implemented in `src/physics/potentials.c` and used throughout the library.
+Potentials implemented in `src/physics/potentials.c` / `physics/potentials.h`.
+
+## API shape
+
+Unlike an array-filling function per potential, QMC uses single-point
+evaluators plus a generic array filler:
+
+```c
+typedef double (*potential_fn)(double x, void *params);
+
+void potential_array(double *x, int n, potential_fn V, void *params,
+                     double *V_out);
+```
+
+Every potential below has this signature - `V(x, params)` - and gets
+evaluated across a grid via `potential_array`, rather than each potential
+having its own array-filling function.
 
 ## Implemented Potentials
 
-All potentials are functions of position `x` and fill an array `V` of length `N`.
+- **Infinite Square Well** - `V_infinite_well(x, params)`
+  `params`: `double *a` (**half-width**). Well is `|x| < a`, centered at the
+  origin - not `[0, L]`.
 
-- **Infinite Square Well**
-  `potential_infinite_well(V, x, N, L)` – zero inside `[0,L]`, infinite (1e30) outside.
+- **Finite Square Well** - `V_finite_well(x, params)`
+  `params`: `struct { double a, V0; }`. `-V0` inside `|x| < a`, zero outside.
 
-- **Finite Square Well**
-  `potential_finite_well(V, x, N, V0, L)` – `-V0` inside `[-L/2, L/2]`, zero outside.
+- **Harmonic Oscillator** - `V_harmonic(x, params)`
+  `params`: `double *omega`. Computes `0.5*omega^2*x^2` - **no mass term**,
+  consistent with the project's natural-units convention ($\hbar = m = 1$). If
+  you need a physical mass, build the array manually instead of going through
+  this function.
 
-- **Harmonic Oscillator**
-  `potential_harmonic(V, x, N, m, omega)` – `0.5*m*omega^2*x^2`.
+- **Step Potential** - `V_step(x, params)`
+  `params`: `double *V0`. `0` for `x < 0`, `V0` for `x >= 0`.
 
-- **Morse Potential**
-  `potential_morse(V, x, N, D_e, a, x0)` – `D_e*(1 - exp(-a*(x-x0)))^2`.
+- **Rectangular Barrier** - `V_barrier(x, params)`
+  `params`: `struct { double a, V0; }`. `V0` inside `0 < x < a`, zero outside.
 
-- **Double Well**
-  `potential_double_well(V, x, N, V0, a)` – `-V0*((x/a)^2 - 1)^2`.
+- **Coulomb Potential** - `V_coulomb(r, params)`
+  For hydrogen-like systems. _`params` isn't documented in the header -
+  needs confirming against `potentials.c` (unlike every other entry here, it
+  has no accompanying params comment)._
 
-- **Kronig-Penney (periodic delta)**  
-  Implemented separately for band structure calculations.
+- **Yukawa Potential** - `V_yukawa(r, params)`
+  Screened Coulomb, $V = -g\,e^{-\mu r}/r$. _`params` also undocumented in
+  the header - likely `struct { double g, mu; }` by analogy with the others,
+  but unconfirmed._
+
+- **Morse Potential** - `V_morse(x, params)`
+  $D_e[1 - e^{-a(x-x_0)}]^2$, for molecular vibration. Params struct not
+  documented in the header.
+
+> **Not currently in `potentials.h`:** a double-well potential and a > Kronig-Penney periodic potential were both referenced in the previous version of this page but have no declaration here. Either they live in a different header I haven't seen yet, or they were aspirational and haven't landed - worth confirming either way before this page claims they exist.
 
 ## Usage Example
 
@@ -30,7 +61,19 @@ All potentials are functions of position `x` and fill an array `V` of length `N`
 int N = 1000;
 double *x = linspace(-10, 10, N);
 double *V = malloc(N * sizeof(double));
-potential_harmonic(V, x, N, 1.0, 1.0);
+
+double omega = 1.0;
+potential_array(x, N, V_harmonic, &omega, V);
 ```
 
-All potentials are used with the Numerov integrator or matrix diagonalization to solve the Schrödinger equation.
+Finite well, using the anonymous params struct inline:
+
+```c
+struct { double a, V0; } fw = { .a = 2.0, .V0 = 5.0 };
+potential_array(x, N, V_finite_well, &fw, V);
+```
+
+All potentials are used with the Numerov integrator (see
+[Numerov Integrator](../internals/numerov.md)) or tridiagonal matrix
+diagonalization (see [Linear Algebra Core](../internals/linalg.md)) to solve
+the Schrödinger equation.
