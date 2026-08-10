@@ -59,7 +59,7 @@ static void test_expectation_fixtures(void) {
   check_close(e, 1.5, 1e-9, "vqe_energy at theta=0 equals H[0][0]");
 
   // \theta=\pi flips |0> -> |1> (up to phase) via RY(pi), so <1|H|1>
-  double theta_pi[1] = {M_PI};
+  const double theta_pi[1] = {M_PI};
   double e_pi = vqe_energy(1, 1, theta_pi, H);
   check_close(e_pi, -2.1, 1e-9, "vqe_energy at theta=pi equals H[1][1]");
 

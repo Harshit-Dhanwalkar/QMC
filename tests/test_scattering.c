@@ -37,7 +37,7 @@ static int test_hard_sphere_s_wave(void) {
   double hbar_sq_2m = 0.5;
 
   int fail = 0;
-  double k_values[3] = {0.3, 0.5, 0.8};
+  const double k_values[3] = {0.3, 0.5, 0.8};
 
   for (int i = 0; i < 3; i++) {
     double k = k_values[i];
@@ -66,7 +66,7 @@ static int test_born_yukawa(void) {
   double r_max = 50.0;
   int N = 20000;
 
-  double theta_values[3] = {0.5, 1.0, 2.0};
+  const double theta_values[3] = {0.5, 1.0, 2.0};
 
   for (int i = 0; i < 3; i++) {
     double theta = theta_values[i];

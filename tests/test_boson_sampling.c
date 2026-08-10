@@ -53,7 +53,7 @@ static int test_unitarity_dft(void) {
 
   for (int a = 0; a < 3; a++) {
     for (int b = a; b < 3; b++) {
-      int out[2] = {a, b};
+      const int out[2] = {a, b};
 
       total += boson_sampling_probability(D, 3, in, out, 2);
     }

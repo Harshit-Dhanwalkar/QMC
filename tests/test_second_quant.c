@@ -139,8 +139,8 @@ static void test_jw_vs_direct_hamiltonian(void) {
 
   int n_modes = 4;
   int dim = 1 << n_modes;
-  double epsilon[4] = {0.3, -0.1, 0.5, 0.2};
   double t = 1.0, U = 0.7;
+  const double epsilon[4] = {0.3, -0.1, 0.5, 0.2};
 
   // Build H via JW operator composition
   cmatrix_t *a[4];
@@ -161,6 +161,7 @@ static void test_jw_vs_direct_hamiltonian(void) {
     cmatrix_t *tmp = cmatrix_add(H_jw, n_i);
     cmatrix_free(H_jw);
     cmatrix_free(n_i);
+
     H_jw = tmp;
   }
 
@@ -175,6 +176,7 @@ static void test_jw_vs_direct_hamiltonian(void) {
     cmatrix_free(hop2);
     cmatrix_free(hop_sum);
     cmatrix_free(H_jw);
+
     H_jw = tmp;
 
     // U*n_i*n_{i+1}
@@ -182,11 +184,14 @@ static void test_jw_vs_direct_hamiltonian(void) {
     cmatrix_t *n_ip1 = cmatrix_multiply(a_dag[i + 1], a[i + 1]);
     cmatrix_t *interaction = cmatrix_multiply(n_i, n_ip1);
     cmatrix_scale(interaction, c_real(U));
+
     tmp = cmatrix_add(H_jw, interaction);
+
     cmatrix_free(n_i);
     cmatrix_free(n_ip1);
     cmatrix_free(interaction);
     cmatrix_free(H_jw);
+
     H_jw = tmp;
   }
 
@@ -245,7 +250,7 @@ static void test_invalid_input(void) {
   check_true(jw_creation_operator(3, 3) == NULL, "mode >= n_modes rejected");
   check_true(jw_annihilation_operator(0, 0) == NULL, "n_modes=0 rejected");
 
-  double eps[2] = {0.0, 0.0};
+  const double eps[2] = {0.0, 0.0};
   check_true(second_quant_build_hopping_hamiltonian(0, eps, 1.0, 0.0) == NULL,
              "n_modes=0 rejected (Hamiltonian builder)");
   check_true(second_quant_build_hopping_hamiltonian(2, NULL, 1.0, 0.0) == NULL,

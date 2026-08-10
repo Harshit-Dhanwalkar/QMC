@@ -49,7 +49,7 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-static double *diagonalize_sorted(cmatrix_t *H, int n) {
+static double *diagonalize_sorted(const cmatrix_t *H, int n) {
   cmatrix_t *copy = cmatrix_copy(H);
   eigen_t *eig = cmatrix_eigh_complex(copy);
   cmatrix_free(copy);

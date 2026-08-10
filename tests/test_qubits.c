@@ -123,7 +123,7 @@ static int test_ghz_state(void) {
 // basis state (nothing to collapse away)
 static int test_measure_deterministic_product_state(void) {
   int n_qubits = 3;
-  double u_values[3] = {0.0, 0.37, 0.999999};
+  const double u_values[3] = {0.0, 0.37, 0.999999};
   int fail = 0;
 
   for (int t = 0; t < 3; t++) {
@@ -377,7 +377,8 @@ static int test_measure_qubit_invalid_input(void) {
   cvector_t *psi = qstate_alloc(2);
   fail |= (qstate_measure_qubit(psi, 2, -1, 0.5) != -1); // target < 0
   fail |= (qstate_measure_qubit(psi, 2, 2, 0.5) != -1);  // target >= n_qubits
-  fail |= (qstate_measure_qubit(psi, 3, 0, 0.5) !=-1);   // dimension mismatch (\psi->n=4 != 2^3)
+  fail |= (qstate_measure_qubit(psi, 3, 0, 0.5) !=
+           -1); // dimension mismatch (\psi->n=4 != 2^3)
   cvector_free(psi);
 
   return fail;

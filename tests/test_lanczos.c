@@ -49,7 +49,7 @@ static void test_diagonal_matrix(void) {
   printf("test_diagonal_matrix:\n");
 
   int n = 8;
-  double diag_vals[8] = {5.0, 1.0, 8.0, 0.5, 3.0, 9.0, 2.0, 6.0};
+  const double diag_vals[8] = {5.0, 1.0, 8.0, 0.5, 3.0, 9.0, 2.0, 6.0};
 
   cmatrix_t *dense = cmatrix_alloc(n, n);
   for (int i = 0; i < n; i++) {
@@ -203,7 +203,8 @@ static void test_invalid_input(void) {
 
   check_true(lanczos_eigs(NULL, 1, 10, 1e-10) == NULL, "NULL matrix rejected");
   check_true(lanczos_eigs(A, 0, 10, 1e-10) == NULL, "k=0 rejected");
-  check_true(lanczos_eigs(A, 10, 10, 1e-10) == NULL, "k > n rejected (n=3, k=10)");
+  check_true(lanczos_eigs(A, 10, 10, 1e-10) == NULL,
+             "k > n rejected (n=3, k=10)");
   check_true(lanczos_eigs(A, 3, 1, 1e-10) == NULL, "max_iter < k rejected");
   check_true(lanczos_eigs(A, 1, 10, 0.0) == NULL, "tol<=0 rejected");
   check_true(lanczos_eigs(A, 1, 10, -1.0) == NULL, "negative tol rejected");

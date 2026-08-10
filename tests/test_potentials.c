@@ -72,7 +72,7 @@ int main(void) {
 
   // Rectangular barrier: V=V0 for 0<x<a, V=0 elsewhere
   printf("   Rectangular barrier (a=1.0, V0=3.0):\n");
-  const double barrier_params[2] = {1.0, 3.0}; // {a, V0}
+  double barrier_params[2] = {1.0, 3.0}; // {a, V0}
   potential_array(x, N, V_barrier, barrier_params, V);
 
   int i_in = (int)((0.5 - (-L)) / dx);  // inside (0, a)

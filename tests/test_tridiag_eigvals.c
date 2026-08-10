@@ -128,7 +128,7 @@ int main(void) {
   failed += test_against_analytic_laplacian();
 
   printf("tridiag_eigvals matches tridiag_eigh (random matrices):\n");
-  int Ns[] = {10, 50, 150};
+  const int Ns[] = {10, 50, 150};
   for (int i = 0; i < 3; i++) {
     failed += test_matches_tridiag_eigh(200 + i, Ns[i]);
   }

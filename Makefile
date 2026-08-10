@@ -263,7 +263,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_quantum_algorithms \
               $(BUILD_DIR)/test_second_quant \
               $(BUILD_DIR)/test_molecular_integrals \
-              $(BUILD_DIR)/test_dft
+              $(BUILD_DIR)/test_dft \
+              $(BUILD_DIR)/test_h2_vqe
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
