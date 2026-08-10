@@ -58,6 +58,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_39_openmp_qmc", "OpenMP-parallel VMC/DMC/PIMC replica runners (wall-clock speedup)"},
     {"build/eg_40_molecular_integrals", "General molecular integrals (McMurchie-Davidson): H2/STO-3G restricted Hartree-Fock"},
     {"build/eg_41_dft_atoms", "Kohn-Sham LDA DFT for atoms (He, Be), compared against Hartree-Fock"},
+    {"build/eg_42_h2_vqe", "Real H2 VQE: AO integrals -> Jordan-Wigner -> variational quantum eigensolver"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
