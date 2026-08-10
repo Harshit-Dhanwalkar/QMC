@@ -217,7 +217,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_37_second_quant \
               $(BUILD_DIR)/eg_38_landau_levels \
               $(BUILD_DIR)/eg_39_openmp_qmc \
-              $(BUILD_DIR)/eg_40_molecular_integrals
+              $(BUILD_DIR)/eg_40_molecular_integrals \
+              $(BUILD_DIR)/eg_41_dft_atoms
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -262,7 +263,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_qec \
               $(BUILD_DIR)/test_quantum_algorithms \
               $(BUILD_DIR)/test_second_quant \
-              $(BUILD_DIR)/test_molecular_integrals
+              $(BUILD_DIR)/test_molecular_integrals \
+              $(BUILD_DIR)/test_dft
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

@@ -110,6 +110,7 @@ make clean
   <li><code>eg_38_landau_levels.c</code></li>
   <li><code>eg_39_openmp_qmc</code></li>
   <li><code>eg_40_molecular_integrals.c</code></li>
+  <li><code>eg_41_dft_atoms.c</code></li>
 </ul>
 </details>
 
@@ -154,6 +155,7 @@ make clean
   <li><code>test_scattering.c</code></li>
   <li><code>test_second_quant.c</code></li>
   <li><code>test_molecular_integrals.c</code></li>
+  <li><code>test_dft.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>

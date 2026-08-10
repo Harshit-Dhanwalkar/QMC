@@ -18,10 +18,10 @@ Test: General Gaussian-type-orbital molecular integrals (McMurchie-Davidson).
    LCAO-Gaussian-basis solver for molecules).
 */
 
+#include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
 #include "../physics/molecular_integrals.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/complex.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,11 +150,7 @@ static void test_molecular_eri_tensor_symmetry(void) {
   basis_function_free(funcs[1]);
 }
 
-/* Minimal from-scratch RHF SCF for a 2-basis-function closed-shell (2
- * electron) molecule -- exactly what's needed for H2/STO-3G, written here
- * rather than in molecular_integrals.c/.h since a general molecular RHF
- * driver is future scope (would live alongside second_quant.c/vqe.c), not
- * part of "the integrals engine" being tested here. */
+/* Minimal RHF SCF for a 2-basis-function closed-shell (2 electron) molecule */
 static double h2_sto3g_rhf_energy(double R_bond) {
   double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
@@ -257,6 +253,7 @@ static double h2_sto3g_rhf_energy(double R_bond) {
     if (fabs(E_elec - E_elec_old) < 1e-12) {
       break;
     }
+
     E_elec_old = E_elec;
   }
 
