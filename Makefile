@@ -163,7 +163,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/quantum_info.c \
                $(PHYSICS_DIR)/qec.c \
                $(PHYSICS_DIR)/quantum_algorithms.c \
-               $(PHYSICS_DIR)/second_quant.c
+               $(PHYSICS_DIR)/second_quant.c \
+               $(PHYSICS_DIR)/molecular_integrals.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
