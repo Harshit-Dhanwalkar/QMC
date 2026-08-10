@@ -195,3 +195,131 @@ cmatrix_t *second_quant_build_hopping_hamiltonian(int n_modes,
 
   return H;
 }
+
+cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
+                                                    const double *h_mo,
+                                                    const double *eri_mo,
+                                                    double nuclear_repulsion) {
+  if (n_spatial < 1 || !h_mo || !eri_mo) {
+    return NULL;
+  }
+
+  int n_modes = 2 * n_spatial; // spin orbitals, interleaved \alpha / \beta
+  int dim = 1 << n_modes;
+
+  cmatrix_t *H = cmatrix_alloc(dim, dim);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int i = 0; i < dim * dim; i++) {
+    H->data[i] = c_zero();
+  }
+
+  for (int state = 0; state < dim; state++) {
+    CMAT(H, state, state) =
+        c_add(CMAT(H, state, state), c_real(nuclear_repulsion));
+  }
+
+  // One-body: \sum_{pq, same spin} h_pq a_p^dagger a_q
+  for (int p = 0; p < n_modes; p++) {
+    int spat_p = p / 2, spin_p = p % 2;
+
+    for (int q = 0; q < n_modes; q++) {
+      int spat_q = q / 2, spin_q = q % 2;
+
+      if (spin_p != spin_q) {
+        continue;
+      }
+
+      double hpq = h_mo[spat_p * n_spatial + spat_q];
+      if (hpq == 0.0) {
+        continue;
+      }
+
+      for (int state = 0; state < dim; state++) {
+        int sign1, sign2;
+        int mid = direct_annihilate(state, q, n_modes, &sign1);
+
+        if (mid < 0) {
+          continue;
+        }
+
+        int fin = direct_create(mid, p, n_modes, &sign2);
+        if (fin < 0) {
+          continue;
+        }
+
+        double amp = hpq * sign1 * sign2;
+        CMAT(H, fin, state) = c_add(CMAT(H, fin, state), c_real(amp));
+      }
+    }
+  }
+
+  /* Two-body: (1/2) * \sum_{pqrs} <pq|rs> a_p^\dagger a_q^\dagger a_s a_r,
+   * with <pq|rs> = chemist (pr|qs) = eri_mo[((p * n + r) * n + q) * n + s].
+   NOTE: Spin conservation: spin(p)=spin(r) (electron 1), spin(q)=spin(s)
+   (electron 2).
+   */
+  for (int p = 0; p < n_modes; p++) {
+    int spat_p = p / 2, spin_p = p % 2;
+
+    for (int q = 0; q < n_modes; q++) {
+      int spat_q = q / 2, spin_q = q % 2;
+
+      for (int r = 0; r < n_modes; r++) {
+        int spat_r = r / 2, spin_r = r % 2;
+
+        if (spin_p != spin_r) {
+          continue;
+        }
+
+        for (int s = 0; s < n_modes; s++) {
+          int spat_s = s / 2, spin_s = s % 2;
+
+          if (spin_q != spin_s) {
+            continue;
+          }
+
+          size_t idx =
+              (((size_t)spat_p * n_spatial + spat_r) * (size_t)n_spatial +
+               spat_q) *
+                  (size_t)n_spatial +
+              spat_s;
+          double val = eri_mo[idx];
+          if (val == 0.0) {
+            continue;
+          }
+
+          for (int state = 0; state < dim; state++) {
+            int sign1, sign2, sign3, sign4;
+            int mid1 = direct_annihilate(state, r, n_modes, &sign1);
+            if (mid1 < 0) {
+              continue;
+            }
+
+            int mid2 = direct_annihilate(mid1, s, n_modes, &sign2);
+            if (mid2 < 0) {
+              continue;
+            }
+
+            int mid3 = direct_create(mid2, q, n_modes, &sign3);
+            if (mid3 < 0) {
+              continue;
+            }
+
+            int fin = direct_create(mid3, p, n_modes, &sign4);
+            if (fin < 0) {
+              continue;
+            }
+
+            double amp = 0.5 * val * sign1 * sign2 * sign3 * sign4;
+            CMAT(H, fin, state) = c_add(CMAT(H, fin, state), c_real(amp));
+          }
+        }
+      }
+    }
+  }
+
+  return H;
+}

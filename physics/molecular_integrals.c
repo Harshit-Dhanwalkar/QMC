@@ -59,10 +59,6 @@ double boys_function(int n, double x) {
  * McMurchie-Davidson 1D Hermite expansion coefficients E^{ij}_t
  * ------------------------------------------------------------------- */
 
-/* NOTE: Recursive, matching the validated Python 1:1. i,j are bounded by basis
- * angular momentum (small: s/p/d/f in practice), so unmemoized recursion is not
- * a performance concern here.
- */
 static double md_E(int i, int j, int t, double Qx, double a, double b) {
   double p = a + b;
   double q = a * b / p;
@@ -184,9 +180,9 @@ static double prim_nuclear(const gto_primitive_t *A, const double Ac[3],
                            const gto_primitive_t *B, const double Bc[3],
                            const double C[3]) {
   double a = A->alpha, b = B->alpha, p = a + b;
-  double P[3] = {(a * Ac[0] + b * Bc[0]) / p, (a * Ac[1] + b * Bc[1]) / p,
-                 (a * Ac[2] + b * Bc[2]) / p};
-  double PC[3] = {P[0] - C[0], P[1] - C[1], P[2] - C[2]};
+  const double P[3] = {(a * Ac[0] + b * Bc[0]) / p, (a * Ac[1] + b * Bc[1]) / p,
+                       (a * Ac[2] + b * Bc[2]) / p};
+  const double PC[3] = {P[0] - C[0], P[1] - C[1], P[2] - C[2]};
   double RPC2 = PC[0] * PC[0] + PC[1] * PC[1] + PC[2] * PC[2];
 
   int Lmax = A->l + B->l + A->m + B->m + A->n + B->n;

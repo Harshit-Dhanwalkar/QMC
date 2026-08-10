@@ -217,7 +217,7 @@ int pimc_bisection_move(pimc_walker_t *w, int which, double Z, double tau,
 
   // Interior offsets only
   int n_interior = seg - 1;
-  int *interior_offsets = offsets + 1; // offsets[1..seg-1] == 1..seg-1
+  const int *interior_offsets = offsets + 1; // offsets[1..seg-1] == 1..seg-1
 
   double S_old, S_new;
   if (which == 0) {

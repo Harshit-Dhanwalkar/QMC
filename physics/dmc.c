@@ -73,7 +73,7 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
   }
 
   double *moving = (which == 0) ? w->r1 : w->r2;
-  double old_pos[3] = {moving[0], moving[1], moving[2]};
+  const double old_pos[3] = {moving[0], moving[1], moving[2]};
 
   double drift_old[3];
   dmc_drift_velocity(w, which, Zeff, b, drift_old);

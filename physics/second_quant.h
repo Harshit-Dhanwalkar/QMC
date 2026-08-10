@@ -58,4 +58,38 @@ cmatrix_t *second_quant_build_hopping_hamiltonian(int n_modes,
                                                   const double *epsilon,
                                                   double t, double U);
 
+/*
+ * Build the full second-quantized molecular electronic Hamiltonian (dense, 2^(2
+ * * n_spatial) x 2^(2 * n_spatial)) via same direct bit-manipulation
+ * Jordan-Wigner construction as second_quant_build_hopping_hamiltonian (not via
+ * jw_creation_operator/jw_annihilation_operator tensor products), on 2 *
+ * n_spatial spin-orbitals using the interleaved convention: spin-orbital index
+ * 2p = spatial MO p, spin-up (\alpha); 2p+1 = spatial MO p, spin-down (\beta).
+ *
+ *   H = nuclear_repulsion * I
+ *       + sum_{pq} h_pq a_p^dagger a_q
+ *       + (1/2) sum_{pqrs} <pq|rs> a_p^dagger a_q^dagger a_s a_r
+ *
+ * h_mo             : n_spatial x n_spatial one-electron (kinetic + nuclear
+ *                    attraction) integrals in the MO basis, row-major
+ *                    (h_mo[p*n_spatial+q]).
+ * eri_mo           : n_spatial^4 two-electron integrals in MO basis, CHEMIST
+ *                    notation (pq|rs) with same flat indexing as
+ *                    molecular_integrals.h's MOLINT_ERI macro (i.e. pass
+ *                    exactly one get from AO->MO-transforming
+ *                    molecular_eri_tensor's output). This function internally
+ *                    converts to physicist <pq|rs> = chemist (pr|qs) ordering
+ *                    sum above needs.
+ * nuclear_repulsion: added as a constant shift to every diagonal element, so
+ *                    the returned matrix's eigenvalues are directly total
+ *                    molecular energies (electronic + nuclear), not just
+ *                    electronic ones.
+ *
+ * Returns NULL if n_spatial < 1 or h_mo/eri_mo is NULL.
+ */
+cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
+                                                    const double *h_mo,
+                                                    const double *eri_mo,
+                                                    double nuclear_repulsion);
+
 #endif
