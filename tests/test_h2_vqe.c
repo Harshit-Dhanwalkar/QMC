@@ -196,7 +196,7 @@ static void test_h2_fci_and_vqe(void) {
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
 
-  double charge[2] = {1.0, 1.0};
+  const double charge[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 

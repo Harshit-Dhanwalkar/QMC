@@ -2,13 +2,12 @@
 Test: Variational Quantum Eigensolver (hardware-efficient ansatz +
 coordinate-descent optimizer).
 
-1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt(a^2 + b^2) (2x2
-Hermitian, closed form).
+1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt(a^2 + b^2)
+  (2x2 Hermitian, closed form).
 2. Transverse-field Ising model (n_qubits=3): cross-checked against exact
-diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
-simple closed form for a small open chain.
-3. vqe_expectation / vqe_energy fixture checks at fixed (untrained) parameters
-(deterministic, no optimizer involved).
+  diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
+  simple closed form for a small open chain.
+3. vqe_expectation / vqe_energy fixture checks at fixed (untrained) parameters.
 4. Invalid-input handling.
 */
 
@@ -54,14 +53,14 @@ static void test_expectation_fixtures(void) {
   CMAT(H, 1, 0) = c_real(0.3);
   CMAT(H, 1, 1) = c_real(-2.1);
 
-  double theta[1] = {0.0};
+  const double theta[1] = {0.0};
   double e = vqe_energy(1, 1, theta, H);
-  check_close(e, 1.5, 1e-9, "vqe_energy at theta=0 equals H[0][0]");
+  check_close(e, 1.5, 1e-9, "vqe_energy at \\theta=0 equals H[0][0]");
 
   // \theta=\pi flips |0> -> |1> (up to phase) via RY(pi), so <1|H|1>
   const double theta_pi[1] = {M_PI};
   double e_pi = vqe_energy(1, 1, theta_pi, H);
-  check_close(e_pi, -2.1, 1e-9, "vqe_energy at theta=pi equals H[1][1]");
+  check_close(e_pi, -2.1, 1e-9, "vqe_energy at \\theta=\\pi equals H[1][1]");
 
   cmatrix_free(H);
 }
@@ -140,7 +139,7 @@ static void test_invalid_input(void) {
   CMAT(H, 1, 1) = c_real(-1.0);
 
   check_true(vqe_prepare_ansatz(0, 1, NULL) == NULL, "n_qubits=0 rejected");
-  check_true(vqe_prepare_ansatz(1, 1, NULL) == NULL, "NULL theta rejected");
+  check_true(vqe_prepare_ansatz(1, 1, NULL) == NULL, "NULL \\theta rejected");
 
   vqe_result_t r1 = vqe_run(1, 1, NULL, 5, M_PI, 1ULL);
   check_true(r1.theta_opt == NULL, "NULL Hamiltonian rejected");

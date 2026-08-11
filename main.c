@@ -59,6 +59,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_40_molecular_integrals", "General molecular integrals (McMurchie-Davidson): H2/STO-3G restricted Hartree-Fock"},
     {"build/eg_41_dft_atoms", "Kohn-Sham LDA DFT for atoms (He, Be), compared against Hartree-Fock"},
     {"build/eg_42_h2_vqe", "Real H2 VQE: AO integrals -> Jordan-Wigner -> variational quantum eigensolver"},
+    {"build/eg_43_h4_vqe", "H4 chain: general N-basis RHF, FCI, and VQE at 8 qubits"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
