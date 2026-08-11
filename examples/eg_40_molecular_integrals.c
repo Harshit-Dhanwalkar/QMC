@@ -13,8 +13,8 @@
  * overlap/kinetic/nuclear/two-electron integrals, run a restricted-HF SCF, and
  * report total energy.
  * The Theoretical reference result for exactly this system/basis/geometry
- * (Szabo & Ostlund, "Modern Quantum Chemistry") is -1.1167 Hartree at R=1.4
- * bohr : this example should land within a few 1e-5 Hartree of that.
+ * (Reference: Szabo & Ostlund, "Modern Quantum Chemistry") is -1.1167 Hartree
+ * at R=1.4 bohr : this example should land within a few 1e-5 Hartree of that.
  */
 
 #include "../core/complex.h"
@@ -42,7 +42,7 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
     printf("  Overlap matrix S:\n");
     printf("    [ %.6f  %.6f ]\n", CMAT(S, 0, 0).re, CMAT(S, 0, 1).re);
     printf("    [ %.6f  %.6f ]\n", CMAT(S, 1, 0).re, CMAT(S, 1, 1).re);
-    printf("  Core Hamiltonian h = T - sum_A Z_A * V_A:\n");
+    printf("  Core Hamiltonian h = T - \\sum_A Z_A * V_A:\n");
     printf("    [ %.6f  %.6f ]\n", CMAT(Hcore, 0, 0).re, CMAT(Hcore, 0, 1).re);
     printf("    [ %.6f  %.6f ]\n", CMAT(Hcore, 1, 0).re, CMAT(Hcore, 1, 1).re);
     printf("  Unique two-electron integrals:\n");
@@ -74,6 +74,7 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
 
   for (it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
+
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         double v = CMAT(Hcore, i, j).re;
@@ -93,6 +94,7 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         double v = 0.0;
+
         for (int p = 0; p < 2; p++) {
           for (int q = 0; q < 2; q++) {
             v += CMAT(Shalf, p, i).re * CMAT(F, p, q).re * CMAT(Shalf, q, j).re;
@@ -108,6 +110,7 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
     for (int i = 0; i < 2; i++) {
       for (int k = 0; k < 2; k++) {
         double v = 0.0;
+
         for (int p = 0; p < 2; p++) {
           v += CMAT(Shalf, i, p).re * CMAT(eig_F->eigenvectors, p, k).re;
         }
@@ -174,7 +177,7 @@ int main(void) {
   printf("  === H2 at R=1.4 bohr (Szabo & Ostlund benchmark geometry) ===\n\n");
   double E = h2_sto3g_rhf(1.4, 1);
   printf(
-      "\n  E_total = %.6f Hartree  (textbook reference: -1.1167 Hartree)\n\n",
+      "\n  E_total = %.6f Hartree  (Theoretical reference: -1.1167 Hartree)\n\n",
       E);
 
   printf("  === Bond-length scan ===\n\n");

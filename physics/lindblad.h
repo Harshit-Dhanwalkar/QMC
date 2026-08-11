@@ -46,7 +46,7 @@ cmatrix_t *lindblad_rhs(const cmatrix_t *H, const cmatrix_t *rho, cmatrix_t **L,
  * lindblad_rhs.
  * Returns 0 on success, -1 on invalid input (dimension mismatch, etc).
  */
-int lindblad_step_rk4(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
+int lindblad_step_rk4(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                       int n_ops, double dt);
 
 // Evolve \rho for `steps` of size dt via repeated lindblad_step_rk4.

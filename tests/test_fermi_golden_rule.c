@@ -50,6 +50,7 @@ int main(void) {
 
   for (int k = 1; k <= M; k++) {
     double Ek = -W / 2.0 + (k - 1) * dE;
+
     CMAT(H, k, k) = c_real(Ek);
     CMAT(H, 0, k) = c_real(V0);
     CMAT(H, k, 0) = c_real(V0);
@@ -64,9 +65,9 @@ int main(void) {
   CMAT(Vpert, 1, 0) = c_real(V0);
   double Gamma = fermi_golden_rate(Vpert, 0, 1, rho);
 
-  int fail =
-      check_close(Gamma, 2.0 * M_PI * V0 * V0 * rho, 1e-10,
-                  "fermi_golden_rate() vs hand formula 2*\\pi*V0^2*\\rho");
+  int fail = check_close(
+      Gamma, 2.0 * M_PI * V0 * V0 * rho, 1e-10,
+      "fermi_golden_rate() vs hand formula 2 * \\pi * V0^2 * \\rho");
 
   // Exact time evolution via diagonalization.
   eigen_t *eig = cmatrix_eigh_generic(H);
@@ -84,15 +85,17 @@ int main(void) {
   }
 
   printf("  Gamma (golden rule) = %.6f\n", Gamma);
-  printf("  Survival probability vs exp(-Gamma*t), intermediate-time "
+  printf("  Survival probability vs \\exp(-\\Gamma * t), intermediate-time "
          "window:\n");
   const double test_times[] = {2.0, 2.5, 3.0, 3.5, 4.0};
 
   for (int ti = 0; ti < 5; ti++) {
     double t = test_times[ti];
     double re = 0.0, im = 0.0;
+
     for (int k = 0; k < dim; k++) {
       double phase = -eig->eigenvalues[k] * t;
+
       re += c[k] * c[k] * cos(phase);
       im += c[k] * c[k] * sin(phase);
     }

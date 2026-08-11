@@ -65,7 +65,7 @@ int main(void) {
   }
 
   double predicted_n0 = lattice_landau_level_energy(0, 0.0, t, alpha);
-  printf("\n   Continuum-limit prediction, E_n = -4t + omega_c*(n+1/2), "
+  printf("\n   Continuum-limit prediction, E_n = -4 * t + \\omega_c*(n + 1/2), "
          "\\omega_c = 4 * \\pi * t * \\alpha = %.6f:\n",
          4.0 * M_PI * t * alpha);
   printf(

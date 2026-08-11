@@ -17,13 +17,18 @@ Restricted Hartree-Fock for closed-shell, s-orbitals-only atoms/ions.
 // Rectangle-rule quadrature normalization: \int u^2 dr = 1.
 static void normalize_u(double *u, int N, double dr) {
   double norm_sq = 0.0;
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     norm_sq += u[i] * u[i] * dr;
-  if (norm_sq < 1e-300)
+  }
+
+  if (norm_sq < 1e-300) {
     return;
+  }
+
   double norm = sqrt(norm_sq);
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     u[i] /= norm;
+  }
 }
 
 /*
@@ -52,6 +57,7 @@ void compute_Y0(const double *r, int N, double dr, const double *ua,
   for (int i = 1; i < N; i++) {
     double f_prev = ua[i - 1] * ub[i - 1];
     double f_curr = ua[i] * ub[i];
+
     inner[i] = inner[i - 1] + 0.5 * (f_prev + f_curr) * dr;
   }
 
@@ -59,6 +65,7 @@ void compute_Y0(const double *r, int N, double dr, const double *ua,
   for (int i = N - 2; i >= 0; i--) {
     double f_prev = (r[i] > 0.0) ? ua[i] * ub[i] / r[i] : 0.0;
     double f_curr = (r[i + 1] > 0.0) ? ua[i + 1] * ub[i + 1] / r[i + 1] : 0.0;
+
     outer[i] = outer[i + 1] + 0.5 * (f_prev + f_curr) * dr;
   }
 
@@ -75,6 +82,7 @@ void compute_Y0(const double *r, int N, double dr, const double *ua,
  * Dense real-symmetric (stored as complex-Hermitian, imaginary parts 0)
  * Fock matrix on the radial grid:
  *   F = T + V_nuc + \sum_k 2 * Y0_kk(r) * \delta_ab - \sum_k K_k(a,b)
+ *
  *  Where
  *   K_k(a,b) = dr * u_k(r_a) * u_k(r_b) / max(r_a, r_b)
  * with Dirichlet boundary conditions u(r[0]) = u(r[N-1]) = 0 enforced by fully
@@ -219,6 +227,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
   int iter = 0;
   for (; iter < max_iter; iter++) {
     cmatrix_t *F = build_fock_matrix(r, N, dr, Z, u, n_orbitals);
+
     if (!F) {
       free_orbital_arrays(u, n_orbitals);
       free(orbital_energies);
@@ -263,6 +272,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
       for (int i = 0; i < N; i++) {
         double mixed = (1.0 - mix) * u[k][i] + mix * u_new[i];
         double delta = fabs(mixed - u[k][i]);
+
         if (delta > max_delta) {
           max_delta = delta;
         }
@@ -376,6 +386,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
       correction += 2.0 * Jij - Kij;
     }
   }
+
   free(Y0_buf);
   total_energy -= correction;
 

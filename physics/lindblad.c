@@ -136,7 +136,7 @@ cmatrix_t *lindblad_rhs(const cmatrix_t *H, const cmatrix_t *rho, cmatrix_t **L,
   cmatrix_free(rhoH);
 
   for (int k = 0; k < n_ops; k++) {
-    cmatrix_t *Lk = L ? L[k] : NULL;
+    const cmatrix_t *Lk = L ? L[k] : NULL;
     if (!Lk || Lk->nrows != n || Lk->ncols != n) {
       cmatrix_free(result);
 
@@ -180,7 +180,7 @@ cmatrix_t *lindblad_rhs(const cmatrix_t *H, const cmatrix_t *rho, cmatrix_t **L,
   return result;
 }
 
-int lindblad_step_rk4(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
+int lindblad_step_rk4(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                       int n_ops, double dt) {
   if (!rho || !H) {
     return -1;

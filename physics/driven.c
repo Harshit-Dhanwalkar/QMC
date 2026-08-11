@@ -28,8 +28,8 @@ typedef struct {
   void *omega_params;
 } driven_rwa_ctx_t;
 
-// -i * H(t) * \psi for H(t) = (1/2)*[[\Delta(t), \Omega(t)],[\Omega(t),
-// -\Delta(t)]]
+// -i * H(t) * \psi for
+// H(t) = (1/2) * [[\Delta(t), \Omega(t)],[\Omega(t), -\Delta(t)]]
 static void rotating_frame_rhs(double t, const cvector_t *y, cvector_t *dydt,
                                void *params) {
   driven_rwa_ctx_t *c = (driven_rwa_ctx_t *)params;
@@ -85,7 +85,7 @@ typedef struct {
 // -i * H(t) * \psi for full lab-frame (non-RWA) Hamiltonian
 static void lab_frame_rhs(double t, const cvector_t *y, cvector_t *dydt,
                           void *params) {
-  driven_lab_ctx_t *c = (driven_lab_ctx_t *)params;
+  const driven_lab_ctx_t *c = (driven_lab_ctx_t *)params;
   double drive = c->Omega0 * cos(c->omega_L * t + c->phase);
 
   complex_t H_psi0 =
@@ -112,6 +112,7 @@ int driven_two_level_evolve_lab_frame(cvector_t *psi, double omega0,
     if (rk4_step(t, dt, psi, lab_frame_rhs, &ctx) != 0) {
       return -1;
     }
+
     t += dt;
   }
 
