@@ -36,10 +36,10 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-/* Same RHF as test_molecular_integrals.c, but also returns converged MO
- * coefficient matrix C, needed for AO->MO integral transform below. */
+// Same RHF as test_molecular_integrals.c, but also returns converged MO
+// coefficient matrix C, needed for AO->MO integral transform below.
 static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
-                                  cmatrix_t *Hcore, double *eri,
+                                  cmatrix_t *Hcore, const double *eri,
                                   double C_out[2][2]) {
   cmatrix_t *S = molecular_overlap_matrix(funcs, 2);
   eigen_t *eig_S = cmatrix_eigh_complex(S);

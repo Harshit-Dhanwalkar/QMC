@@ -31,8 +31,10 @@ double helium_ground_state_energy_numeric(double Z, double tol,
   double hi = 2.0 * Z;
   double Zeff_opt =
       golden_section_minimize(lo, hi, helium_energy_adapter, &Z, tol);
-  if (Zeff_opt_out)
+
+  if (Zeff_opt_out) {
     *Zeff_opt_out = Zeff_opt;
+  }
 
   return helium_variational_energy(Zeff_opt, Z);
 }

@@ -28,8 +28,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_12_tunnelling", "Barrier tunnelling"},
     {"build/eg_13_scattering", "Phase shifts and Born approximation"},
     {"build/eg_14_rabi", "Rabi oscillations"},
-    {"build/eg_15_angular_coupling",
-     "Angular momentum coupling (CG coefficients)"},
+    {"build/eg_15_angular_coupling", "Angular momentum coupling (CG coefficients)"},
     {"build/eg_16_finestructure", "Hydrogen fine structure"},
     {"build/eg_17_dirac", "1D Dirac equation"},
     {"build/eg_18_qubits", "Multi-qubit states and entanglement"},
@@ -38,12 +37,10 @@ static const demo_entry_t demos[] = {
     {"build/eg_21_driven", "Driven two-level systems / Landau-Zener"},
     {"build/eg_22_soft", "Split-operator (SOFT) wavepacket evolution"},
     {"build/eg_23_fermi_golden_rule", "Fermi's golden rule"},
-    {"build/eg_24_central_potential_3d",
-     "3D central potential (HO, finite well)"},
+    {"build/eg_24_central_potential_3d", "3D central potential (HO, finite well)"},
     {"build/eg_25_boson_sampling", "Boson sampling / Hong-Ou-Mandel"},
     {"build/eg_26_zeeman", "Zeeman effect"},
-    {"build/eg_27_cap_tdse",
-     "Complex absorbing potential + time-dependent V(x,t)"},
+    {"build/eg_27_cap_tdse", "Complex absorbing potential + time-dependent V(x,t)"},
     {"build/eg_28_vmc_helium", "Variational Monte Carlo (helium)"},
     {"build/eg_29_dmc_helium", "Diffusion Monte Carlo (helium)"},
     {"build/eg_30_pimc_helium", "Path Integral Monte Carlo (helium)"},
@@ -60,6 +57,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_41_dft_atoms", "Kohn-Sham LDA DFT for atoms (He, Be), compared against Hartree-Fock"},
     {"build/eg_42_h2_vqe", "Real H2 VQE: AO integrals -> Jordan-Wigner -> variational quantum eigensolver"},
     {"build/eg_43_h4_vqe", "H4 chain: general N-basis RHF, FCI, and VQE at 8 qubits"},
+    {"build/eg_44_lih_vqe", "LiH: p-orbitals, frozen-core reduction, and VQE at 10 qubits"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

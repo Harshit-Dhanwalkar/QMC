@@ -38,7 +38,7 @@
 
 /* RHF returning both electronic energy and MO coefficients C, needed for the
  * AO->MO transform. */
-static double rhf(cmatrix_t *Hcore, double *eri, double C_out[2][2],
+static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
                   cmatrix_t *S) {
   eigen_t *eig_S = cmatrix_eigh_complex(S);
   cmatrix_t *Shalf = cmatrix_alloc(2, 2);
@@ -193,7 +193,7 @@ int main(void) {
   double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
-  double charge[2] = {1.0, 1.0};
+  const double charge[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 

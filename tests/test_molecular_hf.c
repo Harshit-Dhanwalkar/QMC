@@ -4,8 +4,8 @@ Test: general N-basis-function molecular_rhf / molecular_ao_to_mo.
 1. Regression: molecular_rhf on H2/STO-3G at R=1.4 bohr must reproduce
    -1.116714 Hartree using the general-N path.
 2. Result: H4, a linear chain of 4 hydrogen atoms (STO-3G, 1.4 bohr spacing).
-  RHF, then via second_quant_build_molecular_hamiltonian + exact diagonalization,
-  FCI.
+  RHF, then via second_quant_build_molecular_hamiltonian + exact
+diagonalization, FCI.
 3. VQE on the resulting 8-qubit (256-dim) Hamiltonian, checked to be variational
   (>= FCI) and to get within reach of the RHF baseline with a modest optimizer
   budget. Exploratory tuning found this 48-parameter (8 qubits x 6 layers)
@@ -55,7 +55,7 @@ static void test_molecular_rhf_h2_regression(void) {
   double centers_pos[2][3] = {{0, 0, 0}, {0, 0, R}};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(centers_pos[0]),
                                 molint_basis_sto3g_h(centers_pos[1])};
-  double charge[2] = {1.0, 1.0};
+  const double charge[2] = {1.0, 1.0};
   molecule_t *mol = molecule_alloc(2, charge, centers_pos);
 
   molecular_hf_result_t *res = molecular_rhf(funcs, 2, mol, 2, 1e-10, 100);

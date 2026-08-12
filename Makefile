@@ -2,6 +2,13 @@ CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
 CFLAGS += -fsanitize=address -g
+
+# AddressSanitizer is on by default.
+SANITIZE ?= 1
+ifeq ($(SANITIZE),1)
+    CFLAGS += -fsanitize=address -g
+endif
+
 CFLAGS += -MMD -MP
 
 OUTPUT_DIR  = output
@@ -220,7 +227,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_40_molecular_integrals \
               $(BUILD_DIR)/eg_41_dft_atoms \
               $(BUILD_DIR)/eg_42_h2_vqe \
-              $(BUILD_DIR)/eg_43_h4_vqe
+              $(BUILD_DIR)/eg_43_h4_vqe \
+              $(BUILD_DIR)/eg_44_lih_vqe
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -268,7 +276,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_molecular_integrals \
               $(BUILD_DIR)/test_dft \
               $(BUILD_DIR)/test_h2_vqe \
-              $(BUILD_DIR)/test_molecular_hf
+              $(BUILD_DIR)/test_molecular_hf \
+              $(BUILD_DIR)/test_lih
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

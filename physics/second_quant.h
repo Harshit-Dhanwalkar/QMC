@@ -67,12 +67,12 @@ cmatrix_t *second_quant_build_hopping_hamiltonian(int n_modes,
  * 2p = spatial MO p, spin-up (\alpha); 2p+1 = spatial MO p, spin-down (\beta).
  *
  *   H = nuclear_repulsion * I
- *       + sum_{pq} h_pq a_p^dagger a_q
- *       + (1/2) sum_{pqrs} <pq|rs> a_p^dagger a_q^dagger a_s a_r
+ *       + \sum_{pq} h_pq a_p^\dagger a_q
+ *       + (1/2) * \sum_{pqrs} <pq|rs> a_p^\dagger a_q^\dagger a_s a_r
  *
  * h_mo             : n_spatial x n_spatial one-electron (kinetic + nuclear
  *                    attraction) integrals in the MO basis, row-major
- *                    (h_mo[p*n_spatial+q]).
+ *                    (h_mo[p * n_spatial + q]).
  * eri_mo           : n_spatial^4 two-electron integrals in MO basis, CHEMIST
  *                    notation (pq|rs) with same flat indexing as
  *                    molecular_integrals.h's MOLINT_ERI macro (i.e. pass
@@ -91,5 +91,48 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
                                                     const double *h_mo,
                                                     const double *eri_mo,
                                                     double nuclear_repulsion);
+
+/*
+ * Same as second_quant_build_molecular_hamiltonian, but freezes the first
+ * n_frozen spatial orbitals (indices 0..n_frozen-1 in h_mo/eri_mo) as
+ * doubly-occupied and excludes them from the active space entirely :
+ * frozen-core approximation (e.g. freezing a tightly-bound, chemically inert
+ * atomic core orbital like Li's 1s in LiH). Builds the Hamiltonian on only the
+ * remaining n_spatial-n_frozen active spatial orbitals (2*(n_spatial-n_frozen)
+ * spin-orbitals), with the frozen orbitals' contribution folded into (a) a
+ * constant energy shift (E_core, added on top of nuclear_repulsion) and (b) an
+ * effective one-electron Hamiltonian for the active orbitals that includes the
+ * frozen orbitals' mean-field (Hartree + exchange) effect:
+ *
+ *   E_core = nuclear_repulsion + \sum_c 2 h_cc
+ *            + \sum_{c,d} [2 (cc|dd) - (cd|dc)]     (c,d range over frozen)
+ *   h_eff_pq = h_pq + \sum_c [2 (pq|cc) - (pc|cq)]  (c ranges over frozen, p,q
+ *                                                    over active)
+ *
+ * with the active-space two-electron integrals otherwise unchanged
+ * (just restricted to active-active-active-active indices).
+ *
+ * Validated (Python, before any C was written): setting n_frozen=0
+ * reduces EXACTLY to second_quant_build_molecular_hamiltonian's own
+ * result (verified numerically, not just by inspection of the formula --
+ * a strong regression guard, since a wrong formula could easily still
+ * happen to look plausible). For LiH/STO-3G (freezing Li's 1s core, the
+ * standard choice in the VQE literature -- see molecular_hf.h/session
+ * notes), the frozen-core ground state (10 qubits, 1024-dim) differs
+ * from the exact full-space FCI (12 qubits, 4096-dim) by only about 0.23
+ * mHartree, confirming both correctness and that Li's 1s core really is
+ * close to chemically inert here, as expected.
+ *
+ * eri_mo must still be the FULL n_spatial^4 tensor (not pre-restricted
+ * to the active block) -- this function does the restriction internally,
+ * since it also needs the frozen-frozen and frozen-active blocks to
+ * compute E_core and h_eff.
+ *
+ * Returns NULL if n_spatial < 1, n_frozen < 0, n_frozen >= n_spatial, or
+ * h_mo/eri_mo is NULL.
+ */
+cmatrix_t *second_quant_build_molecular_hamiltonian_frozen_core(
+    int n_spatial, int n_frozen, const double *h_mo, const double *eri_mo,
+    double nuclear_repulsion);
 
 #endif

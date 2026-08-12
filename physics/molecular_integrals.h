@@ -3,9 +3,9 @@
 
 /*
  * General Gaussian-type-orbital (GTO) molecular integrals via
- * McMurchie-Davidson (MD) Hermite-expansion scheme (McMurchie & Davidson, J.
- * Comput. Phys. 26, 218 (1974); see also Helgaker, Jorgensen & Olsen,
- * "Molecular Electronic-Structure Theory", ch. 9).
+ * McMurchie-Davidson (MD) Hermite-expansion scheme (Refreneces: McMurchie &
+ * Davidson, J. Comput. Phys. 26, 218 (1974); see also Helgaker, Jorgensen &
+ * Olsen, "Molecular Electronic-Structure Theory", ch. 9).
  * NOTE: This is lets second_quant.c / vqe.c build a real molecular
  * electronic-structure Hamiltonian (e.g. for H2 VQE) instead of only the toy
  * fermionic-lattice Hamiltonians second_quant_build_hopping_hamiltonian()
@@ -24,11 +24,12 @@
 
 #include "../core/matrix.h"
 
-/* Boys function F_n(x) = integral_0^1 t^{2n} * \exp(-x t^2) dt, universal
- * building block of every GTO-based Coulomb-type integral (nuclear attraction,
- * ERIs). Computed via the \exp(-x)*convergent-power-series form (all terms same
- * sign, no cancellation) for F_nmax, then the stable downward recursion
+/* Boys function F_n(x) = \int^1 t^{2n} * \exp(-x t^2) dt, universal building
+ * block of every GTO-based Coulomb-type integral (nuclear attraction, ERIs).
+ * Computed via the \exp(-x)*convergent-power-series form (all terms same sign,
+ * no cancellation) for F_nmax, then the stable downward recursion :
  *   F_{n-1}(x) = (2x * F_n(x) + \exp(-x)) / (2n-1) for n < nmax
+ *
  * (WARN: upward recursion is numerically unstable and must never be used)
  *
  * Where
@@ -110,11 +111,11 @@ double molecule_nuclear_repulsion(const molecule_t *mol);
 // <a|b>
 double gto_overlap(const basis_function_t *a, const basis_function_t *b);
 
-// <a|-1/2 nabla^2|b>
+// <a|-1/2 \nabla^2|b>
 double gto_kinetic(const basis_function_t *a, const basis_function_t *b);
 
 // <a|1/|r-C||b>
-/* NOTE: Positive convention :integral itself, not yet multiplied by a nuclear
+/* NOTE: Positive convention : integral itself, not yet multiplied by a nuclear
  * charge or a minus sign; molecular_nuclear_matrix below applies -Z_A per atom
  * and sums over atoms, matching one-electron Hamiltonian h = T - \sum_A Z_A *
  * this_integral).
@@ -123,9 +124,8 @@ double gto_nuclear_attraction(const basis_function_t *a,
                               const basis_function_t *b,
                               const double center[3]);
 
-/* (ab|cd) in chemists' notation: integral integral a(1)b(1) (1/r12)
- * c(2)d(2) d1 d2.
- * Full four-center, four-arbitrary-angular-momentum two-electron repulsion
+// (ab|cd) in chemists' notation: \int \int a(1)b(1) (1/r12) c(2)d(2) d1 d2.
+/* Full four-center, four-arbitrary-angular-momentum two-electron repulsion
  * integral.
  */
 double gto_eri(const basis_function_t *a, const basis_function_t *b,
@@ -153,16 +153,36 @@ cmatrix_t *molecular_core_hamiltonian(basis_function_t **basis, int n_basis,
  * to every equivalent slot, rather than calling gto_eri n_basis^4 times
  * independently.
  *
- * Returns NULL on n_basis<=0 or allocation failure. */
+ * Returns NULL on n_basis<=0 or allocation failure.
+ */
 double *molecular_eri_tensor(basis_function_t **basis, int n_basis);
 #define MOLINT_ERI(eri, n, i, j, k, l)                                         \
   (eri)[(((size_t)(i) * (n) + (j)) * (n) + (k)) * (n) + (l)]
 
 /*
- * Convenience builder: STO-3G hydrogen 1s (Szabo & Ostlund Table 3.7 /
- * published EMSL/Gaussian94 STO-3G parameters), already normalized.
+ * Convenience builder: STO-3G hydrogen 1s (Refreneces: Szabo & Ostlund
+ * Table 3.7 / published EMSL/Gaussian94 STO-3G parameters), already normalized.
  *
- * Returns NULL on allocation failure. */
+ * Returns NULL on allocation failure.
+ */
 basis_function_t *molint_basis_sto3g_h(const double center[3]);
+
+/*
+ * Standard published STO-3G lithium parameters (Refreneces: Hehre, Stewart &
+ * Pople 1969; same numeric values as widely-used psi4/EMSL Basis Set Exchange
+ * sto-3g.gbs).
+ * minimal- basis Li needs 5 basis functions : 1s (core), 2s (valence), and a
+ * full 2p shell (2px, 2py, 2pz), even though 2p is unoccupied in the atomic
+ * ground state, because STO-3G is defined as a full valence-shell minimal
+ * basis. The 2s and 2p functions share the same 3 primitive exponents (a single
+ * "SP shell", the minimal-basis-set convention) but have different contraction
+ * coefficients.
+ *
+ * Fills out[0..4] with newly allocated, already-normalized basis functions in
+ * the order 1s, 2s, 2px, 2py, 2pz.
+ *
+ * Returns 1 on success, 0 on allocation failure.
+ */
+int molint_basis_sto3g_li(const double center[3], basis_function_t *out[5]);
 
 #endif

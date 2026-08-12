@@ -663,3 +663,34 @@ basis_function_t *molint_basis_sto3g_h(const double center[3]) {
 
   return bf;
 }
+
+int molint_basis_sto3g_li(const double center[3], basis_function_t *out[5]) {
+  // S shell (1s), STO-3G Li parameters
+  static const double alphas_1s[3] = {16.1195750, 2.9362007, 0.7946505};
+  static const double coeffs_1s[3] = {0.15432897, 0.53532814, 0.44463454};
+
+  // SP shell: 2s and 2p share these exponents, different coefficients
+  static const double alphas_sp[3] = {0.6362897, 0.1478601, 0.0480887};
+  static const double coeffs_2s[3] = {-0.09996723, 0.39951283, 0.70011547};
+  static const double coeffs_2p[3] = {0.15591627, 0.60768372, 0.39195739};
+
+  out[0] = basis_function_alloc(0, 0, 0, center, 3, alphas_1s, coeffs_1s);
+  out[1] = basis_function_alloc(0, 0, 0, center, 3, alphas_sp, coeffs_2s);
+  out[2] = basis_function_alloc(1, 0, 0, center, 3, alphas_sp, coeffs_2p);
+  out[3] = basis_function_alloc(0, 1, 0, center, 3, alphas_sp, coeffs_2p);
+  out[4] = basis_function_alloc(0, 0, 1, center, 3, alphas_sp, coeffs_2p);
+
+  for (int i = 0; i < 5; i++) {
+    if (!out[i]) {
+      for (int j = 0; j < i; j++) {
+        basis_function_free(out[j]);
+      }
+
+      return 0;
+    }
+
+    molint_normalize_contraction(out[i]);
+  }
+
+  return 1;
+}

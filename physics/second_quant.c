@@ -10,12 +10,12 @@ Hamiltonian builder for cross-validation
 
 static const complex_t I2[4] = {{1, 0}, {0, 0}, {0, 0}, {1, 0}};
 static const complex_t Z2[4] = {{1, 0}, {0, 0}, {0, 0}, {-1, 0}};
-static const complex_t SIGMA_PLUS[4] = {
-    {0, 0}, {0, 0}, {1, 0}, {0, 0}}; // |1><0|: row-major [00,01,10,11]
+// |1><0|: row-major [00,01,10,11]
+static const complex_t SIGMA_PLUS[4] = {{0, 0}, {0, 0}, {1, 0}, {0, 0}};
 static const complex_t SIGMA_MINUS[4] = {{0, 0}, {1, 0}, {0, 0}, {0, 0}};
 
 /* Kronecker product of two dense matrices:
- *  (A tensor B)[i*nb+k][j*nb+l] = A[i][j]*B[k][l]
+ *  (A \otimes B)[i * nb + k][j * nb + l] = A[i][j]*B[k][l]
  *
  * Returns a freshly allocated cmatrix_t
  */
@@ -56,6 +56,7 @@ static cmatrix_t *kron_chain_2x2(const complex_t *const *gates, int n) {
     cmatrix_t *combined = kron2(result, next);
     cmatrix_free(result);
     cmatrix_free(next);
+
     result = combined;
   }
 
@@ -78,6 +79,7 @@ static cmatrix_t *jw_operator(int mode, int n_modes, const complex_t *local) {
   }
 
   cmatrix_t *result = kron_chain_2x2(gates, n_modes);
+
   free(gates);
 
   return result;
@@ -95,6 +97,7 @@ cmatrix_t *jw_annihilation_operator(int mode, int n_modes) {
 // fermionic anticommutation sign when creating/annihilating at `mode`
 static int count_bits_before(int state, int mode, int n_modes) {
   int count = 0;
+
   for (int k = 0; k < mode; k++) {
     int bitpos = n_modes - 1 - k;
     if ((state >> bitpos) & 1) {
@@ -105,7 +108,8 @@ static int count_bits_before(int state, int mode, int n_modes) {
   return count;
 }
 
-/* Direct (bit-manipulation) fermionic annihilation
+/*
+ * Direct (bit-manipulation) fermionic annihilation
  *
  * Returns resulting state index and writes fermionic sign to *sign_out, or
  * Returns -1 (Pauli exclusion / already empty) if mode isn't occupied.
@@ -221,7 +225,7 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
         c_add(CMAT(H, state, state), c_real(nuclear_repulsion));
   }
 
-  // One-body: \sum_{pq, same spin} h_pq a_p^dagger a_q
+  // One-body: \sum_{pq, same spin} h_pq a_p^\dagger a_q
   for (int p = 0; p < n_modes; p++) {
     int spat_p = p / 2, spin_p = p % 2;
 
@@ -258,9 +262,8 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
 
   /* Two-body: (1/2) * \sum_{pqrs} <pq|rs> a_p^\dagger a_q^\dagger a_s a_r,
    * with <pq|rs> = chemist (pr|qs) = eri_mo[((p * n + r) * n + q) * n + s].
-   NOTE: Spin conservation: spin(p)=spin(r) (electron 1), spin(q)=spin(s)
-   (electron 2).
-   */
+   * NOTE: Spin conservation: spin(p)=spin(r) (electron 1), spin(q)=spin(s)
+   * (electron 2). */
   for (int p = 0; p < n_modes; p++) {
     int spat_p = p / 2, spin_p = p % 2;
 
@@ -320,6 +323,79 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
       }
     }
   }
+
+  return H;
+}
+
+cmatrix_t *second_quant_build_molecular_hamiltonian_frozen_core(
+    int n_spatial, int n_frozen, const double *h_mo, const double *eri_mo,
+    double nuclear_repulsion) {
+  if (n_spatial < 1 || n_frozen < 0 || n_frozen >= n_spatial || !h_mo ||
+      !eri_mo) {
+    return NULL;
+  }
+
+  int n_active = n_spatial - n_frozen;
+
+  // MOLINT_ERI-style flat index into an n_spatial^4 tensor
+#define EMO(p, q, r, s)                                                        \
+  eri_mo[(((size_t)(p) * n_spatial + (q)) * (size_t)n_spatial + (r)) *         \
+             (size_t)n_spatial +                                               \
+         (s)]
+
+  double E_core = nuclear_repulsion;
+  for (int c = 0; c < n_frozen; c++) {
+    E_core += 2.0 * h_mo[c * n_spatial + c];
+
+    for (int d = 0; d < n_frozen; d++) {
+      E_core += 2.0 * EMO(c, c, d, d) - EMO(c, d, d, c);
+    }
+  }
+
+  double *h_eff = malloc((size_t)n_active * n_active * sizeof(double));
+  double *eri_active = malloc((size_t)n_active * n_active * n_active *
+                              n_active * sizeof(double));
+  if (!h_eff || !eri_active) {
+    free(h_eff);
+    free(eri_active);
+
+    return NULL;
+  }
+
+  for (int p = 0; p < n_active; p++) {
+    int P = p + n_frozen;
+
+    for (int q = 0; q < n_active; q++) {
+      int Q = q + n_frozen;
+      double v = h_mo[P * n_spatial + Q];
+
+      for (int c = 0; c < n_frozen; c++) {
+        v += 2.0 * EMO(P, Q, c, c) - EMO(P, c, c, Q);
+      }
+
+      h_eff[p * n_active + q] = v;
+    }
+  }
+
+  for (int p = 0; p < n_active; p++) {
+    for (int q = 0; q < n_active; q++) {
+      for (int r = 0; r < n_active; r++) {
+        for (int s = 0; s < n_active; s++) {
+          eri_active[(((size_t)p * n_active + q) * (size_t)n_active + r) *
+                         (size_t)n_active +
+                     s] =
+              EMO(p + n_frozen, q + n_frozen, r + n_frozen, s + n_frozen);
+        }
+      }
+    }
+  }
+#undef EMO
+
+  cmatrix_t *H = second_quant_build_molecular_hamiltonian(n_active, h_eff,
+                                                          eri_active, E_core);
+
+  free(h_eff);
+  free(eri_active);
 
   return H;
 }

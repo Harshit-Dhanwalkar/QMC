@@ -117,6 +117,7 @@ make clean
   <li><code>eg_41_dft_atoms.c</code></li>
   <li><code>eg_42_h2_vqe.c</code></li>
   <li><code>eg_43_h4_vqe.c</code></li>
+  <li><code>eg_44_lih_vqe.c</code></li>
 </ul>
 </details>
 
@@ -164,6 +165,7 @@ make clean
   <li><code>test_dft.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
   <li><code>test_molecular_hf.c</code></li>
+  <li><code>test_lih.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
