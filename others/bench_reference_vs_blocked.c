@@ -1,31 +1,32 @@
 /*
-Benchmark: reference (unblocked) vs column-blocked tridiagonal QL eigenvector
-computation.
-
-both implementations are mathematically identical
-
-The "blocked" variant tests a fix for that record every Givens rotation during
-(cheap, cache-friendly) eigenvalue-only pass, then replay them against
-eigenvector matrix one column-block at a time, so working set per pass is
-block_size*n instead of n*n.
-
-USAGE:
-    gcc -O2 -o bench_reference_vs_blocked bench_reference_vs_blocked.c -lm
-    ./bench_reference_vs_blocked <N> <mode>
-        mode = 0        -> reference (unblocked) implementation
-        mode = <block>  -> blocked implementation with that column-block
-                            size (e.g. 32, 64, 128, 256)
-
-Suggested runs to reproduce what was measured in sandbox, and to get real
-diagnostics locally: # Wall-clock comparison at the sizes where anomaly was
-worst for mode in 0 64 128 256; do ./bench_reference_vs_blocked 1600 $mode; done
-  for mode in 0 64 128 256; do ./bench_reference_vs_blocked 3200 $mode; done
-
- # Cachegrind
- valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked 3200 0
- valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked 3200
-128 # then: cg_annotate cachegrind.out.<pid>
-*/
+ * Benchmark: reference (unblocked) vs column-blocked tridiagonal QL eigenvector
+ * computation.
+ *
+ * both implementations are mathematically identical
+ *
+ * The "blocked" variant tests a fix for that record every Givens rotation
+ * during (cheap, cache-friendly) eigenvalue-only pass, then replay them against
+ * eigenvector matrix one column-block at a time, so working set per pass is
+ * block_size*n instead of n*n.
+ *
+ * USAGE:
+ *     gcc -O2 -o bench_reference_vs_blocked bench_reference_vs_blocked.c -lm
+ *     ./bench_reference_vs_blocked <N> <mode>
+ *         mode = 0        -> reference (unblocked) implementation
+ *         mode = <block>  -> blocked implementation with that column-block
+ *                             size (e.g. 32, 64, 128, 256)
+ *
+ * Suggested runs to reproduce what was measured in sandbox, and to get real
+ * diagnostics locally: # Wall-clock comparison at the sizes where anomaly was
+ * worst for mode in 0 64 128 256; do ./bench_reference_vs_blocked 1600 $mode;
+ * done for mode in 0 64 128 256; do ./bench_reference_vs_blocked 3200 $mode;
+ * done
+ *
+ * # Cachegrind
+ * valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked 3200
+ * 0 valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked
+ * 3200 128 # then: cg_annotate cachegrind.out.<pid>
+ */
 
 #include <math.h>
 #include <stdio.h>
@@ -133,8 +134,16 @@ static long g_nrots, g_cap;
 
 static void record_rot(int i, double s, double c) {
   if (g_nrots >= g_cap) {
-    g_cap = g_cap ? g_cap * 2 : 1024;
-    g_rots = realloc(g_rots, g_cap * sizeof(rot_t));
+    // g_cap = g_cap ? g_cap * 2 : 1024;
+    // g_rots = realloc(g_rots, g_cap * sizeof(rot_t));
+
+    long new_cap = g_cap ? g_cap * 2 : 1024;
+    rot_t *new_rots = realloc(g_rots, new_cap * sizeof(rot_t));
+    if (!new_rots) {
+      fprintf(stderr, "record_rot: realloc failed\n");
+
+      exit(1);
+    }
   }
 
   g_rots[g_nrots].i = i;

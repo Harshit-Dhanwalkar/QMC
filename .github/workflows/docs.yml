@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MDBOOK_VERSION: "0.5.4"
-      MDBOOK_KATEX_VERSION: "0.0.10"
+      MDBOOK_KATEX_VERSION: "0.10.0"
       MDBOOK_LINKCHECK_VERSION: "0.7.7"
 
     steps:

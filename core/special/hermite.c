@@ -29,7 +29,7 @@ double hermite(int n, double x) {
   return H_cur;
 }
 
-void hermite_array(int n, double *x, int m, double *H) {
+void hermite_array(int n, const double *x, int m, double *H) {
   if (!x || !H || m <= 0) {
     return;
   }

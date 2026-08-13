@@ -53,7 +53,7 @@ typedef struct {
  * and their eigenvectors as columns of an n x k cmatrix_t. Free with
  * lanczos_free.
  */
-lanczos_result_t *lanczos_eigs(sparse_matrix_t *A, int k, int max_iter,
+lanczos_result_t *lanczos_eigs(const sparse_matrix_t *A, int k, int max_iter,
                                double tol);
 void lanczos_free(lanczos_result_t *res);
 

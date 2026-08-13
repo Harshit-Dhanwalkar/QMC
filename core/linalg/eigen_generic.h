@@ -7,6 +7,6 @@
    Uses LAPACK if available (USE_LAPACK), otherwise falls back to
    cmatrix_eigh (QR).
 */
-eigen_t *cmatrix_eigh_generic(cmatrix_t *A);
+eigen_t *cmatrix_eigh_generic(const cmatrix_t *A);
 
 #endif

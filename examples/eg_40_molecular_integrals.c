@@ -30,7 +30,7 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
 
-  double charge[2] = {1.0, 1.0};
+  const double charge[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 
@@ -177,7 +177,7 @@ int main(void) {
   printf("  === H2 at R=1.4 bohr (Szabo & Ostlund benchmark geometry) ===\n\n");
   double E = h2_sto3g_rhf(1.4, 1);
   printf(
-      "\n  E_total = %.6f Hartree  (Theoretical reference: -1.1167 Hartree)\n\n",
+      "\n  E_total = %.6f Hartree (Theoretical reference: -1.1167 Hartree)\n\n",
       E);
 
   printf("  === Bond-length scan ===\n\n");

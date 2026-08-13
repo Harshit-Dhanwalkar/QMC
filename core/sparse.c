@@ -122,7 +122,7 @@ void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y) {
  */
 #define LANCZOS_SEED 0x1A2C205ULL
 
-lanczos_result_t *lanczos_eigs(sparse_matrix_t *A, int k, int max_iter,
+lanczos_result_t *lanczos_eigs(const sparse_matrix_t *A, int k, int max_iter,
                                double tol) {
   if (!A || A->nrows != A->ncols || k < 1 || max_iter < k || tol <= 0.0) {
     return NULL;

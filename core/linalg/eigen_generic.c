@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 // Forward declare the QR-based solver
-extern eigen_t *cmatrix_eigh(cmatrix_t *A);
+extern eigen_t *cmatrix_eigh(const cmatrix_t *A);
 
 #ifdef USE_LAPACK
 #include <lapacke.h>
@@ -22,7 +22,7 @@ extern eigen_t *cmatrix_eigh(cmatrix_t *A);
  * aller's A).
  */
 
-eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) {
+eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
   if (!A || A->nrows != A->ncols) {
     return NULL;
   }
@@ -73,8 +73,12 @@ eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) {
 #else
 
 // Fallback when LAPACK is not available – use the built‑in QR eigensolver.
-eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) { return cmatrix_eigh(A); }
+eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
+  return cmatrix_eigh(A);
+}
 
 #endif
 
-eigen_t *cmatrix_eigh_generic(cmatrix_t *A) { return cmatrix_eigh_lapack(A); }
+eigen_t *cmatrix_eigh_generic(const cmatrix_t *A) {
+  return cmatrix_eigh_lapack(A);
+}

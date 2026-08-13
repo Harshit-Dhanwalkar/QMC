@@ -56,7 +56,7 @@ double density_purity(const cmatrix_t *rho) {
   return sum;
 }
 
-double density_von_neumann_entropy(cmatrix_t *rho) {
+double density_von_neumann_entropy(const cmatrix_t *rho) {
   if (!rho) {
     return 0.0;
   }
@@ -260,7 +260,7 @@ int lindblad_step_rk4(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
   return rk4_step(0.0, dt, &rho_flat, lindblad_ode_rhs, &ctx);
 }
 
-int lindblad_evolve(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
+int lindblad_evolve(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                     int n_ops, double dt, int steps) {
   if (!rho || !H || steps < 0) {
     return -1;
@@ -296,6 +296,7 @@ cmatrix_t *embed_single_qubit_op(const complex_t op[4], int n_qubits,
 
       if (r_rest != c_rest) {
         CMAT(M, r, c) = c_zero();
+
         continue;
       }
 
@@ -318,6 +319,7 @@ cmatrix_t *lindblad_amplitude_damping_op(int n_qubits, int target,
   if (!M) {
     return NULL;
   }
+
   cmatrix_scale(M, c_real(sqrt(gamma)));
 
   return M;
@@ -331,6 +333,7 @@ cmatrix_t *lindblad_dephasing_op(int n_qubits, int target, double gamma) {
   if (!M) {
     return NULL;
   }
+
   cmatrix_scale(M, c_real(sqrt(gamma / 2.0)));
 
   return M;
@@ -343,6 +346,7 @@ cmatrix_t *lindblad_bitflip_op(int n_qubits, int target, double gamma) {
   if (!M) {
     return NULL;
   }
+
   cmatrix_scale(M, c_real(sqrt(gamma)));
 
   return M;
@@ -352,12 +356,15 @@ int density_measure_computational_basis(cmatrix_t *rho, double u) {
   if (!rho || rho->nrows != rho->ncols) {
     return -1;
   }
+
   int n = rho->nrows;
 
-  if (u < 0.0)
+  if (u < 0.0) {
     u = 0.0;
-  if (u >= 1.0)
+  }
+  if (u >= 1.0) {
     u = 1.0 - 1e-15;
+  }
 
   double cumulative = 0.0;
   int outcome = n - 1; // fallback for floating-point round-off at u -> 1
@@ -366,6 +373,7 @@ int density_measure_computational_basis(cmatrix_t *rho, double u) {
     cumulative += p;
     if (u < cumulative) {
       outcome = i;
+
       break;
     }
   }
@@ -373,6 +381,7 @@ int density_measure_computational_basis(cmatrix_t *rho, double u) {
   for (int i = 0; i < n * n; i++) {
     rho->data[i] = c_zero();
   }
+
   CMAT(rho, outcome, outcome) = c_real(1.0);
 
   return outcome;

@@ -242,6 +242,7 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
   if (!type) {
     type = "bmatrix";
   }
+
   // HACK: Rough estimate: 10 chars per cell + braces
   size_t est = 20 + strlen(type) + 2 + rows * cols * 20;
   char *res = malloc(est);
@@ -265,7 +266,8 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
     }
   }
 
-  pos += snprintf(res + pos, est - pos, "\\end{%s}", type);
+  // pos += snprintf(res + pos, est - pos, "\\end{%s}", type);
+  snprintf(res + pos, est - pos, "\\end{%s}", type);
 
   return res;
 }

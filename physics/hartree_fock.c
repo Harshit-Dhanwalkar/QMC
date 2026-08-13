@@ -169,7 +169,7 @@ static void free_orbital_arrays(double **u, int n_orbitals) {
   free(u);
 }
 
-hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
+hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
                                           int n_orbitals, double mix,
                                           double tol, int max_iter) {
   if (!r || N < 10 || Z <= 0.0 || n_orbitals < 1 || mix <= 0.0 || mix > 1.0 ||
@@ -251,6 +251,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
     double max_delta = 0.0;
     for (int k = 0; k < n_orbitals; k++) {
       double *u_new = malloc(N * sizeof(double));
+
       for (int i = 0; i < N; i++) {
         u_new[i] = CMAT(eig->eigenvectors, i, k).re;
       }
@@ -291,6 +292,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
     if (max_delta < tol) {
       converged = 1;
       iter++;
+
       break;
     }
   }

@@ -34,7 +34,7 @@ double legendre(int l, double x) {
 
 /* Associated Legendre P_l^m(x) using recurrence or relation.
    Use recurrence from Numerical Recipes:
-   P_l^m = (-1)^m (1-x^2)^{m/2} d^m/dx^m P_l(x)
+   P_l^m = (-1)^m * (1 - x^2)^{m/2} d^m/dx^m P_l(x)
    Implement using recursion in l for fixed m.
    HACK: for small l, compute via derivative of P_l.
 */
@@ -80,7 +80,7 @@ double assoc_legendre(int l, int m, double x) {
   return P_cur;
 }
 
-void legendre_array(int l, double *x, int m, double *P) {
+void legendre_array(int l, const double *x, int m, double *P) {
   if (!x || !P || m <= 0) {
     return;
   }

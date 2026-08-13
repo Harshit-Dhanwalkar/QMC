@@ -1,7 +1,7 @@
 CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
-CFLAGS += -fsanitize=address -g
+# CFLAGS += -fsanitize=address -g
 
 # AddressSanitizer is on by default.
 SANITIZE ?= 1

@@ -22,18 +22,19 @@
  *   n_orbitals distinct radial s-orbitals u_1(r) < u_2(r) < ... (u = r*R,
  *   normalized: integral u_k(r)^2 dr = 1), each 'doubly occupied' (Aufbau, spin
  *   up + spin down), i.e. this models atoms/ions with e^- count = 2 *
- * n_orbitals and all e^-s in s subshells (He: n_orbitals=1, Be: n_orbitals=2,
- * ...).
+ *   n_orbitals and all e^-s in s subshells (He: n_orbitals=1, Be: n_orbitals=2,
+ *   ...).
  *
- * Closed-shell RHF Fock operator (Szabo & Ostlund eq. 3.184):
- *   F = h + sum_k ( 2 J_k - K_k ),
- *   h = -1/2 d^2/dr^2 + l(l+1)/(2r^2) - Z/r
+ * Closed-shell RHF Fock operator (Refrence: Szabo & Ostlund eq. 3.184):
+ *   F = h + \sum_k ( 2 * J_k - K_k ),
+ *   h = -(1/2) * d^2/dr^2 + l(l + 1) / (2 * r^2) - Z/r
  * discretized as a dense real-symmetric matrix, diagonalized each SCF iteration
  * via Hermitian eigensolver.
  *
  * Total electronic energy (Szabo & Ostlund eq. 3.184):
  *   E = \sum_k 2 * eps_k - \sum_{i,j} (2 J_ij - K_ij)
- * Where eps_k are converged orbital (Fock) eigenvalues and J_ij, K_ij are
+ * Where
+ *  eps_k are converged orbital (Fock) eigenvalues and J_ij, K_ij are
  * direct/exchange two-e^-s integrals between orbitals i, j.
  */
 
@@ -49,7 +50,7 @@ typedef struct {
   int iterations;           // SCF iterations actually performed
   int converged;            // 1 if converged within max_iter, else 0
 
-  /* Unoccupied ("virtual") Fock eigenpairs from converged Fock matrix
+  /* NOTE: Unoccupied ("virtual") Fock eigenpairs from converged Fock matrix
    * diagonalization n_virtual = N - n_orbitals. convention/normalization as
    * occupied `orbitals` above, ascending energy order. */
   int n_virtual;
@@ -77,7 +78,7 @@ typedef struct {
  * Returns a allocated hf_result_t, or NULL on invalid input / allocation
  * failure.
  */
-hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
+hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
                                           int n_orbitals, double mix,
                                           double tol, int max_iter);
 
@@ -88,7 +89,7 @@ void hf_result_free(hf_result_t *res);
  * of 1/r12 multipole expansion, i.e. electrostatic potential at r of a
  * spherical charge density proportional to u_a(r')u_b(r'):
  *   Y0_ab(r) = (1/r) * \int_0^r u_a(r')u_b(r') dr' +
- *              \int_r^r_{max} [u_a(r')u_b(r')/r'] dr'
+ *              \int_r^r_{max} [u_a(r')u_b(r') / r'] dr'
  * Writes N values into Y0_out (length N).
  */
 void compute_Y0(const double *r, int N, double dr, const double *ua,

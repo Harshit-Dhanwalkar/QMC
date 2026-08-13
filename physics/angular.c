@@ -262,6 +262,7 @@ void spin_sigma_z(cvector_t *spinor) {
     return;
   }
 
-  spinor->data[0] = spinor->data[0];
+  // spinor->data[0] = spinor->data[0];
+  // data[0] unchanged: sigma_z has eigenvalue +1 on |0> component
   spinor->data[1] = c_scale(spinor->data[1], -1.0);
 }

@@ -36,7 +36,7 @@ typedef struct {
   cmatrix_t *eigenvectors;
 } eigen_t;
 
-eigen_t *cmatrix_eigh(cmatrix_t *a); /* Hermitian eigendecomposition */
+eigen_t *cmatrix_eigh(const cmatrix_t *a); /* Hermitian eigendecomposition */
 void eigen_free(eigen_t *e);
 
 /* Utilities */

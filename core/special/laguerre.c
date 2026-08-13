@@ -33,7 +33,7 @@ double laguerre(int n, double alpha, double x) {
   return L_cur;
 }
 
-void laguerre_array(int n, double alpha, double *x, int N, double *L) {
+void laguerre_array(int n, double alpha, const double *x, int N, double *L) {
   if (!x || !L || N <= 0) {
     return;
   }

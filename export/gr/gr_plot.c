@@ -85,6 +85,7 @@ void gr_draw_labels(const gr_plot_opt_t *opts) {
   if (opts->title && opts->title[0]) {
     gr_setcharheight(0.030);
     gr_settextalign(GKS_K_TEXT_HALIGN_CENTER, GKS_K_TEXT_VALIGN_TOP);
+
     if (tex) {
       char buf[160];
       snprintf(buf, sizeof buf, "$%s$", opts->title);
@@ -98,6 +99,7 @@ void gr_draw_labels(const gr_plot_opt_t *opts) {
   if (opts->xlabel && opts->xlabel[0]) {
     gr_setcharheight(0.022);
     gr_settextalign(GKS_K_TEXT_HALIGN_CENTER, GKS_K_TEXT_VALIGN_BOTTOM);
+
     if (tex) {
       char buf[160];
       snprintf(buf, sizeof buf, "$%s$", opts->xlabel);
@@ -208,6 +210,7 @@ void gr_draw_series(const double *x, const double **ys, int n_series, int n_pts,
       double ly = ymax - (ymax - ymin) * (0.05 + s * 0.07);
       double leg_x[2] = {lx, lx + (xmax - xmin) * 0.06};
       double leg_y[2] = {ly, ly};
+
       gr_polyline(2, leg_x, leg_y);
       gr_settextcolorind(1);
       gr_settextalign(GKS_K_TEXT_HALIGN_LEFT, GKS_K_TEXT_VALIGN_HALF);
@@ -229,9 +232,8 @@ void gr_draw_series(const double *x, const double **ys, int n_series, int n_pts,
 void gr_build_sized_path(char *path, size_t path_size, const char *filename,
                          const char *ext, const gr_plot_opt_t *opts,
                          int default_w, int default_h) {
-  int w = (opts && opts->width > 0) ? opts->width : default_w;
-  int h = (opts && opts->height > 0) ? opts->height : default_h;
-
+  /* w/h are not currently used: GR may not support the |WxH path suffix for
+   * EPS, so size-suffixed path is pending. */
   (void)opts;
   (void)default_w;
   (void)default_h;
@@ -239,6 +241,8 @@ void gr_build_sized_path(char *path, size_t path_size, const char *filename,
 
   // TEST: For EPS, GR may not support the |WxH suffix; test it without suffix
   // for EPS.
+  // int w = (opts && opts->width > 0) ? opts->width : default_w;
+  // int h = (opts && opts->height > 0) ? opts->height : default_h;
   // snprintf(path, path_size, "%s/%s%s|x%d", QMC_OUTPUT_DIR, filename, ext, w,
   // h);
 }

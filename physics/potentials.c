@@ -5,13 +5,14 @@ V(x) library: infinite well, finite well, harmonic, barrier
 #include "potentials.h"
 #include <math.h>
 
+// cppcheck-suppress constParameterPointer
 double V_infinite_well(double x, void *params) {
   const double *a = (const double *)params;
   if (fabs(x) < *a) {
     return 0.0;
   }
 
-  return 1e10; /* Approximate infinity */
+  return 1e10; // Approximate infinity
 }
 
 double V_finite_well(double x, void *params) {
@@ -47,7 +48,7 @@ double V_barrier(double x, void *params) {
 }
 
 double V_coulomb(double r, void *params) {
-  const double *k = (double *)params; /* Coulomb constant */
+  const double *k = (double *)params; // Coulomb constant
 
   return -(*k) / r;
 }

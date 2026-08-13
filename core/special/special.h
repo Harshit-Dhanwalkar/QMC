@@ -6,7 +6,7 @@
 
 /* Hermite polynomials */
 double hermite(int n, double x);
-void hermite_array(int n, double *x, int m, double *H);
+void hermite_array(int n, const double *x, int m, double *H);
 double hermite_deriv(int n, double x);
 double hermite_zeros(int n, int k);
 
@@ -16,12 +16,12 @@ double hermite_function_stable(int n, double xi);
 
 /* Laguerre polynomials */
 double laguerre(int n, double alpha, double x);
-void laguerre_array(int n, double alpha, double *x, int N, double *L);
+void laguerre_array(int n, double alpha, const double *x, int N, double *L);
 
 /* Legendre polynomials */
 double legendre(int l, double x);
 double assoc_legendre(int l, int m, double x);
-void legendre_array(int l, double *x, int N, double *P);
+void legendre_array(int l, const double *x, int N, double *P);
 
 /* Spherical harmonics */
 double spherical_harmonic_real(int l, int m, double theta, double phi);

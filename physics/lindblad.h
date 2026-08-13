@@ -27,7 +27,7 @@ double density_purity(const cmatrix_t *rho);
 // Von Neumann entropy S = -Tr(\rho log2 \rho) of general NxN Hermitian
 // density matrix
 // Returns entropy in bits: 0 for a pure state, log2(N) for maximally mixed.
-double density_von_neumann_entropy(cmatrix_t *rho);
+double density_von_neumann_entropy(const cmatrix_t *rho);
 
 /*
  * Right-hand side of Lindblad equation at current \rho:
@@ -52,7 +52,7 @@ int lindblad_step_rk4(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
 // Evolve \rho for `steps` of size dt via repeated lindblad_step_rk4.
 // Returns 0 on success, -1 on first failed step (\rho may be partially
 // evolved up to that point).
-int lindblad_evolve(cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
+int lindblad_evolve(const cmatrix_t *rho, const cmatrix_t *H, cmatrix_t **L,
                     int n_ops, double dt, int steps);
 
 /*
