@@ -6,8 +6,8 @@
 #include <stdlib.h>
 
 /*
- * A single complex phase oscillator
- * dy/dt = i * \omega * y => y(t) = y0 * \exp(i * \omega * t)
+ * A single complex phase oscillator :
+ *   dy/dt = i * \omega * y => y(t) = y0 * \exp(i * \omega * t)
  */
 static void phase_rhs(double t, const cvector_t *y, cvector_t *dydt,
                       void *params) {

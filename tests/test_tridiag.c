@@ -1,9 +1,9 @@
 /*
-Test: tridiagonal-solver optimizations in solve_tise_matrix (schrodinger.c)
-and klein_gordon_1d (relativistic.c).
-
-Test proves that by building dense tridiagonal matrix functions
-*/
+ * Test: tridiagonal-solver optimizations in solve_tise_matrix (schrodinger.c)
+ * and klein_gordon_1d (relativistic.c).
+ *
+ * Test proves that by building dense tridiagonal matrix functions
+ */
 
 #include "../core/complex.h"
 #include "../core/constants.h"
@@ -32,8 +32,9 @@ static int test_solve_tise_matrix_vs_dense(void) {
   double omega = 1.0;
 
   double *x = malloc(n * sizeof *x);
-  for (int i = 0; i < n; i++)
+  for (int i = 0; i < n; i++) {
     x[i] = x_min + i * dx;
+  }
 
   eigen_t *eig_new =
       solve_tise_matrix(x, n, dx, hbar_sq_2m, V_harmonic, &omega);
@@ -43,10 +44,13 @@ static int test_solve_tise_matrix_vs_dense(void) {
   for (int i = 0; i < n; i++) {
     double V_i = V_harmonic(x[i], &omega);
     CMAT(H, i, i) = c_real(2.0 * coeff + V_i);
-    if (i > 0)
+
+    if (i > 0) {
       CMAT(H, i, i - 1) = c_real(-coeff);
-    if (i < n - 1)
+    }
+    if (i < n - 1) {
       CMAT(H, i, i + 1) = c_real(-coeff);
+    }
   }
   eigen_t *eig_old = cmatrix_eigh_generic(H);
 
@@ -79,8 +83,9 @@ static int test_klein_gordon_vs_dense(void) {
 
   double *x = malloc(N * sizeof *x);
   double *V = calloc(N, sizeof *V); // free particle
-  for (int i = 0; i < N; i++)
+  for (int i = 0; i < N; i++) {
     x[i] = x_min + i * dx;
+  }
 
   eigen_t *eig_new = klein_gordon_1d(x, N, V, m, hbar, c);
 
@@ -88,23 +93,29 @@ static int test_klein_gordon_vs_dense(void) {
   cmatrix_t *H = cmatrix_alloc(N, N);
   for (int i = 0; i < N; i++) {
     CMAT(H, i, i) = c_real(2.0 * coeff + m * m * c * c * c * c);
-    if (i > 0)
+    if (i > 0) {
       CMAT(H, i, i - 1) = c_real(-coeff);
-    if (i < N - 1)
+    }
+    if (i < N - 1) {
       CMAT(H, i, i + 1) = c_real(-coeff);
+    }
   }
 
   eigen_t *eig_old = cmatrix_eigh_generic(H);
   cmatrix_free(H);
   if (eig_old) {
     double V_avg = 0.0;
-    for (int j = 0; j < N; j++)
+
+    for (int j = 0; j < N; j++) {
       V_avg += V[j];
+    }
 
     V_avg /= N;
-    for (int i = 0; i < eig_old->n; i++)
+    for (int i = 0; i < eig_old->n; i++) {
       eig_old->eigenvalues[i] = V_avg + sqrt(eig_old->eigenvalues[i]);
+    }
   }
+
   free(x);
   free(V);
 
@@ -123,6 +134,7 @@ static int test_klein_gordon_vs_dense(void) {
 
   eigen_free(eig_new);
   eigen_free(eig_old);
+
   return fail;
 }
 

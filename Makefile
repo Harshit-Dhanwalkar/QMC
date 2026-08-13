@@ -101,6 +101,14 @@ EXTRA_LDFLAGS ?=
 CFLAGS  += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
+# Optional: LAPACK/BLAS acceleration for dense Hermitian eigensolvers
+## Usage : make USE_LAPACK=1
+USE_LAPACK ?= 0
+ifeq ($(USE_LAPACK),1)
+    CFLAGS  += -DUSE_LAPACK
+    LDFLAGS += -llapacke -ltmglib -lblas -llapack # -lopenblas
+endif
+
 # Directories
 CORE_DIR     = core
 PHYSICS_DIR  = physics
@@ -293,8 +301,7 @@ demo: $(BUILD_DIR)/main
 
 .PHONY: all clean examples tests run-examples run-tests info
 
-# check-backend
-
+# Check backend
 check-backend:
 	@mkdir -p $(BUILD_DIR)
 	@echo "$(PLOT_BACKEND)" > $(BUILD_DIR)/.plot_backend.new

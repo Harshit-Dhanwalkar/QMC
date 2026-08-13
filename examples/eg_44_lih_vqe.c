@@ -49,6 +49,7 @@ int main(void) {
 
   printf("Step 3: AO -> MO transform, then freeze Li's 1s core "
          "(6 spatial orbitals -> 5 active, 12 qubits -> 10)\n\n");
+
   cmatrix_t *Hcore = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
   double nuclear_repulsion = molecule_nuclear_repulsion(mol);
@@ -62,17 +63,18 @@ int main(void) {
 
 #ifdef USE_LAPACK
   printf("Step 4: Exact diagonalization (FCI within the frozen-core active "
-         "space) -- USE_LAPACK build, so this is tractable\n\n");
+         "space) : USE_LAPACK build, so this is tractable\n\n");
   int dim = H->nrows;
   cmatrix_t *H_copy = cmatrix_alloc(dim, dim);
+
   for (int i = 0; i < dim * dim; i++) {
     H_copy->data[i] = H->data[i];
   }
+
   eigen_t *eig = cmatrix_eigh_complex(H_copy);
   double E_fci = eig->eigenvalues[0];
-  printf("  Frozen-core FCI: %.6f Hartree  (full 12-qubit FCI, cross-"
-         "validated separately in Python: -7.876960 Hartree -- frozen-core "
-         "error ~%.4f mHartree)\n\n",
+  printf("  Frozen-core FCI: %.6f Hartree  (full 12-qubit FCI, cross-validated "
+         ": -7.876960 Hartree-frozen-core error ~%.4f mHartree)\n\n",
          E_fci, 1000.0 * fabs(E_fci - (-7.876960)));
 
   printf("Step 5: VQE (10 qubits, hardware-efficient ansatz)\n\n");
@@ -84,10 +86,10 @@ int main(void) {
   printf("  %-30s %-14.6f\n", "Frozen-core FCI (exact)", E_fci);
   printf("  %-30s %-14.6f\n", "VQE (variational)", vqe_res.energy);
   printf("\n  10-qubit VQE run does not reach H2's near-exact convergence with "
-         "a modest optimizer budget : 40 ansatz parameters (10 qubits x 4 "
-         "layers) is a harder non-convex landscape than H2's 12, and 10-qubit "
-         "state simulation itself is dominant cost here. The Hamiltonian and "
-         "FCI energy above are exact regardless.\n");
+         "a optimizer budget : 40 ansatz parameters (10 qubits x 4 layers) is "
+         "a harder non-convex landscape than H2's 12, and 10-qubit state "
+         "simulation itself is dominant cost here. The Hamiltonian and FCI "
+         "energy above are exact regardless.\n");
 
   free(vqe_res.theta_opt);
   eigen_free(eig);

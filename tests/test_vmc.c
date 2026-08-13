@@ -1,22 +1,22 @@
 /*
-Test: Variational Monte Carlo for helium ground state.
-
-1. vmc_trial_wavefunction / vmc_local_energy at fixed configurations must match
-   independently-computed (Python/sympy-derived, then finite-difference
-   cross-checked) reference values -> these are deterministic, no Monte Carlo
-   noise involved.
-2. vmc_run at a reasonable fixed b must satisfy variational theorem (E >=
-   -2.9037 Hartree, experimental ground state) and fall below plain
-   product-orbital result (-2.84765625 Hartree, from
-   helium_ground_state_energy_analytic(2.0)) since Jastrow factor recovers some
-   correlation energy.
-3. Acceptance rates from vmc_run must be in a sane range (order 30-60%),
-   confirming step sizes are reasonably tuned and sampler isn't degenerate
-   (always/never accepting).
-4. vmc_optimize_b must find a minimum energy at or below the b=0 (pure
-   product-orbital) energy, with b_opt in physically expected range for this
-   ansatz.
-*/
+ * Test: Variational Monte Carlo for helium ground state.
+ *
+ * 1. vmc_trial_wavefunction / vmc_local_energy at fixed configurations must
+ *    match independently-computed (Python/sympy-derived, then finite-difference
+ *    cross-checked) reference values -> these are deterministic, no Monte Carlo
+ *    noise involved.
+ * 2. vmc_run at a reasonable fixed b must satisfy variational theorem (E >=
+ *    -2.9037 Hartree, experimental ground state) and fall below plain
+ *    product-orbital result (-2.84765625 Hartree, from
+ *    helium_ground_state_energy_analytic(2.0)) since Jastrow factor recovers
+ *    some correlation energy.
+ * 3. Acceptance rates from vmc_run must be in a sane range (order 30-60%),
+ *    confirming step sizes are reasonably tuned and sampler isn't degenerate
+ *    (always/never accepting).
+ * 4. vmc_optimize_b must find a minimum energy at or below the b=0 (pure
+ *    product-orbital) energy, with b_opt in physically expected range for this
+ *    ansatz.
+ */
 
 #include "../core/random.h"
 #include "../physics/helium.h"
@@ -103,7 +103,7 @@ static void test_vmc_run_bounds(void) {
 
   check_true(
       r.mean >= E_experimental - 3.0 * r.error,
-      "variational theorem: E >= experimental ground state (within 3 \\sigma)");
+      "variational theorem: E >= experimental ground state (within 3\\sigma)");
   check_true(
       r.mean < E_product_orbital,
       "Jastrow-correlated energy improves on plain product-orbital result");
@@ -197,17 +197,17 @@ static void test_vmc_run_parallel_helium(void) {
   vmc_result_t r = vmc_run_parallel(n_replicas, Z, Zeff, b, 1000, n_samples,
                                     100, 0.9, 0.9, 777ULL);
 
-  printf("  parallel He (n_replicas=%d): E = %.6f +- %.6f Hartree, "
-         "n_samples=%d\n",
-         n_replicas, r.mean, r.error, r.n_samples);
+  printf(
+      "  parallel He (n_replicas=%d): E = %.6f +- %.6f Hartree, n_samples=%d\n",
+      n_replicas, r.mean, r.error, r.n_samples);
 
   check_true(r.n_samples == n_replicas * n_samples,
              "n_samples = n_replicas * n_samples");
 
   double E_exact_helium = -2.9037;
   check_true(r.mean >= E_exact_helium - 3.0 * r.error,
-             "parallel He variational theorem: E >= exact ground state "
-             "(within 3 \\sigma)");
+             "parallel He variational theorem: E >= exact ground state (within "
+             "3\\sigma)");
   check_true(r.error > 0.0 && r.error < 0.05,
              "parallel He inter-replica error is a sane, nonzero magnitude");
 }

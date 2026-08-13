@@ -1,15 +1,16 @@
 /*
-Test: klein_gordon_1d_self_consistent (physics/relativistic.c)
-
-1. Constant V(x): self-consistent single-level solver must agree with fast
-   klein_gordon_1d (V_avg) solver's corresponding level, since for constant V
-   both are solving identical linear problem.
-2. Spatially-varying V(x): verify converged (E,psi) satisfies discretized
-   nonlinear Klein-Gordon operator equation,
-     -\hbar^2 * c^2 (\psi'' / dx^2) + [m^2 * c^4 + 2 * E * V(x) - V(x)^2] \psi
-       = E^2 \psi
-   directly, via residual norm (independent of how the solver got there).
-*/
+ * Test: klein_gordon_1d_self_consistent (physics/relativistic.c)
+ *
+ * 1. Constant V(x): self-consistent single-level solver must agree with fast
+ *    klein_gordon_1d (V_avg) solver's corresponding level, since for constant V
+ *    both are solving identical linear problem.
+ * 2. Spatially-varying V(x): verify converged (E,psi) satisfies discretized
+ *    nonlinear Klein-Gordon operator equation,
+ *      -\hbar^2 * c^2 (\psi'' / dx^2) + [m^2 * c^4 + 2 * E * V(x) - V(x)^2]
+ *      \psi = E^2 \psi
+ *   directly, via residual norm (independent of how the solver
+ * got there).
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/tridiag_eigh.h"

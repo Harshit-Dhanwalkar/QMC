@@ -1,26 +1,27 @@
 /*
-Test: Path Integral Monte Carlo for helium ground state (Kelbg-regularized
-Coulomb, bisection sampling).
-
-1. kelbg_potential / kelbg_energy_correction at fixed (r, \lambda, q) must match
-   independently-derived closed-form values - deterministic, no MC noise.
-2. Kelbg potential must be finite at r=0 and must reduce to the bare Coulomb
-   potential q/r as \lambda -> 0 (\tau -> 0 high-temperature limit).
-3. Zero-charge sanity check: q=0 must give exactly V=0 for both functions, at
-   any r and \lambda (confirms charge scaling isn't accidentally offset).
-4. Invalid-input / edge-case handling for allocation and bisection moves.
-5. Full pimc_run output close to exact helium ground state energy (-2.9037
-   Hartree) at validated (P, \tau, level) parameters, with reasonable acceptance
-rate.
-*/
-
-// FIX: Thermodynamic energy estimator's variance grows with P (PIMC issue:
-// kinetic term is difference of two large, partially-cancelling quantities), so
-// pushing P much beyond ~512 at fixed statistics needs proportionally more
-// samples for tight comparison, or a virial estimator (which is not
-// implemented) to avoid growing variance altogether.
-// HACK: This test uses P=512 specifically because it's validated and found
-// during development, not largest P that runs.
+ * Test: Path Integral Monte Carlo for helium ground state (Kelbg-regularized
+ * Coulomb, bisection sampling).
+ *
+ * 1. kelbg_potential / kelbg_energy_correction at fixed (r, \lambda, q) must
+ *    match independently-derived closed-form values - deterministic, no MC
+ *    noise.
+ * 2. Kelbg potential must be finite at r=0 and must reduce to the bare Coulomb
+ *    potential q/r as \lambda -> 0 (\tau -> 0 high-temperature limit).
+ * 3. Zero-charge sanity check: q=0 must give exactly V=0 for both functions, at
+ *    any r and \lambda (confirms charge scaling isn't accidentally offset).
+ * 4. Invalid-input / edge-case handling for allocation and bisection moves.
+ * 5. Full pimc_run output close to exact helium ground state energy (-2.9037
+ *    Hartree) at validated (P, \tau, level) parameters, with reasonable
+ *    acceptance rate.
+ *
+ * FIX: Thermodynamic energy estimator's variance grows with P (PIMC issue:
+ * kinetic term is difference of two large, partially-cancelling quantities), so
+ * pushing P much beyond ~512 at fixed statistics needs proportionally more
+ * samples for tight comparison, or a virial estimator (which is not
+ * implemented) to avoid growing variance altogether.
+ * HACK: This test uses P=512 specifically because it's validated and found
+ * during development, not largest P that runs.
+ */
 
 #include "../core/random.h"
 #include "../physics/pimc.h"
@@ -237,9 +238,9 @@ static void test_pimc_run_invalid_input(void) {
   check_true(r2.n_blocks == 0, "level > log2(P) rejected");
 }
 
-// n_replicas=1 must reproduce pimc_run exactly, same reasoning as analogous
-// VMC/DMC regression tests: stream 0 has zero rng_jump() calls applied, and
-// both route through same pimc_run_with_rng() sampling loop.
+// NOTE: n_replicas=1 must reproduce pimc_run exactly, stream 0 has zero
+// rng_jump() calls applied, and both route through same pimc_run_with_rng()
+// sampling loop.
 static void test_pimc_run_parallel_matches_serial_at_one_replica(void) {
   printf("test_pimc_run_parallel_matches_serial_at_one_replica:\n");
 

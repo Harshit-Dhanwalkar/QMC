@@ -1,15 +1,16 @@
 /*
-Test: Variational Quantum Eigensolver (hardware-efficient ansatz +
-coordinate-descent optimizer).
-
-1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt(a^2 + b^2)
-  (2x2 Hermitian, closed form).
-2. Transverse-field Ising model (n_qubits=3): cross-checked against exact
-  diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
-  simple closed form for a small open chain.
-3. vqe_expectation / vqe_energy fixture checks at fixed (untrained) parameters.
-4. Invalid-input handling.
-*/
+ * Test: Variational Quantum Eigensolver (hardware-efficient ansatz +
+ * coordinate-descent optimizer).
+ *
+ * 1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt(a^2 + b^2)
+ *   (2x2 Hermitian, closed form).
+ * 2. Transverse-field Ising model (n_qubits=3): cross-checked against exact
+ *   diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
+ *   simple closed form for a small open chain.
+ * 3. vqe_expectation / vqe_energy fixture checks at fixed (untrained)
+ *   parameters.
+ * 4. Invalid-input handling.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -57,7 +58,7 @@ static void test_expectation_fixtures(void) {
   double e = vqe_energy(1, 1, theta, H);
   check_close(e, 1.5, 1e-9, "vqe_energy at \\theta=0 equals H[0][0]");
 
-  // \theta=\pi flips |0> -> |1> (up to phase) via RY(pi), so <1|H|1>
+  // \theta = \pi flips |0> -> |1> (up to phase) via RY(pi), so <1|H|1>
   const double theta_pi[1] = {M_PI};
   double e_pi = vqe_energy(1, 1, theta_pi, H);
   check_close(e_pi, -2.1, 1e-9, "vqe_energy at \\theta=\\pi equals H[1][1]");
@@ -80,6 +81,7 @@ static void test_vqe_single_qubit(void) {
   double best_energy = 1e9;
   for (int trial = 0; trial < 5; trial++) {
     vqe_result_t r = vqe_run(1, 2, H, 6, M_PI, 1000ULL + (uint64_t)trial);
+
     if (r.energy < best_energy) {
       best_energy = r.energy;
     }

@@ -1,14 +1,14 @@
 /*
-Test: two-level Rabi oscillations.
-
-1. rabi_evolve_exact must reproduce rabi_excited_probability at every
-   sampled time, both on resonance (Delta=0) and detuned
-2. Resonant pi-pulse: starting in the ground state, evolving to
-   t=\pi /Omega must give (near) complete population inversion.
-3. Unitarity: |\psi[0]|^2 + |\psi[1]|^2 must stay 1 throughout.
-4. Numerical cross-check via crank_nicolson_step - isolated from
-   above.
-*/
+ * Test: two-level Rabi oscillations.
+ *
+ * 1. rabi_evolve_exact must reproduce rabi_excited_probability at every
+ *    sampled time, both on resonance (Delta=0) and detuned
+ * 2. Resonant pi-pulse: starting in the ground state, evolving to
+ *    t=\pi /Omega must give (near) complete population inversion.
+ * 3. Unitarity: |\psi[0]|^2 + |\psi[1]|^2 must stay 1 throughout.
+ * 4. Numerical cross-check via crank_nicolson_step - isolated from
+ *    above.
+ */
 
 #include "../core/complex.h"
 #include "../core/vector.h"
@@ -85,7 +85,9 @@ static int test_unitarity(void) {
     psi->data[1] = c_zero();
     rabi_evolve_exact(psi, t, Omega, Delta);
     double total = c_abs2(psi->data[0]) + c_abs2(psi->data[1]);
+
     cvector_free(psi);
+
     char label[32];
     snprintf(label, sizeof label, "t=%.2f norm", t);
     fail |= check_close(total, 1.0, 1e-10, label);
@@ -107,7 +109,9 @@ static int test_numerical_cross_check(void) {
   int rc = rabi_evolve_numerical(psi, hbar, Omega, Delta, dt, steps);
   if (rc != 0) {
     printf("  FAIL: rabi_evolve_numerical returned error %d\n", rc);
+
     cvector_free(psi);
+
     return 1;
   }
 

@@ -1,14 +1,14 @@
 /*
-Test: tridiag_eigvals (core/linalg/tridiag_eigh.c) - eigenvalues-only
-fast path.
-
-1. Discrete Laplacian (diag=2, offdiag=-1): tridiag_eigvals must match known
-  closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1)).
-2. tridiag_eigvals must agree exactly (same shared core, skipping eigenvector
-  bookkeeping) with tridiag_eigh's eigenvalues, across several random
-tridiagonal matrices.
-3. tridiag_eigvals's eigenvectors field must be NULL.
-*/
+ * Test: tridiag_eigvals (core/linalg/tridiag_eigh.c) - eigenvalues-only
+ * fast path.
+ *
+ * 1. Discrete Laplacian (diag=2, offdiag=-1): tridiag_eigvals must match known
+ *   closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1)).
+ * 2. tridiag_eigvals must agree exactly (same shared core, skipping eigenvector
+ *   bookkeeping) with tridiag_eigh's eigenvalues, across several random
+ *   tridiagonal matrices.
+ * 3. tridiag_eigvals's eigenvectors field must be NULL.
+ */
 
 #include "../core/linalg/tridiag_eigh.h"
 #include "../core/matrix.h"
@@ -42,6 +42,7 @@ static int test_against_analytic_laplacian(void) {
   eigen_t *eig = tridiag_eigvals(diag, offdiag, N);
   if (!eig) {
     printf("  FAIL: tridiag_eigvals returned NULL\n");
+
     free(diag);
     free(offdiag);
 
@@ -57,6 +58,7 @@ static int test_against_analytic_laplacian(void) {
       max_err = err;
     }
   }
+
   printf("  max |eigenvalue - analytic| over N=%d: %.3e\n", N, max_err);
   fail |= (max_err > 1e-8);
 
@@ -94,8 +96,10 @@ static int test_matches_tridiag_eigh(unsigned int seed, int N) {
     fail = 1;
   } else {
     double max_diff = 0.0;
+
     for (int i = 0; i < N; i++) {
       double d = fabs(full->eigenvalues[i] - vals_only->eigenvalues[i]);
+
       if (d > max_diff) {
         max_diff = d;
       }

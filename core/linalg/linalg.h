@@ -6,6 +6,8 @@
 #include "qr.h"
 #include "svd.h"
 #include "eigen_generic.h"
+#include "complex_eigh.h"
+#include "tridiag_eigh.h"
 // IWYU pragma: end_exports
 
 #endif

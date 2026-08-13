@@ -1,15 +1,15 @@
 /*
-Test: Helium (and helium-like ion) variational ground state.
-
-1. Numeric golden-section minimization must match exact analytic minimizer
-   (Z'_opt=Z-5/16) and analytic minimum energy
-2. Helium (Z=2) must reproduce standard theoretical result:
-   Z'_opt=1.6875, E=-2.84765625 Hartree (~-77.5 eV).
-3. Variational theorem: E_variational must be >= known experimental ground-state
-   energy (-2.9037 Hartree)
-4. Sanity check across several Z (H-, He, Li+, Be2+) that golden-section result
-   always matches analytic one.
-*/
+ * Test: Helium (and helium-like ion) variational ground state.
+ *
+ * 1. Numeric golden-section minimization must match exact analytic minimizer
+ *    (Z'_opt=Z-5/16) and analytic minimum energy
+ * 2. Helium (Z=2) must reproduce standard theoretical result:
+ *    Z'_opt=1.6875, E=-2.84765625 Hartree (~-77.5 eV).
+ * 3. Variational theorem: E_variational must be >= known experimental
+ *    ground-state energy (-2.9037 Hartree)
+ * 4. Sanity check across several Z (H-, He, Li+, Be2+) that golden-section
+ *    result always matches analytic one.
+ */
 
 #include "../core/constants.h"
 #include "../physics/helium.h"
@@ -87,8 +87,9 @@ int main(void) {
 
   printf("Numeric golden-section vs analytic closed form (several Z):\n");
   const double Z_values[4] = {1.0, 2.0, 3.0, 4.0}; // H-, He, Li+, Be2+
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 4; i++) {
     failed += test_numeric_matches_analytic(Z_values[i]);
+  }
 
   printf("Helium (Z=2) theoretical value:\n");
   failed += test_helium_theoretical_value();

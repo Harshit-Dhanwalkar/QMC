@@ -1,21 +1,21 @@
 /*
-Test + demonstration: driven two-level systems (general time-dependent H(t),
-Landau-Zener sweeps, and lab-frame driving beyond RWA).
-
-1. Constant \Delta, \Omega cross-check: driven_two_level_evolve with
-  time_fn_constant for both must reproduce rabi_evolve_exact()'s closed-form
-  result, validates the RK4 integrator and rotating-frame RHS independent of any
-  time-dependence-specific code.
-2. Landau-Zener: sweep \Delta(t) = \alpha * t from deep negative to deep
-  positive time, starting in the diabatic ground state; compare final diabatic
-  population to the closed-form landau_zener_probability(), in both
-  fast/diabatic (large alpha) and slow/adiabatic (small alpha) regimes.
-3. Lab-frame vs RWA (Bloch-Siegert): in weak-driving regime (\Omega_0 <<
-  \omega_0), full non-RWA lab-frame simulation must agree with
-  rabi_excited_probability() evaluated at RWA-equivalent parameters (\Delta =
-  \omega_L - \omega_0, \Omega = \Omega_0/2) to within a small tolerance.
-  Bloch-Siegert-type correction from counter-rotating term RWA drops.
-*/
+ * Test + demonstration: driven two-level systems (general time-dependent H(t),
+ * Landau-Zener sweeps, and lab-frame driving beyond RWA).
+ *
+ * 1. Constant \Delta, \Omega cross-check: driven_two_level_evolve with
+ *   time_fn_constant for both must reproduce rabi_evolve_exact()'s closed-form
+ *   result, validates the RK4 integrator and rotating-frame RHS independent of
+ * any time-dependence-specific code.
+ * 2. Landau-Zener: sweep \Delta(t) = \alpha * t from deep negative to deep
+ *   positive time, starting in the diabatic ground state; compare final
+ * diabatic population to the closed-form landau_zener_probability(), in both
+ *   fast/diabatic (large alpha) and slow/adiabatic (small alpha) regimes.
+ * 3. Lab-frame vs RWA (Bloch-Siegert): in weak-driving regime (\Omega_0 <<
+ *   \omega_0), full non-RWA lab-frame simulation must agree with
+ *   rabi_excited_probability() evaluated at RWA-equivalent parameters (\Delta =
+ *   \omega_L - \omega_0, \Omega = \Omega_0/2) to within a small tolerance.
+ *   Bloch-Siegert-type correction from counter-rotating term RWA drops.
+ */
 
 #include "../core/complex.h"
 #include "../core/vector.h"

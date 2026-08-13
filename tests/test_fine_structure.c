@@ -1,15 +1,15 @@
 /*
-Test: hydrogen fine structure / spin-orbit coupling.
-
-1. spin_orbit_ls_expect_from_coupling (built from couple_states + ladder
-   operators) must match the closed-form spin_orbit_ls_expect formula,
-   for every allowed j at l=1,2,3, and be independent of M.
-2. l=0 special case: <L.S> must be exactly 0 (no orbital momentum to
-   couple to spin).
-3. hydrogen_fine_structure_shift must reproduce the well-known hydrogen
-   2P_{3/2}-2P_{1/2} splitting (~10.97 GHz / ~4.5e-5 eV in the
-   literature).
-*/
+ * Test: hydrogen fine structure / spin-orbit coupling.
+ *
+ * 1. spin_orbit_ls_expect_from_coupling (built from couple_states + ladder
+ *    operators) must match the closed-form spin_orbit_ls_expect formula,
+ *    for every allowed j at l=1,2,3, and be independent of M.
+ * 2. l=0 special case: <L.S> must be exactly 0 (no orbital momentum to
+ *    couple to spin).
+ * 3. hydrogen_fine_structure_shift must reproduce the well-known hydrogen
+ *    2P_{3/2}-2P_{1/2} splitting (~10.97 GHz / ~4.5e-5 eV in the
+ *    literature).
+ */
 
 #include "../core/constants.h"
 #include "../physics/angular.h"

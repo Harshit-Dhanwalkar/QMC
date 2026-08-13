@@ -1,18 +1,18 @@
 /*
-Test: Deutsch-Jozsa and Grover's search algorithms.
-
-1. Deutsch-Jozsa: DJ_CONSTANT_0/DJ_CONSTANT_1 must give P(all-zero)=1.0 exactly;
-   DJ_BALANCED (single-bit and multi-bit parity oracles) must give
-   P(all-zero)=0.0 exactly : which are exact quantum-mechanical predictions (no
-   measurement noise involved, deterministic outcome probabilities).
-2. Grover's search: target's measurement probability after optimal number of
-   iterations must match the closed-form \sin^2((2k + 1) * \theta),
-   \sin(\theta)=1 / \sqrt(N), across several (n_qubits, target) combinations.
-   Also checks that full probability distribution sums to 1 (normalization) and
-   that iterating well past optimum ("over-rotation") measurably reduces the
-   success probability.
-3. Invalid-input handling.
-*/
+ * Test: Deutsch-Jozsa and Grover's search algorithms.
+ *
+ * 1. Deutsch-Jozsa: DJ_CONSTANT_0/DJ_CONSTANT_1 must give P(all-zero)=1.0
+ *    exactly; DJ_BALANCED (single-bit and multi-bit parity oracles) must give
+ *    P(all-zero)=0.0 exactly : which are exact quantum-mechanical predictions
+ *    (no measurement noise involved, deterministic outcome probabilities).
+ * 2. Grover's search: target's measurement probability after optimal number of
+ *    iterations must match the closed-form \sin^2((2k + 1) * \theta),
+ *    \sin(\theta)=1 / \sqrt(N), across several (n_qubits, target) combinations.
+ *    Also checks that full probability distribution sums to 1 (normalization)
+ *    and that iterating well past optimum ("over-rotation") measurably reduces
+ *    the success probability.
+ * 3. Invalid-input handling.
+ */
 
 #include "../physics/quantum_algorithms.h"
 #include <math.h>
@@ -103,9 +103,7 @@ static void test_grover(void) {
       sum_p += r.probabilities[i];
     }
     snprintf(label, sizeof label,
-             "n=%d target=%d: probabilities normalize "
-             "to 1",
-             n_qubits, target);
+             "n=%d target=%d: probabilities normalize to 1", n_qubits, target);
     check_close(sum_p, 1.0, 1e-9, label);
 
     free(r.probabilities);
@@ -118,7 +116,7 @@ static void test_grover_overrotation(void) {
   int n_qubits = 4, target = 7;
   int optimal_k = 3; // round((\pi / 4) * \sqrt(16)) = 3
   int trough_k = 6;  // TEST: verified via the closed-form formula
-  // NOTE:  Grover's success probability is periodic in k, not monotonic, so
+  // NOTE: Grover's success probability is periodic in k, not monotonic, so
   // "more iterations" isn't worse
 
   grover_result_t r_optimal = grover_search(n_qubits, target, optimal_k);
@@ -130,7 +128,7 @@ static void test_grover_overrotation(void) {
   check_true(r_trough.p_target < 0.1, "a k chosen to sit near a probability "
                                       "trough gives low success probability");
   check_true(r_trough.p_target < r_optimal.p_target,
-             "trough k gives lower success probability than optimal k "
+             "trough k gives lower success probability than optimal k \n"
              "(Grover's success rate is periodic, not monotonically increasing "
              "with more iterations)");
 

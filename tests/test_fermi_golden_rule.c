@@ -1,20 +1,21 @@
 /*
-Test + demonstration: Fermi's Golden Rule, validated against
-diagonalization-based time evolution
-
-Setup: couple one initial state |0> (energy 0) to M "quasi-continuum" final
-states spread uniformly over an energy window W (so the density of states \rho =
-M/W = 1/dE, dE = level spacing), each with same coupling V0 and no coupling
-among final states themselves (a "star" / Fano-Friedrichs-model Hamiltonian).
-
-Fermi's Golden Rule predicts :
-  P(t) ~ \exp(-\Gamma*t), \Gamma = 2 * \pi * V0^2 *
-\rho, valid at intermediate times: t >> 1/W (needed for golden-rule energy
-coarse-graining to apply, at very short times decay is quadratic/Zeno-like, not
-exponential) and t << 1/dE (before finite-size recurrences from discrete
-spectrum set in). The test checks agreement in intermediate window, not at very
-short t.
-*/
+ * Test + demonstration: Fermi's Golden Rule, validated against
+ * diagonalization-based time evolution
+ *
+ * Setup: couple one initial state |0> (energy 0) to M "quasi-continuum" final
+ * states spread uniformly over an energy window W (so the density of states
+ * \rho = M/W = 1/dE, dE = level spacing), each with same coupling V0 and no
+ * coupling among final states themselves (a "star" / Fano-Friedrichs-model
+ * Hamiltonian).
+ *
+ * Fermi's Golden Rule predicts :
+ *   P(t) ~ \exp(-\Gamma*t), \Gamma = 2 * \pi * V0^2 * \rho,
+ * valid at intermediate times: t >> 1/W (needed for golden-rule energy
+ * coarse-graining to apply, at very short times decay is quadratic/Zeno-like,
+ * not exponential) and t << 1/dE (before finite-size recurrences from discrete
+ * spectrum set in). The test checks agreement in intermediate window, not at
+ * very short t.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/eigen_generic.h"
@@ -103,8 +104,8 @@ int main(void) {
     double P = re * re + im * im;
     char label[32];
     snprintf(label, sizeof label, "P_survival(t=%.1f)", t);
-    // relative tolerance: Compares an exact many-level simulation against an
-    // asymptotic (intermediate-time) formula
+    // NOTE: relative tolerance: Compares an exact many-level simulation against
+    // an asymptotic (intermediate-time) formula
     fail |=
         check_close(P, exp(-Gamma * t), 0.05 * exp(-Gamma * t) + 0.02, label);
   }

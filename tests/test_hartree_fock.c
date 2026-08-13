@@ -1,22 +1,23 @@
 /*
-Test + demonstration: restricted Hartree-Fock (closed-shell, s-orbitals
-only), via physics/hartree_fock.c.
-
-1. Helium (Z=2, n_orbitals=1, i.e. 1s^2): variational theorem gives two-sided
-   bound which can be check without any HF-specific reference number:
-     E_exact_nonrel <= E_HF <= E_simple_product_variational
-   The upper bound is closed-form effective-nuclear-charge result
-   (single-parameter special case of same single-Slater-determinant ansatz
-   family HF searches over more freely). The lower bound is known
-   essentially-exact non-relativistic helium ground state, -2.903724 Hartree
-   (Pekeris 1959) -> HF, being a single-determinant method, can never beat true
-   correlated ground state.
-2. Beryllium (Z=4, n_orbitals=2, i.e. 1s^2 2s^2): range check against well-known
-   non-relativistic HF-limit energy for Be, ~ -14.573 Hartree (Clementi &
-   Roetti / standard HF tables).
-3. Orbital normalization: integral u_k(r)^2 dr = 1 for every converged orbital.
-4. Aufbau ordering: converged orbital (Fock) eigenvalues are ascending.
-*/
+ * Test + demonstration: restricted Hartree-Fock (closed-shell, s-orbitals
+ * only), via physics/hartree_fock.c.
+ *
+ * 1. Helium (Z=2, n_orbitals=1, i.e. 1s^2): variational theorem gives two-sided
+ *    bound which can be check without any HF-specific reference number:
+ *      E_exact_nonrel <= E_HF <= E_simple_product_variational
+ *    The upper bound is closed-form effective-nuclear-charge result
+ *    (single-parameter special case of same single-Slater-determinant ansatz
+ *    family HF searches over more freely). The lower bound is known
+ *    essentially-exact non-relativistic helium ground state, -2.903724 Hartree
+ *    (Pekeris 1959) -> HF, being a single-determinant method, can never beat
+ *     true correlated ground state.
+ * 2. Beryllium (Z=4, n_orbitals=2, i.e. 1s^2 2s^2): range check against
+ *    well-known non-relativistic HF-limit energy for Be, ~ -14.573 Hartree
+ *    (Clementi & Roetti / standard HF tables).
+ * 3. Orbital normalization: integral u_k(r)^2 dr = 1 for every converged
+ *    orbital.
+ * 4. Aufbau ordering: converged orbital (Fock) eigenvalues are ascending.
+ */
 
 // NOTE: this is finite-difference/dense-diagonalization solve on a finite
 // radial grid, not a converged basis-set HF calculation. HF-limit numbers

@@ -1,13 +1,14 @@
 /*
-Test: Diffusion Monte Carlo for helium ground state.
-
-1. dmc_drift_velocity at fixed configurations (deterministic, no MC noise).
-2. Full dmc_run must land close to exact helium ground state energy (-2.9037
-   Hartree) - should be much closer than VMC's variational estimate (-2.84765625
-   from plain product orbital, or ~-2.878 from VMC with same Jastrow).
-3. Acceptance rate and mean population must be in a sane range, confirming
-   sampler isn't degenerate and population control is holding near target.
-*/
+ * Test: Diffusion Monte Carlo for helium ground state.
+ *
+ * 1. dmc_drift_velocity at fixed configurations (deterministic, no MC noise).
+ * 2. Full dmc_run must land close to exact helium ground state energy (-2.9037
+ *    Hartree) - should be much closer than VMC's variational estimate
+ *    (-2.84765625 from plain product orbital, or ~-2.878 from VMC with same
+ *    Jastrow).
+ * 3. Acceptance rate and mean population must be in a sane range, confirming
+ *    sampler isn't degenerate and population control is holding near target.
+ */
 
 #include "../core/random.h"
 #include "../physics/dmc.h"

@@ -1,12 +1,12 @@
 /*
-Test: angular momentum coupling (couple_states / couple_allowed_J).
-
-1. Two spin-1/2's -> triplet (J=1) + singlet (J=0), checked against
-  exact coefficients (in Sakurai angular-momenta table).
-2. General sanity checks for less trivial case (j1=1, j2=1/2, i.e.
-   l(x)s structure needed for spin-orbit coupling): normalization of
-   each coupled state, and orthogonality b/w different J's at same M.
-*/
+ * Test: angular momentum coupling (couple_states / couple_allowed_J).
+ *
+ * 1. Two spin-1/2's -> triplet (J=1) + singlet (J=0), checked against
+ *   exact coefficients (in Sakurai angular-momenta table).
+ * 2. General sanity checks for less trivial case (j1=1, j2=1/2, i.e.
+ *   l(x)s structure needed for spin-orbit coupling): normalization of
+ *   each coupled state, and orthogonality b/w different J's at same M.
+ */
 
 #include "../core/complex.h"
 #include "../core/special/special.h"

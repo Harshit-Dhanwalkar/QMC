@@ -12,6 +12,7 @@ int main() {
     printf("FAIL: allocation\n");
     return 1;
   }
+
   CMAT(A, 0, 0) = c_real(1.0);
   CMAT(A, 0, 1) = c_real(2.0);
   CMAT(A, 0, 2) = c_real(3.0);
@@ -23,19 +24,25 @@ int main() {
   cmatrix_t *At = cmatrix_transpose(A);
   if (!At) {
     printf("FAIL: transpose\n");
+
     cmatrix_free(A);
+
     return 1;
   }
   if (At->nrows != 3 || At->ncols != 2) {
     printf("FAIL: transpose dimensions\n");
+
     cmatrix_free(A);
     cmatrix_free(At);
+
     return 1;
   }
   if (c_abs(c_sub(CMAT(At, 0, 0), c_real(1.0))) > 1e-12) {
     printf("FAIL: transpose value\n");
+
     cmatrix_free(A);
     cmatrix_free(At);
+
     return 1;
   }
 
@@ -43,25 +50,31 @@ int main() {
   cmatrix_t *B = cmatrix_multiply(A, At);
   if (!B) {
     printf("FAIL: multiplication\n");
+
     cmatrix_free(A);
     cmatrix_free(At);
+
     return 1;
   }
 
   if (B->nrows != 2 || B->ncols != 2) {
     printf("FAIL: multiplication dimensions\n");
+
     cmatrix_free(A);
     cmatrix_free(At);
     cmatrix_free(B);
+
     return 1;
   }
 
   // Expected: [[14, 32], [32, 77]]
   if (c_abs(c_sub(CMAT(B, 0, 0), c_real(14.0))) > 1e-12) {
     printf("FAIL: multiplication result\n");
+
     cmatrix_free(A);
     cmatrix_free(At);
     cmatrix_free(B);
+
     return 1;
   }
 
@@ -69,5 +82,6 @@ int main() {
   cmatrix_free(A);
   cmatrix_free(At);
   cmatrix_free(B);
+
   return 0;
 }

@@ -1,22 +1,22 @@
 /*
-Test: General Gaussian-type-orbital molecular integrals (McMurchie-Davidson).
-
-1. Boys function: F_0(0)=1 exact identity, plus a couple of known values
-   cross-checked against closed-form :
-     F_0(x) = \sqrt(\pi / (4 * x)) erf(\sqrt(x))
-2. s-s overlap and s-s nuclear attraction against their closed-form
-   Gaussian-product-theorem formulas (independent of general McMurchie-Davidson
-   code path being tested).
-3. molint_normalize_contraction: a normalized basis function's self-overlap must
-   be exactly 1.
-4. ERI 8-fold permutational symmetry: (ij|kl) must equal every one of its 7
-   index-permutation equivalents.
-5. The end-to-end validation: full restricted-HF SCF on H2/STO-3G at R=1.4 bohr
-   must reproduce the theoretical Szabo & Ostlund result (-1.1167 Hartree) using
-   only this integrals engine + a RHF loop written in this test file (not
-   reusing hartree_fock.c, which is a radial-grid solver for atoms, not an
-   LCAO-Gaussian-basis solver for molecules).
-*/
+ * Test: General Gaussian-type-orbital molecular integrals (McMurchie-Davidson).
+ *
+ * 1. Boys function: F_0(0)=1 exact identity, plus a couple of known values
+ *    cross-checked against closed-form :
+ *      F_0(x) = \sqrt(\pi / (4 * x)) erf(\sqrt(x))
+ * 2. s-s overlap and s-s nuclear attraction against their closed-form
+ *    Gaussian-product-theorem formulas (independent of general
+ *    McMurchie-Davidson code path being tested).
+ * 3. molint_normalize_contraction: a normalized basis function's self-overlap
+ *    must be exactly 1.
+ * 4. ERI 8-fold permutational symmetry: (ij|kl) must equal every one of its 7
+ *    index-permutation equivalents.
+ * 5. The end-to-end validation: full restricted-HF SCF on H2/STO-3G at R=1.4
+ *    bohr must reproduce the theoretical Szabo & Ostlund result (-1.1167
+ *    Hartree) using only this integrals engine + a RHF loop written in this
+ *    test (not reusing hartree_fock.c, which is a radial-grid solver for atoms,
+ *    not an LCAO-Gaussian-basis solver for molecules).
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"

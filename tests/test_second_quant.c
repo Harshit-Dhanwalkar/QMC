@@ -1,20 +1,20 @@
 /*
-Test: Jordan-Wigner fermion-to-qubit mapping.
-
-1. Anticommutation relations {a_i, a_j^\dagger} = \delta_ij*I,
-  {a_i, a_j} = 0 must hold exactly for JW operators, for every pair (i,j) in a
-  4-mode system : these are the defining algebraic relations of fermionic
-  operators, and whole point of Z-string construction is to make bosonic qubit
-  tensor products satisfy them.
-2. The number operator a_j^dagger a_j must correctly read off mode j's
-  occupation on a fixed test state.
-3. Cross-validation: a Hamiltonian built by composing
-  jw_creation_operator/jw_annihilation_operator (tensor-product construction)
-  must exactly match (to machine precision) the same hamiltonian built by
-  second_quant_build_hopping_hamiltonian (a completely independent direct
-  bit-manipulation + fermionic-sign-counting construction, no tensor products at
-  all) and their eigenvalue spectra must agree.
-*/
+ * Test: Jordan-Wigner fermion-to-qubit mapping.
+ *
+ * 1. Anticommutation relations {a_i, a_j^\dagger} = \delta_ij*I,
+ *   {a_i, a_j} = 0 must hold exactly for JW operators, for every pair (i,j) in
+ *   a 4-mode system : these are the defining algebraic relations of fermionic
+ *   operators, and whole point of Z-string construction is to make bosonic
+ *   qubit tensor products satisfy them.
+ * 2. The number operator a_j^dagger a_j must correctly read off mode j's
+ *   occupation on a fixed test state.
+ * 3. Cross-validation: a Hamiltonian built by composing
+ *   jw_creation_operator/jw_annihilation_operator (tensor-product construction)
+ *   must exactly match (to machine precision) the same hamiltonian built by
+ *   second_quant_build_hopping_hamiltonian (a completely independent direct
+ *   bit-manipulation + fermionic-sign-counting construction, no tensor products
+ *   at all) and their eigenvalue spectra must agree.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -159,6 +159,7 @@ static void test_jw_vs_direct_hamiltonian(void) {
     cmatrix_t *n_i = cmatrix_multiply(a_dag[i], a[i]);
     cmatrix_scale(n_i, c_real(epsilon[i]));
     cmatrix_t *tmp = cmatrix_add(H_jw, n_i);
+
     cmatrix_free(H_jw);
     cmatrix_free(n_i);
 
@@ -172,6 +173,7 @@ static void test_jw_vs_direct_hamiltonian(void) {
     cmatrix_t *hop_sum = cmatrix_add(hop1, hop2);
     cmatrix_scale(hop_sum, c_real(-t));
     cmatrix_t *tmp = cmatrix_add(H_jw, hop_sum);
+
     cmatrix_free(hop1);
     cmatrix_free(hop2);
     cmatrix_free(hop_sum);
@@ -221,12 +223,14 @@ static void test_jw_vs_direct_hamiltonian(void) {
   cmatrix_t *H_direct_copy = cmatrix_copy(H_direct);
   eigen_t *eig_jw = cmatrix_eigh_complex(H_jw_copy);
   eigen_t *eig_direct = cmatrix_eigh_complex(H_direct_copy);
+
   cmatrix_free(H_jw_copy);
   cmatrix_free(H_direct_copy);
 
   double max_eig_diff = 0.0;
   for (int k = 0; k < dim; k++) {
     double d = fabs(eig_jw->eigenvalues[k] - eig_direct->eigenvalues[k]);
+
     if (d > max_eig_diff) {
       max_eig_diff = d;
     }

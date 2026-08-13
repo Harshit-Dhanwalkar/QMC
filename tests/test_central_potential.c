@@ -1,11 +1,11 @@
 /*
-Test: general central-potential radial solver.
-
-1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum
-  E_{n_r,l} = hbar*omega*(2 * n_r + l + 3/2).
-2. Hydrogen regression: hydrogen_radial_solve must reproduce
-  hydrogen_energy_level(1) to same accuracy as before the refactor.
-*/
+ * Test: general central-potential radial solver.
+ *
+ * 1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum
+ *   E_{n_r,l} = hbar*omega*(2 * n_r + l + 3/2).
+ * 2. Hydrogen regression: hydrogen_radial_solve must reproduce
+ *   hydrogen_energy_level(1) to same accuracy as before the refactor.
+ */
 
 #include "../core/constants.h"
 #include "../core/linalg/tridiag_eigh.h"

@@ -1,14 +1,14 @@
 /*
-Test: complex-Hermitian eigensolver (cmatrix_eigh_complex).
-
-1. 2x2: Pauli \sigma_y matrix has known eigenvalues +-1 and known eigenvectors
-  (1,+-i) / \sqrt2
-2. General NxN Hermitian check:
-  verify ||H v_k - \lambda_k v_k|| is small for every eigenpair, eigenvectors
-  are orthonormal (V^\dagger V ~= I). This checks defining property of an
-  eigendecomposition directly rather than needing a closed-form reference for
-  arbitrary matrix.
-*/
+ * Test: complex-Hermitian eigensolver (cmatrix_eigh_complex).
+ *
+ * 1. 2x2: Pauli \sigma_y matrix has known eigenvalues +-1 and known
+ *   eigenvectors (1,+-i) / \sqrt2
+ * 2. General NxN Hermitian check:
+ *   verify ||H v_k - \lambda_k v_k|| is small for every eigenpair, eigenvectors
+ *   are orthonormal (V^\dagger V ~= I). This checks defining property of an
+ *   eigendecomposition directly rather than needing a closed-form reference for
+ *   arbitrary matrix.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -40,8 +40,9 @@ static int test_sigma_y(void) {
 
     printf("  eigenvalue[%d]: got=%.6f expected=%.6f err=%.2e\n", k,
            eig->eigenvalues[k], expected[k], err);
-    if (err > 1e-8)
+    if (err > 1e-8) {
       fail = 1;
+    }
   }
 
   // Eigenvector check up to phase: |v . conj(v_expected)| should be ~1.
@@ -62,8 +63,9 @@ static int test_sigma_y(void) {
 
     double mag = sqrt(c_abs2(overlap));
     printf("  eigenvector[%d] overlap magnitude: %.6f (expected ~1)\n", k, mag);
-    if (fabs(mag - 1.0) > 1e-6)
+    if (fabs(mag - 1.0) > 1e-6) {
       fail = 1;
+    }
   }
 
   eigen_free(eig);
@@ -100,6 +102,7 @@ static int test_random_hermitian(void) {
     printf("  FAIL: cmatrix_eigh_complex returned NULL\n");
 
     cmatrix_free(H);
+
     return 1;
   }
 
@@ -127,8 +130,9 @@ static int test_random_hermitian(void) {
     printf("  eigenpair %d: \\lambda=%.6f residual=%.2e\n", k, lambda,
            residual);
 
-    if (residual > tol)
+    if (residual > tol) {
       fail = 1;
+    }
   }
 
   // Orthonormality check: V^dagger V ~= I
@@ -152,6 +156,7 @@ static int test_random_hermitian(void) {
 
   eigen_free(eig);
   cmatrix_free(H);
+
   return fail;
 }
 

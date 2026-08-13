@@ -1,12 +1,12 @@
 /*
-Test: 3-qubit bit-flip and phase-flip quantum error correction codes.
-
-For both codes, every possible single-qubit error (none, or on data qubit 0, 1,
-or 2) must be correctly diagnosed by syndrome (matching the known syndrome
-table) and exactly corrected : then the recovered logical qubit must equal to
-the original (\alpha, \beta) to machine precision, regardless of which qubit (if
-any) was hit.
-*/
+ * Test: 3-qubit bit-flip and phase-flip quantum error correction codes.
+ *
+ * For both codes, every possible single-qubit error (none, or on data qubit 0,
+ * 1, or 2) must be correctly diagnosed by syndrome (matching the known syndrome
+ * table) and exactly corrected : then the recovered logical qubit must equal to
+ * the original (\alpha, \beta) to machine precision, regardless of which qubit
+ * (if any) was hit.
+ */
 
 #include "../core/complex.h"
 #include "../physics/qec.h"
@@ -66,7 +66,8 @@ static void run_code_all_errors(qec_code_t code, const char *name) {
              r.corrected_qubit);
     check_true(r.corrected_qubit == e, label_corr);
 
-    snprintf(label_a, sizeof label_a, "error_qubit=%d: recovered \\alpha.re", e);
+    snprintf(label_a, sizeof label_a, "error_qubit=%d: recovered \\alpha.re",
+             e);
     snprintf(label_b, sizeof label_b, "error_qubit=%d: recovered \\beta", e);
     check_close(r.recovered_alpha.re, alpha.re, 1e-9, label_a);
     check_close(r.recovered_beta.re, beta.re, 1e-9, label_b);

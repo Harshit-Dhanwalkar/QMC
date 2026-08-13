@@ -1,14 +1,14 @@
 /*
-Test: Boson sampling
-
-1. Hong-Ou-Mandel dip: two photons through a 50:50 beam splitter must give
-   P(1,1)=0 exactly (destructive interference/bunching) and P(2,0)=P(0,2)=0.5,
-   summing to 1.
-2. Unitarity: for an arbitrary unitary network (DFT_3), summing probabilities
-   over all output configurations for a fixed input must equal 1.
-3. Permutation invariance: probability must not depend on order photons are
-   listed in input_modes (only on multiset).
-*/
+ * Test: Boson sampling
+ *
+ * 1. Hong-Ou-Mandel dip: two photons through a 50:50 beam splitter must give
+ *    P(1,1)=0 exactly (destructive interference/bunching) and
+ *    P(2,0)=P(0,2)=0.5, summing to 1.
+ * 2. Unitarity: for an arbitrary unitary network (DFT_3), summing probabilities
+ *    over all output configurations for a fixed input must equal 1.
+ * 3. Permutation invariance: probability must not depend on order photons are
+ *    listed in input_modes (only on multiset).
+ */
 
 #include "../core/complex.h"
 #include "../core/matrix.h"

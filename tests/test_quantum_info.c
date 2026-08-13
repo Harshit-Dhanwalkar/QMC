@@ -1,16 +1,16 @@
 /*
-Test: Quantum teleportation, superdense coding, CHSH/Bell inequality.
-
-1. Teleportation: for a fixed unknown state (\alpha, \beta), all 4 possible
-   Bell-measurement outcomes (forced deterministically via u1,u2) must produce,
-   after correction, Bob's qubit exactly matching original state.
-2. Superdense coding: all 4 two-bit messages must decode exactly (protocol is
-   100% deterministic by construction).
-3. CHSH: correlator must match the known closed form \cos(\theta - \phi);
-   optimal angle choice must saturate Tsirelson bound 2* \sqrt(2), and a
-   naive/suboptimal angle choice must NOT reach it (sanity check that the module
-   isn't trivially always returning same S).
-*/
+ * Test: Quantum teleportation, superdense coding, CHSH/Bell inequality.
+ *
+ * 1. Teleportation: for a fixed unknown state (\alpha, \beta), all 4 possible
+ *    Bell-measurement outcomes (forced deterministically via u1,u2) must
+ *    produce, after correction, Bob's qubit exactly matching original state.
+ * 2. Superdense coding: all 4 two-bit messages must decode exactly (protocol is
+ *    100% deterministic by construction).
+ * 3. CHSH: correlator must match the known closed form \cos(\theta - \phi);
+ *    optimal angle choice must saturate Tsirelson bound 2* \sqrt(2), and a
+ *    naive/suboptimal angle choice must NOT reach it (sanity check that the
+ *    module isn't trivially always returning same S).
+ */
 
 #include "../core/complex.h"
 #include "../physics/quantum_info.h"
@@ -45,9 +45,9 @@ static void test_teleport_all_outcomes(void) {
   complex_t alpha = c_real(0.6);
   complex_t beta = c_new(0.7368487952023082, 0.31153467384692046);
 
-  // u values that force each of 4 measurement outcomes: qstate_measure _qubit
-  // picks outcome 0 if u < p0, else 1; Bell measurement here gives p0=0.5 for
-  // both bits, so u=0.1 forces 0 and u=0.9 forces 1.
+  // NOTE: u values that force each of 4 measurement outcomes: qstate_measure
+  // _qubit picks outcome 0 if u < p0, else 1. Bell measurement here gives
+  // p0=0.5 for both bits, so u=0.1 forces 0 and u=0.9 forces 1.
   double u_for_0 = 0.1, u_for_1 = 0.9;
   const double u1_vals[2] = {u_for_0, u_for_1};
   const double u2_vals[2] = {u_for_0, u_for_1};

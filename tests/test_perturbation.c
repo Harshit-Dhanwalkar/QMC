@@ -1,7 +1,7 @@
 /*
  * Test perturbation theory: compare first-order correction for harmonic + x^4
  * with known analytic result for the ground state.
- * For m= \omega=1, <0|x^4|0> = 3/4.
+ * For atomic units m = \omega=1, <0|x^4|0> = 3/4.
  */
 
 #include "../core/complex.h"
@@ -71,9 +71,11 @@ int main(void) {
   if (eig->n < 1 || !eig->eigenvectors) {
     fprintf(stderr, "FAIL: eig invalid (n=%d, eigenvectors=%p)\n", eig->n,
             (void *)eig->eigenvectors);
+
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
+
     return 1;
   }
 
@@ -82,6 +84,7 @@ int main(void) {
          eig->eigenvalues[0]);
   if (fabs(eig->eigenvalues[0] - 0.5) > 0.05) {
     fprintf(stderr, "FAIL: ground state energy too far from 0.5\n");
+
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
@@ -93,6 +96,7 @@ int main(void) {
   cvector_t *psi0 = cvector_from_matrix_column(eig->eigenvectors, 0);
   if (!psi0) {
     fprintf(stderr, "FAIL: cvector_from_matrix_column returned NULL\n");
+
     eigen_free(eig);
     cmatrix_free(H_0);
     free(x);
@@ -109,6 +113,7 @@ int main(void) {
 
   if (norm_sq < 1e-30) {
     fprintf(stderr, "FAIL: \\psi0 norm is zero\n");
+
     cvector_free(psi0);
     eigen_free(eig);
     cmatrix_free(H_0);

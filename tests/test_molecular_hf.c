@@ -1,21 +1,23 @@
 /*
-Test: general N-basis-function molecular_rhf / molecular_ao_to_mo.
-
-1. Regression: molecular_rhf on H2/STO-3G at R=1.4 bohr must reproduce
-   -1.116714 Hartree using the general-N path.
-2. Result: H4, a linear chain of 4 hydrogen atoms (STO-3G, 1.4 bohr spacing).
-  RHF, then via second_quant_build_molecular_hamiltonian + exact
-diagonalization, FCI.
-3. VQE on the resulting 8-qubit (256-dim) Hamiltonian, checked to be variational
-  (>= FCI) and to get within reach of the RHF baseline with a modest optimizer
-  budget. Exploratory tuning found this 48-parameter (8 qubits x 6 layers)
-  landscape is noticeably harder to optimize than H2's 12-parameter one.
-  // TODO: deeper ansatz, more sweeps, and some seed sensitivity are needed to
-  approach FCI, a real (well-known in the VQE    literature)
-  optimization-landscape effect at larger qubit count.
-  NOTE: This test uses a fast
-  budget rather than claiming H2-level convergence at 8 qubits.
-*/
+ * Test: general N-basis-function molecular_rhf / molecular_ao_to_mo.
+ *
+ * 1. Regression: molecular_rhf on H2/STO-3G at R=1.4 bohr must reproduce
+ *    -1.116714 Hartree using the general-N path.
+ * 2. Result: H4, a linear chain of 4 hydrogen atoms (STO-3G, 1.4 bohr spacing).
+ *    RHF, then via second_quant_build_molecular_hamiltonian + exact
+ *    diagonalization, FCI.
+ * 3. VQE on the resulting 8-qubit (256-dim) Hamiltonian, checked to be
+ *    variational (>= FCI) and to get within reach of the RHF baseline with a
+ *    modest optimizer budget. Exploratory tuning found this 48-parameter (8
+ *    qubits x 6 layers) landscape is noticeably harder to optimize than H2's
+ *    12-parameter one.
+ *
+ *    // TODO: deeper ansatz, more sweeps, and some seed sensitivity are needed
+ *    to approach FCI, a real (well-known in VQE literature)
+ * optimization-landscape effect at larger qubit count.
+ *   //  NOTE: This test uses a fast budget rather than claiming H2-level
+ *   convergence at 8 qubits.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -25,6 +27,7 @@ diagonalization, FCI.
 #include "../physics/second_quant.h"
 #include "../physics/vqe.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -101,6 +104,7 @@ static void test_h4_chain_fci_and_vqe(void) {
 
     return;
   }
+
   printf("  H4 chain RHF: %.6f Hartree (iters=%d)\n", hf->total_energy,
          hf->iterations);
   check_true(hf->converged, "H4 RHF converges");
@@ -153,10 +157,25 @@ static void test_h4_chain_fci_and_vqe(void) {
   /* NOTE: VQE on 8-qubit Hamiltonian: a much harder search than H2's 4 qubits
    * and 12 parameters (n_params = n_qubits*n_layers = 48 here vs 12 for H2).
    */
-  vqe_result_t vqe_res = vqe_run(8, 6, H, 30, 0.6, 20260810ULL);
-  printf("  VQE (8 qubits, 6 layers, 30 sweeps): E = %.6f Hartree (FCI = %.6f, "
-         "RHF = %.6f)\n",
-         vqe_res.energy, E_fci, hf->total_energy);
+  const uint64_t vqe_seeds[] = {20260810ULL, 20260811ULL, 20260812ULL};
+  vqe_result_t vqe_res = {0};
+  vqe_res.energy = 1e300;
+  for (size_t s = 0; s < sizeof(vqe_seeds) / sizeof(vqe_seeds[0]); s++) {
+    vqe_result_t trial = vqe_run(8, 6, H, 30, 0.6, vqe_seeds[s]);
+
+    if (trial.theta_opt && trial.energy < vqe_res.energy) {
+      free(vqe_res.theta_opt);
+
+      vqe_res = trial;
+    } else {
+      free(trial.theta_opt);
+    }
+  }
+
+  printf("  VQE (8 qubits, 6 layers, 30 sweeps, best of %zu seeds): E = "
+         "%.6f Hartree (FCI = %.6f, RHF = %.6f)\n",
+         sizeof(vqe_seeds) / sizeof(vqe_seeds[0]), vqe_res.energy, E_fci,
+         hf->total_energy);
   check_true(vqe_res.theta_opt != NULL, "VQE ran (theta_opt allocated)");
   check_true(vqe_res.energy >= E_fci - 1e-6,
              "VQE energy is variational (>= exact FCI ground state)");

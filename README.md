@@ -59,6 +59,33 @@ make run-tests
 make clean
 ```
 
+### Optional: LAPACK/BLAS acceleration
+
+Dense Hermitian diagonalization (used by `hartree_fock.c`, `dft.c`, `molecular_hf.c`, exact diagonalization of `second_quant_build_molecular_hamiltonian`'s output, and `vqe.c`) uses a hand-rolled QR/real-embedding solver by default. This becomes the real bottleneck as system size grows (e.g. a radial-grid DFT run at larger N, or an 8$\pm$qubit molecular Hamiltonian's exact diagonalization).
+
+If `liblapacke-dev` and a BLAS backend (e.g. `libopenblas-dev`) are installed, opt in to LAPACK-backed solvers:
+
+```bash
+# Debian/Ubuntu:
+sudo apt-get install liblapacke-dev libopenblas-dev libtmglib-dev
+
+# make USE_LAPACK=1 run-tests
+PATH=/usr/bin:$PATH make USE_LAPACK=1 run-tests
+```
+
+This swaps in LAPACK's `dsyev`/`zheev` for both the real-symmetric and complex-Hermitian solvers for the complex case.
+
+### Optional: disabling AddressSanitizer
+
+AddressSanitizer (`-fsanitize=address`) is on by default. It must be turned OFF (for `EXTRA_CFLAGS` to be cleared and that hook is additive and doesn't remove flags already in `CFLAGS`) when running binaries under Valgrind, since Valgrind cannot run an ASan-instrumented binary correctly:
+
+```bash
+# install headers + libraries to a prefix (default /usr/local)
+make SANITIZE=0 install-lib PREFIX=/usr/local
+```
+
+---
+
 ## Features & Modules
 
 - Core Math : Complex vectors/matrices, special functions (Hermite, Laguerre, Legendre, Spherical Harmonics, Bessel)
@@ -69,7 +96,7 @@ make clean
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
-- [ ] Optimised linear algebra (LAPACK/BLAS backend).
+- Optimised linear algebra (LAPACK/BLAS backend).
 
 <details>
 <summary>Examples for each topic.</summary>

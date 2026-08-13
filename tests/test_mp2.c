@@ -1,16 +1,17 @@
 /*
-Test: MP2 (s-orbitals-only restricted) second-order perturbation theory.
-
-1. Deterministic fixture: mp2_correlation_energy on a built hf_result_t
-   with synthetic (non-HF) occupied/virtual orbitals and orbital energies,
-2. Physics: MP2 on top of converged helium HF must be negative, monotonically
-   increase (in magnitude) as more virtuals are included, and move total energy
-   toward the exact ground state.
-   NOTE: Given the s-only restriction (see mp2.h), this recovers only part of
-   true correlation energy (angular correlation from p/d virtuals is missing),
-   so test currently checks direction, not exact recovery.
-3. Invalid-input handling.
-*/
+ * Test: MP2 (s-orbitals-only restricted) second-order perturbation theory.
+ *
+ * 1. Deterministic fixture: mp2_correlation_energy on a built hf_result_t
+ *    with synthetic (non-HF) occupied/virtual orbitals and orbital energies,
+ * 2. Physics: MP2 on top of converged helium HF must be negative, monotonically
+ *    increase (in magnitude) as more virtuals are included, and move total
+ *    energy toward the exact ground state.
+ *     NOTE: Given the s-only restriction , this recovers only part of true
+ *    correlation energy (angular correlation from p/d virtuals is missing), so
+ *    test currently checks direction, not exact recovery.
+ *     FIX: Now QMC support p and d orbitals
+ * 3. Invalid-input handling.
+ */
 
 #include "../core/complex.h"
 #include "../core/utils.h"

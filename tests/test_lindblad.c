@@ -1,26 +1,26 @@
 /*
-Test + demonstration: Lindblad equation (open quantum systems).
-
-1. Amplitude damping (T1) of a single excited qubit, H=0: population
-   \rho11(t) decays as \exp(-\gamma * t) with no unitary drive - exact
-   closed-form solution of d(\rho11)/dt = -\gamma * \rho11, lindblad_evolve's
-   RK4 integration.
-2. Pure dephasing (T2) of a |+> superposition, H=0: coherence \rho01(t)
-   decays as \rho01(0) * exp(-\gamma * t) while populations stay fixed at 0.5
-   each (derived analytically from the Lindblad dissipator for L =
-   \sqrt(\gamma/2) * \sigma_z)
-3. Closed-system cross-check (n_ops=0): density-matrix evolution under
-   Rabi H must reproduce rabi_excited_probability()'s exact analytic
-   result - validates -i[H,\rho] commutator term and RK4 integration
-   independent of dissipative machinery.
-4. Trace preservation: Tr(\rho) stays 1 under RK4 evolution for both damping and
-   dephasing.
-5. Von Neumann entropy of general density matrices via cmatrix_eigh, cross-
-   checked against closed-form 2x2 formula for pure state and maximally mixed
-   state.
-6. Measurement collapse: deterministic outcome selection from known diagonal
-   distribution, and collapse to the correct basis projector.
-*/
+ * Test + demonstration: Lindblad equation (open quantum systems).
+ *
+ * 1. Amplitude damping (T1) of a single excited qubit, H=0: population
+ *    \rho11(t) decays as \exp(-\gamma * t) with no unitary drive - exact
+ *    closed-form solution of d(\rho11)/dt = -\gamma * \rho11, lindblad_evolve's
+ *    RK4 integration.
+ * 2. Pure dephasing (T2) of a |+> superposition, H=0: coherence \rho01(t)
+ *    decays as \rho01(0) * exp(-\gamma * t) while populations stay fixed at 0.5
+ *    each (derived analytically from the Lindblad dissipator for L =
+ *    \sqrt(\gamma/2) * \sigma_z)
+ * 3. Closed-system cross-check (n_ops=0): density-matrix evolution under
+ *    Rabi H must reproduce rabi_excited_probability()'s exact analytic
+ *    result - validates -i[H,\rho] commutator term and RK4 integration
+ *    independent of dissipative machinery.
+ * 4. Trace preservation: Tr(\rho) stays 1 under RK4 evolution for both damping
+ *    and dephasing.
+ * 5. Von Neumann entropy of general density matrices via cmatrix_eigh, cross-
+ *    checked against closed-form 2x2 formula for pure state and maximally mixed
+ *    state.
+ * 6. Measurement collapse: deterministic outcome selection from known diagonal
+ *    distribution, and collapse to the correct basis projector.
+ */
 
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -42,8 +42,11 @@ static int check_close(double got, double expected, double tol,
 
 static double density_trace(const cmatrix_t *rho) {
   double tr = 0.0;
-  for (int i = 0; i < rho->nrows; i++)
+
+  for (int i = 0; i < rho->nrows; i++) {
     tr += CMAT(rho, i, i).re;
+  }
+
   return tr;
 }
 
@@ -228,10 +231,11 @@ static int test_measurement_collapse(void) {
 int main(void) {
   int failed = 0;
 
-  printf("Amplitude damping (T1): rho11(t) = exp(-gamma*t), H=0:\n");
+  printf("Amplitude damping (T1): \\rho11(t) = \\exp(-\\gamma*t), H=0:\n");
   failed += test_amplitude_damping();
 
-  printf("Pure dephasing (T2): rho01(t) = rho01(0)*exp(-gamma*t), H=0:\n");
+  printf("Pure dephasing (T2): \\rho01(t) = \\rho01(0) * \\exp(-\\gamma*t), "
+         "H=0:\n");
   failed += test_dephasing();
 
   printf("Closed system (n_ops=0) cross-check vs rabi_excited_probability:\n");

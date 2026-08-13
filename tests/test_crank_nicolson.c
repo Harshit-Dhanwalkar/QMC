@@ -4,8 +4,9 @@
  * Properties verified:
  *  1. Norm preservation: ||\phi(t)||^2 = 1 after N steps (unitarity)
  *  2. Energy conservation: <H> stays constant under free evolution
- *  3. Phase propagation: stationary state \phi_n picks up phase e^{-iE_n t} so
- *     |\phi(t)|^2 = |\phi(0)|^2 exactly for an energy eigenstate
+ *  3. Phase propagation: stationary state \phi_n picks up phase
+ *     \exp^{-i * E_n * t} so |\phi(t)|^2 = |\phi(0)|^2 exactly for an energy
+ *     eigenstate
  *  4. Time-independent limit: driving V(x,t) with t-independent function must
  *     reproduce existing static crank_nicolson_step path to tight tolerance
  *  5. No CAP: norm must stay conserved (H Hermitian, CN is unitary) over many
@@ -54,6 +55,7 @@ static void make_gaussian(cvector_t *psi, const double *x, int N, double x0,
   for (int i = 0; i < N; i++) {
     double dxg = x[i] - x0;
     double envelope = exp(-dxg * dxg / (4.0 * sigma0 * sigma0));
+
     psi->data[i].re = envelope * cos(k0 * x[i]);
     psi->data[i].im = envelope * sin(k0 * x[i]);
   }
@@ -243,6 +245,7 @@ int main(void) {
   eigen_t *eig = cmatrix_eigh(H);
   if (!eig) {
     printf("FAIL: eigensolver\n");
+
     cmatrix_free(H);
     free(x);
     free(V);

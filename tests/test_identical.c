@@ -1,10 +1,9 @@
 /*
-identical.c (Gaussian-elimination determinant, Ryser's
-formula permanent)
-
-1. Random complex NxN matrices, N=2..6: determinant/permanent must
-   match reference to numerical precision.
-*/
+ * Gaussian-elimination determinant, Ryser's formula permanent
+ *
+ * 1. Random complex NxN matrices, N=2..6: determinant/permanent must
+ *    match reference to numerical precision.
+ */
 
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -47,6 +46,7 @@ static complex_t cofactor_expand_reference(cmatrix_t *A, int use_sign) {
 
     sum = c_add(sum, term);
     cmatrix_free(minor);
+
     sign = -sign;
   }
 

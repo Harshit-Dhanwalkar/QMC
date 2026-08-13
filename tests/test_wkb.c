@@ -1,6 +1,4 @@
 /*
- * test_wkb.c
- *
  * Verifies WKB / Bohr-Sommerfeld quantization.
  *
  * For the harmonic oscillator V(x) = 1/2x^2 (\hbar=m=\omega=1):
@@ -53,12 +51,14 @@ int main(void) {
   double action = wkb_action_integral_harmonic(0.5, 1.0, 1.0);
   // Expected: \pi (= (n+1/2)* 2 * \pi * \hbar with n=0, \hbar=1)
   all_pass &=
-      check("action/(2\\pi) at E=0.5", action / (2.0 * M_PI), 0.5, 0.01);
+      check("action/(2 * \\pi) at E=0.5", action / (2.0 * M_PI), 0.5, 0.01);
 
   // Tunneling probability through rectangular barrier
   printf("\n   WKB tunneling: rectangular barrier V0=2, width=1:\n");
-  /* T = \exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E)
-   / hbar_sq_2m) with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1): kappa =
+  /*
+    T = \exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E)
+   / hbar_sq_2m)
+    with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1): kappa =
    \sqrt((2-1)/0.5) = \sqrt(2) ~= 1.41421356
   */
   double E = 1.0;

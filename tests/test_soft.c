@@ -1,24 +1,26 @@
 /*
-Test : Split-Operator Fourier Transform (SOFT) method, 2D and 3D
-
-Validation strategy:
-1. Free-particle Gaussian wavepacket (V=0), 2D and 3D: a minimum-uncertainty
-   Gaussian wavepacket spreads with a well-known closed form (e.g. Griffiths
-   "Intro to QM" ch. 2; Cohen-Tannoudji complement G_I):
-     <x>(t)  = x0 + (\hbar * k0/ m ) * t
-     Var(x)(t) = \sigma_0^2 * (1 + (\hbar * t / (2 * m * \sigma_0^2))^2)
-   independently in every Cartesian direction. This isolates and validates
-   momentum-space kinetic propagator (fft2d/ fft3d + phase factors) with
-   potential term switched off entirely.
-2. 2D harmonic-oscillator coherent state: a Gaussian of width \sigma_0 =
-   \sqrt(\hbar / (m * \omega)), displaced from origin, is an exact coherent
-   state of the HO. It does NOT spread, and its centroid follows the trajectory
-   exactly (Ehrenfest's theorem is exact for a harmonic potential):
-   <x>(t) = x_0 * \cos(\omega *t),   <y>(t) = y_0 * \cos(\omega * t)
-   The potential-operator half-steps together with kinetic propagator in same
-   run.
-3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run.
-*/
+ * Test : Split-Operator Fourier Transform (SOFT) method, 2D and 3D
+ *
+ * Validation strategy:
+ * 1. Free-particle Gaussian wavepacket (V=0), 2D and 3D: a minimum-uncertainty
+ *    Gaussian wavepacket spreads with a well-known closed form (e.g. Griffiths
+ *    "Intro to QM" ch. 2; Cohen-Tannoudji complement G_I):
+ *      <x>(t)  = x0 + (\hbar * k0/ m ) * t
+ *      Var(x)(t) = \sigma_0^2 * (1 + (\hbar * t / (2 * m * \sigma_0^2))^2)
+ *    independently in every Cartesian direction. This isolates and validates
+ *    momentum-space kinetic propagator (fft2d/ fft3d + phase factors) with
+ *    potential term switched off entirely.
+ * 2. 2D harmonic-oscillator coherent state: a Gaussian of width \sigma_0 =
+ *    \sqrt(\hbar / (m * \omega)), displaced from origin, is an exact coherent
+ *    state of the HO. It does NOT spread, and its centroid follows the
+ *    trajectory exactly (Ehrenfest's theorem is exact for a harmonic
+ *    potential):
+ *      <x>(t) = x_0 * \cos(\omega * t)
+ *      <y>(t) = y_0 * \cos(\omega * t)
+ *    The potential-operator half-steps together with kinetic propagator in same
+ *    run.
+ * 3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run.
+ */
 
 #include "../core/complex.h"
 #include "../core/vector.h"
@@ -60,6 +62,7 @@ static int test_free_particle_2d(void) {
       double gx = exp(-(x[ix] - x0) * (x[ix] - x0) / (4 * sigma0 * sigma0));
       double gy = exp(-(y[iy] - y0) * (y[iy] - y0) / (4 * sigma0 * sigma0));
       double phase = kx0 * x[ix] + ky0 * y[iy];
+
       psi->data[ix * Ny + iy] = c_scale(c_new(cos(phase), sin(phase)), gx * gy);
     }
   }
@@ -142,6 +145,7 @@ static int test_free_particle_3d(void) {
         double gy = exp(-(y[iy] - y0) * (y[iy] - y0) / (4 * sigma0 * sigma0));
         double gz = exp(-(z[iz] - z0) * (z[iz] - z0) / (4 * sigma0 * sigma0));
         double phase = kx0 * x[ix] + ky0 * y[iy] + kz0 * z[iz];
+
         psi->data[(ix * Ny + iy) * Nz + iz] =
             c_scale(c_new(cos(phase), sin(phase)), gx * gy * gz);
       }
@@ -181,8 +185,8 @@ static int test_free_particle_3d(void) {
   return fail;
 }
 
-// Test 3: 2D harmonic-oscillator coherent state (no spreading, exact
-// classical centroid motion via Ehrenfest's theorem).
+// Test 3: 2D harmonic-oscillator coherent state (no spreading, exact classical
+// centroid motion via Ehrenfest's theorem).
 static int test_ho_coherent_state_2d(void) {
   int Nx = 64, Ny = 64;
   double Lx = 20.0, Ly = 20.0;
@@ -213,6 +217,7 @@ static int test_ho_coherent_state_2d(void) {
     for (int iy = 0; iy < Ny; iy++) {
       double gx = exp(-(x[ix] - x0) * (x[ix] - x0) / (4 * sigma0 * sigma0));
       double gy = exp(-(y[iy] - y0) * (y[iy] - y0) / (4 * sigma0 * sigma0));
+
       psi->data[ix * Ny + iy] = c_real(gx * gy);
     }
   }
@@ -230,6 +235,7 @@ static int test_ho_coherent_state_2d(void) {
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       double p = c_abs2(psi->data[ix * Ny + iy]) * dx * dy;
+
       mean_x += x[ix] * p;
       mean_y += y[iy] * p;
     }

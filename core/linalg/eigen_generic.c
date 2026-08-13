@@ -1,6 +1,3 @@
-// TODO:
-
-// eigen_generic.c
 #include "eigen_generic.h"
 #include "../matrix.h"
 #include <stdio.h>
@@ -9,61 +6,75 @@
 // Forward declare the QR-based solver
 extern eigen_t *cmatrix_eigh(cmatrix_t *A);
 
-// FIX: later, allocate matrix and copy result from LAPACK's column‑major
-// storage
 #ifdef USE_LAPACK
 #include <lapacke.h>
 
+/*
+ * Generic (real or complex) Hermitian solver via LAPACK's zheev, called on
+ * every cmatrix_t regardless of whether its imaginary parts happen to be zero.
+ */
+/* NOTE: Unlike a real-only dsyev path, this can never silently drop a complex
+ * Hermitian matrix's imaginary part. complex_t's layout ({double re, im;}) is
+ * bit-compatible with LAPACK's lapack_complex_double (two consecutive doubles),
+ * so cmatrix_t data can be reinterpreted in place with no copy/conversion
+ * beyond what zheev itself needs (it overwrites its input array with the
+ * eigenvectors, so a copy of the input is still required to preserve the
+ * aller's A).
+ */
+
 eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) {
-  if (!A || A->nrows != A->ncols)
+  if (!A || A->nrows != A->ncols) {
     return NULL;
+  }
+
   int n = A->nrows;
-  double *mat = malloc(n * n * sizeof(double));
-  double *eigvals = malloc(n * sizeof(double));
-  if (!mat || !eigvals) {
-    free(mat);
-    free(eigvals);
-    return NULL;
-  }
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
-      mat[j * n + i] = CMAT(A, i, j).re; // assumes real symmetric
-
-  int info = LAPACKE_dsyev(LAPACK_COL_MAJOR, 'V', 'U', n, mat, n, eigvals);
-  if (info != 0) {
-    fprintf(stderr, "LAPACK dsyev failed with error %d\n", info);
-    free(mat);
-    free(eigvals);
-    return NULL;
-  }
-
   eigen_t *result = malloc(sizeof(eigen_t));
   if (!result) {
-    free(mat);
-    free(eigvals);
     return NULL;
   }
 
   result->n = n;
-  result->eigenvalues = eigvals;
-  result->eigenvectors = malloc(n * sizeof(cvector_t));
-  for (int i = 0; i < n; i++) {
-    result->eigenvectors[i].n = n;
-    result->eigenvectors[i].data = malloc(n * sizeof(complex_t));
-    for (int j = 0; j < n; j++)
-      result->eigenvectors[i].data[j] = c_real(mat[i * n + j]);
+  result->eigenvalues = malloc((size_t)n * sizeof(double));
+  result->eigenvectors = cmatrix_alloc(n, n);
+  if (!result->eigenvalues || !result->eigenvectors) {
+    free(result->eigenvalues);
+
+    if (result->eigenvectors) {
+      cmatrix_free(result->eigenvectors);
+    }
+
+    free(result);
+
+    return NULL;
   }
 
-  free(mat);
+  /* NOTE: zheev overwrites its input with the eigenvectors, so copy A into the
+   * (row-major) buffer we're about to hand it : CMAT's row-major layout
+   * matches LAPACK_ROW_MAJOR directly, no transpose needed.
+   */
+  for (int i = 0; i < n * n; i++) {
+    result->eigenvectors->data[i] = A->data[i];
+  }
+
+  int info = LAPACKE_zheev(LAPACK_ROW_MAJOR, 'V', 'U', n,
+                           (lapack_complex_double *)result->eigenvectors->data,
+                           n, result->eigenvalues);
+  if (info != 0) {
+    fprintf(stderr, "LAPACK zheev failed with error %d\n", info);
+    cmatrix_free(result->eigenvectors);
+    free(result->eigenvalues);
+    free(result);
+
+    return NULL;
+  }
 
   return result;
 }
+#else
+
+// Fallback when LAPACK is not available – use the built‑in QR eigensolver.
+eigen_t *cmatrix_eigh_lapack(cmatrix_t *A) { return cmatrix_eigh(A); }
+
 #endif
 
-eigen_t *cmatrix_eigh_generic(cmatrix_t *A) {
-#ifdef USE_LAPACK
-  return cmatrix_eigh_lapack(A);
-#else
-  return cmatrix_eigh(A); // existing QR implementation;
-#endif
-}
+eigen_t *cmatrix_eigh_generic(cmatrix_t *A) { return cmatrix_eigh_lapack(A); }

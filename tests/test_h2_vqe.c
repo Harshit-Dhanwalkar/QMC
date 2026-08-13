@@ -1,9 +1,9 @@
 /*
-Test: full H2/STO-3G VQE pipeline, end to end :
-AO integrals (molecular_integrals.c) -> RHF -> AO-to-MO transform ->
-second-quantized Jordan-Wigner Hamiltonian (second_quant.c) -> exact
-diagonalization (FCI) -> VQE (vqe.c).
-*/
+ * Test: full H2/STO-3G VQE pipeline, end to end :
+ * AO integrals (molecular_integrals.c) -> RHF -> AO-to-MO transform ->
+ * second-quantized Jordan-Wigner Hamiltonian (second_quant.c) -> exact
+ * diagonalization (FCI) -> VQE (vqe.c).
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"

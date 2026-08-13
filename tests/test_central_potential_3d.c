@@ -1,17 +1,18 @@
 /*
-Test + demonstration: central_potential_radial_solve() validated directly
-against two closed-form/independently-computed 3D quantum systems.
-
-1. 3D isotropic harmonic oscillator: exact energies E_(n,l) = \hbar * \omega*(2n
-  + l + 3/2), n=0,1,2,..., l=0,1,2,... - about as clean closed form as exists
-  for a 3D central potential, and exercises solver at several l simultaneously
-  (different centrifugal barriers).
-2. 3D finite spherical well (l=0): bound-state energies satisfy transcendental
-  condition k * \cot(k * a) = -\kappa (k=\sqrt(2m * (E+V0))/\hbar,
-  \kappa = \sqrt(-2m * E) / \hbar, E<0), found here via independent bisection
-  root-finding (NOT using central_potential_radial_solve itself) before
-  comparing to the solver's output.
-*/
+ * Test + demonstration: central_potential_radial_solve() validated directly
+ * against two closed-form/independently-computed 3D quantum systems.
+ *
+ * 1. 3D isotropic harmonic oscillator: exact energies
+ *     E_(n,l) = \hbar * \omega*(2n + l + 3/2), n=0,1,2,..., l=0,1,2,... - about
+ *   as clean closed form as exists for a 3D central potential, and exercises
+ *   solver at several l simultaneously (different centrifugal barriers).
+ * 2. 3D finite spherical well (l=0): bound-state energies satisfy
+ *   transcendental condition
+ *    k * \cot(k * a) = -\kappa (k=\sqrt(2m * (E+V0))/\hbar
+ *    \kappa = \sqrt(-2m * E) / \hbar, E<0), found here via independent
+ *   bisection root-finding (NOT using central_potential_radial_solve itself)
+ *   before comparing to the solver's output.
+ */
 
 #include "../core/matrix.h"
 #include "../core/utils.h"

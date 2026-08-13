@@ -1,20 +1,20 @@
 /*
-Test + demonstration: Turing-trivial vs Turing-universal for QM simulator
-
-1. Single-qubit gates alone: Never produce entanglement, no matter how
-   much superposition exists per-qubit. Demonstrated by checking
-   reduced-density-matrix entropy stays exactly 0 for every qubit even
-   after applying Hadamard to all of them independently. This is
-   "trivial" case - state stays a product state, cost stays linear in
-   n_qubits (n independent 2-dim problems), not exponential.
-2. One entangling gate (CNOT) is enough to leave that regime: Bell state (H +
-   CNOT) and GHZ state (H + CNOT + CNOT) checked against their exact known
-   amplitudes (1/sqrt2 each on two basis states, 0 elsewhere) and their reduced
-   single-qubit entropy is exactly 1 bit (maximally entangled), unambiguous
-   contrast with test 1.
-3. Cost is exponential by construction : state vector dimension vs n_qubits,
-   printed for n=2..14.
-*/
+ * Test + demonstration: Turing-trivial vs Turing-universal for QM simulator
+ *
+ * 1. Single-qubit gates alone: Never produce entanglement, no matter how
+ *    much superposition exists per-qubit. Demonstrated by checking
+ *    reduced-density-matrix entropy stays exactly 0 for every qubit even
+ *    after applying Hadamard to all of them independently. This is
+ *    "trivial" case - state stays a product state, cost stays linear in
+ *    n_qubits (n independent 2-dim problems), not exponential.
+ * 2. One entangling gate (CNOT) is enough to leave that regime: Bell state (H +
+ *    CNOT) and GHZ state (H + CNOT + CNOT) checked against their exact known
+ *    amplitudes (1/sqrt2 each on two basis states, 0 elsewhere) and their
+ *    reduced single-qubit entropy is exactly 1 bit (maximally entangled),
+ *    unambiguous contrast with test 1.
+ * 3. Cost is exponential by construction : state vector dimension vs n_qubits,
+ *    printed for n=2..14.
+ */
 
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -45,7 +45,9 @@ static int test_product_state_no_entanglement(void) {
   for (int q = 0; q < n_qubits; q++) {
     cmatrix_t *rho = qstate_reduced_density_single(psi, n_qubits, q);
     double S = von_neumann_entropy_2x2(rho);
+
     cmatrix_free(rho);
+
     char label[32];
     snprintf(label, sizeof label, "qubit %d entropy", q);
     fail |= check_close(S, 0.0, 1e-9, label);
@@ -73,9 +75,11 @@ static int test_bell_state(void) {
 
   cmatrix_t *rho = qstate_reduced_density_single(psi, n_qubits, 0);
   double S = von_neumann_entropy_2x2(rho);
+
   cmatrix_free(rho);
 
   fail |= check_close(S, 1.0, 1e-9, "qubit 0 entanglement entropy (bits)");
+
   cvector_free(psi);
 
   return fail;
@@ -353,6 +357,7 @@ static int test_measure_qubit_ghz_correlation(void) {
     int expected_index = (o0 << 2) | (o1 << 1) | o2;
     for (int i = 0; i < psi->n; i++) {
       double expected_re = (i == expected_index) ? 1.0 : 0.0;
+
       if (fabs(psi->data[i].re - expected_re) > 1e-9 ||
           fabs(psi->data[i].im) > 1e-9) {
         fail = 1;

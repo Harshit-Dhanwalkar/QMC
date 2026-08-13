@@ -1,21 +1,22 @@
 /*
-Test: Tight-binding lattice models (1D/2D chains, Anderson localization, SSH
-topological edge states).
-
-1. 1D chain (open + periodic): numerical diagonalization must match exact
-   analytic dispersion (Bloch's theorem / standing-wave quantization) to near
-   machine precision.
-2. 2D square lattice (open + periodic): using exact separability of 2D problem
-   into independent x/y 1D dispersions.
-3. lattice_ipr: deterministic checks on a delta-function state (IPR=1, maximally
-   localized) and a uniform superposition (IPR=1/n, maximally delocalized).
-4. Anderson localization: disorder_W=0 must reproduce clean chain exactly
-   (regression against lattice_1d_chain_analytic); average IPR over several
-   disorder realizations must be noticeably larger at strong disorder than at
-   weak disorder (qualitative Anderson-localization signature).
-5. SSH model: topological phase (t2>t1, open) must show near-zero-energy states
-   with large edge weight/IPR; trivial phase (t1>t2) must not.
-*/
+ * Test: Tight-binding lattice models (1D/2D chains, Anderson localization, SSH
+ * topological edge states).
+ *
+ * 1. 1D chain (open + periodic): numerical diagonalization must match exact
+ *    analytic dispersion (Bloch's theorem / standing-wave quantization) to near
+ *    machine precision.
+ * 2. 2D square lattice (open + periodic): using exact separability of 2D
+ *    problem into independent x/y 1D dispersions.
+ * 3. lattice_ipr: deterministic checks on a delta-function state (IPR=1,
+ *    maximally localized) and a uniform superposition (IPR=1/n, maximally
+ *    delocalized).
+ * 4. Anderson localization: disorder_W=0 must reproduce clean chain exactly
+ *    (regression against lattice_1d_chain_analytic); average IPR over several
+ *    disorder realizations must be noticeably larger at strong disorder than at
+ *    weak disorder (qualitative Anderson-localization signature).
+ * 5. SSH model: topological phase (t2>t1, open) must show near-zero-energy
+ *    states with large edge weight/IPR; trivial phase (t1>t2) must not.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -107,6 +108,7 @@ static void test_2d_square_vs_analytic(void) {
     double max_err = 0.0;
     for (int i = 0; i < N; i++) {
       double err = fabs(E_num[i] - E_analytic[i]);
+
       if (err > max_err) {
         max_err = err;
       }
@@ -114,8 +116,7 @@ static void test_2d_square_vs_analytic(void) {
 
     char label[64];
     snprintf(label, sizeof label,
-             "%s: max |E_num - E_analytic| over all %d "
-             "states",
+             "%s: max |E_num - E_analytic| over all %d states",
              bc == LATTICE_PERIODIC ? "periodic" : "open", N);
     check_close(max_err, 0.0, 1e-8, label);
 
@@ -141,7 +142,7 @@ static void test_ipr_deterministic(void) {
 
   cvector_t *uniform = cvector_alloc(n);
   for (int i = 0; i < n; i++) {
-    uniform->data[i] = c_real(1.0); /* lattice_ipr normalizes internally */
+    uniform->data[i] = c_real(1.0); // lattice_ipr normalizes internally
   }
   check_close(lattice_ipr(uniform), 1.0 / n, 1e-12,
               "uniform superposition: IPR = 1/n (maximally delocalized)");
@@ -165,6 +166,7 @@ static void test_anderson_clean_limit(void) {
   double max_err = 0.0;
   for (int i = 0; i < n_sites; i++) {
     double err = fabs(E_anderson[i] - E_clean[i]);
+
     if (err > max_err) {
       max_err = err;
     }
@@ -316,8 +318,8 @@ static void test_landau_zero_field_matches_plain_square(void) {
     for (int j = 0; j < N; j++) {
       complex_t a = CMAT(H_mag, i, j);
       complex_t b = CMAT(H_plain, i, j);
-
       double err = c_abs(c_sub(a, b));
+
       if (err > max_entry_err) {
         max_entry_err = err;
       }
@@ -359,8 +361,8 @@ static void test_landau_hermiticity(void) {
   for (int i = 0; i < N; i++) {
     for (int j = 0; j < N; j++) {
       complex_t err = c_sub(CMAT(H, i, j), c_conj(CMAT(H, j, i)));
-
       double e = c_abs(err);
+
       if (e > max_err) {
         max_err = e;
       }

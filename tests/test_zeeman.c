@@ -1,13 +1,14 @@
 /*
-Test: zeeman.c (Lande g-factor, weak-field Zeeman shift, and a
-Clebsch-Gordan cross-check of <Sz>).
-
-1. Lande g-factors reproduce known textbook values for S1/2, P1/2, P3/2,
-   D3/2, D5/2.
-2. zeeman_sz_expect_from_coupling (built from couple_states + CG probabilities)
-   must match closed-form identity <Sz>=(g_J-1)*mj, for every allowed mj at l=0..3.
-3. zeeman_energy_shift must equal g_J * mu_B * B * mj (formula check).
-*/
+ * Test: zeeman.c (Lande g-factor, weak-field Zeeman shift, and a
+ * Clebsch-Gordan cross-check of <Sz>).
+ *
+ * 1. Lande g-factors reproduce known textbook values for S1/2, P1/2, P3/2,
+ *    D3/2, D5/2.
+ * 2. zeeman_sz_expect_from_coupling (built from couple_states + CG
+ *   probabilities) must match closed-form identity <Sz>=(g_J-1) * mj, for every
+ *   allowed mj at l=0..3.
+ * 3. zeeman_energy_shift must equal g_J * \mu_B * B * mj (formula check).
+ */
 
 #include "../physics/angular.h"
 #include "../physics/zeeman.h"
@@ -49,8 +50,9 @@ static int test_sz_matches_coupling(void) {
     for (int idx = 0; idx < count; idx++) {
       int j_2 = J2_list[idx];
       double g = zeeman_lande_g_factor(l, j_2);
-      if (isnan(g))
+      if (isnan(g)) {
         continue;
+      }
 
       for (int mj_2 = -j_2; mj_2 <= j_2; mj_2 += 2) {
         double closed = (g - 1.0) * (mj_2 / 2.0);
@@ -73,7 +75,7 @@ static int test_energy_shift_formula(void) {
   double expected = g * mu_B * B * (mj_2 / 2.0);
   double got = zeeman_energy_shift(l, j_2, mj_2, B, mu_B);
 
-  return check_close(got, expected, 1e-12, "dE = g_J * mu_B * B * mj");
+  return check_close(got, expected, 1e-12, "dE = g_J * \\mu_B * B * mj");
 }
 
 int main(void) {

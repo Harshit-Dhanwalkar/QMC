@@ -1,10 +1,10 @@
 /*
-Tests for core/random.c: xoshiro256** PRNG and derived distributions.
-
-Validates: seed reproducibility, stream divergence under distinct seeds,
-uniform range/moments, a chi-square goodness-of-fit check on rng_uniform,
-and mean/variance of rng_gaussian.
-*/
+ * Tests for core/random.c: xoshiro256** PRNG and derived distributions.
+ *
+ * 1. Validates: seed reproducibility, stream divergence under distinct seeds,
+ *    uniform range/moments, a chi-square goodness-of-fit check on rng_uniform,
+ *    and mean/variance of rng_gaussian.
+ */
 
 #include "../core/random.h"
 #include <assert.h>
@@ -37,9 +37,11 @@ static void test_seed_reproducibility(void) {
     uint64_t xb = rng_next_u64(&b);
     if (xa != xb) {
       identical = 0;
+
       break;
     }
   }
+
   CHECK(identical, "identical seeds must produce identical u64 streams");
 }
 
@@ -55,6 +57,7 @@ static void test_distinct_seeds_diverge(void) {
   for (int i = 0; i < 16; i++) {
     if (rng_next_u64(&a) != rng_next_u64(&b)) {
       any_diff = 1;
+
       break;
     }
   }
@@ -190,6 +193,7 @@ static void test_gaussian_moments(void) {
 
   for (int i = 0; i < N; i++) {
     double g = rng_gaussian(&r);
+
     sum += g;
     sum2 += g * g;
   }
@@ -214,6 +218,7 @@ static void test_gaussian_scaled(void) {
 
   for (int i = 0; i < N; i++) {
     double g = rng_gaussian_scaled(&r, mu, sigma);
+
     sum += g;
     sum2 += g * g;
   }
@@ -270,13 +275,16 @@ static void test_jump_no_short_run_overlap(void) {
   int found_overlap = 0;
   for (int i = 0; i < n && !found_overlap; i++) {
     uint64_t v = rng_next_u64(&jumped);
+
     for (int j = 0; j < n; j++) {
       if (v == orig[j]) {
         found_overlap = 1;
+
         break;
       }
     }
   }
+
   CHECK(!found_overlap,
         "no 64-bit output collisions between pre- and post-jump streams "
         "over 1e5 draws each");

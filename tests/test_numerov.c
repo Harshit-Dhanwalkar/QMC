@@ -135,6 +135,7 @@ int main() {
              && fabs(sol->energy - 1.5) < 0.01 && nodes == 1 &&
              fabs(norm_sq - 1.0) < 0.01 && fabs(x2 - 0.5) < 0.02 &&
              max_err < 0.02;
+
   numerov_solution_free(sol);
   free(x);
   free(V);

@@ -1,14 +1,15 @@
 /*
-Test: dirac_1d complex-Hermitian eigensolver.
-
-1. Hermiticity check: the 2N x 2N Dirac matrix must satisfy
-   H[a][b] = conj(H[b][a]) for every entry.
-2. Physical interpretation: for free particle (V=0), eigenvalue spectrum should
-   mostly split into two branches separated by ~2mc^2 (positive-energy states
-   near/above +mc^2, negative-energy states near/below -mc^2).
-3. dirac_radial_solve validated against exact closed-form relativistic hydrogen
-   spectrum (Sommerfeld formula)
-*/
+ * Test: dirac_1d complex-Hermitian eigensolver.
+ *
+ * 1. Hermiticity check: the 2N x 2N Dirac matrix must satisfy
+ *    H[a][b] = conj(H[b][a]) for every entry.
+ * 2. Physical interpretation: for free particle (V=0), eigenvalue spectrum
+ *    should mostly split into two branches separated by ~2 * m * c^2
+ *    (positive-energy states near/above +mc^2, negative-energy states
+ * near/below -m * c^2).
+ * 3. dirac_radial_solve validated against exact closed-form relativistic
+ *    hydrogen spectrum (Sommerfeld formula)
+ */
 
 #include "../core/complex.h"
 #include "../core/constants.h"
@@ -63,14 +64,17 @@ static int test_hermiticity_of_construction(void) {
         printf(
             "  FAIL: H[%d][%d]=(%.4f,%.4f) not conj of H[%d][%d]=(%.4f,%.4f)\n",
             a, b, hab.re, hab.im, b, a, hba.re, hba.im);
+
         fail = 1;
       }
     }
   }
-  if (!fail)
+  if (!fail) {
     printf("  OK: H[a][b] = conj(H[b][a]) for all %d x %d entries\n", M, M);
+  }
 
   cmatrix_free(H);
+
   return fail;
 }
 
@@ -85,8 +89,10 @@ static int test_free_particle_branches(void) {
   }
 
   eigen_t *eig = dirac_1d(x, N, V, m, hbar, c);
+
   free(x);
   free(V);
+
   if (!eig) {
     printf("  FAIL: dirac_1d returned NULL\n");
     return 1;
@@ -166,8 +172,10 @@ static int test_dirac_hydrogen_sommerfeld(void) {
     double best_diff = 1e300;
     for (int i = 0; i < eig->n; i++) {
       double E = eig->eigenvalues[i];
+
       if (E > 0.0 && E < mc2) {
         double diff = fabs(E - E_exact);
+
         if (diff < best_diff) {
           best_diff = diff;
           best = E;

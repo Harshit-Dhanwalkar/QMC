@@ -1,25 +1,26 @@
 /*
-Test: LiH/STO-3G : first real molecule/basis using p-orbitals and a
-heteronuclear pair, plus the frozen-core reduction needed to make its 12-qubit
-second-quantized Hamiltonian's exact diagonalization tractable.
-
-1. Li basis (molint_basis_sto3g_li): normalization and p-orbital orthogonality
-  (<2px|2py>=0 etc, exact by symmetry) : first real exercise of the general GTO
-  engine on l+m+n>0 angular momentum, everything through H2/H4 only ever used s
-  functions.
-2. LiH RHF: implementation gave -7.856587 Hartree at R=3.015 bohr (~1.596
-   Angstrom, close to LiH's experimental equilibrium bond length).
-3. Frozen-core Hamiltonian construction
-  (second_quant_build_molecular_hamiltonian_frozen_core): a check that
-  n_frozen=0 reduces Exactly to the unfrozen builder's own result, then real
-  validation : freezing Li's 1s core (standard choice in the LiH VQE literature)
-  gives a 10-qubit (1024-dim) FCI ground state differing from the exact full
-  12-qubit (4096-dim) FCI by only about 0.23 mHartree, both confirming
-  correctness and that Li's 1s core really is close to chemically inert here.
-
-// WARN: VQE on this 10-qubit system is intentionally NOT exercised in this
-automated test (both slow, like H4's 8-qubit case)
-*/
+ * Test: LiH/STO-3G : first real molecule/basis using p-orbitals and a
+ * heteronuclear pair, plus the frozen-core reduction needed to make its
+ * 12-qubit second-quantized Hamiltonian's exact diagonalization tractable.
+ *
+ * 1. Li basis (molint_basis_sto3g_li): normalization and p-orbital
+ *    orthogonality (<2px|2py>=0 etc, exact by symmetry) : first real exercise
+ *    of the general GTO engine on l+m+n>0 angular momentum, everything through
+ *    H2/H4 only ever used s functions.
+ * 2. LiH RHF: implementation gave -7.856587 Hartree at R=3.015 bohr (~1.596
+ *    Angstrom, close to LiH's experimental equilibrium bond length).
+ * 3. Frozen-core Hamiltonian construction
+ *    (second_quant_build_molecular_hamiltonian_frozen_core): a check that
+ *    n_frozen=0 reduces Exactly to the unfrozen builder's own result, then real
+ *    validation : freezing Li's 1s core (standard choice in the LiH VQE
+ *    literature) gives a 10-qubit (1024-dim) FCI ground state differing from
+ *    the exact full 12-qubit (4096-dim) FCI by only about 0.23 mHartree, both
+ *    confirming correctness and that Li's 1s core really is close to chemically
+ *    inert here.
+ *
+ * // WARN: VQE on this 10-qubit system is intentionally NOT exercised in this
+ * automated test (both slow, like H4's 8-qubit case)
+ */
 
 #include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"

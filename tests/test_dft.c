@@ -1,12 +1,12 @@
 /*
-Test: closed-shell Kohn-Sham LDA DFT (Slater exchange + PZ81 correlation) for
-s-orbitals-only atoms/ions.
-
-Same grid-resolution as test_hartree_fock.c:
-finite-difference/dense-diagonalization solve on a finite radial grid, not a
-converged calculation, so tolerances are meaningful but grid-tolerant, not tight
-to several decimal places.
-*/
+ * Test: closed-shell Kohn-Sham LDA DFT (Slater exchange + PZ81 correlation) for
+ * s-orbitals-only atoms/ions.
+ *
+ * Same grid-resolution as test_hartree_fock.c:
+ * finite-difference/dense-diagonalization solve on a finite radial grid, not a
+ * converged calculation, so tolerances are meaningful but grid-tolerant, not
+ * tight to several decimal places.
+ */
 
 #include "../core/utils.h"
 #include "../core/vector.h"
@@ -64,8 +64,8 @@ static void test_xc_potential_matches_finite_difference(void) {
                   (2.0 * h);
 
     char label_x[64], label_c[64];
-    snprintf(label_x, sizeof(label_x), "V_x(%.3f) matches d(n eps_x)/dn", n);
-    snprintf(label_c, sizeof(label_c), "V_c(%.3f) matches d(n eps_c)/dn", n);
+    snprintf(label_x, sizeof(label_x), "V_x(%.3f) matches d(n * eps_x)/dn", n);
+    snprintf(label_c, sizeof(label_c), "V_c(%.3f) matches d(n * eps_c)/dn", n);
     check_close(lda_exchange_potential(n), fd_x, 1e-6, label_x);
     check_close(lda_correlation_potential_pz81(n), fd_c, 1e-6, label_c);
   }
@@ -111,12 +111,13 @@ static void test_helium_ks_lda(void) {
 
   check_true(res->converged, "He SCF converges within max_iter");
 
-  /* Ordering established in literature for this system: exact energy is most
-   * negative, HF less so, converged-basis LDA less still (LDA underbinds
+  /* NOTE: Ordering established in literature for this system: exact energy is
+   * most negative, HF less so, converged-basis LDA less still (LDA underbinds
    * relative to HF).
    * This coarse grid (N=160) will be less bound again than converged-grid LDA
    * reference, so ckeck is a wide but meaningful range rather than a tight pin
-   * (same convention as test_hartree_fock.c). */
+   * (same convention as test_hartree_fock.c).
+   */
   check_true(!check_range(res->total_energy, -2.87, -2.70,
                           "He total_energy in physically sane range"),
              "He total_energy in physically sane range");

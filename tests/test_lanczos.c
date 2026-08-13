@@ -1,17 +1,18 @@
 /*
-Test: Lanczos iteration for lowest eigenvalues of a Hermitian sparse matrix.
-
-1. Diagonal matrix sanity check: for a diagonal Hermitian matrix, k lowest
-   eigenvalues are trivially k smallest diagonal entries, and eigenvectors are
-   corresponding coordinate vectors. Deterministic, exact (to numerical
-   tolerance).
-2. Cross-check against the project's already-trusted dense Hermitian eigensolver
-   (cmatrix_eigh): build a random Hermitian sparse matrix, run both solvers,
-   compare k lowest eigenvalues and verify Ax = \lambda * x for Lanczos
-   eigenvectors directly.
-3. Eigenvector orthonormality: <v_i, v_j> = \delta_ij for returned eigenvectors.
-4. Invalid-input handling.
-*/
+ * Test: Lanczos iteration for lowest eigenvalues of a Hermitian sparse matrix.
+ *
+ * 1. Diagonal matrix sanity check: for a diagonal Hermitian matrix, k lowest
+ *    eigenvalues are trivially k smallest diagonal entries, and eigenvectors
+ *    are corresponding coordinate vectors. Deterministic, exact (to numerical
+ *    tolerance).
+ * 2. Cross-check against the project's already-trusted dense Hermitian
+ *    eigensolver (cmatrix_eigh): build a random Hermitian sparse matrix, run
+ *    both solvers, compare k lowest eigenvalues and verify Ax = \lambda * x for
+ *    Lanczos eigenvectors directly.
+ * 3. Eigenvector orthonormality: <v_i, v_j> = \delta_ij for returned
+ *    eigenvectors.
+ * 4. Invalid-input handling.
+ */
 
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"

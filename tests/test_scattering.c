@@ -1,18 +1,17 @@
 /*
-Test: scattering.c (phase_shift, born_amplitude, born_cross_section),
-partial-wave observables, LS solver, Born-series convergence.
-
-1. s-wave hard-sphere-like scattering: exact result is \delta_0 = -k * a
-   for any energy.
-2. Born approximation for a Yukawa potential: f(theta) has closed form via
-   standard Laplace transform
-   \Int_0^\inf \exp^{-\mu * r} * \sin(qr)dr = q/(\mu^2 + q^2):
-     f_Born(\theta) =  (1 / hbar_sq_2m)* g/(\mu^2 + q^2), q=2k * \sin(\theta /
-     2)
-   checks born_amplitude's numerical integration against an exact analytic
-   result.
-3. born_cross_section = |f|^2, structural check.
-*/
+ * Test: scattering.c (phase_shift, born_amplitude, born_cross_section),
+ * partial-wave observables, LS solver, Born-series convergence.
+ *
+ * 1. s-wave hard-sphere-like scattering: exact result is \delta_0 = -k * a
+ *    for any energy.
+ * 2. Born approximation for a Yukawa potential: f(theta) has closed form via
+ *    standard Laplace transform
+ *    \Int_0^\inf \exp^{-\mu * r} * \sin(qr)dr = q/(\mu^2 + q^2):
+ *      f_Born(\theta) =  (1 / hbar_sq_2m)* g/(\mu^2 + q^2), q=2k * \sin(\theta
+ * / 2) checks born_amplitude's numerical integration against an exact analytic
+ *    result.
+ * 3. born_cross_section = |f|^2, structural check.
+ */
 
 #include "../core/complex.h"
 #include "../core/constants.h"
@@ -45,10 +44,12 @@ static int test_hard_sphere_s_wave(void) {
                                2000, hbar_sq_2m);
     double delta_exact = -k * a;
 
-    while (delta - delta_exact > M_PI)
+    while (delta - delta_exact > M_PI) {
       delta -= M_PI;
-    while (delta - delta_exact < -M_PI)
+    }
+    while (delta - delta_exact < -M_PI) {
       delta += M_PI;
+    }
 
     char label[32];
     snprintf(label, sizeof label, "k=%.2f \\delta_0", k);
@@ -95,7 +96,7 @@ static int test_cross_section_structural(void) {
 
 static int test_optical_theorem(void) {
   // Weak Yukawa, several l's: \sigma_{tot} from the partial-wave sum must equal
-  // (4 * \pi / k) Im f(0), computed from fully independent formula.
+  // (4 * \pi / k) Im f(0)
   int fail = 0;
   double g = 0.3, mu = 1.0;
   double yukawa_params[2] = {g, mu};
@@ -132,7 +133,7 @@ static int test_ls_vs_numerov(void) {
   double delta_ls = phase_shift_lippmann_schwinger(
       0, k, V_barrier, barrier_params, 0.01, 20.0, 300, hbar_sq_2m);
 
-  // Both are only defined |\pi (tan-based / atan2-based)|, compare tangents.
+  // Both are only defined |\pi (\tan-based / \atan2-based)|, compare tangents.
   fail |= check_close(tan(delta_numerov), tan(delta_ls), 0.1,
                       "\\tan(\\delta_0): Numerov vs Lippmann-Schwinger");
   return fail;
@@ -163,6 +164,7 @@ static int test_born_series_convergence(void) {
              order - 1);
       fail = 1;
     }
+
     delta_prev_err = err;
   }
 
