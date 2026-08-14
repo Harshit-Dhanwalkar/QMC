@@ -288,7 +288,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_dft \
               $(BUILD_DIR)/test_h2_vqe \
               $(BUILD_DIR)/test_molecular_hf \
-              $(BUILD_DIR)/test_lih
+              $(BUILD_DIR)/test_lih \
+              $(BUILD_DIR)/test_uhf
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

@@ -196,6 +196,7 @@ make SANITIZE=0 install-lib PREFIX=/usr/local
   <li><code>test_dft.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
   <li><code>test_molecular_hf.c</code></li>
+  <li><code>test_uhf.c</code></li>
   <li><code>test_lih.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_tridiag.c</code></li>
