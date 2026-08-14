@@ -58,6 +58,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_42_h2_vqe", "Real H2 VQE: AO integrals -> Jordan-Wigner -> variational quantum eigensolver"},
     {"build/eg_43_h4_vqe", "H4 chain: general N-basis RHF, FCI, and VQE at 8 qubits"},
     {"build/eg_44_lih_vqe", "LiH: p-orbitals, frozen-core reduction, and VQE at 10 qubits"},
+    {"build/eg_45_noisy_vqe", "H2 Noisy VQE: T1/T2 decoherence and zero-noise extrapolation (ZNE)"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

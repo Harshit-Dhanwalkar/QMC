@@ -237,7 +237,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_41_dft_atoms \
               $(BUILD_DIR)/eg_42_h2_vqe \
               $(BUILD_DIR)/eg_43_h4_vqe \
-              $(BUILD_DIR)/eg_44_lih_vqe
+              $(BUILD_DIR)/eg_44_lih_vqe \
+              $(BUILD_DIR)/eg_45_noisy_vqe
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -276,6 +277,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_dmc \
               $(BUILD_DIR)/test_pimc \
               $(BUILD_DIR)/test_vqe \
+              $(BUILD_DIR)/test_vqe_noisy \
               $(BUILD_DIR)/test_mp2 \
               $(BUILD_DIR)/test_lattice \
               $(BUILD_DIR)/test_quantum_info \

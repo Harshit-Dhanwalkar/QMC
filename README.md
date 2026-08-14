@@ -71,6 +71,9 @@ sudo apt-get install liblapacke-dev libopenblas-dev libtmglib-dev
 
 # make USE_LAPACK=1 run-tests
 PATH=/usr/bin:$PATH make USE_LAPACK=1 run-tests
+
+# make USE_LAPACK=1 run-examples
+PATH=/usr/bin:$PATH make USE_LAPACK=1 run-examples
 ```
 
 This swaps in LAPACK's `dsyev`/`zheev` for both the real-symmetric and complex-Hermitian solvers for the complex case.
@@ -145,6 +148,7 @@ make SANITIZE=0 install-lib PREFIX=/usr/local
   <li><code>eg_42_h2_vqe.c</code></li>
   <li><code>eg_43_h4_vqe.c</code></li>
   <li><code>eg_44_lih_vqe.c</code></li>
+  <li><code>eg_45_vqe_nosiy.c</code></li>
 </ul>
 </details>
 
@@ -198,6 +202,7 @@ make SANITIZE=0 install-lib PREFIX=/usr/local
   <li><code>test_tridiag_eigvals.c</code></li>
   <li><code>test_vmc.c</code></li>
   <li><code>test_vqe.c</code></li>
+  <li><code>test_vqe_noisy.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
 </ul>
