@@ -128,24 +128,26 @@ jobs:
           clang-tidy core/*.c physics/*.c -- -Icore -Iphysics -Iexport
 
   valgrind-check:
-      runs-on: ubuntu-latest
-      needs: build-and-test
-      steps:
-        - uses: actions/checkout@v5
-          with:
-            submodules: recursive
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
 
-        - name: Install Dependencies & Valgrind
-          run: |
-            sudo apt-get update && sudo apt-get install -y build-essential valgrind gnuplot
+      - name: Install Dependencies & Valgrind
+        run: |
+          sudo apt-get update && sudo apt-get install -y build-essential valgrind gnuplot
 
-        - name: Run Tests under Valgrind
-          run: |
-            make clean
-            make tests SANITIZE=0
-            for t in build/test_*; do
-              valgrind --leak-check=full --error-exitcode=1 "$t" || exit 1
-            done
+      - name: Run Tests under Valgrind
+        run: |
+          make clean
+          make tests SANITIZE=0
+          for t in build/test_*; do
+             [ -x "$t" ] || continue
+             case "$t" in *.d) continue ;; esac
+             valgrind --leak-check=full --error-exitcode=1 "$t" || exit 1
+          done
 
   sanitizers:
     runs-on: ubuntu-latest

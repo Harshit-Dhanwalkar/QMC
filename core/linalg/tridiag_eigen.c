@@ -202,10 +202,13 @@ cvector_free(v_old);
 }
 */
 
+// TODO:
+/*
 // Jacobi eigenvalue algorithm for real symmetric matrices
 static double max_offdiag(const cmatrix_t *A) {
   double max = 0.0;
   int n = A->nrows;
+
   for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
       double val = fabs(CMAT(A, i, j).re);
@@ -218,6 +221,7 @@ static double max_offdiag(const cmatrix_t *A) {
 
   return max;
 }
+*/
 
 // Sum of squares of all off-diagonal elements
 static double offdiag_norm(const cmatrix_t *A) {
@@ -329,6 +333,7 @@ eigen_t *cmatrix_eigh(const cmatrix_t *A) {
 
   power_iteration(Acopy, v, &result->eigenvalues[0], 1000, 1e-10);
   result->eigenvectors[0] = *v;
+
   free(v);
 
   // TODO: For higher states: use Ritz values or Lanczos method
@@ -354,6 +359,7 @@ eigen_t *cmatrix_eigh(const cmatrix_t *A) {
             c_sub(v->data[i], c_mul(proj, result->eigenvectors[j].data[i]));
       }
     }
+
     cvector_normalize(v);
 
     power_iteration(Acopy, v, &result->eigenvalues[k], 1000, 1e-10);
