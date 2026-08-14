@@ -47,6 +47,7 @@ static eigen_t *cmatrix_eigh_complex_lapack(cmatrix_t *H) {
 
     free(result->eigenvalues);
     free(result);
+
     return NULL;
   }
 
@@ -133,6 +134,7 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
     if (idx + 1 < m2) {
       lambda = 0.5 * (lambda + eig2n->eigenvalues[idx + 1]);
     }
+
     result->eigenvalues[k] = lambda;
 
     for (int i = 0; i < n; i++) {

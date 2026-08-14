@@ -1,13 +1,14 @@
 /*
-Singular value decomposition
-
-// HACK: Currently implement a simple Jacobi SVD for real matrices
-// TODO: adapt to complex by treating real and imaginary separately
-
-Implemented a Golub-Reinsch algorithm for real and then provide a complex
-wrapper that uses the real SVD on the block matrix [[Re(A), -Im(A)], [Im(A),
-Re(A)]].
-*/
+ * Singular value decomposition
+ *
+ * HACK: Currently implement a simple Jacobi SVD for real matrices
+ * TODO: adapt to complex by treating real and imaginary separately
+ *
+ * Implemented a Golub-Reinsch algorithm for real and then provide a complex
+ * wrapper that uses the real SVD on the block matrix :
+ *  [[Re(A), -Im(A)],
+ *   [Im(A),  Re(A)]].
+ */
 
 #include "svd.h"
 #include "../../core/complex.h"
@@ -116,6 +117,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
     int j = idx[i];
     S->data[i].re = sqrt(eig->eigenvalues[j]);
     S->data[i].im = 0.0;
+
     // V column i = eigenvector j
     for (int r = 0; r < n; r++) {
       CMAT(V, r, i) = eig->eigenvectors[j].data[r];

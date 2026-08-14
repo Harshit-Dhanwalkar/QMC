@@ -10,7 +10,6 @@
  * For H = A + iB, build real symmetric 2N x 2N matrix
  *   M = [[ A, -B ],
  *        [ B,  A ]]
- *
  */
 eigen_t *cmatrix_eigh_complex(cmatrix_t *H);
 

@@ -61,6 +61,7 @@ eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
                            n, result->eigenvalues);
   if (info != 0) {
     fprintf(stderr, "LAPACK zheev failed with error %d\n", info);
+
     cmatrix_free(result->eigenvectors);
     free(result->eigenvalues);
     free(result);
@@ -72,7 +73,7 @@ eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
 }
 #else
 
-// Fallback when LAPACK is not available – use the built‑in QR eigensolver.
+// Fallback when LAPACK is not available - use the built‑in QR eigensolver.
 eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
   return cmatrix_eigh(A);
 }
