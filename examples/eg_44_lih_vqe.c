@@ -36,7 +36,7 @@ int main(void) {
   basis_function_t *h = molint_basis_sto3g_h(h_center);
   basis_function_t *basis[6] = {li[0], li[1], li[2], li[3], li[4], h};
 
-  double charge[2] = {3.0, 1.0};
+  const double charge[2] = {3.0, 1.0};
   double centers_pos[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charge, centers_pos);
 

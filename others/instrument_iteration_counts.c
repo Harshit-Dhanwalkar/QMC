@@ -15,11 +15,13 @@ static double pythag(double a, double b) {
   double absa = fabs(a), absb = fabs(b);
   if (absa > absb) {
     double r = absb / absa;
+
     return absa * sqrt(1.0 + r * r);
   } else if (absb == 0.0) {
     return 0.0;
   } else {
     double r = absa / absb;
+
     return absb * sqrt(1.0 + r * r);
   }
 }
@@ -51,6 +53,7 @@ int main(int argc, char **argv) {
 
   for (int l = 0; l < n; l++) {
     int iter = 0, m;
+
     do {
       for (m = l; m < n - 1; m++) {
         double dd = fabs(d[m]) + fabs(d[m + 1]);
@@ -77,6 +80,7 @@ int main(int argc, char **argv) {
           total_i_steps++;
           double f = s * e[i];
           double b = c * e[i];
+
           r = pythag(f, g);
           e[i + 1] = r;
 
@@ -99,6 +103,7 @@ int main(int argc, char **argv) {
         if (r == 0.0 && i >= l) {
           continue;
         }
+
         d[l] -= p;
         e[l] = g;
         e[m] = 0.0;

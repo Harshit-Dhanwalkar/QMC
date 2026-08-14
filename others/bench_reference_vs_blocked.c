@@ -38,11 +38,13 @@ static double pythag(double a, double b) {
   double absa = fabs(a), absb = fabs(b);
   if (absa > absb) {
     double r = absb / absa;
+
     return absa * sqrt(1.0 + r * r);
-  } else if (absb == 0.0)
+  } else if (absb == 0.0) {
     return 0.0;
-  else {
+  } else {
     double r = absa / absb;
+
     return absb * sqrt(1.0 + r * r);
   }
 }
@@ -70,6 +72,7 @@ static void reference_eigh(const double *diag, const double *offdiag, int n,
 
   for (int l = 0; l < n; l++) {
     int iter = 0, m;
+
     do {
       for (m = l; m < n - 1; m++) {
         double dd = fabs(d[m]) + fabs(d[m + 1]);
@@ -91,6 +94,7 @@ static void reference_eigh(const double *diag, const double *offdiag, int n,
         for (i = m - 1; i >= l; i--) {
           double f = s * e[i];
           double b = c * e[i];
+
           r = pythag(f, g);
           e[i + 1] = r;
 
@@ -111,10 +115,12 @@ static void reference_eigh(const double *diag, const double *offdiag, int n,
 
           for (int k = 0; k < n; k++) {
             double f2 = z[(i + 1) * n + k];
+
             z[(i + 1) * n + k] = s * z[i * n + k] + c * f2;
             z[i * n + k] = c * z[i * n + k] - s * f2;
           }
         }
+
         if (r == 0.0 && i >= l) {
           continue;
         }
@@ -125,6 +131,7 @@ static void reference_eigh(const double *diag, const double *offdiag, int n,
       }
     } while (m != l);
   }
+
   free(e);
 }
 
@@ -142,8 +149,12 @@ static void record_rot(int i, double s, double c) {
     if (!new_rots) {
       fprintf(stderr, "record_rot: realloc failed\n");
 
+      free(g_rots);
       exit(1);
     }
+
+    g_rots = new_rots;
+    g_cap = new_cap;
   }
 
   g_rots[g_nrots].i = i;
@@ -169,6 +180,7 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
   // Phase 1: eigenvalues only, recording rotations
   for (int l = 0; l < n; l++) {
     int iter = 0, m;
+
     do {
       for (m = l; m < n - 1; m++) {
         double dd = fabs(d[m]) + fabs(d[m + 1]);
@@ -192,6 +204,7 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
         for (i = m - 1; i >= l; i--) {
           double f = s * e[i];
           double b = c * e[i];
+
           r = pythag(f, g);
           e[i + 1] = r;
 
@@ -215,12 +228,14 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
         if (r == 0.0 && i >= l) {
           continue;
         }
+
         d[l] -= p;
         e[l] = g;
         e[m] = 0.0;
       }
     } while (m != l);
   }
+
   free(e);
 
   // Phase 2: initialize z to identity, replay rotations column-block by
@@ -240,13 +255,16 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
     for (long r = 0; r < g_nrots; r++) {
       int i = g_rots[r].i;
       double s = g_rots[r].s, c = g_rots[r].c;
+
       for (int k = k0; k < k1; k++) {
         double f2 = z[(i + 1) * n + k];
+
         z[(i + 1) * n + k] = s * z[i * n + k] + c * f2;
         z[i * n + k] = c * z[i * n + k] - s * f2;
       }
     }
   }
+
   free(g_rots);
 }
 

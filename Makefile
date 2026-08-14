@@ -172,6 +172,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/dmc.c \
                $(PHYSICS_DIR)/pimc.c \
                $(PHYSICS_DIR)/vqe.c \
+               $(PHYSICS_DIR)/vqe_noisy.c \
                $(PHYSICS_DIR)/mp2.c \
                $(PHYSICS_DIR)/lattice.c \
                $(PHYSICS_DIR)/quantum_info.c \
