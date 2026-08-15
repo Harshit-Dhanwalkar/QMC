@@ -202,5 +202,6 @@ jobs:
       - name: Run Tests with Sanitizers
         run: |
           make clean
+          export LSAN_OPTIONS="suppressions=$PWD/lsan.supp"
           make run-tests PLOT_BACKEND=GR EXTRA_CFLAGS="-O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
           # make run-tests PLOT_BACKEND=GR CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address,undefined"

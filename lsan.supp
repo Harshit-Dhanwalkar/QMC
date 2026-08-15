@@ -1,0 +1,3 @@
+# Suppress leaks from GR/GKS third-party libraries
+leak:libGKS.so
+leak:libGR.so

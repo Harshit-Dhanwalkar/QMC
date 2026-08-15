@@ -106,7 +106,6 @@ static void test_dmc_run_accuracy(void) {
          r.mean_population, r.acceptance_rate, r.n_blocks);
 
   double E_exact = -2.9037;
-  double E_vmc_jastrow = -2.878; // \aprrox value from VMC b-scan
   double E_product_orbital = helium_ground_state_energy_analytic(2.0);
 
   /* NOTE: DMC should land close to exact (much tighter than a VMC-level
@@ -121,6 +120,7 @@ static void test_dmc_run_accuracy(void) {
 
   // Skip improvments on VMC checks under Valgrind (too noisy)
   if (!RUNNING_ON_VALGRIND) {
+    double E_vmc_jastrow = -2.878; // aprrox value from VMC b-scan
     check_true(r.energy_mixed < E_vmc_jastrow,
                "DMC energy improves on VMC-with-Jastrow estimate");
     check_true(r.energy_mixed < E_product_orbital,

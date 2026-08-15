@@ -6,7 +6,7 @@ CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # AddressSanitizer is on by default.
 SANITIZE ?= 1
 ifeq ($(SANITIZE),1)
-    CFLAGS += -fsanitize=address -g
+    CFLAGS += -fsanitize=address -g -DSANITIZE_ENABLED=1
 endif
 
 CFLAGS += -MMD -MP

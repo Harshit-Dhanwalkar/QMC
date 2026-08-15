@@ -71,7 +71,7 @@ static void test_zero_noise_limit(void) {
   printf("test_zero_noise_limit:\n");
 
   int n_qubits = 3, n_layers = 2;
-  int n_params = n_qubits * n_layers;
+  // int n_params = n_qubits * n_layers;
   const double theta[6] = {0.3, -0.7, 1.1, 0.2, -0.4, 0.9};
 
   cmatrix_t *H = vqe_build_tfim(n_qubits, 1.0, 0.5);
