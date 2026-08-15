@@ -1,23 +1,19 @@
-// FIX: sanitizer
 #include "../export/gr/gr_plot.h"
-// #include <gr.h>
 #include "../third_party/gr/install/include/gr.h"
 #include <math.h>
-#include <sanitizer/lsan_interface.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-// #if __has_include(<sanitizer/lsan_interface.h>)
-// #include <sanitizer/lsan_interface.h>
-// #else
-// void __lsan_disable(void);
-// void __lsan_enable(void);
-// #endif
+#ifdef SANITIZE_ENABLED
+#include <sanitizer/lsan_interface.h>
+#define LSAN_DISABLE() __lsan_disable()
+#define LSAN_ENABLE() __lsan_enable()
+#else
+#define LSAN_DISABLE() ((void)0)
+#define LSAN_ENABLE() ((void)0)
+#endif
 
 int main() {
-  // setenv("GKS_WSTYPE", "nul", 0);
-  // GKS_WSTYPE=nul is set centrally inside gr_plot_to_file itself
-
   int N = 100;
   double x[100], y[100];
   for (int i = 0; i < N; i++) {
@@ -32,23 +28,13 @@ int main() {
   opts.width = 800;
   opts.height = 600;
 
-// #if defined(__SANITIZER_ADDRESS__) || defined(__LEAK_SANITIZER__)
-//   __lsan_disable();
-// #endif
-
-  __lsan_disable();
+  LSAN_DISABLE();
   gr_plot_to_file("gaussian", GR_FORMAT_PDF, x, y, N, &opts);
-  __lsan_enable();
-
-// #if defined(__SANITIZER_ADDRESS__) || defined(__LEAK_SANITIZER__)
-//   __lsan_enable();
-// #endif
+  LSAN_ENABLE();
 
   gr_plot_to_file("gaussian", GR_FORMAT_SVG, x, y, N, &opts);
   gr_plot_to_file("gaussian", GR_FORMAT_PNG, x, y, N, &opts);
   gr_plot_to_file("gaussian", GR_FORMAT_JPEG, x, y, N, &opts);
-
-  // gr_closegks();
 
   return 0;
 }

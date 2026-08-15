@@ -22,6 +22,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int failures = 0;
 
 static void check_close(double got, double expected, double tol,
@@ -29,10 +33,8 @@ static void check_close(double got, double expected, double tol,
   double err = fabs(got - expected);
   printf("  %s: got=%.10f expected=%.10f err=%.2e\n", label, got, expected,
          err);
-
   if (err > tol) {
     printf("  FAIL: %s\n", label);
-
     failures++;
   }
 }
@@ -67,7 +69,7 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
 
   hf->n_orbitals = 2;
   hf->N = N;
-  hf->Z = 0.0; // unused by mp2_correlation_energy
+  hf->Z = 0.0;
   hf->total_energy = 0.0;
   hf->iterations = 0;
   hf->converged = 1;
@@ -81,6 +83,7 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
   hf->orbitals = malloc(2 * sizeof(cvector_t *));
   double *o0 = make_radial(r, N, dr, 1.0, 0.8);
   double *o1 = make_radial(r, N, dr, 0.6, 1.4);
+
   hf->orbitals[0] = cvector_alloc(N);
   hf->orbitals[1] = cvector_alloc(N);
 
@@ -98,8 +101,10 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
   hf->virtual_energies[1] = 0.5;
 
   hf->virtual_orbitals = malloc(2 * sizeof(cvector_t *));
+
   double *v0 = make_radial(r, N, dr, 1.5, 1.2);
   double *v1 = make_radial(r, N, dr, 2.0, 0.6);
+
   hf->virtual_orbitals[0] = cvector_alloc(N);
   hf->virtual_orbitals[1] = cvector_alloc(N);
 
@@ -114,6 +119,7 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
   return hf;
 }
 
+// Deterministic fixture must use same grid as the reference value.
 static void test_synthetic_fixture(void) {
   printf("test_synthetic_fixture:\n");
 
@@ -135,19 +141,23 @@ static void test_synthetic_fixture(void) {
 static void test_helium_mp2_physical_sanity(void) {
   printf("test_helium_mp2_physical_sanity:\n");
 
-  int N = 160;
-  double r_min = 1e-4, r_max = 12.0;
+  int N = RUNNING_ON_VALGRIND ? 40 : 160;
+  double r_min = 1e-4;
+  double r_max = RUNNING_ON_VALGRIND ? 6.0 : 12.0;
   double *r = linspace(r_min, r_max, N);
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 200;
 
-  hf_result_t *hf = hartree_fock_atom_s_orbitals(r, N, 2.0, 1, 0.4, 1e-8, 200);
+  hf_result_t *hf =
+      hartree_fock_atom_s_orbitals(r, N, 2.0, 1, 0.4, 1e-8, max_iter);
   check_true(hf != NULL && hf->converged, "helium HF reference converges");
 
   if (hf) {
     double E_exact = -2.9037;
     double prev_mp2_magnitude = 0.0;
     const int nv_list[4] = {2, 5, 10, 20};
+    int nv_count = RUNNING_ON_VALGRIND ? 2 : 4;
 
-    for (int t = 0; t < 4; t++) {
+    for (int t = 0; t < nv_count; t++) {
       mp2_result_t res = mp2_correlation_energy(hf, r, N, nv_list[t]);
 
       printf("  n_virtual=%2d: E_MP2=%.8f  E_HF+MP2=%.6f\n", nv_list[t],
@@ -164,11 +174,6 @@ static void test_helium_mp2_physical_sanity(void) {
       check_true(fabs(res.e_mp2) >= prev_mp2_magnitude - 1e-12, label);
       prev_mp2_magnitude = fabs(res.e_mp2);
 
-      // HF+MP2 should move toward exact, not overshoot past it
-      /* NOTE: s-only restriction recovers only part of true correlation energy
-       * so this should still be a variational-ish upper-ish bound in practice,
-       * not exactly guaranteed but a ture check for this system/basis).
-       */
       snprintf(label, sizeof label,
                "n_virtual=%d: E_HF+MP2 closer to exact than E_HF alone",
                nv_list[t]);
@@ -185,8 +190,8 @@ static void test_helium_mp2_physical_sanity(void) {
 static void test_invalid_input(void) {
   printf("test_invalid_input:\n");
 
-  int N = 160;
-  double *r = linspace(1e-4, 12.0, N);
+  int N = RUNNING_ON_VALGRIND ? 40 : 160;
+  double *r = linspace(1e-4, RUNNING_ON_VALGRIND ? 6.0 : 12.0, N);
   hf_result_t *hf = build_synthetic_hf(r, N);
 
   mp2_result_t r1 = mp2_correlation_energy(NULL, r, N, 1);
@@ -198,7 +203,7 @@ static void test_invalid_input(void) {
   mp2_result_t r3 = mp2_correlation_energy(hf, r, N, 0);
   check_true(r3.e_mp2 == 0.0 && r3.n_occ == 0, "n_virtual=0 rejected");
 
-  mp2_result_t r4 = mp2_correlation_energy(hf, r, N, 100); // hf->n_virtual=2
+  mp2_result_t r4 = mp2_correlation_energy(hf, r, N, 100);
   check_true(r4.e_mp2 == 0.0 && r4.n_occ == 0,
              "n_virtual > hf->n_virtual rejected");
 

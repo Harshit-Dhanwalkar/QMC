@@ -15,10 +15,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 int main(void) {
   printf(" > Testing perturbation theory (harmonic + \\lambda x^4)\n");
 
-  int N = 501; // grid size
+  int N = RUNNING_ON_VALGRIND ? 51 : 501; // grid size
   double x_min = -6.0, x_max = 6.0;
   // TEST:
   // int N = 1501; // grid size
@@ -28,6 +32,7 @@ int main(void) {
   double *x = linspace(x_min, x_max, N);
   if (!x) {
     fprintf(stderr, "FAIL: linspace\n");
+
     return 1;
   }
 
@@ -39,6 +44,7 @@ int main(void) {
   cmatrix_t *H_0 = cmatrix_alloc(N, N);
   if (!H_0) {
     fprintf(stderr, "FAIL: cmatrix_alloc\n");
+
     free(x);
 
     return 1;
@@ -62,6 +68,7 @@ int main(void) {
   eigen_t *eig = cmatrix_eigh(H_0);
   if (!eig) {
     fprintf(stderr, "FAIL: cmatrix_eigh returned NULL\n");
+
     cmatrix_free(H_0);
     free(x);
 
@@ -109,6 +116,7 @@ int main(void) {
   for (int i = 0; i < N; i++) {
     norm_sq += c_abs2(psi0->data[i]);
   }
+
   norm_sq *= dx;
 
   if (norm_sq < 1e-30) {
@@ -132,8 +140,10 @@ int main(void) {
   double x4_expect = 0.0;
   for (int i = 0; i < N; i++) {
     double xi2 = x[i] * x[i];
+
     x4_expect += xi2 * xi2 * c_abs2(psi0->data[i]);
   }
+
   x4_expect *= dx;
   printf("    <x^4> = %.6f  (analytic: 0.75)\n", x4_expect);
 

@@ -15,6 +15,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 #define HELIUM_EXACT_NONREL -2.903724      // Pekeris (1959), Hartree
 #define HELIUM_HF -2.861680                // RHF limit, Szabo & Ostlund
 #define HELIUM_VWN_LDA_REFERENCE -2.834836 // arXiv:2202.00647, Table II
@@ -66,6 +70,7 @@ static void test_xc_potential_matches_finite_difference(void) {
     char label_x[64], label_c[64];
     snprintf(label_x, sizeof(label_x), "V_x(%.3f) matches d(n * eps_x)/dn", n);
     snprintf(label_c, sizeof(label_c), "V_c(%.3f) matches d(n * eps_c)/dn", n);
+
     check_close(lda_exchange_potential(n), fd_x, 1e-6, label_x);
     check_close(lda_correlation_potential_pz81(n), fd_c, 1e-6, label_c);
   }
@@ -92,11 +97,14 @@ static void test_xc_sign_and_limits(void) {
 static void test_helium_ks_lda(void) {
   printf("test_helium_ks_lda:\n");
 
-  int N = 160;
-  double r_min = 1e-4, r_max = 12.0;
+  int N = RUNNING_ON_VALGRIND ? 40 : 160;
+  double r_min = 1e-4;
+  double r_max = RUNNING_ON_VALGRIND ? 6.0 : 12.0;
   double *r = linspace(r_min, r_max, N);
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 200;
 
-  dft_result_t *res = dft_lda_atom_s_orbitals(r, N, 2.0, 1, 0.3, 1e-9, 200);
+  dft_result_t *res =
+      dft_lda_atom_s_orbitals(r, N, 2.0, 1, 0.3, 1e-9, max_iter);
   check_true(res != NULL, "dft_lda_atom_s_orbitals allocates for He");
   if (!res) {
     free(r);
@@ -111,24 +119,20 @@ static void test_helium_ks_lda(void) {
 
   check_true(res->converged, "He SCF converges within max_iter");
 
-  /* NOTE: Ordering established in literature for this system: exact energy is
-   * most negative, HF less so, converged-basis LDA less still (LDA underbinds
-   * relative to HF).
-   * This coarse grid (N=160) will be less bound again than converged-grid LDA
-   * reference, so ckeck is a wide but meaningful range rather than a tight pin
-   * (same convention as test_hartree_fock.c).
-   */
-  check_true(!check_range(res->total_energy, -2.87, -2.70,
+  // Range relaxed under Valgrind (coarser grid → less accurate)
+  double lo = RUNNING_ON_VALGRIND ? -2.9 : -2.87;
+  double hi = RUNNING_ON_VALGRIND ? -2.5 : -2.70;
+  check_true(!check_range(res->total_energy, lo, hi,
                           "He total_energy in physically sane range"),
              "He total_energy in physically sane range");
 
-  // Occupied orbital's own normalization must hold: \int u^2 dr = 1
   double dr = r[1] - r[0];
   double norm_sq = 0.0;
   for (int i = 0; i < N; i++) {
     double u = res->orbitals[0]->data[i].re;
     norm_sq += u * u * dr;
   }
+
   check_close(norm_sq, 1.0, 1e-6,
               "occupied orbital normalized: \\int u^2 dr = 1");
 

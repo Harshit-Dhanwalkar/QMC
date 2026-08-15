@@ -13,8 +13,8 @@
  *     true correlated ground state.
  * 2. Beryllium (Z=4, n_orbitals=2, i.e. 1s^2 2s^2): range check against
  *    well-known non-relativistic HF-limit energy for Be, ~ -14.573 Hartree
- *    (Clementi & Roetti / standard HF tables).
- * 3. Orbital normalization: integral u_k(r)^2 dr = 1 for every converged
+ *    (Reference: Clementi & Roetti / standard HF tables).
+ * 3. Orbital normalization: \int u_k(r)^2 dr = 1 for every converged
  *    orbital.
  * 4. Aufbau ordering: converged orbital (Fock) eigenvalues are ascending.
  */
@@ -34,7 +34,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define HELIUM_EXACT_NONREL -2.903724 // Pekeris (1959), Hartree
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
+#define HELIUM_EXACT_NONREL -2.903724 // Reference : Pekeris (1959), Hartree
 
 static int check_range(double got, double lo, double hi, const char *label) {
   printf("  %s: got=%.6f  expected range=[%.6f, %.6f]\n", label, got, lo, hi);
@@ -54,16 +58,20 @@ static double integral_u2(const cvector_t *u, double dr) {
 // Test 1: helium (Z=2, n_orbitals=1) bounded between exact and simple
 // variational estimate.
 static int test_helium(void) {
-  int N = 160;
-  double r_min = 1e-4, r_max = 12.0;
+  int N = RUNNING_ON_VALGRIND ? 40 : 160;
+  double r_min = 1e-4;
+  double r_max = RUNNING_ON_VALGRIND ? 6.0 : 12.0;
   double *r = linspace(r_min, r_max, N);
   double dr = r[1] - r[0];
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 200;
 
-  hf_result_t *res = hartree_fock_atom_s_orbitals(r, N, 2.0, 1, 0.4, 1e-8, 200);
+  hf_result_t *res =
+      hartree_fock_atom_s_orbitals(r, N, 2.0, 1, 0.4, 1e-8, max_iter);
 
   int fail = 0;
   if (!res) {
     printf("  hartree_fock_atom_s_orbitals returned NULL\n");
+
     free(r);
 
     return 1;
@@ -73,8 +81,9 @@ static int test_helium(void) {
   fail |= !res->converged;
 
   double e_simple_variational = helium_ground_state_energy_analytic(2.0);
-  fail |= check_range(res->total_energy, HELIUM_EXACT_NONREL - 0.01,
-                      e_simple_variational + 0.01,
+  double lo = HELIUM_EXACT_NONREL - (RUNNING_ON_VALGRIND ? 0.1 : 0.01);
+  double hi = e_simple_variational + (RUNNING_ON_VALGRIND ? 0.1 : 0.01);
+  fail |= check_range(res->total_energy, lo, hi,
                       "He total energy (variational sandwich bound)");
 
   fail |= check_range(integral_u2(res->orbitals[0], dr), 0.999, 1.001,
@@ -91,30 +100,38 @@ static int test_helium(void) {
 // Test 2: beryllium (Z=4, n_orbitals=2), sanity range around known HF-limit
 // energy (~ -14.573 Hartree).
 static int test_beryllium(void) {
-  int N = 160;
-  double r_min = 1e-4, r_max = 10.0;
+  int N = RUNNING_ON_VALGRIND ? 40 : 160;
+  double r_min = 1e-4;
+  double r_max = RUNNING_ON_VALGRIND ? 6.0 : 10.0;
   double *r = linspace(r_min, r_max, N);
   double dr = r[1] - r[0];
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 300;
 
-  hf_result_t *res = hartree_fock_atom_s_orbitals(r, N, 4.0, 2, 0.4, 1e-8, 300);
+  hf_result_t *res =
+      hartree_fock_atom_s_orbitals(r, N, 4.0, 2, 0.4, 1e-8, max_iter);
 
   int fail = 0;
   if (!res) {
     printf("  hartree_fock_atom_s_orbitals returned NULL\n");
+
     free(r);
+
     return 1;
   }
 
   printf("  converged=%d in %d iterations\n", res->converged, res->iterations);
   fail |= !res->converged;
 
+  double lo = RUNNING_ON_VALGRIND ? -16.0 : -15.2;
+  double hi = RUNNING_ON_VALGRIND ? -12.0 : -14.0;
   fail |=
-      check_range(res->total_energy, -15.2, -14.0,
+      check_range(res->total_energy, lo, hi,
                   "Be total energy (sanity range around HF limit ~-14.573)");
 
   for (int k = 0; k < 2; k++) {
     char label[32];
     snprintf(label, sizeof label, "Be orbital %d normalization", k);
+
     fail |= check_range(integral_u2(res->orbitals[k], dr), 0.999, 1.001, label);
   }
 

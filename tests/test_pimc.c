@@ -28,6 +28,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int failures = 0;
 
 static void check_close(double got, double expected, double tol,
@@ -54,7 +58,10 @@ static void test_kelbg_fixtures(void) {
   printf("test_kelbg_fixtures:\n");
 
   {
-    double r = 0.618, lambda = sqrt(0.139 / 0.5), q = 1.0; // tau=0.139
+    double r = 0.618;
+    double tau = 0.139;
+    double lambda = sqrt(tau / 0.5);
+    double q = 1.0;
     double v = kelbg_potential(r, lambda, q);
     double vc = kelbg_energy_correction(r, lambda, q);
     check_close(v, 1.5359326977018246, 1e-9, "kelbg_potential fixture 1");
@@ -62,7 +69,10 @@ static void test_kelbg_fixtures(void) {
                 "kelbg_energy_correction fixture 1");
   }
   {
-    double r = 2.885, lambda = sqrt(0.365 / 0.5), q = -3.0; // tau=0.365
+    double r = 2.885;
+    double tau = 0.365;
+    double lambda = sqrt(tau / 0.5);
+    double q = -3.0;
     double v = kelbg_potential(r, lambda, q);
     double vc = kelbg_energy_correction(r, lambda, q);
     check_close(v, -1.0398608977874575, 1e-9, "kelbg_potential fixture 2");
@@ -77,6 +87,7 @@ static void test_kelbg_limits(void) {
   // Finite at r=0: analytic limit is (q * \sqrt(\pi) / \lambda)
   double lambda = 0.2, q = -2.0;
   double v0 = kelbg_potential(1e-6, lambda, q);
+
   check_true(isfinite(v0), "V_Kelbg finite as r->0");
   check_close(
       v0, q * sqrt(M_PI) / lambda, 1e-3,
@@ -85,6 +96,7 @@ static void test_kelbg_limits(void) {
   // Reduces to bare Coulomb q/r as \lambda -> 0 (\tau -> 0)
   double r = 0.5;
   double v_small_lambda = kelbg_potential(r, 1e-3, q);
+
   check_close(v_small_lambda, q / r, 1e-2,
               "V_Kelbg -> bare Coulomb as \\lambda -> 0");
 
@@ -148,11 +160,14 @@ static void test_pimc_run_helium_accuracy(void) {
 
   double Z = 2.0;
   double beta = 8.0;
-  int P = 512;
+  int P = RUNNING_ON_VALGRIND ? 64 : 512;
+  int n_blocks = RUNNING_ON_VALGRIND ? 10 : 40;
+  int samples_per_block = RUNNING_ON_VALGRIND ? 100 : 300;
   double tau = beta / P;
   int level = 4;
 
-  pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 909090ULL);
+  pimc_result_t r =
+      pimc_run(Z, P, tau, level, 400, n_blocks, samples_per_block, 909090ULL);
 
   printf("  P=%d \\tau=%.5f \\beta=%.2f: E=%.6f +- %.6f  E_virial=%.6f +- %.6f "
          "acceptance=%.4f  n_blocks=%d\n",
@@ -161,14 +176,16 @@ static void test_pimc_run_helium_accuracy(void) {
 
   double E_exact = -2.9037;
 
-  check_true(r.n_blocks == 40, "requested number of blocks completed");
+  check_true(r.n_blocks == n_blocks, "requested number of blocks completed");
   check_true(r.acceptance_rate > 0.3,
-             "bisection acceptance stays well above near-zero pathology a "
-             "naive full-ring move shows at this P");
+             "bisection acceptance stays well above near-zero pathology");
 
-  check_close(r.energy, E_exact, 0.4,
+  // HACK: Under Valgrind, reduced statistics give large error; relax tolerance
+  // heavily.
+  double tol = RUNNING_ON_VALGRIND ? 2.0 : 0.4;
+  check_close(r.energy, E_exact, tol,
               "PIMC energy lands close to exact helium ground state");
-  check_close(r.energy_virial, E_exact, 0.4,
+  check_close(r.energy_virial, E_exact, tol,
               "PIMC virial energy lands close to exact helium ground state");
 }
 
@@ -182,11 +199,14 @@ static void test_virial_matches_thermodynamic(void) {
 
   double Z = 2.0;
   double beta = 8.0;
-  int P = 256;
+  int P = RUNNING_ON_VALGRIND ? 32 : 256;
+  int n_blocks = RUNNING_ON_VALGRIND ? 4 : 40;
+  int samples_per_block = RUNNING_ON_VALGRIND ? 50 : 300;
   double tau = beta / P;
   int level = 4;
 
-  pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 20260805ULL);
+  pimc_result_t r =
+      pimc_run(Z, P, tau, level, 400, n_blocks, samples_per_block, 20260805ULL);
 
   double diff = fabs(r.energy - r.energy_virial);
   double combined_err =
@@ -198,8 +218,7 @@ static void test_virial_matches_thermodynamic(void) {
 
   check_true(diff < 4.0 * combined_err,
              "thermodynamic and virial estimators agree within their combined "
-             "statistical error (cross-validation of the independently-derived "
-             "virial formula)");
+             "statistical error");
 }
 
 /* NOTE: The motivation for virial estimator is lower variance than
@@ -210,14 +229,17 @@ static void test_virial_lower_variance(void) {
 
   double Z = 2.0;
   double beta = 8.0;
-  int P = 256;
+  int P = RUNNING_ON_VALGRIND ? 32 : 256;
+  int n_blocks = RUNNING_ON_VALGRIND ? 4 : 40;
+  int samples_per_block = RUNNING_ON_VALGRIND ? 50 : 300;
   double tau = beta / P;
   int level = 4;
 
-  pimc_result_t r = pimc_run(Z, P, tau, level, 400, 40, 300, 777333ULL);
+  pimc_result_t r =
+      pimc_run(Z, P, tau, level, 400, n_blocks, samples_per_block, 777333ULL);
 
-  printf("  error (thermodynamic) = %.6f\n", r.error);
-  printf("  error (virial)        = %.6f\n", r.error_virial);
+  printf("  error (thermodynamic)          = %.6f\n", r.error);
+  printf("  error (virial)                 = %.6f\n", r.error_virial);
   printf("  variance ratio (thermo/virial) = %.2f\n",
          (r.error / r.error_virial) * (r.error / r.error_virial));
 
@@ -245,7 +267,7 @@ static void test_pimc_run_parallel_matches_serial_at_one_replica(void) {
   printf("test_pimc_run_parallel_matches_serial_at_one_replica:\n");
 
   double Z = 2.0;
-  int P = 64;
+  int P = RUNNING_ON_VALGRIND ? 16 : 64;
   double tau = 8.0 / P;
   int level = 3;
 
@@ -266,14 +288,16 @@ static void test_pimc_run_parallel_matches_serial_at_one_replica(void) {
 static void test_pimc_run_parallel_helium(void) {
   printf("test_pimc_run_parallel_helium:\n");
 
-  int n_replicas = 6;
+  int n_replicas = RUNNING_ON_VALGRIND ? 2 : 6;
   double Z = 2.0;
-  int P = 256;
+  int P = RUNNING_ON_VALGRIND ? 32 : 256;
+  int n_blocks = RUNNING_ON_VALGRIND ? 4 : 20;
+  int samples_per_block = RUNNING_ON_VALGRIND ? 50 : 200;
   double tau = 8.0 / P;
   int level = 4;
 
-  pimc_result_t r =
-      pimc_run_parallel(n_replicas, Z, P, tau, level, 400, 20, 200, 24601ULL);
+  pimc_result_t r = pimc_run_parallel(n_replicas, Z, P, tau, level, 400,
+                                      n_blocks, samples_per_block, 24601ULL);
 
   printf("  parallel He (n_replicas=%d): E=%.6f +- %.6f  E_virial=%.6f +- %.6f "
          " n_blocks=%d\n",
@@ -281,10 +305,12 @@ static void test_pimc_run_parallel_helium(void) {
          r.n_blocks);
 
   double E_exact = -2.9037;
-  check_close(r.energy, E_exact, 0.5,
+
+  double tol = RUNNING_ON_VALGRIND ? 2.0 : 0.5;
+  check_close(r.energy, E_exact, tol,
               "parallel PIMC energy lands close to exact helium ground state");
   check_true(r.error > 0.0, "parallel PIMC inter-replica error is nonzero");
-  check_true(r.n_blocks == 20 * n_replicas,
+  check_true(r.n_blocks == n_blocks * n_replicas,
              "n_blocks reports n_blocks_per_replica * n_replicas");
 }
 

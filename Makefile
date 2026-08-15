@@ -303,8 +303,6 @@ $(BUILD_DIR)/main: main.c config.h | directories
 demo: $(BUILD_DIR)/main
 	@$(BUILD_DIR)/main
 
-.PHONY: all clean examples tests run-examples run-tests info
-
 # Check backend
 check-backend:
 	@mkdir -p $(BUILD_DIR)
@@ -343,19 +341,19 @@ $(OUTPUT_DIR):
 $(BUILD_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -Icore -Iexport -I. -c $< -o $@
 
-# Examples
+## Examples
 $(BUILD_DIR)/eg_%: $(EXAMPLES_DIR)/eg_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
 	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
-# Tests
+## Tests
 $(BUILD_DIR)/test_%: $(TESTS_DIR)/test_%.c $(ALL_OBJS)
 	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
-# Run targets
+## Run targets
 examples: directories $(OUTPUT_DIR) $(EXAMPLES)
 tests:    directories $(TESTS)
 
-# Run a all tests
+## Run a all tests
 run-tests: tests
 	@echo "Running all tests..."
 	@passed=0; failed=0; \
@@ -375,6 +373,22 @@ run-tests: tests
 	echo "Results: $$passed passed, $$failed failed"; \
 	[ $$failed -eq 0 ]
 
+## Run a specific test
+test-%: $(BUILD_DIR)/test_%
+	@$
+
+## Run a all examples
+run-examples: examples $(OUTPUT_DIR)
+	@echo "    Running examples"
+	@for ex in $(EXAMPLES); do \
+		name=$$(basename $$ex); \
+		echo ""; \
+		echo " -> $$name ";\
+		$$ex || true; \
+	done
+	@echo ""
+	@echo "Output files in: $(OUTPUT_DIR)/"
+
 # Coverage
 LCOV_AVAIL := $(shell command -v lcov >/dev/null 2>&1 && echo yes || echo no)
 
@@ -391,21 +405,36 @@ else
 	@echo "Coverage report generated at coverage/html/index.html"
 endif
 
-# Run a specific test
-test-%: $(BUILD_DIR)/test_%
-	@$
+# Valgrind
+VALGRIND_SUPP ?= valgrind.supp
+VALGRIND_FLAGS = --leak-check=full \
+                 --error-exitcode=1 \
+                 --suppressions=$(VALGRIND_SUPP) \
+                 --errors-for-leak-kinds=definite,indirect
 
-# Run a all examples
-run-examples: examples $(OUTPUT_DIR)
-	@echo "    Running examples"
-	@for ex in $(EXAMPLES); do \
-		name=$$(basename $$ex); \
-		echo ""; \
-		echo " -> $$name ";\
-		$$ex || true; \
+# Run all tests under Valgrind (clean, rebuild without ASan, then run)
+valgrind: clean | $(OUTPUT_DIR)
+	$(MAKE) tests SANITIZE=0 EXTRA_CFLAGS="-DRUNNING_ON_VALGRIND=1"
+	@echo "Running tests under Valgrind..."
+	@for t in $(TESTS); do \
+		name=$$(basename $$t); \
+		printf "Valgrind $$name... "; \
+		if valgrind $(VALGRIND_FLAGS) $$t > /tmp/$$name.valgrind.out 2>&1; then \
+			printf "\033[32mPASS\033[0m\n"; \
+		else \
+			printf "\033[31mFAIL\033[0m\n"; \
+			cat /tmp/$$name.valgrind.out; \
+			exit 1; \
+		fi; \
 	done
-	@echo ""
-	@echo "Output files in: $(OUTPUT_DIR)/"
+
+# Run a single test under Valgrind
+valgrind-%: clean
+	$(MAKE) $(BUILD_DIR)/test_$* SANITIZE=0
+	@echo "Running $@ under Valgrind..."
+	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
+
+.PHONY: all clean examples tests run-examples run-tests info valgrind valgrind-%
 
 # Info target
 info:

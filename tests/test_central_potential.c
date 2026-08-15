@@ -1,8 +1,8 @@
 /*
  * Test: general central-potential radial solver.
  *
- * 1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum
- *   E_{n_r,l} = hbar*omega*(2 * n_r + l + 3/2).
+ * 1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum :
+ *    E_{n_r,l} = \hbar * \omega * (2 * n_r + l + 3/2).
  * 2. Hydrogen regression: hydrogen_radial_solve must reproduce
  *   hydrogen_energy_level(1) to same accuracy as before the refactor.
  */
@@ -17,9 +17,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int test_harmonic_3d(void) {
-  int N = 300;
-  double r_max = 15.0; // in units where \hbar = m = \omega = 1
+  int N = RUNNING_ON_VALGRIND ? 80 : 300;
+  double r_max =
+      RUNNING_ON_VALGRIND ? 8.0 : 15.0; // in units where \hbar = m = \omega = 1
   double r_min = 1e-3;
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);
@@ -57,12 +62,13 @@ static int test_harmonic_3d(void) {
   }
 
   eigen_free(eig);
+
   return fail;
 }
 
 static int test_hydrogen_regression(void) {
-  int N = 500;
-  double r_max = 60.0 * AU_LENGTH;
+  int N = RUNNING_ON_VALGRIND ? 100 : 500;
+  double r_max = RUNNING_ON_VALGRIND ? 20.0 * AU_LENGTH : 60.0 * AU_LENGTH;
   double r_min = 1e-8 * AU_LENGTH;
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);

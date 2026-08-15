@@ -82,6 +82,7 @@ static int test_time_independent_limit(void) {
   for (int i = 0; i < N; i++) {
     V[i] = 0.5 * omega * omega * x[i] * x[i];
   }
+
   build_tridiagonal_hamiltonian(x, V, N, dx, hbar_sq_2m, diag, offdiag);
 
   cvector_t *psi_static = cvector_alloc(N);
@@ -236,7 +237,6 @@ int main(void) {
     if (i > 0) {
       CMAT(H, i, i - 1) = c_real(-coeff);
     }
-
     if (i < N - 1) {
       CMAT(H, i, i + 1) = c_real(-coeff);
     }
@@ -306,8 +306,9 @@ int main(void) {
     }
   }
 
-  if (!norm_fail)
+  if (!norm_fail) {
     printf("   Norm preserved to 1e-10 over %d steps: PASS\n", n_steps);
+  }
 
   // Test 2: Stationary state - |\phi(t)|^2 unchanged
   printf("   Test 2: |\\phi(t)|^2 invariant for energy eigenstate...\n");

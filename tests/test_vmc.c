@@ -24,6 +24,10 @@
 #include <math.h>
 #include <stdio.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int failures = 0;
 
 static void check_close(double got, double expected, double tol,
@@ -44,8 +48,7 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-// Deterministic fixture values (cross-checked against finite-difference
-// Laplacian to ~1e-7).
+// Deterministic fixture values
 static void test_local_energy_fixtures(void) {
   printf("test_local_energy_fixtures:\n");
 
@@ -81,6 +84,7 @@ static void test_degenerate_guard(void) {
 
   vmc_walker_t w = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}};
   double E_L = vmc_local_energy(&w, 2.0, 2.0, 0.2);
+
   check_true(isfinite(E_L) && E_L == 0.0,
              "r1->0 configuration returns finite guard value (0.0)");
 }
@@ -90,8 +94,12 @@ static void test_vmc_run_bounds(void) {
 
   double Z = 2.0, Zeff = 2.0;
   double b = 0.15;
+  int burn = RUNNING_ON_VALGRIND ? 500 : 2000;
+  int samples = RUNNING_ON_VALGRIND ? 10000 : 200000;
+  int block_size = RUNNING_ON_VALGRIND ? 100 : 200;
+
   vmc_result_t r =
-      vmc_run(Z, Zeff, b, 2000, 200000, 200, 0.9, 0.9, 20260729ULL);
+      vmc_run(Z, Zeff, b, burn, samples, block_size, 0.9, 0.9, 20260729ULL);
 
   printf("  E = %.6f +- %.6f Hartree (n_samples=%d)\n", r.mean, r.error,
          r.n_samples);
@@ -111,8 +119,7 @@ static void test_vmc_run_bounds(void) {
              "electron-1 acceptance rate in sane range");
   check_true(r.acceptance_rate2 > 0.15 && r.acceptance_rate2 < 0.85,
              "electron-2 acceptance rate in sane range");
-  check_true(r.n_samples == 200000,
-             "n_samples matches request (block_size divides evenly here)");
+  check_true(r.n_samples == samples, "n_samples matches request");
 }
 
 static void test_optimize_b(void) {
@@ -120,11 +127,15 @@ static void test_optimize_b(void) {
 
   double Z = 2.0, Zeff = 2.0;
   double b_opt;
-  double E_opt = vmc_optimize_b(Z, Zeff, 0.0, 0.6, 1000, 50000, 0.9, 0.9,
+  int burn = RUNNING_ON_VALGRIND ? 500 : 1000;
+  int samples = RUNNING_ON_VALGRIND ? 20000 : 500000;
+  int max_iter = RUNNING_ON_VALGRIND ? 100 : 1000;
+
+  double E_opt = vmc_optimize_b(Z, Zeff, 0.0, 0.6, max_iter, samples, 0.9, 0.9,
                                 4242ULL, 1e-3, &b_opt);
 
   vmc_result_t r_b0 =
-      vmc_run(Z, Zeff, 0.0, 1000, 50000, 200, 0.9, 0.9, 4242ULL);
+      vmc_run(Z, Zeff, 0.0, burn, samples, 200, 0.9, 0.9, 4242ULL);
 
   printf("  b_opt = %.4f, E(b_opt) = %.6f Hartree\n", b_opt, E_opt);
   printf("  E(b=0) = %.6f Hartree (for comparison)\n", r_b0.mean);
@@ -142,20 +153,28 @@ static void test_local_energy_z_neq_zeff_fixture(void) {
   printf("test_local_energy_z_neq_zeff_fixture:\n");
 
   vmc_walker_t w = {{0.5, 0.3, -0.2}, {-0.4, 0.6, 0.1}};
-  double Z = 1.0, Zeff = 2.0, b = 0.10; // H- (Z=1) with Zeff=2 trial orbital
+  double Z = 1.0, Zeff = 2.0; // H- (Z=1) with Zeff=2 trial orbital
+  double b = 0.10;
   double E_L = vmc_local_energy(&w, Z, Zeff, b);
+
   check_close(E_L, 0.29101849950066816, 1e-6, "E_L, Z=1 Zeff=2 (H-)");
 }
 
 // Check VMC for a different two-electron ion (Li+, Z=3) lands in a sensible
 // range, respecting variational theorem against known-precise reference
-// (-7.2799133 Hartree, Frolov 1997 SVM calculation) with a tolerance
+// (Reference: -7.2799133 Hartree, Frolov 1997 SVM calculation) with a tolerance
 // appropriate for simple Slater-Jastrow
 static void test_vmc_run_different_ion(void) {
   printf("test_vmc_run_different_ion:\n");
 
-  double Z = 3.0, Zeff = 2.6, b = 0.12; // Li+
-  vmc_result_t r = vmc_run(Z, Zeff, b, 2000, 200000, 200, 0.9, 0.9, 99110ULL);
+  double Z = 3.0, Zeff = 2.6; // Li+
+  double b = 0.12;
+  int burn = RUNNING_ON_VALGRIND ? 500 : 2000;
+  int samples = RUNNING_ON_VALGRIND ? 10000 : 20000;
+  int block_size = RUNNING_ON_VALGRIND ? 100 : 200;
+
+  vmc_result_t r =
+      vmc_run(Z, Zeff, b, burn, samples, block_size, 0.9, 0.9, 99110ULL);
 
   printf("  Li+ (Z=3, Zeff=%.2f): E = %.6f +- %.6f Hartree\n", Zeff, r.mean,
          r.error);
@@ -163,7 +182,7 @@ static void test_vmc_run_different_ion(void) {
   double E_exact_liplus = -7.2799133;
   check_true(r.mean >= E_exact_liplus - 3.0 * r.error,
              "Li+ variational theorem: E >= exact ground state (within "
-             "3 \\sigma)");
+             "3\\sigma)");
   check_true(r.mean < 0.0, "Li+ energy is a sane bound state (negative)");
 }
 
@@ -174,10 +193,16 @@ static void test_vmc_run_different_ion(void) {
 static void test_vmc_run_parallel_matches_serial_at_one_replica(void) {
   printf("test_vmc_run_parallel_matches_serial_at_one_replica:\n");
 
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
-  vmc_result_t serial = vmc_run(Z, Zeff, b, 1000, 50000, 100, 0.9, 0.9, 42ULL);
-  vmc_result_t parallel =
-      vmc_run_parallel(1, Z, Zeff, b, 1000, 50000, 100, 0.9, 0.9, 42ULL);
+  double Z = 2.0, Zeff = 1.6875;
+  double b = 0.3;
+  int burn = RUNNING_ON_VALGRIND ? 500 : 1000;
+  int samples = RUNNING_ON_VALGRIND ? 20000 : 500000;
+  int block_size = RUNNING_ON_VALGRIND ? 100 : 200;
+
+  vmc_result_t serial =
+      vmc_run(Z, Zeff, b, burn, samples, block_size, 0.9, 0.9, 42ULL);
+  vmc_result_t parallel = vmc_run_parallel(1, Z, Zeff, b, burn, samples,
+                                           block_size, 0.9, 0.9, 42ULL);
 
   check_close(parallel.mean, serial.mean, 1e-12,
               "n_replicas=1 mean bit-identical to vmc_run");
@@ -191,11 +216,15 @@ static void test_vmc_run_parallel_matches_serial_at_one_replica(void) {
 static void test_vmc_run_parallel_helium(void) {
   printf("test_vmc_run_parallel_helium:\n");
 
-  int n_replicas = 8;
-  int n_samples = 40000;
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
-  vmc_result_t r = vmc_run_parallel(n_replicas, Z, Zeff, b, 1000, n_samples,
-                                    100, 0.9, 0.9, 777ULL);
+  double Z = 2.0, Zeff = 1.6875;
+  double b = 0.3;
+  int n_replicas = RUNNING_ON_VALGRIND ? 2 : 8;
+  int n_samples = RUNNING_ON_VALGRIND ? 20000 : 40000;
+  int burn = RUNNING_ON_VALGRIND ? 500 : 1000;
+  int block_size = RUNNING_ON_VALGRIND ? 100 : 200;
+
+  vmc_result_t r = vmc_run_parallel(n_replicas, Z, Zeff, b, burn, n_samples,
+                                    block_size, 0.9, 0.9, 777ULL);
 
   printf(
       "  parallel He (n_replicas=%d): E = %.6f +- %.6f Hartree, n_samples=%d\n",

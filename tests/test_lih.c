@@ -31,6 +31,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int failures = 0;
 
 static void check_close(double got, double expected, double tol,
@@ -155,26 +159,29 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
    * real-embedding solver (effectively a 2048x2048 real-symmetric QR solve for
    * this case)
    */
-  int dim = H_frozen->nrows;
-  cmatrix_t *H_copy = cmatrix_alloc(dim, dim);
-  for (int i = 0; i < dim * dim; i++) {
-    H_copy->data[i] = H_frozen->data[i];
+  if (!RUNNING_ON_VALGRIND) {
+    int dim = H_frozen->nrows;
+    cmatrix_t *H_copy = cmatrix_alloc(dim, dim);
+    for (int i = 0; i < dim * dim; i++) {
+      H_copy->data[i] = H_frozen->data[i];
+    }
+
+    eigen_t *eig = cmatrix_eigh_complex(H_copy);
+    double E_fci_frozen = eig->eigenvalues[0];
+    printf("  LiH frozen-core FCI: %.6f Hartree\n", E_fci_frozen);
+    check_close(E_fci_frozen, -7.876732, 1e-4, "LiH frozen-core FCI");
+    check_true(E_fci_frozen < hf->total_energy - 1e-6,
+               "frozen-core FCI is below RHF (captures correlation energy)");
+
+    printf("  Frozen-core error vs. Full-space FCI (-7.876960): %.6f Hartree\n",
+           fabs(E_fci_frozen - (-7.876960)));
+    check_true(fabs(E_fci_frozen - (-7.876960)) < 0.005,
+               "frozen-core error vs. Full-space FCI is small (Li's 1s core is "
+               "close to chemically inert, as expected)");
+
+    eigen_free(eig);
+    cmatrix_free(H_copy);
   }
-  eigen_t *eig = cmatrix_eigh_complex(H_copy);
-  double E_fci_frozen = eig->eigenvalues[0];
-  printf("  LiH frozen-core FCI: %.6f Hartree\n", E_fci_frozen);
-  check_close(E_fci_frozen, -7.876732, 1e-4, "LiH frozen-core FCI");
-  check_true(E_fci_frozen < hf->total_energy - 1e-6,
-             "frozen-core FCI is below RHF (captures correlation energy)");
-
-  printf("  Frozen-core error vs. Full-space FCI (-7.876960): %.6f Hartree\n",
-         fabs(E_fci_frozen - (-7.876960)));
-  check_true(fabs(E_fci_frozen - (-7.876960)) < 0.005,
-             "frozen-core error vs. Full-space FCI is small (Li's 1s core is "
-             "close to chemically inert, as expected)");
-
-  eigen_free(eig);
-  cmatrix_free(H_copy);
 #else
   printf("  (skipping exact diagonalization of the 1024x1024 frozen-core "
          "Hamiltonian : default build has no LAPACK; rebuild with USE_LAPACK=1 "

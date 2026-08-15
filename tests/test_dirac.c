@@ -6,7 +6,7 @@
  * 2. Physical interpretation: for free particle (V=0), eigenvalue spectrum
  *    should mostly split into two branches separated by ~2 * m * c^2
  *    (positive-energy states near/above +mc^2, negative-energy states
- * near/below -m * c^2).
+ *    near/below -m * c^2).
  * 3. dirac_radial_solve validated against exact closed-form relativistic
  *    hydrogen spectrum (Sommerfeld formula)
  */
@@ -20,8 +20,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int test_hermiticity_of_construction(void) {
-  int N = 20;
+  int N = RUNNING_ON_VALGRIND ? 10 : 20;
   double dx = 0.1;
   double hbar = 1.0, c = 1.0, m = 1.0;
   double coeff = hbar * c / (2.0 * dx);
@@ -59,6 +63,7 @@ static int test_hermiticity_of_construction(void) {
     for (int b = 0; b < M; b++) {
       complex_t hab = CMAT(H, a, b);
       complex_t hba = CMAT(H, b, a);
+
       double err = sqrt(pow(hab.re - hba.re, 2) + pow(hab.im + hba.im, 2));
       if (err > tol) {
         printf(
@@ -69,6 +74,7 @@ static int test_hermiticity_of_construction(void) {
       }
     }
   }
+
   if (!fail) {
     printf("  OK: H[a][b] = conj(H[b][a]) for all %d x %d entries\n", M, M);
   }
@@ -79,7 +85,7 @@ static int test_hermiticity_of_construction(void) {
 }
 
 static int test_free_particle_branches(void) {
-  int N = 40;
+  int N = RUNNING_ON_VALGRIND ? 20 : 40;
   double dx = 0.2;
   double hbar = 1.0, c = 1.0, m = 1.0;
   double *x = malloc(N * sizeof *x);
@@ -111,6 +117,7 @@ static int test_free_particle_branches(void) {
     else
       n_gap++;
   }
+
   printf("  mc^2=%.3f: %d states >= +mc^2, %d states <= -mc^2, %d in gap\n",
          mc2, n_pos, n_neg, n_gap);
 
@@ -124,10 +131,10 @@ static int test_dirac_hydrogen_sommerfeld(void) {
   int fail = 0;
   double tol_rel = 5e-6;
 
-  int N = 300;
+  int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double a0 = 4.0 * M_PI * EPSILON_0 * HBAR * HBAR /
               (M_ELECTRON * E_CHARGE * E_CHARGE); // Bohr radius
-  double r_max = 40.0 * a0;
+  double r_max = RUNNING_ON_VALGRIND ? 20.0 * a0 : 40.0 * a0;
   double r_min = 1e-4 * a0 / N;
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);

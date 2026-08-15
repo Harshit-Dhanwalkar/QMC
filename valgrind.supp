@@ -1,0 +1,19 @@
+{
+   OpenMP thread-local allocation
+   Memcheck:Leak
+   ...
+   obj:*libgomp*
+   ...
+}
+{
+   GR/GKS library leaks
+   Memcheck:Leak
+   ...
+   obj:*libGKS.so*
+}
+{
+   GR/GKS library leaks
+   Memcheck:Leak
+   ...
+   obj:*libGR.so*
+}
