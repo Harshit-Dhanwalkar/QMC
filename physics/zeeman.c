@@ -54,6 +54,7 @@ double zeeman_sz_expect_from_coupling(int l, int j_2, int mj_2) {
       int m2_2 = -j2_2 + 2 * i2; // doubled spin m: -1 (down) or +1 (up)
       double m2 = m2_2 / 2.0;
       double c_here = v->data[i1 * dim2 + i2].re;
+
       sz += c_here * c_here * m2;
     }
   }

@@ -1,10 +1,11 @@
 /*
- * Benchmark: reference (unblocked) vs column-blocked tridiagonal QL eigenvector
- * computation.
+ * Benchmark: # Algorithmic Cache Optimization
+ *            reference (unblocked) vs column-blocked tridiagonal QL eigenvector
+ *            computation.
  *
- * both implementations are mathematically identical
+ * Both implementations are mathematically identical
  *
- * The "blocked" variant tests a fix for that record every Givens rotation
+ * The "blocked" variant tests a fix for that record every givens rotation
  * during (cheap, cache-friendly) eigenvalue-only pass, then replay them against
  * eigenvector matrix one column-block at a time, so working set per pass is
  * block_size*n instead of n*n.
@@ -17,15 +18,16 @@
  *                             size (e.g. 32, 64, 128, 256)
  *
  * Suggested runs to reproduce what was measured in sandbox, and to get real
- * diagnostics locally: # Wall-clock comparison at the sizes where anomaly was
- * worst for mode in 0 64 128 256; do ./bench_reference_vs_blocked 1600 $mode;
- * done for mode in 0 64 128 256; do ./bench_reference_vs_blocked 3200 $mode;
- * done
+ * diagnostics locally:
+ * # Wall-clock comparison at the sizes where anomaly was worst
+ * for mode in 0 64 128 256; do ./bench_reference_vs_blocked 1600 $mode; done
+ * for mode in 0 64 128 256; do ./bench_reference_vs_blocked 3200 $mode; done
  *
  * # Cachegrind
  * valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked 3200
- * 0 valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked
- * 3200 128 # then: cg_annotate cachegrind.out.<pid>
+ * 0
+ * valgrind --tool=cachegrind --cache-sim=yes ./bench_reference_vs_blocked 3200
+ * 128 # then: cg_annotate cachegrind.out.<pid>
  */
 
 #include <math.h>

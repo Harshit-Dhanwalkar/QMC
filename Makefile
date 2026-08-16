@@ -343,51 +343,75 @@ $(BUILD_DIR)/%.o: %.c
 
 ## Examples
 $(BUILD_DIR)/eg_%: $(EXAMPLES_DIR)/eg_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
-	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
+        $(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
 ## Tests
 $(BUILD_DIR)/test_%: $(TESTS_DIR)/test_%.c $(ALL_OBJS)
-	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
+        $(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
 ## Run targets
-examples: directories $(OUTPUT_DIR) $(EXAMPLES)
-tests:    directories $(TESTS)
+examples:   directories $(OUTPUT_DIR) $(EXAMPLES)
+tests:      directories $(TESTS)
+benchmarks: directories $(OUTPUT_DIR) $(BENCHMARKS)
 
 ## Run a all tests
 run-tests: tests
-	@echo "Running all tests..."
-	@passed=0; failed=0; \
-	for t in $(TESTS); do \
-		name=$$(basename $$t); \
-		printf "Running $$name... "; \
-		if $$t > /tmp/$$name.out 2>&1; then \
-			printf "\033[32mPASS\033[0m\n"; \
-			passed=$$((passed+1)); \
-		else \
-			printf "\033[31mFAIL\033[0m\n"; \
-			cat /tmp/$$name.out; \
-			failed=$$((failed+1)); \
-		fi; \
-	done; \
-	echo ""; \
-	echo "Results: $$passed passed, $$failed failed"; \
-	[ $$failed -eq 0 ]
+        @echo "Running all tests..."
+        @passed=0; failed=0; \
+        for t in $(TESTS); do \
+                name=$$(basename $$t); \
+                printf "Running $$name... "; \
+                if $$t > /tmp/$$name.out 2>&1; then \
+                        printf "\033[32mPASS\033[0m\n"; \
+                        passed=$$((passed+1)); \
+                else \
+                        printf "\033[31mFAIL\033[0m\n"; \
+                        cat /tmp/$$name.out; \
+                        failed=$$((failed+1)); \
+                fi; \
+        done; \
+        echo ""; \
+        echo "Results: $$passed passed, $$failed failed"; \
+        [ $$failed -eq 0 ]
 
 ## Run a specific test
 test-%: $(BUILD_DIR)/test_%
-	@$
+        @$(BUILD_DIR)/test_$*
 
 ## Run a all examples
 run-examples: examples $(OUTPUT_DIR)
-	@echo "    Running examples"
-	@for ex in $(EXAMPLES); do \
-		name=$$(basename $$ex); \
-		echo ""; \
-		echo " -> $$name ";\
-		$$ex || true; \
-	done
-	@echo ""
-	@echo "Output files in: $(OUTPUT_DIR)/"
+        @echo "    Running examples"
+        @for ex in $(EXAMPLES); do \
+                name=$$(basename $$ex); \
+                echo ""; \
+                echo " -> $$name ";\
+                $$ex || true; \
+        done
+        @echo ""
+        @echo "Output files in: $(OUTPUT_DIR)/"
+
+# Benchmarks
+BENCH_DIR   = benchmarks
+
+BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
+              $(BUILD_DIR)/bench_eigensolver \
+              $(BUILD_DIR)/bench_vmc_convergence \
+              # TODO: add :
+              # $(BUILD_DIR)/bench_reference_vs_blocked \
+              # $(BUILD_DIR)/instrument_iteration_counts \
+
+$(BUILD_DIR)/bench_%: $(BENCH_DIR)/bench_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
+        $(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
+
+MPICC ?= mpicc
+MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && echo yes || echo no)
+
+$(BUILD_DIR)/bench_openmp_parallel: $(BENCH_DIR)/bench_openmp_parallel.c $(ALL_OBJS) | $(OUTPUT_DIR)
+ifeq ($(MPI_AVAIL),yes)
+        $(MPICC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
+else
+        $(warning $(MPICC) not found : skipping bench_openmp_parallel (install an MPI implementation, e.g. libopenmpi-dev, to build it))
+endif
 
 # Coverage
 LCOV_AVAIL := $(shell command -v lcov >/dev/null 2>&1 && echo yes || echo no)
@@ -396,7 +420,7 @@ coverage: CFLAGS += -fprofile-arcs -ftest-coverage
 coverage: LDFLAGS += -lgcov
 coverage: clean run-tests
 ifeq ($(LCOV_AVAIL),no)
-	$(error "lcov is not installed. Install lcov (e.g., 'sudo apt install lcov') to generate coverage reports.")
+        $(error "lcov is not installed. Install lcov (e.g., 'sudo apt install lcov') to generate coverage reports.")
 else
 	@mkdir -p coverage
 	lcov --capture --directory . --output-file coverage/coverage.info --ignore-errors gcov,gcov
@@ -414,25 +438,25 @@ VALGRIND_FLAGS = --leak-check=full \
 
 # Run all tests under Valgrind (clean, rebuild without ASan, then run)
 valgrind: clean | $(OUTPUT_DIR)
-	$(MAKE) tests SANITIZE=0 EXTRA_CFLAGS="-DRUNNING_ON_VALGRIND=1"
-	@echo "Running tests under Valgrind..."
-	@for t in $(TESTS); do \
-		name=$$(basename $$t); \
-		printf "Valgrind $$name... "; \
-		if valgrind $(VALGRIND_FLAGS) $$t > /tmp/$$name.valgrind.out 2>&1; then \
-			printf "\033[32mPASS\033[0m\n"; \
-		else \
-			printf "\033[31mFAIL\033[0m\n"; \
-			cat /tmp/$$name.valgrind.out; \
-			exit 1; \
-		fi; \
-	done
+        $(MAKE) tests SANITIZE=0 EXTRA_CFLAGS="-DRUNNING_ON_VALGRIND=1"
+        @echo "Running tests under Valgrind..."
+        @for t in $(TESTS); do \
+                name=$$(basename $$t); \
+                printf "Valgrind $$name... "; \
+                if valgrind $(VALGRIND_FLAGS) $$t > /tmp/$$name.valgrind.out 2>&1; then \
+                        printf "\033[32mPASS\033[0m\n"; \
+                else \
+                        printf "\033[31mFAIL\033[0m\n"; \
+                        cat /tmp/$$name.valgrind.out; \
+                        exit 1; \
+                fi; \
+        done
 
 # Run a single test under Valgrind
 valgrind-%: clean
-	$(MAKE) $(BUILD_DIR)/test_$* SANITIZE=0
-	@echo "Running $@ under Valgrind..."
-	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
+        $(MAKE) $(BUILD_DIR)/test_$* SANITIZE=0
+        @echo "Running $@ under Valgrind..."
+        valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
 .PHONY: all clean examples tests run-examples run-tests info valgrind valgrind-%
 
