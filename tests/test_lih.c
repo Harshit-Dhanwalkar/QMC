@@ -7,16 +7,14 @@
  *    orthogonality (<2px|2py>=0 etc, exact by symmetry) : first real exercise
  *    of the general GTO engine on l+m+n>0 angular momentum, everything through
  *    H2/H4 only ever used s functions.
- * 2. LiH RHF: implementation gave -7.856587 Hartree at R=3.015 bohr (~1.596
- *    Angstrom, close to LiH's experimental equilibrium bond length).
+ * 2. LiH RHF: -7.862009272 Hartree at R=3.015 bohr (~1.596 Angstrom, close to
+ *    LiH's experimental equilibrium bond length)
  * 3. Frozen-core Hamiltonian construction
  *    (second_quant_build_molecular_hamiltonian_frozen_core): a check that
  *    n_frozen=0 reduces Exactly to the unfrozen builder's own result, then real
  *    validation : freezing Li's 1s core (standard choice in the LiH VQE
- *    literature) gives a 10-qubit (1024-dim) FCI ground state differing from
- *    the exact full 12-qubit (4096-dim) FCI by only about 0.23 mHartree, both
- *    confirming correctness and that Li's 1s core really is close to chemically
- *    inert here.
+ *    literature) gives a 10-qubit (1024-dim) FCI ground state (-7.882167498
+ *    Hartree.
  *
  * // WARN: VQE on this 10-qubit system is intentionally NOT exercised in this
  * automated test (both slow, like H4's 8-qubit case)
@@ -116,7 +114,7 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
   printf("  LiH RHF: %.6f Hartree (iters=%d)\n", hf->total_energy,
          hf->iterations);
   check_true(hf->converged, "LiH RHF converges");
-  check_close(hf->total_energy, -7.856587, 1e-4,
+  check_close(hf->total_energy, -7.862009272, 1e-6,
               "LiH RHF matches cross-validation");
 
   cmatrix_t *Hcore = molecular_core_hamiltonian(basis, 6, mol);
@@ -169,13 +167,14 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
     eigen_t *eig = cmatrix_eigh_complex(H_copy);
     double E_fci_frozen = eig->eigenvalues[0];
     printf("  LiH frozen-core FCI: %.6f Hartree\n", E_fci_frozen);
-    check_close(E_fci_frozen, -7.876732, 1e-4, "LiH frozen-core FCI");
+    check_close(E_fci_frozen, -7.882167498, 1e-6, "LiH frozen-core FCI");
     check_true(E_fci_frozen < hf->total_energy - 1e-6,
                "frozen-core FCI is below RHF (captures correlation energy)");
 
-    printf("  Frozen-core error vs. Full-space FCI (-7.876960): %.6f Hartree\n",
-           fabs(E_fci_frozen - (-7.876960)));
-    check_true(fabs(E_fci_frozen - (-7.876960)) < 0.005,
+    printf(
+        "  Frozen-core error vs. Full-space FCI (-7.882394958): %.6f Hartree\n",
+        fabs(E_fci_frozen - (-7.882394958)));
+    check_true(fabs(E_fci_frozen - (-7.882394958)) < 0.001,
                "frozen-core error vs. Full-space FCI is small (Li's 1s core is "
                "close to chemically inert, as expected)");
 

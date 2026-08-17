@@ -39,20 +39,21 @@ void molecular_hf_result_free(molecular_hf_result_t *res);
 
 /*
  * General N-basis-function open-shell Unrestricted Hartree-Fock (UHF):
- * separate (\alpha / \beta) density matrices and MO coefficients, additive
- * extension of molecular_rhf. Unlocks radicals, open-shell cations/anions, and
- * triplet (or higher-multiplicity) states that RHF's paired-electron assumption
- * cannot represent.
+ * separate alpha/beta density matrices and MO coefficients, additive extension
+ * of molecular_rhf. Unlocks radicals, open-shell cations/anions, and triplet
+ * (or higher-multiplicity) states that RHF's paired-electron assumption cannot
+ * represent.
  *
  * Fock matrices (Refrence: UHF equations, Szabo & Ostlund Ch. 3.8):
  *   F^a_ij = Hcore_ij + J[D^a+D^b]_ij - K[D^a]_ij
  *   F^b_ij = Hcore_ij + J[D^a+D^b]_ij - K[D^b]_ij
+ *
  * Where
  *  D^s_ij = sum over occupied spin-s MOs of C^s_ik C^s_jk (no factor of 2 -
- * single-particle density per spin channel, unlike RHF's paired D). Both spin
- * channels are diagonalized against the same Lowdin-orthogonalized basis
- * (shared S^{-1/2}), each self-consistently, sharing only Coulomb (J) term
- * built from the total density.
+ * single-particle density per spin channel, unlike RHF's paired D).
+ * Both spin channels are diagonalized against the same Lowdin-orthogonalized
+ * basis (shared S^{-1/2}), each self-consistently, sharing only Coulomb (J)
+ * term built from the total density.
  */
 typedef struct {
   int n_basis;
@@ -97,5 +98,22 @@ void molecular_uhf_result_free(molecular_uhf_result_t *res);
 void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
                         const cmatrix_t *C, int n_basis, double *h_mo,
                         double *eri_mo);
+
+/*
+ * Analytic RHF nuclear gradient / forces (Reference Pulay 1969).
+ * atom_of_basis[i] gives the index into mol->center[]/mol->charge[] that
+ * basis[i] is centered on (a basis function not tied to any atom, e.g. a
+ * floating orbital, may pass -1 to exclude it from AO-center chain-rule terms;
+ * every basis set shipped in this project is atom-centered so this is always
+ * 0..n_atoms-1 in practice). scf must be a converged molecular_rhf result for
+ * the same basis/mol (uses scf->C, scf->orbital_energies, scf->n_electrons).
+ *
+ * Returns a newly allocated flat n_atoms*3 array (grad[3*A+d] = dE/dR_A[d],
+ * d=0,1,2 for x,y,z), caller frees with free(). Returns NULL on invalid
+ * input, an unconverged scf result, or allocation failure.
+ */
+double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
+                               const molecule_t *mol, const int *atom_of_basis,
+                               const molecular_hf_result_t *scf);
 
 #endif

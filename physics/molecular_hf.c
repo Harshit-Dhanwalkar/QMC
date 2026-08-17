@@ -47,6 +47,7 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
       CMAT(Shalf, i, j) = c_real(sum);
     }
   }
+
   eigen_free(eig_S);
 
   double *D = calloc((size_t)n * n, sizeof(double));
@@ -89,9 +90,11 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
     for (int i = 0; i < n; i++) {
       for (int k = 0; k < n; k++) {
         double v = 0.0;
+
         for (int p = 0; p < n; p++) {
           v += CMAT(Shalf, i, p).re * CMAT(eig_F->eigenvectors, p, k).re;
         }
+
         C_arr[i * n + k] = v;
       }
     }
@@ -132,6 +135,7 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
         E_elec += 0.5 * D_new[i * n + j] * (CMAT(Hcore, i, j).re + v);
       }
     }
+
     cmatrix_free(F_new);
 
     memcpy(D, D_new, (size_t)n * n * sizeof(double));
@@ -140,8 +144,10 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
     if (iter > 0 && fabs(E_elec - E_elec_old) < tol) {
       converged = 1;
       iter++;
+
       break;
     }
+
     E_elec_old = E_elec;
   }
 
@@ -223,6 +229,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
       CMAT(Shalf, i, j) = c_real(sum);
     }
   }
+
   eigen_free(eig_S);
 
   double *Da = calloc((size_t)n * n, sizeof(double));
@@ -241,6 +248,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   for (; iter < max_iter; iter++) {
     // Coulomb term shared by both spins, built from the total density
     double *Dtot = malloc((size_t)n * n * sizeof(double));
+
     for (int i = 0; i < n * n; i++) {
       Dtot[i] = Da[i] + Db[i];
     }
@@ -361,6 +369,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
     if (iter > 0 && fabs(E_elec - E_elec_old) < tol) {
       converged = 1;
       iter++;
+
       break;
     }
 
@@ -380,6 +389,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
           ov += Ca_arr[p * n + i] * CMAT(S, p, q).re * Cb_arr[q * n + j];
         }
       }
+
       overlap_sum += ov * ov;
     }
   }
@@ -493,4 +503,219 @@ void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
       }
     }
   }
+}
+
+/*
+ * NOTE: Analytic RHF nuclear gradient (Reference :Pulay 1969 / Szabo & Ostlund
+ * eq. 3.184; Helgaker, Jorgensen & Olsen ch. 10).
+ *
+ *   dE/dX_A = dE_nuc / dX_A
+ *           + \sum_{uv} P_uv dH_uv / dX_A
+ *           + (1/2) * \sum_{uvls} \Gamma_{uvls} d(uv|ls) / dX_A
+ *           - \sum_{uv} W_{uv} dS_{uv} / dX_A
+ *
+ * Where
+ *  \Gamma_{uvls} = P_{uv} * P_{ls} - 0.5 * P_{ul} * P_{vs} is RHF two-particle
+ *      density
+ *  P is the one-electron density matrix
+ *  W_{uv} = 2 * \sum_{occ} eps_i C_{ui} C_{vi} is the energy-weighted density
+ *      matrix (Pulay trick stationarity condition makes the implicit dP/dX
+ *      contributions vanish against this term, neither P nor W nor C need to be
+ *      re-differentiated wrt nuclear position).
+ *
+ * NOTE: dH_uv/dX_A (core Hamiltonian = kinetic + nuclear attraction) picks up a
+ * contribution from every relevant piece: if AO u is centered on atom A, its
+ * own-center kinetic/nuclear-attraction derivative (summed over every atom's
+ * nuclear charge, since AOs interact with all nuclei); likewise for v; and
+ * separately, for every atom's own nuclear-attraction operator, a
+ * "Hellmann-Feynman" contribution from differentiating wrt THAT atom's own
+ * charge position (gto_nuclear_attraction_grad_C), present regardless of which
+ * atoms u,v happen to be centered on.
+ */
+double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
+                               const molecule_t *mol, const int *atom_of_basis,
+                               const molecular_hf_result_t *scf) {
+  if (!basis || n_basis <= 0 || !mol || !atom_of_basis || !scf || !scf->C ||
+      !scf->orbital_energies || !scf->converged) {
+    return NULL;
+  }
+
+  int n = n_basis;
+  int n_occ = scf->n_electrons / 2;
+  int n_atoms = mol->n_atoms;
+
+  double *grad = calloc((size_t)n_atoms * 3, sizeof(double));
+  if (!grad) {
+    return NULL;
+  }
+
+  /* One-electron density P_{uv} = 2 \sum_occ C_{ui} C_{vi}, and energy-weighted
+   * density W_{uv} = 2 * \sum_{occ} eps_i C_ui C_vi.
+   * Real orbitals throughout (molecular_rhf always produces real C/eps), so
+   * only .re is used. */
+  double *P = malloc((size_t)n * n * sizeof(double));
+  double *W = malloc((size_t)n * n * sizeof(double));
+  if (!P || !W) {
+    free(P);
+    free(W);
+    free(grad);
+
+    return NULL;
+  }
+
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      double p_uv = 0.0, w_uv = 0.0;
+
+      for (int i = 0; i < n_occ; i++) {
+        double cu = CMAT(scf->C, u, i).re;
+        double cv = CMAT(scf->C, v, i).re;
+
+        p_uv += cu * cv;
+        w_uv += scf->orbital_energies[i] * cu * cv;
+      }
+
+      P[u * n + v] = 2.0 * p_uv;
+      W[u * n + v] = 2.0 * w_uv;
+    }
+  }
+
+  // Nuclear-nuclear repulsion: closed form
+  for (int A = 0; A < n_atoms; A++) {
+    for (int B = 0; B < n_atoms; B++) {
+      if (B == A) {
+        continue;
+      }
+
+      const double Rvec[3] = {mol->center[A][0] - mol->center[B][0],
+                              mol->center[A][1] - mol->center[B][1],
+                              mol->center[A][2] - mol->center[B][2]};
+      double dist2 = Rvec[0] * Rvec[0] + Rvec[1] * Rvec[1] + Rvec[2] * Rvec[2];
+      double dist3 = dist2 * sqrt(dist2);
+      double pref = -mol->charge[A] * mol->charge[B] / dist3;
+
+      for (int d = 0; d < 3; d++) {
+        grad[3 * A + d] += pref * Rvec[d];
+      }
+    }
+  }
+
+  // One-electron (kinetic + nuclear-attraction) and overlap contributions
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      double p_uv = P[u * n + v];
+      double w_uv = W[u * n + v];
+      if (p_uv == 0.0 && w_uv == 0.0) {
+        continue;
+      }
+
+      int atom_u = atom_of_basis[u];
+      int atom_v = atom_of_basis[v];
+
+      double gT[3], gS[3];
+      if (atom_u >= 0) {
+        gto_kinetic_grad_a(basis[u], basis[v], gT);
+        gto_overlap_grad_a(basis[u], basis[v], gS);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * atom_u + d] += p_uv * gT[d];
+          grad[3 * atom_u + d] -= w_uv * gS[d];
+        }
+
+        for (int A = 0; A < n_atoms; A++) {
+          double gV[3];
+          gto_nuclear_attraction_grad_a(basis[u], basis[v], mol->center[A], gV);
+
+          for (int d = 0; d < 3; d++) {
+            grad[3 * atom_u + d] += p_uv * (-mol->charge[A]) * gV[d];
+          }
+        }
+      }
+
+      if (atom_v >= 0) {
+        gto_kinetic_grad_a(basis[v], basis[u], gT);
+        gto_overlap_grad_a(basis[v], basis[u], gS);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * atom_v + d] += p_uv * gT[d];
+          grad[3 * atom_v + d] -= w_uv * gS[d];
+        }
+
+        for (int A = 0; A < n_atoms; A++) {
+          double gV[3];
+          gto_nuclear_attraction_grad_a(basis[v], basis[u], mol->center[A], gV);
+
+          for (int d = 0; d < 3; d++) {
+            grad[3 * atom_v + d] += p_uv * (-mol->charge[A]) * gV[d];
+          }
+        }
+      }
+
+      // Hellmann-Feynman term: every atom's own nuclear-attraction operator
+      // contributes here regardless of where u,v are centered
+      for (int A = 0; A < n_atoms; A++) {
+        double gC[3];
+        gto_nuclear_attraction_grad_C(basis[u], basis[v], mol->center[A], gC);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * A + d] += p_uv * (-mol->charge[A]) * gC[d];
+        }
+      }
+    }
+  }
+
+  // Two-electron (ERI) contribution: 1/2 * \Gamma_{uvls} * d(uv|ls) / dX_A,
+  // \Gamma_{uvls} = P_{uv} * P_{ls} - 1/2 * P_{ul} * P_{vs} (RHF two-particle
+  // density)
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      for (int l = 0; l < n; l++) {
+        for (int s = 0; s < n; s++) {
+          double gamma = 0.5 * (P[u * n + v] * P[l * n + s] -
+                                0.5 * P[u * n + l] * P[v * n + s]);
+          if (gamma == 0.0) {
+            continue;
+          }
+
+          const int atoms4[4] = {atom_of_basis[u], atom_of_basis[v],
+                                 atom_of_basis[l], atom_of_basis[s]};
+          basis_function_t *bfs4[4] = {basis[u], basis[v], basis[l], basis[s]};
+
+          for (int slot = 0; slot < 4; slot++) {
+            int A = atoms4[slot];
+            if (A < 0) {
+              continue;
+            }
+
+            double gE[3];
+            /* NOTE: Reorder so `slot` becomes the bra-first argument,
+             * preserving bra-pair/ket-pair structure. */
+            switch (slot) {
+            case 0:
+              gto_eri_grad_a(bfs4[0], bfs4[1], bfs4[2], bfs4[3], gE);
+              break;
+            case 1:
+              gto_eri_grad_a(bfs4[1], bfs4[0], bfs4[2], bfs4[3], gE);
+              break;
+            case 2:
+              gto_eri_grad_a(bfs4[2], bfs4[3], bfs4[0], bfs4[1], gE);
+              break;
+            default:
+              gto_eri_grad_a(bfs4[3], bfs4[2], bfs4[0], bfs4[1], gE);
+              break;
+            }
+
+            for (int d = 0; d < 3; d++) {
+              grad[3 * A + d] += gamma * gE[d];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  free(P);
+  free(W);
+
+  return grad;
 }

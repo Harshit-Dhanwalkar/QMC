@@ -28,13 +28,31 @@ static double boys_series(int n, double x, int nterms) {
   return exp(-x) * s;
 }
 
+/* FIX: boys_series's claim of large-x stability (via the \exp(-x) prefactor)
+ * doesn't hold in practice. For x above the threshold below, use the
+ * numerically stable route instead: F_0 has an exact closed form via the error
+ * function, and UPWARD recursion in n from that seed is well known to be the
+ * numerically stable direction for large x (the opposite of small x, where
+ * upward recursion catastrophically amplifies rounding error and
+ * downward-from-series must be used instead. */
 void boys_function_array(int nmax, double x, double *F) {
   if (nmax < 0) {
     return;
   }
 
-  F[nmax] = boys_series(nmax, x, 300);
   double ex = exp(-x);
+
+  if (x > 30.0) {
+    F[0] = 0.5 * sqrt(M_PI / x) * erf(sqrt(x));
+
+    for (int n = 0; n < nmax; n++) {
+      F[n + 1] = ((2.0 * n + 1.0) * F[n] - ex) / (2.0 * x);
+    }
+
+    return;
+  }
+
+  F[nmax] = boys_series(nmax, x, 300);
 
   for (int n = nmax; n > 0; n--) {
     F[n - 1] = (2.0 * x * F[n] + ex) / (2 * n - 1);
@@ -377,6 +395,229 @@ double gto_eri(const basis_function_t *A, const basis_function_t *B,
   }
 
   return s;
+}
+
+/* ---------------------------------------------------------------------
+ * Analytic derivative (gradient) integrals, via the McMurchie-Davidson
+ * "increment/decrement" identity (Reference: Helgaker, Jorgensen & Olsen
+ * eq. 9.3.8): for a primitive Cartesian Gaussian G_i(x) = (x - A_x)^i
+ * \exp(-\alpha(x - A_x)^2), d/dA_x G_i = 2 * \alpha * G_{i+1} - i * G_{i-1}
+ * applied per-Cartesian-direction independently.
+ * ------------------------------------------------------------------- */
+
+static int shift_basis_function_alloc(const basis_function_t *bf, int dim,
+                                      int delta, int use_alpha_scale,
+                                      basis_function_t *out) {
+  int l = bf->l, m = bf->m, n = bf->n;
+  if (dim == 0) {
+    l += delta;
+  } else if (dim == 1) {
+    m += delta;
+  } else {
+    n += delta;
+  }
+
+  if (l < 0 || m < 0 || n < 0) {
+    return 0;
+  }
+
+  double *coeff_buf = malloc((size_t)bf->n_primitives * sizeof(double));
+  if (!coeff_buf) {
+    return 0;
+  }
+
+  for (int i = 0; i < bf->n_primitives; i++) {
+    coeff_buf[i] =
+        bf->coefficients[i] * (use_alpha_scale ? 2.0 * bf->exponents[i] : 1.0);
+  }
+
+  out->l = l;
+  out->m = m;
+  out->n = n;
+  out->center[0] = bf->center[0];
+  out->center[1] = bf->center[1];
+  out->center[2] = bf->center[2];
+  out->n_primitives = bf->n_primitives;
+  out->exponents = bf->exponents;
+  out->coefficients = coeff_buf;
+
+  return 1;
+}
+
+// Component of `a` along `dim` (0=x,1=y,2=z)
+static int angmom_component(const basis_function_t *bf, int dim) {
+  return (dim == 0) ? bf->l : (dim == 1) ? bf->m : bf->n;
+}
+
+void gto_overlap_grad_a(const basis_function_t *a, const basis_function_t *b,
+                        double grad[3]) {
+  basis_function_t shifted;
+
+  for (int dim = 0; dim < 3; dim++) {
+    double plus = 0.0, minus = 0.0;
+
+    if (shift_basis_function_alloc(a, dim, +1, 1, &shifted)) {
+      plus = gto_overlap(&shifted, b);
+
+      free(shifted.coefficients);
+    }
+
+    int comp = angmom_component(a, dim);
+    if (comp > 0 && shift_basis_function_alloc(a, dim, -1, 0, &shifted)) {
+      minus = comp * gto_overlap(&shifted, b);
+
+      free(shifted.coefficients);
+    }
+
+    grad[dim] = plus - minus;
+  }
+}
+
+void gto_kinetic_grad_a(const basis_function_t *a, const basis_function_t *b,
+                        double grad[3]) {
+  basis_function_t shifted;
+
+  for (int dim = 0; dim < 3; dim++) {
+    double plus = 0.0, minus = 0.0;
+
+    if (shift_basis_function_alloc(a, dim, +1, 1, &shifted)) {
+      plus = gto_kinetic(&shifted, b);
+
+      free(shifted.coefficients);
+    }
+
+    int comp = angmom_component(a, dim);
+    if (comp > 0 && shift_basis_function_alloc(a, dim, -1, 0, &shifted)) {
+      minus = comp * gto_kinetic(&shifted, b);
+
+      free(shifted.coefficients);
+    }
+
+    grad[dim] = plus - minus;
+  }
+}
+
+void gto_nuclear_attraction_grad_a(const basis_function_t *a,
+                                   const basis_function_t *b,
+                                   const double center[3], double grad[3]) {
+  basis_function_t shifted;
+
+  for (int dim = 0; dim < 3; dim++) {
+    double plus = 0.0, minus = 0.0;
+
+    if (shift_basis_function_alloc(a, dim, +1, 1, &shifted)) {
+      plus = gto_nuclear_attraction(&shifted, b, center);
+
+      free(shifted.coefficients);
+    }
+
+    int comp = angmom_component(a, dim);
+    if (comp > 0 && shift_basis_function_alloc(a, dim, -1, 0, &shifted)) {
+      minus = comp * gto_nuclear_attraction(&shifted, b, center);
+
+      free(shifted.coefficients);
+    }
+
+    grad[dim] = plus - minus;
+  }
+}
+
+/* Derivative wrt the point-charge center C itself (Hellmann-Feynman term):
+ * This can't be expressed via a's/b's own angular-momentum shift since C is a
+ * separate parameter of the integral, not a basis-function center. Uses the
+ * identity that the integral depends on C only through PC = P-C (P =
+ * Gaussian-product center), so d/dC <a|1/|r-C||b> = -d/dP <a|1/|r-C||b> and by
+ * construction of the Hermite-Coulomb R-tensor recursion, d/dP_x R_{tuv} =
+ * R_{t+1,u,v} (analogously for y,z).
+ */
+void gto_nuclear_attraction_grad_C(const basis_function_t *a,
+                                   const basis_function_t *b,
+                                   const double center[3], double grad[3]) {
+  grad[0] = grad[1] = grad[2] = 0.0;
+
+  for (int i = 0; i < a->n_primitives; i++) {
+    double alpha = a->exponents[i];
+
+    for (int j = 0; j < b->n_primitives; j++) {
+      double beta = b->exponents[j];
+      double p = alpha + beta;
+      const double P[3] = {(alpha * a->center[0] + beta * b->center[0]) / p,
+                           (alpha * a->center[1] + beta * b->center[1]) / p,
+                           (alpha * a->center[2] + beta * b->center[2]) / p};
+      const double PC[3] = {P[0] - center[0], P[1] - center[1],
+                            P[2] - center[2]};
+      double RPC2 = PC[0] * PC[0] + PC[1] * PC[1] + PC[2] * PC[2];
+
+      int Lmax = a->l + b->l + a->m + b->m + a->n + b->n + 1;
+      double *Fvals = malloc((size_t)(Lmax + 1) * sizeof(double));
+      if (!Fvals) {
+        continue;
+      }
+
+      boys_function_array(Lmax, p * RPC2, Fvals);
+
+      double coeff_ij = a->coefficients[i] * b->coefficients[j];
+      double pref = 2.0 * M_PI / p;
+
+      for (int t = 0; t <= a->l + b->l; t++) {
+        double Ex =
+            md_E(a->l, b->l, t, a->center[0] - b->center[0], alpha, beta);
+        if (Ex == 0.0) {
+          continue;
+        }
+
+        for (int u = 0; u <= a->m + b->m; u++) {
+          double Ey =
+              md_E(a->m, b->m, u, a->center[1] - b->center[1], alpha, beta);
+          if (Ey == 0.0) {
+            continue;
+          }
+
+          for (int v = 0; v <= a->n + b->n; v++) {
+            double Ez =
+                md_E(a->n, b->n, v, a->center[2] - b->center[2], alpha, beta);
+            if (Ez == 0.0) {
+              continue;
+            }
+
+            double EEE = Ex * Ey * Ez;
+            grad[0] -= coeff_ij * pref * EEE *
+                       md_R(t + 1, u, v, 0, p, PC[0], PC[1], PC[2], Fvals);
+            grad[1] -= coeff_ij * pref * EEE *
+                       md_R(t, u + 1, v, 0, p, PC[0], PC[1], PC[2], Fvals);
+            grad[2] -= coeff_ij * pref * EEE *
+                       md_R(t, u, v + 1, 0, p, PC[0], PC[1], PC[2], Fvals);
+          }
+        }
+      }
+
+      free(Fvals);
+    }
+  }
+}
+
+void gto_eri_grad_a(const basis_function_t *a, const basis_function_t *b,
+                    const basis_function_t *c, const basis_function_t *d,
+                    double grad[3]) {
+  basis_function_t shifted;
+
+  for (int dim = 0; dim < 3; dim++) {
+    double plus = 0.0, minus = 0.0;
+
+    if (shift_basis_function_alloc(a, dim, +1, 1, &shifted)) {
+      plus = gto_eri(&shifted, b, c, d);
+      free(shifted.coefficients);
+    }
+
+    int comp = angmom_component(a, dim);
+    if (comp > 0 && shift_basis_function_alloc(a, dim, -1, 0, &shifted)) {
+      minus = comp * gto_eri(&shifted, b, c, d);
+
+      free(shifted.coefficients);
+    }
+
+    grad[dim] = plus - minus;
+  }
 }
 
 /* ---------------------------------------------------------------------

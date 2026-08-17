@@ -4,8 +4,8 @@
 /*
  * General Gaussian-type-orbital (GTO) molecular integrals via
  * McMurchie-Davidson (MD) Hermite-expansion scheme (Refreneces: McMurchie &
- * Davidson, J. Comput. Phys. 26, 218 (1974); see also Helgaker, Jorgensen &
- * Olsen, "Molecular Electronic-Structure Theory", ch. 9).
+ * Davidson, J. Comput. Phys. 26, 218 (1974); Helgaker, Jorgensen & Olsen,
+ * "Molecular Electronic-Structure Theory", ch. 9).
  * NOTE: This is lets second_quant.c / vqe.c build a real molecular
  * electronic-structure Hamiltonian (e.g. for H2 VQE) instead of only the toy
  * fermionic-lattice Hamiltonians second_quant_build_hopping_hamiltonian()
@@ -24,11 +24,11 @@
 
 #include "../core/matrix.h"
 
-/* Boys function F_n(x) = \int^1 t^{2n} * \exp(-x t^2) dt, universal building
+/* Boys function F_n(x) = \int^1 t^{2n} * \exp(-x * t^2) dt, universal building
  * block of every GTO-based Coulomb-type integral (nuclear attraction, ERIs).
  * Computed via the \exp(-x)*convergent-power-series form (all terms same sign,
  * no cancellation) for F_nmax, then the stable downward recursion :
- *   F_{n-1}(x) = (2x * F_n(x) + \exp(-x)) / (2n-1) for n < nmax
+ *   F_{n-1}(x) = (2x * F_n(x) + \exp(-x)) / (2n - 1) for n < nmax
  *
  * (WARN: upward recursion is numerically unstable and must never be used)
  *
@@ -130,6 +130,44 @@ double gto_nuclear_attraction(const basis_function_t *a,
  */
 double gto_eri(const basis_function_t *a, const basis_function_t *b,
                const basis_function_t *c, const basis_function_t *d);
+
+/*
+ * Analytic derivative (gradient) integrals wrt a basis-function center or a
+ * nuclear point-charge center, via the McMurchie-Davidson "increment/decrement"
+ * identity (Helgaker, Jorgensen & Olsen eq. 9.3.8): reuses the integral
+ * routines above with one center's angular momentum shifted by +-1, rather than
+ * a separate derivative-Hermite-coefficient implementation.
+ *
+ * Every integral above is symmetric under swapping which argument comes first
+ * (real GTOs, Hermitian/self-adjoint operators: <a|O|b> = <b|O|a>, (ab|cd) =
+ * (ba|cd) = (cd|ab)), so the derivative wrt any other center is obtained by
+ * simply reordering the arguments to put that center first:
+ *   d<a|b>/dB   = gto_overlap_grad_a(b, a)
+ *   d(ab|cd)/dB = gto_eri_grad_a(b, a, c, d)
+ *   d(ab|cd)/dC = gto_eri_grad_a(c, d, a, b)
+ *   d(ab|cd)/dD = gto_eri_grad_a(d, c, a, b)
+ *
+ * NOTE: bra-pair order and ket-pair order may each be freely swapped, and bra
+ * pair may swap with ket pair as a whole; a bra index may never be paired with
+ * a ket index directly, since that changes which two centers' exponents sum
+ * into the "p" of the bra vs "q" of the ket.
+ */
+void gto_overlap_grad_a(const basis_function_t *a, const basis_function_t *b,
+                        double grad[3]);
+void gto_kinetic_grad_a(const basis_function_t *a, const basis_function_t *b,
+                        double grad[3]);
+void gto_nuclear_attraction_grad_a(const basis_function_t *a,
+                                   const basis_function_t *b,
+                                   const double center[3], double grad[3]);
+/* Derivative wrt the point-charge center itself (Hellmann-Feynman term) --
+ * present regardless of which atoms a/b happen to be centered on, since
+ * moving that nucleus changes the 1/|r-C| operator felt by every AO pair. */
+void gto_nuclear_attraction_grad_C(const basis_function_t *a,
+                                   const basis_function_t *b,
+                                   const double center[3], double grad[3]);
+void gto_eri_grad_a(const basis_function_t *a, const basis_function_t *b,
+                    const basis_function_t *c, const basis_function_t *d,
+                    double grad[3]);
 
 /*
  * Whole-basis matrix/tensor builders: loop the above over every pair (or
