@@ -238,7 +238,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_42_h2_vqe \
               $(BUILD_DIR)/eg_43_h4_vqe \
               $(BUILD_DIR)/eg_44_lih_vqe \
-              $(BUILD_DIR)/eg_45_noisy_vqe
+              $(BUILD_DIR)/eg_45_noisy_vqe \
+              $(BUILD_DIR)/eg_46_geometry_optimization
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -289,7 +290,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_h2_vqe \
               $(BUILD_DIR)/test_molecular_hf \
               $(BUILD_DIR)/test_lih \
-              $(BUILD_DIR)/test_uhf
+              $(BUILD_DIR)/test_uhf \
+              $(BUILD_DIR)/test_hf_gradient
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
@@ -349,6 +351,16 @@ $(BUILD_DIR)/eg_%: $(EXAMPLES_DIR)/eg_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
 $(BUILD_DIR)/test_%: $(TESTS_DIR)/test_%.c $(ALL_OBJS)
 	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
+## Benchmarks
+BENCH_DIR   = benchmarks
+
+BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
+              $(BUILD_DIR)/bench_eigensolver \
+              $(BUILD_DIR)/bench_vmc_convergence
+              # TODO: add :
+              # $(BUILD_DIR)/bench_reference_vs_blocked \
+              # $(BUILD_DIR)/instrument_iteration_counts \
+
 ## Run targets
 examples:   directories $(OUTPUT_DIR) $(EXAMPLES)
 tests:      directories $(TESTS)
@@ -390,23 +402,30 @@ run-examples: examples $(OUTPUT_DIR)
 	@echo ""
 	@echo "Output files in: $(OUTPUT_DIR)/"
 
-# Benchmarks
-BENCH_DIR   = benchmarks
-
-BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
-              $(BUILD_DIR)/bench_eigensolver \
-              # TODO: add :
-              # $(BUILD_DIR)/bench_reference_vs_blocked \
-              # $(BUILD_DIR)/instrument_iteration_counts \
-              $(BUILD_DIR)/bench_vmc_convergence
+## Run all benchmarks
+run-benchmarks: benchmarks $(OUTPUT_DIR)
+	@echo "    Running benchmarks"
+	@for b in $(BENCHMARKS); do \
+		name=$$(basename $$b); \
+		echo ""; \
+		echo " -> $$name "; \
+		$$b | tee $(OUTPUT_DIR)/$$name.dat || true; \
+	done
+	@echo ""
+	@echo "Output files in: $(OUTPUT_DIR)/"
+	@echo ""
+	@echo "Note: bench_openmp_parallel (hybrid MPI+OpenMP) isn't run above" 
+	@echo "      It needs mpirun, not a plain invocation. Build and run it explicitly:"
+	@echo "   make $(BUILD_DIR)/bench_openmp_parallel && mpirun -np 4 ./$(BUILD_DIR)/bench_openmp_parallel"
 
 $(BUILD_DIR)/bench_%: $(BENCH_DIR)/bench_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
 	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
 
 # MIC Support
+# (bench_openmp_parallel: hybrid MPI+OpenMP benchmark)
 MPICC ?= mpicc
 # MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && echo yes || echo no)
-MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && tmpf=$$(mktemp) && echo 'int main(void){return 0;}' | $(MPICC) -x c - -o $$tmpf >/dev/null 2>&1 && rm -f $$tmpf && echo yes || echo no)
+ MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && tmpf=$$(mktemp) && echo 'int main(void){return 0;}' | $(MPICC) -x c - -o $$tmpf >/dev/null 2>&1 && rm -f $$tmpf && echo yes || echo no)
 
 $(BUILD_DIR)/bench_openmp_parallel: $(BENCH_DIR)/bench_openmp_parallel.c $(ALL_OBJS) | $(OUTPUT_DIR)
 ifeq ($(MPI_AVAIL),yes)
@@ -460,7 +479,7 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-.PHONY: all clean examples tests run-examples run-tests info valgrind valgrind-%
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-%
 
 # Info target
 info:

@@ -26,6 +26,8 @@ A pure-C library and simulation engine for numerical and semi-analytic quantum m
 - `make` and `cmake`
 - `grplot` : GR Framework (Default plot backend, built via Git submodule or system libs)
 - `gnuplot` : GNU plot (Optional, fallback plot backend)
+- MIP :
+- LAPACK :
 
 ## Building
 
@@ -86,6 +88,27 @@ AddressSanitizer (`-fsanitize=address`) is on by default. It must be turned OFF 
 # install headers + libraries to a prefix (default /usr/local)
 make SANITIZE=0 install-lib PREFIX=/usr/local
 ```
+
+## Benchmarks
+
+Standalone benchmark programs under `benchmarks/`, built the same way as examples/tests:
+
+```bash
+# Build and run everything except the MPI hybrid benchmark
+make run-benchmarks
+
+# Just build them (no run)
+make benchmarks
+```
+
+- **`bench_accuracy`** : VMC/DMC ground-state energy vs. published values for the He isoelectronic two-electron sequence (He, Li+, Be2+).
+- **`bench_eigensolver`** : hand-rolled (Jacobi) vs. LAPACK complex-Hermitian eigensolver - these are compared by building twice, once with `USE_LAPACK=0` and once `USE_LAPACK=1` (see `benchmarks/README.md`).
+- **`bench_vmc_convergence`** : VMC statistical convergence vs. sample count.
+- **`bench_reference_vs_blocked`** / **`instrument_iteration_counts`** : cache-blocking benchmark for the tridiagonal QL eigensolver -built and run standalone with `gcc`/`valgrind`+`cachegrind`, not through `make`.
+
+`run-benchmarks` writes each benchmark's stdout to `output/bench_<name>.dat` in addition to printing it, for later plotting/comparison.
+
+See [[benchmarks/README.md]] for build/run details, validation notes, and the reasoning behind each benchmark's design (e.g. why `bench_accuracy` uses Be2+ instead of neutral Be, why `bench_eigensolver` needs two separate builds instead of a runtime flag).
 
 ---
 
@@ -149,6 +172,7 @@ make SANITIZE=0 install-lib PREFIX=/usr/local
   <li><code>eg_43_h4_vqe.c</code></li>
   <li><code>eg_44_lih_vqe.c</code></li>
   <li><code>eg_45_vqe_nosiy.c</code></li>
+  <li><code>eg_46_geometry_optimization.c</code></li>
 </ul>
 </details>
 
@@ -196,6 +220,7 @@ make SANITIZE=0 install-lib PREFIX=/usr/local
   <li><code>test_dft.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
   <li><code>test_molecular_hf.c</code></li>
+  <li><code>test_hf_gradient.c</code></li>
   <li><code>test_uhf.c</code></li>
   <li><code>test_lih.c</code></li>
   <li><code>test_soft.c</code></li>
