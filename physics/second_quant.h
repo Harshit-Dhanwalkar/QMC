@@ -109,24 +109,8 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
  *   h_eff_pq = h_pq + \sum_c [2 (pq|cc) - (pc|cq)]  (c ranges over frozen, p,q
  *                                                    over active)
  *
- * with the active-space two-electron integrals otherwise unchanged
- * (just restricted to active-active-active-active indices).
- *
- * Validated (Python, before any C was written): setting n_frozen=0
- * reduces EXACTLY to second_quant_build_molecular_hamiltonian's own
- * result (verified numerically, not just by inspection of the formula --
- * a strong regression guard, since a wrong formula could easily still
- * happen to look plausible). For LiH/STO-3G (freezing Li's 1s core, the
- * standard choice in the VQE literature -- see molecular_hf.h/session
- * notes), the frozen-core ground state (10 qubits, 1024-dim) differs
- * from the exact full-space FCI (12 qubits, 4096-dim) by only about 0.23
- * mHartree, confirming both correctness and that Li's 1s core really is
- * close to chemically inert here, as expected.
- *
- * eri_mo must still be the FULL n_spatial^4 tensor (not pre-restricted
- * to the active block) -- this function does the restriction internally,
- * since it also needs the frozen-frozen and frozen-active blocks to
- * compute E_core and h_eff.
+ * with the active-space two-electron integrals otherwise unchanged (just
+ * restricted to active-active-active-active indices).
  *
  * Returns NULL if n_spatial < 1, n_frozen < 0, n_frozen >= n_spatial, or
  * h_mo/eri_mo is NULL.

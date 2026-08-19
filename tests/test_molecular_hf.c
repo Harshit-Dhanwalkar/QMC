@@ -143,7 +143,7 @@ static void test_h4_chain_fci_and_vqe(void) {
   double E_fci = eig->eigenvalues[0];
   printf("  H4 chain FCI: %.6f Hartree\n", E_fci);
 
-  check_close(E_fci, -2.139443, 1e-4, "H4 FCI matches Python cross-validation");
+  check_close(E_fci, -2.139443, 1e-4, "H4 FCI matches cross-validation");
   check_true(E_fci < hf->total_energy - 1e-6,
              "FCI below RHF (captures correlation energy)");
 

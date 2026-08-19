@@ -216,6 +216,7 @@ static void test_h2_fci_and_vqe(void) {
 
   cmatrix_t *H_molecular = second_quant_build_molecular_hamiltonian(
       2, h_mo, eri_mo, nuclear_repulsion);
+
   check_true(H_molecular != NULL,
              "second_quant_build_molecular_hamiltonian allocates");
   check_true(H_molecular->nrows == 16,
@@ -226,12 +227,14 @@ static void test_h2_fci_and_vqe(void) {
   for (int i = 0; i < 16 * 16; i++) {
     H_copy->data[i] = H_molecular->data[i];
   }
+
   eigen_t *eig = cmatrix_eigh_complex(H_copy);
   double E_fci = eig->eigenvalues[0];
   printf("  FCI (exact diagonalization) ground state: %.6f Hartree\n", E_fci);
+
   check_close(E_fci, -1.137276, 1e-4,
-              "FCI matches Python cross-validation (-1.137276 Hartree, also "
-              "the well-known literature FCI/STO-3G H2 value)");
+              "FCI matches cross-validation (-1.137276 Hartree, also "
+              "well-known literature FCI/STO-3G H2 value)");
   check_true(E_fci < E_rhf - 1e-6,
              "FCI is below RHF (captures correlation energy, as it must "
              "variationally)");
@@ -248,6 +251,7 @@ static void test_h2_fci_and_vqe(void) {
 
     N_expect += p * nbits;
   }
+
   check_close(N_expect, 2.0, 1e-6,
               "ground state electron number expectation = 2 exactly");
 
@@ -260,6 +264,7 @@ static void test_h2_fci_and_vqe(void) {
   vqe_result_t vqe_res = vqe_run(4, 3, H_molecular, 6, 0.6, 20260810ULL);
   printf("  VQE (4 qubits, 3 layers): E = %.6f Hartree (FCI = %.6f)\n",
          vqe_res.energy, E_fci);
+
   check_true(vqe_res.theta_opt != NULL, "VQE ran (theta_opt allocated)");
   check_close(vqe_res.energy, E_fci, 0.05,
               "VQE converges close to FCI ground state");

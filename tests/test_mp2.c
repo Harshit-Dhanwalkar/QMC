@@ -130,7 +130,7 @@ static void test_synthetic_fixture(void) {
   mp2_result_t res = mp2_correlation_energy(hf, r, N, 2);
 
   check_close(res.e_mp2, -0.6561117086134629, 1e-6,
-              "E_MP2 matches independent Python reference implementation");
+              "E_MP2 matches reference implementation");
   check_true(res.n_occ == 2 && res.n_virt == 2,
              "n_occ/n_virt reported correctly");
 

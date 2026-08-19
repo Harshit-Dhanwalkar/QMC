@@ -292,7 +292,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_molecular_hf \
               $(BUILD_DIR)/test_lih \
               $(BUILD_DIR)/test_uhf \
-              $(BUILD_DIR)/test_hf_gradient
+              $(BUILD_DIR)/test_hf_gradient \
+              $(BUILD_DIR)/test_ccsd
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

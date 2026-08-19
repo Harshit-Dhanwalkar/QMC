@@ -3,8 +3,8 @@
 
 /*
  * Closed-shell-reference spin-orbital CCSD (Coupled Cluster Singles and
- Doubles), built on molecular_hf.c's canonical RHF orbitals and
- molecular_ao_to_mo's MO-basis integrals.
+ * Doubles), built on molecular_hf.c's canonical RHF orbitals and
+ * molecular_ao_to_mo's MO-basis integrals.
  *
  * NOTE: Uses standard spin-orbital formulation (Reference: Stanton, Gauss,
  * Watts & Bartlett, J. Chem. Phys. 94, 4334 (1991)): antisymmetrized

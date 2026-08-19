@@ -181,6 +181,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 <ul>
   <li><code>test_angular_coupling.c</code></li>
   <li><code>test_boson_sampling.c</code></li>
+  <li><code>test_ccsd.c</code></li>
   <li><code>test_central_potential.c</code></li>
   <li><code>test_central_potential_3d.c</code></li>
   <li><code>test_complex.c</code></li>
