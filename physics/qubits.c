@@ -82,6 +82,7 @@ void qstate_apply_gate1(cvector_t *psi, int n_qubits, int target,
     if ((i & mask) == 0) {
       long long j = i | mask;
       complex_t a0 = psi->data[i], a1 = psi->data[j];
+
       psi->data[i] = c_add(c_mul(gate[0], a0), c_mul(gate[1], a1));
       psi->data[j] = c_add(c_mul(gate[2], a0), c_mul(gate[3], a1));
     }
@@ -106,6 +107,7 @@ void qstate_apply_controlled_u(cvector_t *psi, int n_qubits, int control,
     if ((i & cmask) && (i & tmask) == 0) {
       long long j = i | tmask;
       complex_t a0 = psi->data[i], a1 = psi->data[j];
+
       psi->data[i] = c_add(c_mul(U[0], a0), c_mul(U[1], a1));
       psi->data[j] = c_add(c_mul(U[2], a0), c_mul(U[3], a1));
     }
@@ -114,6 +116,138 @@ void qstate_apply_controlled_u(cvector_t *psi, int n_qubits, int control,
 
 void qstate_apply_cnot(cvector_t *psi, int n_qubits, int control, int target) {
   qstate_apply_controlled_u(psi, n_qubits, control, target, sigma_x);
+}
+
+void qstate_apply_swap(cvector_t *psi, int n_qubits, int qa, int qb) {
+  if (!psi || qa < 0 || qa >= n_qubits || qb < 0 || qb >= n_qubits ||
+      qa == qb) {
+    return;
+  }
+
+  long long n = 1LL << n_qubits;
+  int abit = n_qubits - 1 - qa;
+  int bbit = n_qubits - 1 - qb;
+  long long amask = 1LL << abit;
+  long long bmask = 1LL << bbit;
+
+  for (long long i = 0; i < n; i++) {
+    int a_is_1 = (i & amask) != 0;
+    int b_is_1 = (i & bmask) != 0;
+
+    if (a_is_1 != b_is_1 && !a_is_1) {
+      /* i has qa=0, qb=1: swap partner has qa=1, qb=0. Touch each such pair
+       * exactly once by only acting when qa=0 (a_is_1==0). */
+      long long j = (i | amask) & ~bmask;
+      complex_t tmp = psi->data[i];
+
+      psi->data[i] = psi->data[j];
+      psi->data[j] = tmp;
+    }
+  }
+}
+
+void qstate_apply_controlled_phase(cvector_t *psi, int n_qubits, int control,
+                                   int target, double phi) {
+  if (!psi || control < 0 || control >= n_qubits || target < 0 ||
+      target >= n_qubits || control == target) {
+    return;
+  }
+
+  long long n = 1LL << n_qubits;
+  int cbit = n_qubits - 1 - control;
+  int tbit = n_qubits - 1 - target;
+  long long cmask = 1LL << cbit;
+  long long tmask = 1LL << tbit;
+  complex_t phase = c_new(cos(phi), sin(phi));
+
+  for (long long i = 0; i < n; i++) {
+    if ((i & cmask) && (i & tmask)) {
+      psi->data[i] = c_mul(psi->data[i], phase);
+    }
+  }
+}
+
+void qstate_apply_controlled_unitary(cvector_t *psi, int n_qubits, int control,
+                                     const int *targets, int n_targets,
+                                     const cmatrix_t *U) {
+  if (!psi || !targets || !U || n_targets < 1 || control < 0 ||
+      control >= n_qubits) {
+    return;
+  }
+
+  long long dim = 1LL << n_qubits;
+  int m = n_targets;
+  long long block = 1LL << m; // 2^m
+
+  if (U->nrows != block || U->ncols != block) {
+    return;
+  }
+
+  int tbit[32]; // bit position (from LSB) of each target qubit
+  long long tmask_all = 0;
+  for (int t = 0; t < m; t++) {
+    if (targets[t] < 0 || targets[t] >= n_qubits || targets[t] == control) {
+      return;
+    }
+
+    tbit[t] = n_qubits - 1 - targets[t];
+    tmask_all |= (1LL << tbit[t]);
+  }
+
+  int cbit = n_qubits - 1 - control;
+  long long cmask = 1LL << cbit;
+
+  /* NOTE: Iterate over every basis state whose target-qubit bits are all 0
+   * ("block base"): for each, gather the 2^m amplitudes spanning every
+   * assignment of the target qubits, apply U to that sub-vector, and scatter
+   * result back but only where control=1 (else leave amplitudes untouched,
+   * applying identity). */
+  for (long long base = 0; base < dim; base++) {
+    if ((base & tmask_all) != 0) {
+      continue; // only process each block once, at its all-zero-target rep
+    }
+
+    if (!(base & cmask)) {
+      continue; // control=0: identity, nothing to do
+    }
+
+    complex_t in[32]; // block <= 2^m, m assumed small (<=5 in practice)
+    complex_t out[32];
+
+    for (long long s = 0; s < block; s++) {
+      long long idx = base;
+
+      for (int t = 0; t < m; t++) {
+        if (s & (1LL << (m - 1 - t))) {
+          idx |= (1LL << tbit[t]);
+        }
+      }
+
+      in[s] = psi->data[idx];
+    }
+
+    for (long long r = 0; r < block; r++) {
+      complex_t acc = c_zero();
+
+      for (long long c = 0; c < block; c++) {
+        acc = c_add(acc, c_mul(CMAT(U, r, c), in[c]));
+      }
+
+      out[r] = acc;
+    }
+
+    for (long long s = 0; s < block; s++) {
+      long long idx = base;
+
+      for (int t = 0; t < m; t++) {
+        if (s & (1LL << (m - 1 - t))) {
+          idx |= (1LL << tbit[t]);
+        }
+      }
+
+      psi->data[idx] = out[s];
+    }
+  }
 }
 
 cmatrix_t *qstate_reduced_density_single(const cvector_t *psi, int n_qubits,

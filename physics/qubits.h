@@ -12,27 +12,59 @@
  * any N-qubit unitary to arbitrary precision).
  */
 
-/* Allocate an n-qubit state initialized to |00...0>, n >= 1 and small enough
- * that 2^n doubles fit in memory. */
+/*
+ * Allocate an n-qubit state initialized to |00...0>, n >= 1 and small enough
+ * that 2^n doubles fit in memory.
+ */
 cvector_t *qstate_alloc(int n_qubits);
 
 /* P(measuring computational basis state `index`) = |amplitude|^2 */
 double qstate_probability(const cvector_t *psi, int index);
 
-/* Apply an arbitrary single-qubit gate to qubit `target` (0-indexed,
- * 0=leftmost) of an n_qubits-qubit state \psi (length 2^n_qubits). */
+/*
+ * Apply an arbitrary single-qubit gate to qubit `target` (0-indexed,
+ * 0=leftmost) of an n_qubits-qubit state \psi (length 2^n_qubits).
+ */
 void qstate_apply_gate1(cvector_t *psi, int n_qubits, int target,
                         const complex_t gate[4]);
 
-/* Apply gate to `target` only when qubit `control` is |1>: controlled-U
- * primitive. control != target required. */
-
+/*
+ * Apply gate to `target` only when qubit `control` is |1>: controlled-U
+ * primitive. control != target required.
+ */
 // NOTE: CNOT is special case U = \sigma_x (from angular.c)
 void qstate_apply_controlled_u(cvector_t *psi, int n_qubits, int control,
                                int target, const complex_t U[4]);
 
 /* CNOT(control, target) = qstate_apply_controlled_u with U = \sigma_x */
 void qstate_apply_cnot(cvector_t *psi, int n_qubits, int control, int target);
+
+/* SWAP(qa, qb): exchange the states of two qubits. */
+void qstate_apply_swap(cvector_t *psi, int n_qubits, int qa, int qb);
+
+/*
+ * Controlled-phase: multiply amplitude by \exp^{i * \phi} whenever both
+ * `control` and `target` are |1>. This is CPHASE/CR_k, the building block of
+ * the QFT's controlled-rotation ladder (a diagonal 2-qubit gate, so it commutes
+ * with itself).
+ */
+void qstate_apply_controlled_phase(cvector_t *psi, int n_qubits, int control,
+                                   int target, double phi);
+
+/*
+ * General controlled-U primitive for an m-qubit (not just single-qubit)
+ * unitary: apply the 2^m x 2^m unitary matrix U to the `n_targets` qubits
+ * listed in `targets` (in the same MSB-first index convention as every other
+ * qstate_* function; `targets[0]` is the most-significant of the m-qubit
+ * sub-register U acts on), but only on the branch where `control` is |1>.
+ * `n_targets` up to ~5 in practice (block = 2^n_targets amplitudes gathered per
+ * basis-state group, stack-allocated). Needed for Quantum Phase Estimation's
+ * controlled-U^(2^k) step when the eigenstate register spans more than one
+ * qubit (qstate_apply_controlled_u only covers the single-target-qubit case).
+ */
+void qstate_apply_controlled_unitary(cvector_t *psi, int n_qubits, int control,
+                                     const int *targets, int n_targets,
+                                     const cmatrix_t *U);
 
 /* Hadamard gate: (1/\sqrt2) [[1,1],[1,-1]] */
 extern const complex_t hadamard_gate[4];
