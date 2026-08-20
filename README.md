@@ -241,6 +241,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Computational Physics, Breuer & Petruccione, Feynman & Hibbs, Taylor's
 - Scattering Theory, Greiner's Relativistic Quantum Mechanics.
 - Quantum Theory of Many-Particle Systems, Fetter & Walecka.
+- Quantum Computation and Quantum Information, Michael A. Nielsen and Isaac L. Chuang
 
 # License and Commercial Use
 
