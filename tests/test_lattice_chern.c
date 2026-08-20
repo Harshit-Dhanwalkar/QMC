@@ -46,6 +46,7 @@ static double sum_array(const double *a, int n) {
   for (int i = 0; i < n; i++) {
     s += a[i];
   }
+
   return s;
 }
 
@@ -67,7 +68,7 @@ static void test_p1_q5(void) {
   int ok = lattice_hofstadter_chern_numbers(1, 5, 1.0, 24, c);
   check_true(ok, "call succeeds");
 
-  double expected[5] = {1.0, 1.0, -4.0, 1.0, 1.0};
+  const double expected[5] = {1.0, 1.0, -4.0, 1.0, 1.0};
   for (int i = 0; i < 5; i++) {
     char label[64];
     snprintf(label, sizeof label, "band %d Chern number", i);
@@ -84,7 +85,7 @@ static void test_p2_q5(void) {
   int ok = lattice_hofstadter_chern_numbers(2, 5, 1.0, 24, c);
   check_true(ok, "call succeeds");
 
-  double expected[5] = {-2.0, 3.0, -2.0, 3.0, -2.0};
+  const double expected[5] = {-2.0, 3.0, -2.0, 3.0, -2.0};
   for (int i = 0; i < 5; i++) {
     char label[64];
     snprintf(label, sizeof label, "band %d Chern number", i);

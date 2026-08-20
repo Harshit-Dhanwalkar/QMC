@@ -508,18 +508,46 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
   return E;
 }
 
+void ccsd_amplitudes_free(ccsd_amplitudes_t *amp) {
+  if (!amp) {
+    return;
+  }
+
+  free(amp->occ);
+  free(amp->virt);
+  free(amp->Fso);
+  free(amp->V);
+  free(amp->t1);
+  free(amp->t2);
+  free(amp);
+}
+
 ccsd_result_t *ccsd_run(int n_spatial, const double *h_mo, const double *eri_mo,
                         const double *mo_energy, int n_electrons,
                         int n_frozen_spatial, double e_rhf, double conv_tol,
                         int max_iter) {
+  return ccsd_run_ex(n_spatial, h_mo, eri_mo, mo_energy, n_electrons,
+                     n_frozen_spatial, e_rhf, conv_tol, max_iter, NULL);
+}
+
+ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
+                           const double *eri_mo, const double *mo_energy,
+                           int n_electrons, int n_frozen_spatial, double e_rhf,
+                           double conv_tol, int max_iter,
+                           ccsd_amplitudes_t **amplitudes_out) {
+  if (amplitudes_out) {
+    *amplitudes_out = NULL;
+  }
+
   if (n_spatial <= 0 || !h_mo || !eri_mo || !mo_energy ||
       n_electrons % 2 != 0 || 2 * n_frozen_spatial >= n_electrons) {
     return NULL;
   }
 
-  (void)h_mo; /* canonical RHF: off-diagonal core Hamiltonian in the MO basis is
-                 zero by Brillouin's theorem, only orbital energies (the
-                 diagonal) are needed. */
+  // (void)h_mo; /* canonical RHF: off-diagonal core Hamiltonian in the MO basis
+  // is
+  //                zero by Brillouin's theorem, only orbital energies (the
+  //                diagonal) are needed. */
 
   int nso = 2 * n_spatial;
   ccsd_ctx_t ctx;
@@ -681,8 +709,37 @@ ccsd_result_t *ccsd_run(int n_spatial, const double *h_mo, const double *eri_mo,
   result->converged = converged;
   result->iterations = it;
 
-  free(t1);
-  free(t2);
+  if (amplitudes_out) {
+    ccsd_amplitudes_t *amp = malloc(sizeof(ccsd_amplitudes_t));
+    if (amp) {
+      amp->nso = nso;
+      amp->nocc = no;
+      amp->nvirt = nv;
+      amp->occ = ctx.occ;
+      amp->virt = ctx.virt;
+      amp->Fso = ctx.Fso;
+      amp->V = ctx.V;
+      amp->t1 = t1;
+      amp->t2 = t2;
+      *amplitudes_out = amp;
+    } else {
+      // allocation failure: fall back to freeing everything below
+      free(ctx.occ);
+      free(ctx.virt);
+      free(ctx.Fso);
+      free(ctx.V);
+      free(t1);
+      free(t2);
+    }
+  } else {
+    free(ctx.occ);
+    free(ctx.virt);
+    free(ctx.Fso);
+    free(ctx.V);
+    free(t1);
+    free(t2);
+  }
+
   free(new_t1);
   free(new_t2);
   free(Fae);
@@ -691,10 +748,6 @@ ccsd_result_t *ccsd_run(int n_spatial, const double *h_mo, const double *eri_mo,
   free(Wmnij);
   free(Wabef);
   free(Wmbej);
-  free(ctx.occ);
-  free(ctx.virt);
-  free(ctx.Fso);
-  free(ctx.V);
   free(ctx.Dia);
   free(ctx.Dijab);
 

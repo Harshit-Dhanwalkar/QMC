@@ -6,16 +6,17 @@
  * Doubles), built on molecular_hf.c's canonical RHF orbitals and
  * molecular_ao_to_mo's MO-basis integrals.
  *
- * NOTE: Uses standard spin-orbital formulation (Reference: Stanton, Gauss,
+ *  NOTE: Uses standard spin-orbital formulation (Reference: Stanton, Gauss,
  * Watts & Bartlett, J. Chem. Phys. 94, 4334 (1991)): antisymmetrized
  * spin-orbital integrals built from the spatial RHF MOs (doubled into
  * alternating alpha/beta spin orbitals), then the T1/T2 amplitude equations
- * solved by plain fixed-point iteration through the
- * Fae/Fmi/Fme/Wmnij/Wabef/Wmbej intermediates. Spin-orbital (not spin-adapted
- * spatial-orbital) CCSD is used because its equations are simpler to state and
- * verify correctly (fewer distinct spin cases to track).
- * // HACK: acceptable for currently small test molecules (H2, LiH)
- * // TODO: scale to large systems.
+ * solved by plain fixed-point iteration through Fae/Fmi/Fme/Wmnij/Wabef/Wmbej
+ * intermediates.
+ *  HACK: Spin-orbital (not spin-adapted spatial-orbital) CCSD is used because
+ * its equations are simpler to state and verify correctly.
+ *  HACK: acceptable for
+ * currently small test molecules (H2, LiH)
+ *  TODO: scale to large systems.
  */
 
 #include "molecular_hf.h"
@@ -26,6 +27,30 @@ typedef struct {
   int converged;
   int iterations;
 } ccsd_result_t;
+
+/*
+ * Converged CCSD amplitudes and underlying spin-orbital machinery they
+ * were computed with, retained (rather than freed internally, as ccsd_run
+ * does) for downstream use.
+ * The perturbative (T) triples correction (ccsd_t.c), which needs T1/T2 plus
+ * the antisymmetrized spin-orbital integrals V and Fock diagonal Fso to build
+ * the connected / disconnected T3 contractions. Same flat-array indexing
+ * convention as ccsd.c internals: IDX2(arr, nso, p, q) = arr[p * nso + q], IDX4
+ * similarly; occ[]/virt[] list the nocc/nvirt active (frozen-core-excluded)
+ * spin-orbital indices actually populated in Fso/V/t1/t2 (all are allocated at
+ * full nso/nso^2/nso^4 size, but only entries touching occ[]/virt[] indices are
+ * meaningful).
+ */
+typedef struct {
+  int nso, nocc, nvirt;
+  int *occ, *virt;
+  double *Fso;
+  double *V;
+  double *t1;
+  double *t2;
+} ccsd_amplitudes_t;
+
+void ccsd_amplitudes_free(ccsd_amplitudes_t *amp);
 
 /*
  * Runs CCSD on top of a converged RHF result.
@@ -55,5 +80,17 @@ ccsd_result_t *ccsd_run(int n_spatial, const double *h_mo, const double *eri_mo,
                         const double *mo_energy, int n_electrons,
                         int n_frozen_spatial, double e_rhf, double conv_tol,
                         int max_iter);
+
+/*
+ * Same as ccsd_run, but if `amplitudes_out` is non-NULL, also returns converged
+ * T1/T2 amplitudes and supporting spin-orbital machinery instead of freeing
+ * them internally. Passing NULL for `amplitudes_out` makes this behave
+ * identically to ccsd_run.
+ */
+ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
+                           const double *eri_mo, const double *mo_energy,
+                           int n_electrons, int n_frozen_spatial, double e_rhf,
+                           double conv_tol, int max_iter,
+                           ccsd_amplitudes_t **amplitudes_out);
 
 #endif
