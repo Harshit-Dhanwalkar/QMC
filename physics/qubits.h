@@ -66,7 +66,7 @@ void qstate_apply_controlled_unitary(cvector_t *psi, int n_qubits, int control,
                                      const int *targets, int n_targets,
                                      const cmatrix_t *U);
 
-/* Hadamard gate: (1/\sqrt2) [[1,1],[1,-1]] */
+/* Hadamard gate: (1 / \sqrt2) [[1,1],[1,-1]] */
 extern const complex_t hadamard_gate[4];
 
 /*

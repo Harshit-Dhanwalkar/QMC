@@ -2,9 +2,8 @@
  * Test: Variational Monte Carlo for helium ground state.
  *
  * 1. vmc_trial_wavefunction / vmc_local_energy at fixed configurations must
- *    match independently-computed (Python/sympy-derived, then finite-difference
- *    cross-checked) reference values -> these are deterministic, no Monte Carlo
- *    noise involved.
+ *    match reference values -> these are deterministic, no Monte Carlo noise
+ *    involved.
  * 2. vmc_run at a reasonable fixed b must satisfy variational theorem (E >=
  *    -2.9037 Hartree, experimental ground state) and fall below plain
  *    product-orbital result (-2.84765625 Hartree, from
@@ -18,7 +17,6 @@
  *    ansatz.
  */
 
-#include "../core/random.h"
 #include "../physics/helium.h"
 #include "../physics/vmc.h"
 #include <math.h>

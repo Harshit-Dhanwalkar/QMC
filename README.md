@@ -232,6 +232,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_vqe_noisy.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
+  <li><code>test_qqe.c</code></li>
 </ul>
 </details>
 

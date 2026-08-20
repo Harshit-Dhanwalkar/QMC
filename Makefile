@@ -162,6 +162,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/relativistic.c \
                $(PHYSICS_DIR)/fine_structure.c \
                $(PHYSICS_DIR)/qubits.c \
+               $(PHYSICS_DIR)/qft.c \
+               $(PHYSICS_DIR)/qpe.c \
                $(PHYSICS_DIR)/lindblad.c \
                $(PHYSICS_DIR)/hartree_fock.c \
                $(PHYSICS_DIR)/driven.c \
@@ -182,9 +184,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/molecular_integrals.c \
                $(PHYSICS_DIR)/molecular_hf.c \
                $(PHYSICS_DIR)/ccsd.c \
-               $(PHYSICS_DIR)/dft.c \
-               $(PHYSICS_DIR)/qft.c \
-               $(PHYSICS_DIR)/qpe.c
+               $(PHYSICS_DIR)/dft.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -295,7 +295,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lih \
               $(BUILD_DIR)/test_uhf \
               $(BUILD_DIR)/test_hf_gradient \
-              $(BUILD_DIR)/test_ccsd
+              $(BUILD_DIR)/test_ccsd \
+              $(BUILD_DIR)/test_qpe
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

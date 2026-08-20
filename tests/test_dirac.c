@@ -55,6 +55,7 @@ static int test_hermiticity_of_construction(void) {
       CMAT(H, row2, i + 1) = c_imag(-coeff);
     }
   }
+
   free(V);
 
   int fail = 0;
@@ -129,8 +130,7 @@ static int test_free_particle_branches(void) {
 
 static int test_dirac_hydrogen_sommerfeld(void) {
   int fail = 0;
-  double tol_rel = 5e-6;
-
+  double tol_rel = RUNNING_ON_VALGRIND ? 2e-5 : 5e-6;
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double a0 = 4.0 * M_PI * EPSILON_0 * HBAR * HBAR /
               (M_ELECTRON * E_CHARGE * E_CHARGE); // Bohr radius
@@ -155,8 +155,8 @@ static int test_dirac_hydrogen_sommerfeld(void) {
       {"2p_1/2", 2, 1},
       {"2p_3/2", 2, -2},
   };
-  int n_states = sizeof(states) / sizeof(states[0]);
 
+  int n_states = sizeof(states) / sizeof(states[0]);
   for (int s = 0; s < n_states; s++) {
     int n = states[s].n, kappa = states[s].kappa;
 
