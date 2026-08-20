@@ -300,6 +300,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_hf_gradient \
               $(BUILD_DIR)/test_ccsd \
               $(BUILD_DIR)/test_ccsd_t \
+              $(BUILD_DIR)/test_ucc \
               $(BUILD_DIR)/test_qpe
 
 ifeq ($(PLOT_BACKEND),GR)
