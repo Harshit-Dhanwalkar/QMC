@@ -183,7 +183,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/molecular_hf.c \
                $(PHYSICS_DIR)/ccsd.c \
                $(PHYSICS_DIR)/dft.c \
-               $(PHYSICS_DIR)/qft.c
+               $(PHYSICS_DIR)/qft.c \
+               $(PHYSICS_DIR)/qpe.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
