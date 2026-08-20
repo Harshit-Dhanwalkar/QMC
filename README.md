@@ -201,6 +201,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_klein_gordon.c</code></li>
   <li><code>test_lanczos.c</code></li>
   <li><code>test_lattice.c</code></li>
+  <li><code>test_lattice_chern.c</code></li>
   <li><code>test_lindblad.c</code></li>
   <li><code>test_matrix.c</code></li>
   <li><code>test_mp2.c</code></li>

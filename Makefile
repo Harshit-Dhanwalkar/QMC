@@ -284,6 +284,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_vqe_noisy \
               $(BUILD_DIR)/test_mp2 \
               $(BUILD_DIR)/test_lattice \
+              $(BUILD_DIR)/test_lattice_chern \
               $(BUILD_DIR)/test_quantum_info \
               $(BUILD_DIR)/test_qec \
               $(BUILD_DIR)/test_quantum_algorithms \
@@ -296,7 +297,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_uhf \
               $(BUILD_DIR)/test_hf_gradient \
               $(BUILD_DIR)/test_ccsd \
-              $(BUILD_DIR)/test_qpe
+              $(BUILD_DIR)/test_qpe \
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

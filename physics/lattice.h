@@ -131,7 +131,7 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
  * Landau gauge A = (0, B * x, 0): bonds along x are unaffected (amplitude -t,
  * real), bonds along y acquire a position-dependent phase set by site's x
  * index:
- *   H_{(ix, iy),(ix, iy + 1)} = -t * \exp(i * 2 * \pi * \alpha * ix),
+ *   H_{(ix, iy),(ix, iy + 1)} = -t * \exp(i * 2 * \pi * \alpha * ix)
  *   h.c. for the reverse bond
  *
  * Where
