@@ -544,10 +544,9 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
     return NULL;
   }
 
-  // (void)h_mo; /* canonical RHF: off-diagonal core Hamiltonian in the MO basis
-  // is
-  //                zero by Brillouin's theorem, only orbital energies (the
-  //                diagonal) are needed. */
+  (void)h_mo; /* canonical RHF: off-diagonal core Hamiltonian in the MO basis is
+                 zero by Brillouin's theorem, only orbital energies (diagonal)
+                 are needed. */
 
   int nso = 2 * n_spatial;
   ccsd_ctx_t ctx;

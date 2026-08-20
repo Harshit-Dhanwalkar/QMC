@@ -39,7 +39,7 @@ typedef struct {
  * Returns NULL on the same invalid-input conditions as ccsd_run, or if the
  * underlying CCSD does not converge within max_iter
  *
- * HACK: ccsdt_result_t's ccsd_converged field lets the caller distinguish
+ *  HACK: ccsdt_result_t's ccsd_converged field lets the caller distinguish
  * "didn't converge" from "invalid input" if a non-NULL-on-non-convergence
  * variant is ever needed : for now this returns NULL in both cases, matching
  * ccsd_run's contract of not returning results from an unconverged

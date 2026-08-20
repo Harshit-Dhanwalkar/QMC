@@ -1,12 +1,13 @@
 #include "ccsd_t.h"
+#include "ccsd.h"
 #include <stdlib.h>
 
 #define IDX2(arr, nso, p, q) (arr)[(size_t)(p) * (nso) + (q)]
 #define IDX4(arr, nso, p, q, r, s)                                             \
   (arr)[(((size_t)(p) * (nso) + (q)) * (nso) + (r)) * (nso) + (s)]
 
-/* tmp_d(i,j,k,a,b,c) = t1_ia * <jk||bc> -- the disconnected-triples "base"
-   term (before the P(i/jk)P(a/bc) antisymmetrization below is applied). */
+/* tmp_d(i,j,k,a,b,c) = t1_ia * <jk||bc> : disconnected-triples "base" term
+ * (before the P(i/jk)P(a/bc) antisymmetrization below is applied). */
 static double tmp_d_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
                         int a, int b, int c) {
   (void)k;
@@ -28,20 +29,22 @@ static double tmp_c_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
     int e = virt[ei];
     s += IDX4(amp->t2, nso, j, k, a, e) * IDX4(amp->V, nso, e, i, b, c);
   }
+
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
     s -= IDX4(amp->t2, nso, i, m, b, c) * IDX4(amp->V, nso, m, a, j, k);
   }
+
   return s;
 }
 
 typedef double (*tmp_fn_t)(const ccsd_amplitudes_t *, int, int, int, int, int,
                            int);
 
-/* P(i/jk) P(a/bc) tmp(i,j,k,a,b,c): the 3-term cyclic antisymmetrizer over
-   {i swapped with j, i swapped with k} composed with the same over
-   {a swapped with b, a swapped with c} -- 9 terms total (3x3), signs from
-   expanding (1 - Sij - Sik)(1 - Sab - Sac). */
+/* P(i/jk) P(a/bc) tmp(i,j,k,a,b,c): the 3-term cyclic antisymmetrizer over {i
+ * swapped with j, i swapped with k} composed with the same over {a swapped with
+ * b, a swapped with c} -> 9 terms total (3x3), signs from expanding (1 - Sij -
+ * Sik)(1 - Sab - Sac). */
 static double P_ijk_abc(tmp_fn_t tmp, const ccsd_amplitudes_t *amp, int i,
                         int j, int k, int a, int b, int c) {
   double t = 0.0;
@@ -54,6 +57,7 @@ static double P_ijk_abc(tmp_fn_t tmp, const ccsd_amplitudes_t *amp, int i,
   t -= tmp(amp, k, j, i, a, b, c);
   t += tmp(amp, k, j, i, b, a, c);
   t += tmp(amp, k, j, i, c, b, a);
+
   return t;
 }
 
@@ -66,8 +70,10 @@ static double perturbative_triples(const ccsd_amplitudes_t *amp) {
 
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
+
     for (int ji = 0; ji < no; ji++) {
       int j = occ[ji];
+
       for (int ki = 0; ki < no; ki++) {
         int k = occ[ki];
 
@@ -77,8 +83,10 @@ static double perturbative_triples(const ccsd_amplitudes_t *amp) {
 
         for (int ai = 0; ai < nv; ai++) {
           int a = virt[ai];
+
           for (int bi = 0; bi < nv; bi++) {
             int b = virt[bi];
+
             for (int ci = 0; ci < nv; ci++) {
               int c = virt[ci];
 
@@ -117,6 +125,7 @@ ccsdt_result_t *ccsdt_run(int n_spatial, const double *h_mo,
   if (!ccsd->converged) {
     free(ccsd);
     ccsd_amplitudes_free(amp);
+
     return NULL;
   }
 
