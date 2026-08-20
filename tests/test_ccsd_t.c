@@ -45,10 +45,10 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-static void run_case(basis_function_t **basis, int n_basis, molecule_t *mol,
-                     int n_electrons, double expected_rhf,
-                     double expected_ccsd_corr, double expected_pert_t,
-                     double tol, const char *label) {
+static void run_case(basis_function_t **basis, int n_basis,
+                     const molecule_t *mol, int n_electrons,
+                     double expected_rhf, double expected_ccsd_corr,
+                     double expected_pert_t, double tol, const char *label) {
   printf("test_ccsd_t_%s:\n", label);
 
   molecular_hf_result_t *hf =
