@@ -5,6 +5,7 @@ dispersions (Bloch's theorem / standing-wave quantization) for validation.
 
 #include "lattice.h"
 #include "../core/complex.h"
+#include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
 #include "../core/random.h"
 #include "../core/vector.h"
@@ -318,4 +319,155 @@ double lattice_landau_level_energy(int n, double epsilon0, double t,
   double omega_c = 4.0 * M_PI * t * alpha;
 
   return epsilon0 - 4.0 * t + omega_c * ((double)n + 0.5);
+}
+
+cmatrix_t *lattice_hofstadter_bloch(double kx, double ky, int p, int q,
+                                    double t) {
+  if (p < 1 || q < 2 || p >= q) {
+    return NULL;
+  }
+
+  cmatrix_t *H = cmatrix_alloc(q, q);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int i = 0; i < q; i++) {
+    for (int j = 0; j < q; j++) {
+      CMAT(H, i, j) = c_zero();
+    }
+  }
+
+  double alpha = (double)p / (double)q;
+
+  /* NOTE: Landau-gauge magnetic unit cell: q sites stacked along y (index m =
+   * 0..q-1). Diagonal on-site energy carries the "in-cell" y-dispersion with a
+   * site-dependent Peierls phase 2*pi*alpha*m (Harper equation form);
+   * off-diagonal (m, m+1) hopping is uniform bond amplitude -t, real for every
+   * bond except the one that wraps magnetic unit cell back on itself (m=q-1 to
+   * m=0), which alone carries Bloch phase \exp^{-i * kx} that stitches unit
+   * cells together. */
+  for (int m = 0; m < q; m++) {
+    CMAT(H, m, m) = c_real(2.0 * t * cos(ky + 2.0 * M_PI * alpha * (double)m));
+  }
+
+  for (int m = 0; m < q - 1; m++) {
+    complex_t hop = c_real(-t);
+    CMAT(H, m, m + 1) = c_add(CMAT(H, m, m + 1), hop);
+    CMAT(H, m + 1, m) = c_add(CMAT(H, m + 1, m), c_conj(hop));
+  }
+
+  complex_t wrap = c_scale(c_new(cos(kx), -sin(kx)), -t);
+  CMAT(H, q - 1, 0) = c_add(CMAT(H, q - 1, 0), wrap);
+  CMAT(H, 0, q - 1) = c_add(CMAT(H, 0, q - 1), c_conj(wrap));
+
+  return H;
+}
+
+int lattice_hofstadter_chern_numbers(int p, int q, double t, int n_k,
+                                     double *chern_out) {
+  if (p < 1 || q < 2 || p >= q || n_k < 2 || !chern_out) {
+    return 0;
+  }
+
+  // Eigenvectors on the n_k x n_k BZ grid, kx,ky in [0, 2* \pi)
+  cmatrix_t ***U = malloc((size_t)n_k * sizeof(cmatrix_t **));
+  if (!U) {
+    return 0;
+  }
+
+  for (int i = 0; i < n_k; i++) {
+    U[i] = malloc((size_t)n_k * sizeof(cmatrix_t *));
+
+    if (!U[i]) {
+      for (int ii = 0; ii < i; ii++) {
+        for (int jj = 0; jj < n_k; jj++) {
+          cmatrix_free(U[ii][jj]);
+        }
+
+        free(U[ii]);
+      }
+
+      free(U);
+
+      return 0;
+    }
+  }
+
+  for (int i = 0; i < n_k; i++) {
+    double kx = 2.0 * M_PI * (double)i / (double)n_k;
+
+    for (int j = 0; j < n_k; j++) {
+      double ky = 2.0 * M_PI * (double)j / (double)n_k;
+      cmatrix_t *H = lattice_hofstadter_bloch(kx, ky, p, q, t);
+      eigen_t *eig = cmatrix_eigh_complex(H);
+
+      cmatrix_free(H);
+      U[i][j] = cmatrix_copy(
+          eig->eigenvectors); // columns = eigenvectors, already ascending order
+      eigen_free(eig);
+    }
+  }
+
+  for (int n = 0; n < q; n++) {
+    chern_out[n] = 0.0;
+  }
+
+  for (int i = 0; i < n_k; i++) {
+    int i1 = (i + 1) % n_k;
+
+    for (int j = 0; j < n_k; j++) {
+      int j1 = (j + 1) % n_k;
+
+      for (int n = 0; n < q; n++) {
+        /* NOTE: U1..U4: gauge-invariant link variables around one plaquette
+         * (Refrence: Fukui-Hatsugai-Suzuki 2005). Each is the overlap of band-n
+         * eigenvectors at neighboring grid points, normalized to unit modulus
+         * (normalization makes gauge-invariant: any * per-k-point phase choice
+         * in eigensolver's eigenvectors cancels out of |z|). */
+        complex_t U1 = c_zero(), U2 = c_zero(), U3 = c_zero(), U4 = c_zero();
+        for (int a = 0; a < q; a++) {
+          U1 = c_add(U1,
+                     c_mul(c_conj(CMAT(U[i][j], a, n)), CMAT(U[i1][j], a, n)));
+          U2 = c_add(
+              U2, c_mul(c_conj(CMAT(U[i1][j], a, n)), CMAT(U[i1][j1], a, n)));
+          U3 = c_add(
+              U3, c_mul(c_conj(CMAT(U[i1][j1], a, n)), CMAT(U[i][j1], a, n)));
+          U4 = c_add(U4,
+                     c_mul(c_conj(CMAT(U[i][j1], a, n)), CMAT(U[i][j], a, n)));
+        }
+
+        double n1 = c_abs(U1), n2 = c_abs(U2), n3 = c_abs(U3), n4 = c_abs(U4);
+        if (n1 < 1e-14 || n2 < 1e-14 || n3 < 1e-14 || n4 < 1e-14) {
+          continue; /* exact band touching at this plaquette corner: link
+                       variable undefined here, skip (see docstring) */
+        }
+
+        complex_t prod = c_scale(U1, 1.0 / n1);
+        prod = c_mul(prod, c_scale(U2, 1.0 / n2));
+        prod = c_mul(prod, c_scale(U3, 1.0 / n3));
+        prod = c_mul(prod, c_scale(U4, 1.0 / n4));
+
+        double curvature =
+            atan2(prod.im, prod.re); // principal branch, (-\pi, \pi]
+        chern_out[n] += curvature;
+      }
+    }
+  }
+
+  for (int n = 0; n < q; n++) {
+    chern_out[n] /= (2.0 * M_PI);
+  }
+
+  for (int i = 0; i < n_k; i++) {
+    for (int j = 0; j < n_k; j++) {
+      cmatrix_free(U[i][j]);
+    }
+
+    free(U[i]);
+  }
+
+  free(U);
+
+  return 1;
 }

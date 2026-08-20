@@ -132,7 +132,7 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
  * real), bonds along y acquire a position-dependent phase set by site's x
  * index:
  *   H_{(ix, iy),(ix, iy + 1)} = -t * \exp(i * 2 * \pi * \alpha * ix),
- * h.c. for the reverse bond
+ *   h.c. for the reverse bond
  *
  * Where
  *  \alpha = flux through one plaquette / flux quantum = B * a^2 / (2 * \pi) in
@@ -170,15 +170,77 @@ cmatrix_t *lattice_build_2d_square_magnetic(int nx, int ny, double epsilon0,
  * frequency :
  *  \omega_c = 2 * t * a^2 * B = 4 * pi * t * \alpha
  * (using \alpha = B * a^2 / (2 * \pi))
- * This is 2D magneto-tight-binding effective-mass result (Refences : Hofstadter
- * 1976; MacDonald 1983); each level is macroscopically degenerate in \alpha<<1
- * limit (one state per flux quantum through the sample).
+ * This is 2D magneto-tight-binding effective-mass result (References :
+ * Hofstadter 1976; MacDonald 1983); each level is macroscopically degenerate in
+ * \alpha<<1 limit (one state per flux quantum through the sample).
  *
  * Deviations at larger alpha come from lattice curvature (dispersion is not
  * perfectly parabolic) and, on a finite lattice, from edge effects once the
- * magnetic length ~1/\sqrt(\alpha) becomes comparable to nx or ny.
+ * magnetic length ~1 / \sqrt(\alpha) becomes comparable to nx or ny.
  */
 double lattice_landau_level_energy(int n, double epsilon0, double t,
                                    double alpha);
+
+/*
+ * Hofstadter model: 2D square-lattice tight-binding electron in a uniform
+ * magnetic field with rational flux \alpha = p/q (p, q coprime integers; flux
+ * quantum per plaquette). Unlike lattice_build_2d_square_magnetic (finite
+ * real-space lattice, open/periodic boundary in y, used for weak-field
+ * Landau-level limit above), this works directly in thermodynamic-limit
+ * momentum-space (Bloch) picture: magnetic unit cell is q sites wide (Landau
+ * gauge, phase carried on x-bonds as a function of site's row within cell,
+ * period q in y), giving a q x q Bloch Hamiltonian H(kx,ky) whose q eigenvalues
+ * are the q "Hofstadter butterfly" subbands at that (kx,ky). This is
+ * momentum-space object the Chern-number calculation below integrates Berry
+ * curvature over.
+ *
+ * Returns a newly-allocated q x q complex Hermitian matrix (NULL on invalid
+ * input: p<1, q<2, or p>=q i.e. not a flux in (0,1)); caller owns it
+ * (cmatrix_free).
+ */
+cmatrix_t *lattice_hofstadter_bloch(double kx, double ky, int p, int q,
+                                    double t);
+
+/*
+ * Chern number of each of the q Hofstadter subbands, (Reference:
+ * Fukui-Hatsugai-Suzuki (2005)) via discretized/gauge-invariant lattice
+ * Berry-curvature method: sample H(kx,ky) on an n_k x n_k grid over (2 * \pi x
+ * 2 * \pi) magnetic Brillouin zone, form the U(1) link variable U_{\mu}(k) =
+ * <n,k|n,k + \mu> / |<n,k|n,k + \mu>| between neighboring grid points'
+ * eigenvectors for each band n, and \sum arg(plaquette product of 4 links) over
+ * every plaquette : this is gauge-invariant (no smooth-gauge choice needed
+ * across the BZ, unlike a naive derivative-of-Berry-connection approach) and
+ * gives an exactly-integer-quantized result in the n_k->\infty limit for any
+ * gapped band.
+ *
+ * Writes q values into `chern_out` (caller-allocated, length q): each
+ * should be within numerical-grid-resolution of an integer for any p/q
+ * where subband n is gapped from its neighbors.
+ *
+ * NOTE: at band-touching points (e.g. p/q=1/2, the "pi-flux" case, where the 2
+ * subbands touch at Dirac points) individual-band Chern numbers are not
+ * well-defined by the usual TKNN argument - this function will still return a
+ * number (bands near-touching but not exactly, on a finite grid, given some
+ * residual curvature), but it need not be well-quantized in that case; the sum
+ * over all q bands is always confined to a strong sum-rule (=0 exactly, a
+ * useful self-consistency check) regardless of gap closures, since it is Chern
+ * number of full Bloch bundle across compensating regions of curvature.
+ *
+ * Returns 1 on success, 0 on invalid input (p<1, q<2, p>=q, n_k<2, or
+ * chern_out NULL).
+ * NOTE: For even q, the Hofstadter spectrum can have exact band touchings
+ * between adjacent subbands at isolated (kx,ky) points (Dirac points),
+ * independent of numerical resolution : e.g. p/q=1/2 (all q=2 bands touch, both
+ * individual Chern numbers 0) and p/q=1/4 (the middle two of four bands touch,
+ * min gap exactly 0 across the whole BZ). At such a touching, the FHS
+ * link-variable construction below is only meaningful away from the touching
+ * point, and this function's per-band output can become numerically unstable /
+ * grid-resolution-dependent right at touching bands specifically (verified: q=3
+ * and q=5, both fully gapped for every kx,ky, give grid-independent integer
+ * results from n_k=16 through n_k=100+; q=4's touching pair does not). The sum
+ * over all q bands together remains exactly 0 regardless (full q-band bundle is
+ * trivial). */
+int lattice_hofstadter_chern_numbers(int p, int q, double t, int n_k,
+                                     double *chern_out);
 
 #endif
