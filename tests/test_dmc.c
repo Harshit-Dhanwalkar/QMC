@@ -15,6 +15,7 @@
 #include "../physics/helium.h"
 #include "../physics/vmc.h"
 #include <math.h>
+#include <omp.h>
 #include <stdio.h>
 
 #ifndef RUNNING_ON_VALGRIND
@@ -78,6 +79,7 @@ static void test_degenerate_guard(void) {
 
   vmc_walker_t w = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}};
   double d[3];
+
   dmc_drift_velocity(&w, 0, 2.0, 0.2, d);
   check_true(isfinite(d[0]) && isfinite(d[1]) && isfinite(d[2]) &&
                  d[0] == 0.0 && d[1] == 0.0 && d[2] == 0.0,
@@ -140,9 +142,10 @@ static void test_dmc_run_accuracy(void) {
              "population control holds near target");
 }
 
-// DMC for a different two-electron ion (Li+, Z=3): must output closer to exact
-// reference than VMC's own Li+ estimate does, and must respect variational
-// theorem.
+/* DMC for a different two-electron ion (Li+, Z=3): must output closer to exact
+ * reference than VMC's own Li+ estimate does, and must respect variational
+ * theorem.
+ */
 static void test_dmc_run_different_ion(void) {
   printf("test_dmc_run_different_ion:\n");
 
@@ -182,9 +185,10 @@ static void test_dmc_run_different_ion(void) {
   }
 }
 
-// Stress test for comb-resampling population control: with max_population set
-// close to target_population, population control triggers on nearly every
-// generation instead of occasionally
+/* Stress test for comb-resampling population control: with max_population set
+ * close to target_population, population control triggers on nearly every
+ * generation instead of occasionally
+ */
 static void test_dmc_frequent_resampling(void) {
   printf("test_dmc_frequent_resampling:\n");
 
@@ -215,10 +219,11 @@ static void test_dmc_frequent_resampling(void) {
              "population control holds near target under frequent triggering");
 }
 
-// n_replicas=1 must reproduce dmc_run exactly, same reason being as analogous
-// VMC regression test: stream 0 has zero rng_jump() calls applied, and both
-// route through same dmc_run_with_rng() population loop. (same parameters, same
-// seed)
+/* n_replicas=1 must reproduce dmc_run exactly, same reason being as analogous
+ * VMC regression test: stream 0 has zero rng_jump() calls applied, and both
+ * route through same dmc_run_with_rng() population loop. (same parameters, same
+ * seed)
+ */
 static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
   printf("test_dmc_run_parallel_matches_serial_at_one_replica:\n");
 
@@ -244,9 +249,54 @@ static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
               "n_replicas=1 mean_population bit-identical to dmc_run");
 }
 
-// Parallel DMC with multiple replicas
-// Multiple independent DMC populations combined must still land close to the
-// exact helium ground state, with a sane nonzero inter-replica error bar.
+/* The intra-run walker population loop is OpenMP-parallelized across walkers
+ * within a single DMC run (not just across independent replicas, as
+ * dmc_run_parallel already did). Each population slot `i` always draws from its
+ * own fixed walker_streams[i] (derived once via rng_jump chaining before
+ * parallel region opens, independent of which thread ends up processing that
+ * lot in any given generation), so results should be 'bit-identical' regardless
+ * of how many threads OpenMP actually uses : a correctness property for
+ * thread-safety of this refactor (not just "close within statistical noise").
+ */
+static void test_dmc_run_deterministic_across_thread_counts(void) {
+  printf("test_dmc_run_deterministic_across_thread_counts:\n");
+
+  double Z = 2.0, Zeff = 2.0;
+  double b = 0.15;
+  double tau = 0.01;
+  int target_population = RUNNING_ON_VALGRIND ? 20 : 150;
+  int max_population = RUNNING_ON_VALGRIND ? 60 : 450;
+  int n_equilibration = RUNNING_ON_VALGRIND ? 50 : 100;
+  int n_blocks = RUNNING_ON_VALGRIND ? 5 : 10;
+  int block_size = RUNNING_ON_VALGRIND ? 20 : 100;
+
+  int max_threads = omp_get_max_threads();
+
+  omp_set_num_threads(1);
+  dmc_result_t one_thread =
+      dmc_run(Z, Zeff, b, target_population, max_population, tau,
+              n_equilibration, n_blocks, block_size, /*seed=*/777ULL);
+
+  omp_set_num_threads(max_threads > 1 ? max_threads : 2);
+  dmc_result_t many_threads =
+      dmc_run(Z, Zeff, b, target_population, max_population, tau,
+              n_equilibration, n_blocks, block_size, /*seed=*/777ULL);
+
+  omp_set_num_threads(max_threads); /* restore for any later tests */
+
+  printf("  max_threads available=%d\n", max_threads);
+  check_close(many_threads.energy_mixed, one_thread.energy_mixed, 1e-12,
+              "energy_mixed bit-identical across thread counts");
+  check_close(many_threads.mean_population, one_thread.mean_population, 1e-12,
+              "mean_population bit-identical across thread counts");
+  check_close(many_threads.acceptance_rate, one_thread.acceptance_rate, 1e-12,
+              "acceptance_rate bit-identical across thread counts");
+}
+
+/* Parallel DMC with multiple replicas
+ * Multiple independent DMC populations combined must still land close to the
+ * exact helium ground state, with a sane nonzero inter-replica error bar.
+ */
 static void test_dmc_run_parallel_helium(void) {
   printf("test_dmc_run_parallel_helium:\n");
 
@@ -287,6 +337,7 @@ int main(void) {
   test_dmc_frequent_resampling();
   test_dmc_run_different_ion();
   test_dmc_run_parallel_matches_serial_at_one_replica();
+  test_dmc_run_deterministic_across_thread_counts();
   test_dmc_run_parallel_helium();
 
   if (failures == 0) {

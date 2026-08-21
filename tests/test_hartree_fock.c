@@ -19,11 +19,12 @@
  * 4. Aufbau ordering: converged orbital (Fock) eigenvalues are ascending.
  */
 
-// NOTE: this is finite-difference/dense-diagonalization solve on a finite
-// radial grid, not a converged basis-set HF calculation. HF-limit numbers
-// depends on grid resolution (N, r_max) and should not be expected to several
-// decimal places. Tolerances below are chosen to be meaningful but
-// grid-resolution-tolerant.
+/* NOTE: this is finite-difference/dense-diagonalization solve on a finite
+ * radial grid, not a converged basis-set HF calculation. HF-limit numbers
+ * depends on grid resolution (N, r_max) and should not be expected to several
+ * decimal places. Tolerances below are chosen to be meaningful but
+ * grid-resolution-tolerant.
+ */
 
 #include "../core/matrix.h"
 #include "../core/utils.h"

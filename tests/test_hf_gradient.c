@@ -2,18 +2,18 @@
  * Test: analytic RHF nuclear gradient (Pulay 1969)
  *
  * 1. Gradient integral primitives (gto_*_grad_a, gto_nuclear_attraction_grad_C)
- * vs finite difference, isolated from the SCF/Pulay-formula machinery:
- * validates McMurchie-Davidson "increment/decrement" identity (Reference:
- * Helgaker, Jorgensen & Olsen eq. 9.3.8) gradient code is built on, independent
- * of any density-matrix or energy-weighted-density.
+ *    vs finite difference, isolated from the SCF/Pulay-formula machinery:
+ *    validates McMurchie-Davidson "increment/decrement" identity (Reference:
+ *    Helgaker, Jorgensen & Olsen eq. 9.3.8) gradient code is built on,
+ *    independent of any density-matrix or energy-weighted-density.
  * 2. molecular_rhf_gradient vs finite difference of the total SCF energy:
- * H2/STO-3G at several bond lengths (translational invariance - sum of forces
- * on both atoms is exactly zero), and LiH/STO-3G (multi-atom, multiple basis
- * functions sharing a center, including p-orbitals)
+ *    H2/STO-3G at several bond lengths (translational invariance - sum of
+ *    forces on both atoms is exactly zero), and LiH/STO-3G (multi-atom,
+ *    multiple basis functions sharing a center, including p-orbitals)
  * 3. H2 equilibrium bond length via bisection on the analytic gradient,
- * cross-checked against literature (STO-3G/RHF H2 equilibrium ~1.34-1.40 bohr)
- * as an end-to-end sanity check that gradient actually locates a real energy
- * minimum, not just any zero-crossing.
+ *    cross-checked against literature (STO-3G/RHF H2 equilibrium ~1.34-1.40
+ *    bohr) as an end-to-end sanity check that gradient actually locates a real
+ *    energy minimum, not just any zero-crossing.
  */
 
 #include "../physics/molecular_hf.h"

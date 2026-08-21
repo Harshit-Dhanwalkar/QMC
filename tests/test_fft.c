@@ -18,7 +18,7 @@ int main() {
   for (int i = 0; i < N; i++) {
     double t = 2.0 * M_PI * i / N;
 
-    x->data[i] = c_new(cos(t), sin(t)); // e^{it}
+    x->data[i] = c_new(cos(t), sin(t)); // \exp^{it}
   }
 
   fft(x);

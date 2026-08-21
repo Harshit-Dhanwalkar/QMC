@@ -8,8 +8,7 @@
  *    nonlinear Klein-Gordon operator equation,
  *      -\hbar^2 * c^2 (\psi'' / dx^2) + [m^2 * c^4 + 2 * E * V(x) - V(x)^2]
  *      \psi = E^2 \psi
- *   directly, via residual norm (independent of how the solver
- * got there).
+ *    directly, via residual norm (independent of how the solver got there).
  */
 
 #include "../core/complex.h"

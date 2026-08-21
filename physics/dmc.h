@@ -10,6 +10,18 @@
  * ...), with importance sampling against a Slater-Jastrow trial wavefunction
  *
  * All energies in Hartree atomic units
+ *
+ * Parallelism: two independent OpenMP layers. dmc_run_parallel parallelizes
+ * across n_replicas fully independent DMC runs (embarrassingly parallel, each
+ * replica its own rng_jump-derived stream). Additionally, within a single run,
+ * dmc_run/dmc_run_with_rng's walker population loop is itself
+ * OpenMP-parallelized across walkers each generation. Unlike VMC/PIMC, which
+ * are each a single correlated Markov chain (every step depends on the previous
+ * one, so there is no legitimate within-chain parallelism opportunity beyond
+ * replica level), DMC's population of walkers evolves independently within one
+ * generation. Each population slot always uses its own rng_jump-derived stream
+ * regardless of which OpenMP thread processes it in any given generation, so
+ * results are bit-identical regardless of thread count.
  */
 
 typedef struct {

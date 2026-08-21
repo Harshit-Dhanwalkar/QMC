@@ -186,7 +186,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/ccsd.c \
                $(PHYSICS_DIR)/ccsd_t.c \
                $(PHYSICS_DIR)/ucc.c \
-               $(PHYSICS_DIR)/dft.c
+               $(PHYSICS_DIR)/dft.c \
+               $(PHYSICS_DIR)/basis_parser.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 

@@ -90,7 +90,8 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
   double drift_new[3];
   dmc_drift_velocity(w, which, Zeff, b, drift_new);
 
-  /* Green's function ratio for reverse vs forward drift-diffusion move
+  /*
+   * NOTE: Green's function ratio for reverse vs forward drift-diffusion move
    * (normalization prefactors (2 * \pi * \tau)^(-3/2) are identical for forward
    * and reverse and cancel in ratio):
    *  fwd = r' - r - \tau * v(r)
@@ -98,7 +99,8 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
    *  \tau * v(r')
    *  \ln G(r<-r') - \ln G(r'<-r) = (|fwd|^2 - |bwd|^2) / (2 * \tau)
    * Full log acceptance ratio: 2 * (\ln(Psi') - \ln(Psi)) + that
-   * Green's-function term. */
+   * Green's-function term.
+   */
   double fwd[3], bwd[3];
   for (int k = 0; k < 3; k++) {
     fwd[k] = proposed[k] - old_pos[k] - tau * drift_old[k];
@@ -201,43 +203,84 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
 }
 
 /* One full generation: move+branch every walker in `cur`, writing
- survivors/replicas into `next`. Walkers beyond max_population are handled by
- random subsampling back down to target_population.
-
- Returns population-weighted mean local energy for this generation (for mixed
- estimator and E_T update), and accumulates acceptance counts into
- *accept_sum-by-*move_count.
-*/
+ * survivors/replicas into `next`. Walkers beyond max_population are handled by
+ * random subsampling back down to target_population.
+ *
+ * Parallelized across the walker population. Structured as compute-then-scatter
+ * to stay race-free under  OpenMP: pass 1 (parallel) evolves every walker
+ * independently using its own slot-indexed RNG stream from `walker_streams`
+ * (length >= cur->count, provided by caller via rng_jump chaining); pass 2
+ * (serial) does prefix-sum-style scatter into `next->data` and accept/energy
+ * reductions, avoiding any race on next->count that concurrent scatter would
+ * create. Population-control resampling still uses a single `control_rng` (one
+ * rng_uniform call per generation, serial by nature already).
+ *
+ * Returns population-weighted mean local energy for this generation (for mixed
+ * estimator and E_T update), and accumulates acceptance counts into
+ * *accept_sum / *move_count.
+ */
 static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
                                  double Z, double Zeff, double b, double tau,
                                  double E_T, int target_population,
-                                 int max_population, rng_state_t *rng,
-                                 long *accept_sum, long *move_count) {
+                                 int max_population,
+                                 rng_state_t *walker_streams,
+                                 rng_state_t *control_rng, long *accept_sum,
+                                 long *move_count) {
   next->count = 0;
+  // double E_L_weighted_sum = 0.0;
+  // long total_copies = 0;
+
+  int n = cur->count;
+  vmc_walker_t *evolved = malloc((size_t)n * sizeof(vmc_walker_t));
+  int *mult = malloc((size_t)n * sizeof(int));
+  int *acc = malloc((size_t)n * sizeof(int));
+  double *EL = malloc((size_t)n * sizeof(double));
+
+  if (!evolved || !mult || !acc || !EL) {
+    free(evolved);
+    free(mult);
+    free(acc);
+    free(EL);
+
+    return E_T; // allocation failure: bail out with E_T unchanged
+  }
+
+#pragma omp parallel for schedule(dynamic)
+  for (int i = 0; i < n; i++) {
+    vmc_walker_t w = cur->data[i];
+    int accepted;
+    int m = dmc_branch_walker(&w, Z, Zeff, b, tau, E_T, &walker_streams[i],
+                              &accepted);
+
+    evolved[i] = w;
+    mult[i] = m;
+    acc[i] = accepted;
+    EL[i] = vmc_local_energy(&w, Z, Zeff, b);
+  }
+
   double E_L_weighted_sum = 0.0;
   long total_copies = 0;
 
-  for (int i = 0; i < cur->count; i++) {
-    vmc_walker_t w = cur->data[i];
-    int accepted;
-    int m = dmc_branch_walker(&w, Z, Zeff, b, tau, E_T, rng, &accepted);
-
-    *accept_sum += accepted;
+  for (int i = 0; i < n; i++) {
+    *accept_sum += acc[i];
     *move_count += 2;
+    E_L_weighted_sum += EL[i] * mult[i];
+    total_copies += mult[i];
 
-    double E_L_new = vmc_local_energy(&w, Z, Zeff, b);
-    E_L_weighted_sum += E_L_new * m;
-    total_copies += m;
-
-    for (int copy = 0; copy < m; copy++) {
+    for (int copy = 0; copy < mult[i]; copy++) {
       if (next->count < next->capacity) {
-        next->data[next->count] = w;
+        next->data[next->count] = evolved[i];
         next->count++;
       }
       /* NOTE: If next->capacity is exhausted, further copies of walker are
        * silently dropped rather than growing unbounded */
     }
   }
+
+  free(evolved);
+  free(mult);
+  free(acc);
+  free(EL);
 
   /*
    * Population control via comb (systematic) resampling back to
@@ -246,7 +289,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   if (next->count > max_population) {
     int n_pool = next->count;
     double step = (double)n_pool / target_population;
-    double offset = rng_uniform(rng) * step;
+    double offset = rng_uniform(control_rng) * step;
 
     vmc_walker_t *resampled =
         malloc((size_t)target_population * sizeof *resampled);
@@ -300,8 +343,32 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
 
   dmc_population_init(pop_a, target_population, Zeff, rng);
 
-  /* E_T feedback gain. kappa~0.1-1 is standard (Umrigar, Nightingale & Runge
-   * 1993); 0.1 is chosen here.
+  /*
+   * NOTE: Per-slot RNG streams for the walker population : one independent
+   * stream per population slot 0..max_population-1, derived once here via
+   * rng_jump chaining from the caller's `rng`, which itself continues to be
+   * used serially as the population-control RNG ("control_rng" below) and done
+   * before any parallel region opens, so no race deriving these.
+   */
+  rng_state_t *walker_streams =
+      malloc((size_t)max_population * sizeof(rng_state_t));
+  if (!walker_streams) {
+    dmc_population_free(pop_a);
+    dmc_population_free(pop_b);
+
+    return result;
+  }
+
+  rng_seed(&walker_streams[0], rng_next_u64(rng));
+  for (int i = 1; i < max_population; i++) {
+    walker_streams[i] = walker_streams[i - 1];
+
+    rng_jump(&walker_streams[i]);
+  }
+
+  /*
+   * NOTE: E_T feedback gain. \kappa~0.1-1 is a thereotical value (Reference:
+   * Umrigar, Nightingale & Runge 1993); 0.1 is chosen here.
    * TODO: expose \kappa as a dmc_run parameter if different (\tau,
    * target_population) regime ever needs different feedback gain to stay stable
    * which is kept internal for now to avoid over-parameterizing single
@@ -311,6 +378,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   for (int i = 0; i < pop_a->count; i++) {
     E_T += vmc_local_energy(&pop_a->data[i], Z, Zeff, b);
   }
+
   E_T /= pop_a->count;
 
   dmc_population_t *cur = pop_a;
@@ -318,10 +386,11 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   long accept_sum = 0, move_count = 0;
 
   for (int gen = 0; gen < n_equilibration; gen++) {
-    double mean_E_L =
-        run_one_generation(cur, next, Z, Zeff, b, tau, E_T, target_population,
-                           max_population, rng, &accept_sum, &move_count);
+    double mean_E_L = run_one_generation(
+        cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
+        walker_streams, rng, &accept_sum, &move_count);
     int N = next->count;
+
     E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
 
     dmc_population_t *tmp = cur;
@@ -334,6 +403,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   if (!block_means_mixed || !block_means_growth) {
     free(block_means_mixed);
     free(block_means_growth);
+    free(walker_streams);
     dmc_population_free(pop_a);
     dmc_population_free(pop_b);
 
@@ -347,9 +417,9 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     double sum_mixed = 0.0, sum_growth = 0.0;
 
     for (int s = 0; s < block_size; s++) {
-      double mean_E_L =
-          run_one_generation(cur, next, Z, Zeff, b, tau, E_T, target_population,
-                             max_population, rng, &accept_sum, &move_count);
+      double mean_E_L = run_one_generation(
+          cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
+          walker_streams, rng, &accept_sum, &move_count);
       int N = next->count;
       E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
 
@@ -372,6 +442,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     mean_mixed += block_means_mixed[blk];
     mean_growth += block_means_growth[blk];
   }
+
   mean_mixed /= n_blocks;
   mean_growth /= n_blocks;
 
@@ -382,6 +453,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     for (int blk = 0; blk < n_blocks; blk++) {
       double dm = block_means_mixed[blk] - mean_mixed;
       double dg = block_means_growth[blk] - mean_growth;
+
       var_mixed += dm * dm;
       var_growth += dg * dg;
     }
@@ -394,6 +466,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
 
   free(block_means_mixed);
   free(block_means_growth);
+  free(walker_streams);
 
   result.energy_mixed = mean_mixed;
   result.error_mixed = err_mixed;
@@ -448,6 +521,7 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
   rng_seed(&streams[0], master_seed);
   for (int i = 1; i < n_replicas; i++) {
     streams[i] = streams[i - 1];
+
     rng_jump(&streams[i]);
   }
 
@@ -491,6 +565,7 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
 
     double dm = replica_results[i].energy_mixed - grand_mixed;
     double dg = replica_results[i].energy_growth - grand_growth;
+
     var_mixed += dm * dm;
     var_growth += dg * dg;
   }
