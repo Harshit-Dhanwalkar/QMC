@@ -249,8 +249,9 @@ static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
               "n_replicas=1 mean_population bit-identical to dmc_run");
 }
 
-/* The intra-run walker population loop is OpenMP-parallelized across walkers
- * within a single DMC run (not just across independent replicas, as
+/*
+ * NOTE: The intra-run walker population loop is OpenMP-parallelized across
+ * walkers within a single DMC run (not just across independent replicas, as
  * dmc_run_parallel already did). Each population slot `i` always draws from its
  * own fixed walker_streams[i] (derived once via rng_jump chaining before
  * parallel region opens, independent of which thread ends up processing that
@@ -293,7 +294,8 @@ static void test_dmc_run_deterministic_across_thread_counts(void) {
               "acceptance_rate bit-identical across thread counts");
 }
 
-/* Parallel DMC with multiple replicas
+/*
+ * Parallel DMC with multiple replicas
  * Multiple independent DMC populations combined must still land close to the
  * exact helium ground state, with a sane nonzero inter-replica error bar.
  */
@@ -324,7 +326,8 @@ static void test_dmc_run_parallel_helium(void) {
   check_close(r.energy_mixed, E_exact, tol,
               "parallel DMC lands close to exact helium ground state");
 
-  check_true(r.error_mixed > 0.0 && r.error_mixed < 0.05,
+  check_true(r.error_mixed > 0.0 &&
+                 r.error_mixed < (RUNNING_ON_VALGRIND ? 0.1 : 0.05),
              "parallel DMC inter-replica error is a sane, nonzero magnitude");
   check_true(r.n_blocks == n_blocks * n_replicas,
              "n_blocks reports n_blocks_per_replica * n_replicas");

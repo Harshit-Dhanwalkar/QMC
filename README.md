@@ -222,6 +222,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_second_quant.c</code></li>
   <li><code>test_molecular_integrals.c</code></li>
   <li><code>test_molecular_integrals_fuzz.c</code></li>
+  <li><code>test_basis_parser.c</code></li>
   <li><code>test_dft.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
   <li><code>test_molecular_hf.c</code></li>

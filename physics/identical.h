@@ -9,12 +9,11 @@
  * N-particle Slater determinant (fermions) or permanent (bosons) at a
  * specific configuration, and compute that determinant/permanent.
  *
- * orbitals[i]: tabulated single-particle orbital i, sampled on a
- *   common position grid of length M.
- * indices[j]: grid index of particle j's position (0 <= indices[j] < M).
- *   Two particles at same grid index (indices[j1]==indices[j2]) or two
- *   identical orbitals both make Slater determinant vanish exactly (Pauli
- *   exclusion)
+ * orbitals[i]: tabulated single-particle orbital i, sampled on a common
+ *              position grid of length M.
+ * indices[j] : grid index of particle j's position (0 <= indices[j] < M).
+ * Two particles at same grid index (indices[j1]==indices[j2]) or two identical
+ * orbitals both make Slater determinant vanish exactly (Pauli exclusion)
  */
 
 /* M_ij = orbitals[i]->data[indices[j]], size N x N */
@@ -29,7 +28,7 @@ complex_t slater_determinant_value(cvector_t **orbitals, int N,
 /* Bosons: \psi(x_1,...,x_N) = (1 / \sqrt(N! * prod_k n_k!)) * perm[\phi_i(x_j)]
  * is invariant under exchanging any two particles. n_k is the occupation number
  * of each distinct orbital among orbitals[0..n-1]; this reduces to simpler
- * 1/sqrt(N!) exactly when every orbital is distinct, but prod_k n_k! factor
+ * 1 / sqrt(N!) exactly when every orbital is distinct, but prod_k n_k! factor
  * matters whenever multiple bosons share an orbital
  */
 complex_t bosonic_permanent_value(cvector_t **orbitals, int N,

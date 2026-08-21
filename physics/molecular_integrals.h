@@ -14,17 +14,17 @@
  * Supports arbitrary Cartesian angular momentum (s, p, d, f, ...) and arbitrary
  * contraction (number of primitives), so this is a general basis-set /
  * general-molecule engine, not restricted to any one element or minimal basis.
- * WARN: though only basis-set builder shipped here (molint_basis_sto3g_h) is
- * STO-3G hydrogen, since that is exactly what's needed for a first real H2 VQE
- * target. Other basis functions can be constructed directly via
- * basis_function_t without any new engine.
+ *
+ * See basis_parser.c/.h for a general Gaussian94-format basis-set-file parser
+ * built on the same basis_function_t representation.
  *
  * Units: atomic units throughout (bohr for length, Hartree for energy)
  */
 
 #include "../core/matrix.h"
 
-/* Boys function F_n(x) = \int^1 t^{2n} * \exp(-x * t^2) dt, universal building
+/*
+ *Boys function F_n(x) = \int^1 t^{2n} * \exp(-x * t^2) dt, universal building
  * block of every GTO-based Coulomb-type integral (nuclear attraction, ERIs).
  * Computed via the \exp(-x)*convergent-power-series form (all terms same sign,
  * no cancellation) for F_nmax, then the stable downward recursion :
@@ -39,7 +39,8 @@
 double boys_function(int n, double x);
 void boys_function_array(int nmax, double x, double *F /* length nmax+1 */);
 
-/* A single primitive Cartesian Gaussian, unnormalized:
+/*
+ * A single primitive Cartesian Gaussian, unnormalized:
  *   g(r) = x^l y^m z^n \exp(-\alpha |r - center|^2)
  * l+m+n is this primitive's total angular momentum (0=s, 1=p, 2=d, ...).
  * Individual (l,m,n) triples distinguish e.g. px/py/pz (1,0,0)/(0,1,0)/
@@ -50,7 +51,8 @@ typedef struct {
   double alpha;
 } gto_primitive_t;
 
-/* A contracted basis function: a fixed linear combination of primitives sharing
+/*
+ * A contracted basis function: a fixed linear combination of primitives sharing
  * one center and one (l,m,n). coefficients[] are expected to already include
  * each primitive's own normalization and the overall contraction normalization.
  */
@@ -62,7 +64,8 @@ typedef struct {
   double *coefficients; /* length n_primitives */
 } basis_function_t;
 
-/* Allocate a basis function and copy in exponents/raw (unnormalized)
+/*
+ * Allocate a basis function and copy in exponents/raw (unnormalized)
  * literature contraction coefficients
  *
  * Returns NULL on allocation failure or n_primitives <= 0.
@@ -73,14 +76,16 @@ basis_function_t *basis_function_alloc(int l, int m, int n,
                                        const double *raw_coefficients);
 void basis_function_free(basis_function_t *bf);
 
-/* In place:
+/*
+ * In place:
  *   - folds each primitive's own Cartesian-Gaussian normalization constant into
  *     coefficients[i],
  *   - rescales the whole contraction so self-overlap integral(bf * bf) = 1.
  */
 void molint_normalize_contraction(basis_function_t *bf);
 
-/* A molecule: point nuclear charges (atomic units, so charge is in units of
+/*
+ * A molecule: point nuclear charges (atomic units, so charge is in units of
  * |e|, e.g. 1.0 for hydrogen) at fixed 3D centers. Same molecule_t can be
  * paired with any basis set.
  */
@@ -93,7 +98,9 @@ typedef struct {
 molecule_t *molecule_alloc(int n_atoms, const double *charge,
                            const double center[][3]);
 void molecule_free(molecule_t *mol);
-/* Classical nuclear-nuclear repulsion energy :
+
+/*
+ * Classical nuclear-nuclear repulsion energy :
  *  \Sum_{A<B} Z_A Z_B / |R_A - R_B|
  * piece of total electronic-structure energy that has nothing to do with basis
  * set or electrons.
@@ -159,9 +166,11 @@ void gto_kinetic_grad_a(const basis_function_t *a, const basis_function_t *b,
 void gto_nuclear_attraction_grad_a(const basis_function_t *a,
                                    const basis_function_t *b,
                                    const double center[3], double grad[3]);
-/* Derivative wrt the point-charge center itself (Hellmann-Feynman term) --
+/*
+ * Derivative wrt the point-charge center itself (Hellmann-Feynman term) :
  * present regardless of which atoms a/b happen to be centered on, since
- * moving that nucleus changes the 1/|r-C| operator felt by every AO pair. */
+ * moving that nucleus changes the 1/|r-C| operator felt by every AO pair.
+ */
 void gto_nuclear_attraction_grad_C(const basis_function_t *a,
                                    const basis_function_t *b,
                                    const double center[3], double grad[3]);
@@ -184,7 +193,8 @@ cmatrix_t *molecular_kinetic_matrix(basis_function_t **basis, int n_basis);
 cmatrix_t *molecular_core_hamiltonian(basis_function_t **basis, int n_basis,
                                       const molecule_t *mol);
 
-/* Flat row-major n_basis^4 array of (ij|kl) chemists'-notation ERIs,
+/*
+ *Flat row-major n_basis^4 array of (ij|kl) chemists'-notation ERIs,
  * index (((i * n_basis + j) * n_basis + k) * n_basis + l).
  * NOTE: Exploits 8-fold permutational symmetry (ij|kl) = (ji|kl) = (ij|lk) =
  * (kl|ij) = ... by computing each symmetry-distinct integral once and copying

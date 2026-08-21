@@ -45,6 +45,7 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
   for (int col = 0; col < n; col++) {
     int pivot = col;
     double best = c_abs2(CMAT(M, col, col));
+
     for (int r = col + 1; r < n; r++) {
       double mag = c_abs2(CMAT(M, r, col));
       if (mag > best) {
@@ -73,6 +74,7 @@ static complex_t determinant_gauss_destructive(cmatrix_t *M) {
 
     for (int r = col + 1; r < n; r++) {
       complex_t factor = c_mul(CMAT(M, r, col), piv_recip);
+
       for (int c = col; c < n; c++) {
         CMAT(M, r, c) = c_sub(CMAT(M, r, c), c_mul(factor, CMAT(M, col, c)));
       }
@@ -161,7 +163,9 @@ complex_t slater_determinant_value(cvector_t **orbitals, int N,
   }
 
   complex_t det = determinant_gauss_destructive(M);
+
   cmatrix_free(M);
+
   double inv_sqrt_nfact = 1.0 / sqrt(factorial(N));
 
   return c_scale(det, inv_sqrt_nfact);
@@ -175,6 +179,7 @@ complex_t bosonic_permanent_value(cvector_t **orbitals, int N,
   }
 
   complex_t perm = permanent_ryser(M);
+
   cmatrix_free(M);
 
   double mult_factor = 1.0;
