@@ -37,7 +37,8 @@ jobs:
             libqhull-dev zlib1g-dev \
             libx11-dev libxt-dev libxrender-dev libxext-dev \
             libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
-            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+            liblapacke-dev liblapack-dev libblas-dev liblapack-test
 
       - name: Get GR submodule commit
         id: gr-sha
@@ -85,9 +86,11 @@ jobs:
 
       - name: Build All
         run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+        # run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_LAPACK=1
 
       - name: Run Test Suite
         run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+        # run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_LAPACK=1
 
       # - name: Run Example Binaries
       #   run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR

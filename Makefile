@@ -1,7 +1,26 @@
 CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
-# CFLAGS += -fsanitize=address -g
+
+# Auto-detect Homebrew GCC and LAPACK
+ifeq ($(shell command -v brew >/dev/null 2>&1 && echo yes),yes)
+    BREW_PREFIX := $(shell brew --prefix)
+    # Optionally set CC to Homebrew's GCC if not overridden
+    ifeq ($(origin CC),default)
+        BREW_GCC := $(shell ls $(BREW_PREFIX)/bin/gcc-* 2>/dev/null | head -1)
+        ifneq ($(BREW_GCC),)
+            CC := $(BREW_GCC)
+            $(info Using Homebrew GCC: $(CC))
+        endif
+    endif
+    # Add Homebrew LAPACK paths if installed
+    BREW_LAPACK := $(shell brew --prefix lapack 2>/dev/null)
+    ifneq ($(BREW_LAPACK),)
+        CFLAGS  += -I$(BREW_LAPACK)/include
+        LDFLAGS += -L$(BREW_LAPACK)/lib
+        $(info Using Homebrew LAPACK from $(BREW_LAPACK))
+    endif
+endif
 
 # AddressSanitizer is on by default.
 SANITIZE ?= 1
@@ -68,19 +87,19 @@ ifeq ($(PLOT_BACKEND),GR)
     PLOT_LIBS    = -lGR -lGR3 -lqhull_r
     PLOT_CFLAGS  = -DUSE_GR -I$(GR_INC) -Iexport
     PLOT_LDFLAGS = -L$(GR_LIB) -Wl,-rpath,$(GR_LIB) -L/usr/lib/x86_64-linux-gnu
-    $(info Plot backend: GR ($(GR_LIB)))
+    # $(info Plot backend: GR ($(GR_LIB)))
 else ifeq ($(PLOT_BACKEND),GNUPLOT)
     PLOT_SRC     = export/plot_gnuplot.c \
                    export/gnuplot/gnuplot_pipe.c
     PLOT_CFLAGS  = -DUSE_GNUPLOT -Iexport
     PLOT_LDFLAGS =
-    $(info Plot backend: GNUPLOT)
+    # $(info Plot backend: GNUPLOT)
 else ifeq ($(PLOT_BACKEND),MATPLOTLIB)
     PLOT_SRC     = export/plot_matplotlib.c \
                    export/matplotlib/matplotlib_pipe.c
     PLOT_CFLAGS  = -DUSE_MATPLOTLIB -Iexport
     PLOT_LDFLAGS =
-    $(info Plot backend: MATPLOTLIB)
+    # $(info Plot backend: MATPLOTLIB)
 else
     PLOT_BACKEND := NONE
     PLOT_SRC     = export/plot_none.c
@@ -103,10 +122,18 @@ LDFLAGS += $(EXTRA_LDFLAGS)
 
 # Optional: LAPACK/BLAS acceleration for dense Hermitian eigensolvers
 ## Usage : make USE_LAPACK=1
+LAPACK_AVAIL := $(shell tmpf=$$(mktemp) && \
+    printf '#include <lapacke.h>\nint main(void){return 0;}\n' | \
+    $(CC) $(CFLAGS) -x c - -o $$tmpf $(LDFLAGS) >/dev/null 2>&1 && \
+    rm -f $$tmpf && echo yes || echo no)
+
 USE_LAPACK ?= 0
 ifeq ($(USE_LAPACK),1)
-    CFLAGS  += -DUSE_LAPACK
-    LDFLAGS += -llapacke -ltmglib -lblas -llapack # -lopenblas
+   ifeq ($(LAPACK_AVAIL),no)
+        $(warning USE_LAPACK=1 requested but LAPACK/BLAS could not be compiled/linked (missing liblapacke-dev/liblapack-dev/libblas-dev, or an OpenBLAS equivalent) - the build will likely fail deep in core/linalg. Install e.g. 'sudo apt install liblapacke-dev liblapack-dev libblas-dev' (or libopenblas-dev) and re-run.)
+   endif
+   CFLAGS  += -DUSE_LAPACK
+   LDFLAGS += -llapacke -lblas -llapack # -ltmglib -lopenblas
 endif
 
 # Directories
@@ -245,7 +272,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_43_h4_vqe \
               $(BUILD_DIR)/eg_44_lih_vqe \
               $(BUILD_DIR)/eg_45_noisy_vqe \
-              $(BUILD_DIR)/eg_46_geometry_optimization
+              $(BUILD_DIR)/eg_46_geometry_optimization \
+              $(BUILD_DIR)/eg_47_general_basis_parser
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -494,11 +522,45 @@ valgrind-%: clean
 
 .PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-%
 
-# Info target
+# Info target: print external dependency
 info:
-	@echo "Plot backend : $(PLOT_BACKEND)"
-	@echo "GR prefix    : $(GR_PREFIX)"
-	@echo "Output dir   : $(OUTPUT_DIR)"
+	@echo "Compiler"
+	@echo "  CC              : $(CC)"
+	@echo "  SANITIZE        : $(SANITIZE) $(if $(filter 1,$(SANITIZE)),(AddressSanitizer on),(off))"
+	@echo "Plotting"
+	@echo "  Plot backend    : $(PLOT_BACKEND)"
+	@echo "  GR prefix       : $(GR_PREFIX)"
+	@echo "  Output dir      : $(OUTPUT_DIR)"
+	@echo "LaTeX" 
+	@echo "  LaTeX available : $(LATEX_AVAIL)"
+	@echo "  LaTeX compiler  : $(LATEX_COMPILER)"
+	@echo "LAPACK/BLAS"
+	@echo "  LAPACK available: $(LAPACK_AVAIL)"
+	@echo "  USE_LAPACK      : $(USE_LAPACK) $(if $(filter 1,$(USE_LAPACK)),(dense Hermitian eigensolvers use LAPACKE zheev),(hand-rolled Jacobi/real-embedding eigensolver))"
+	@if [ "$(USE_LAPACK)" = "0" ] && [ "$(LAPACK_AVAIL)" = "yes" ]; then \
+		echo "                   (LAPACK is available on this system but not enabled - build with USE_LAPACK=1 to use it)"; \
+	fi
+	@echo "MPI"
+	@echo "  MPI available   : $(MPI_AVAIL) ($(MPICC))"
+	@echo "Coverage"
+	@echo "  lcov available  : $(LCOV_AVAIL)"
+	@echo "Build" 
+	@echo "  Examples        : $(words $(EXAMPLES))"
+	@echo "  Tests           : $(words $(TESTS))"
+	@echo "  Benchmarks      : $(words $(BENCHMARKS))"
+	@echo "Common targets"
+	@echo "  make examples       - build all examples"
+	@echo "  make tests          - build all tests"
+	@echo "  make run-tests      - build + run all tests with pass/fail summary"
+	@echo "  make test-NAME      - build + run a single test (e.g. make test-ccsd)"
+	@echo "  make run-examples   - build + run all examples"
+	@echo "  make benchmarks     - build all benchmarks"
+	@echo "  make run-benchmarks - build + run all benchmarks"
+	@echo "  make valgrind       - run all tests under Valgrind (rebuilds without ASan)"
+	@echo "  make coverage       - run tests with gcov/lcov coverage report"
+	@echo "  make USE_LAPACK=1   - enable LAPACK/BLAS-accelerated eigensolvers"
+	@echo "  make SANITIZE=0     - disable AddressSanitizer"
+	@echo "  make clean          - remove build/output artifacts"
 
 # Clean build,test and examples outputs
 clean:
