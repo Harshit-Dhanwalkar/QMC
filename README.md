@@ -173,6 +173,9 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_44_lih_vqe.c</code></li>
   <li><code>eg_45_vqe_nosiy.c</code></li>
   <li><code>eg_46_geometry_optimization.c</code></li>
+  <li><code>eg_47_ccsd.c</code></li>
+  <li><code>eg_48_ccsd_t.c</code></li>
+  <li><code>eg_49_general_basis_parser.c</code></li>
 </ul>
 </details>
 

@@ -710,6 +710,31 @@ void molint_normalize_contraction(basis_function_t *bf) {
   }
 }
 
+double basis_function_value(const basis_function_t *bf, const double r[3]) {
+  double dx = r[0] - bf->center[0];
+  double dy = r[1] - bf->center[1];
+  double dz = r[2] - bf->center[2];
+  double r2 = dx * dx + dy * dy + dz * dz;
+
+  double angular = 1.0;
+  for (int k = 0; k < bf->l; k++) {
+    angular *= dx;
+  }
+  for (int k = 0; k < bf->m; k++) {
+    angular *= dy;
+  }
+  for (int k = 0; k < bf->n; k++) {
+    angular *= dz;
+  }
+
+  double radial = 0.0;
+  for (int i = 0; i < bf->n_primitives; i++) {
+    radial += bf->coefficients[i] * exp(-bf->exponents[i] * r2);
+  }
+
+  return angular * radial;
+}
+
 molecule_t *molecule_alloc(int n_atoms, const double *charge,
                            const double center[][3]) {
   if (n_atoms <= 0) {

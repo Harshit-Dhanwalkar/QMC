@@ -85,6 +85,17 @@ void basis_function_free(basis_function_t *bf);
 void molint_normalize_contraction(basis_function_t *bf);
 
 /*
+ * Evaluate a contracted Cartesian GTO basis function's value at an arbitrary
+ * point r (not just the integrals between two basis functions). Needed for any
+ * real-space numerical-grid method (e.g. Becke-grid DFT)
+ *
+ * Where
+ *   - density n(r) = \sum_{pq} P_{pq} * \phi_{p}(r) * \phi_{q}(r) must be
+ *     evaluated pointwise on a quadrature grid.
+ */
+double basis_function_value(const basis_function_t *bf, const double r[3]);
+
+/*
  * A molecule: point nuclear charges (atomic units, so charge is in units of
  * |e|, e.g. 1.0 for hydrogen) at fixed 3D centers. Same molecule_t can be
  * paired with any basis set.
@@ -208,7 +219,7 @@ double *molecular_eri_tensor(basis_function_t **basis, int n_basis);
   (eri)[(((size_t)(i) * (n) + (j)) * (n) + (k)) * (n) + (l)]
 
 /*
- * Convenience builder: STO-3G hydrogen 1s (Refreneces: Szabo & Ostlund
+ * Builder: STO-3G hydrogen 1s (Refrenece: Szabo & Ostlund
  * Table 3.7 / published EMSL/Gaussian94 STO-3G parameters), already normalized.
  *
  * Returns NULL on allocation failure.
@@ -216,10 +227,9 @@ double *molecular_eri_tensor(basis_function_t **basis, int n_basis);
 basis_function_t *molint_basis_sto3g_h(const double center[3]);
 
 /*
- * Standard published STO-3G lithium parameters (Refreneces: Hehre, Stewart &
- * Pople 1969; same numeric values as widely-used psi4/EMSL Basis Set Exchange
- * sto-3g.gbs).
- * minimal- basis Li needs 5 basis functions : 1s (core), 2s (valence), and a
+ * Published STO-3G lithium parameters (Refreneces: Hehre, Stewart & Pople 1969;
+ * same numeric values as widely-used psi4/EMSL Basis Set Exchange sto-3g.gbs).
+ * minimal-basis Li needs 5 basis functions : 1s (core), 2s (valence), and a
  * full 2p shell (2px, 2py, 2pz), even though 2p is unoccupied in the atomic
  * ground state, because STO-3G is defined as a full valence-shell minimal
  * basis. The 2s and 2p functions share the same 3 primitive exponents (a single

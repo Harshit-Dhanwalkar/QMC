@@ -214,7 +214,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/ccsd_t.c \
                $(PHYSICS_DIR)/ucc.c \
                $(PHYSICS_DIR)/dft.c \
-               $(PHYSICS_DIR)/basis_parser.c
+               $(PHYSICS_DIR)/basis_parser.c \
+               $(PHYSICS_DIR)/molecular_dft.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -273,7 +274,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_44_lih_vqe \
               $(BUILD_DIR)/eg_45_noisy_vqe \
               $(BUILD_DIR)/eg_46_geometry_optimization \
-              $(BUILD_DIR)/eg_47_general_basis_parser
+              $(BUILD_DIR)/eg_47_ccsd \
+              $(BUILD_DIR)/eg_48_ccsd_t
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -544,7 +546,7 @@ info:
 	@echo "  MPI available   : $(MPI_AVAIL) ($(MPICC))"
 	@echo "Coverage"
 	@echo "  lcov available  : $(LCOV_AVAIL)"
-	@echo "Build" 
+	@echo "Build"
 	@echo "  Examples        : $(words $(EXAMPLES))"
 	@echo "  Tests           : $(words $(TESTS))"
 	@echo "  Benchmarks      : $(words $(BENCHMARKS))"
