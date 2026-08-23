@@ -73,23 +73,23 @@ int evolve_tdse_crank(const double *diag, const double *offdiag, int n,
 int evolve_tdse_split_step(cvector_t *psi, const double *x, const double *V,
                            int n, double dx, double dt, int steps, double hbar,
                            double mass) {
-  if (!psi || !x || !V || n < 2 || steps < 1) {
+  if (!psi || !x || !V || n < 2 || steps < 1 || hbar <= 0.0 || mass <= 0.0) {
     return -1;
   }
 
   double dk = 2.0 * M_PI / (n * dx);
-  double hbar_over_2m = hbar * hbar / (2.0 * mass);
+  double hbar_over_2m = hbar / (2.0 * mass);
 
   for (int s = 0; s < steps; s++) {
-    // 1. Half-step in position space: \exp(-i * V * dt/2)
+    // 1. Half-step in position space: \exp(-i * V * dt / (2 * \hbar))
     for (int i = 0; i < n; i++) {
-      double phase = -V[i] * dt / 2.0;
+      double phase = -V[i] * dt / (2.0 * hbar);
       complex_t exp_factor = c_exp(c_imag(phase));
 
       psi->data[i] = c_mul(psi->data[i], exp_factor);
     }
 
-    // 2. Full step in momentum space: \exp(-i * \hbar^2 k^2/(2m) dt)
+    // 2. Full step in momentum space: \exp(-i * \hbar k^2 / (2 * m) dt)
     fft(psi); // forward FFT (no normalization)
     for (int i = 0; i < n; i++) {
       double k = (i < n / 2) ? i * dk : (i - n) * dk;
@@ -100,9 +100,9 @@ int evolve_tdse_split_step(cvector_t *psi, const double *x, const double *V,
     }
     ifft(psi); // inverse FFT (with normalization)
 
-    // 3. Half-step in position space: \exp(-i * V * dt/2)
+    // 3. Half-step in position space: \exp(-i * V * dt / (2 * \hbar))
     for (int i = 0; i < n; i++) {
-      double phase = -V[i] * dt / 2.0;
+      double phase = -V[i] * dt / (2.0 * hbar);
       complex_t exp_factor = c_exp(c_imag(phase));
 
       psi->data[i] = c_mul(psi->data[i], exp_factor);

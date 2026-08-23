@@ -279,7 +279,9 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_48_ccsd_t \
               $(BUILD_DIR)/eg_49_general_basis_parser \
               $(BUILD_DIR)/eg_50_ucc \
-              $(BUILD_DIR)/eg_51_qpe
+              $(BUILD_DIR)/eg_51_qpe \
+              $(BUILD_DIR)/eg_52_molecular_dft \
+              $(BUILD_DIR)/eg_53_schrodinger_solvers
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -316,6 +318,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lanczos \
               $(BUILD_DIR)/test_vmc \
               $(BUILD_DIR)/test_dmc \
+              $(BUILD_DIR)/test_schrodinger \
               $(BUILD_DIR)/test_pimc \
               $(BUILD_DIR)/test_vqe \
               $(BUILD_DIR)/test_vqe_noisy \

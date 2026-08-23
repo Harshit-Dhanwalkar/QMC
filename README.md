@@ -179,6 +179,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_50_ucc.c</code></li>
   <li><code>eg_51_qpe.c</code></li>
   <li><code>eg_52_molecular_dft.c</code></li>
+  <li><code>eg_53_schrodinger_solvers.c</code></li>
 </ul>
 </details>
 
@@ -197,6 +198,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_crank_nicolson.c</code></li>
   <li><code>test_dirac.c</code></li>
   <li><code>test_dmc.c</code></li>
+  <li><code>test_schrodinger.c</code></li>
   <li><code>test_driven.c</code></li>
   <li><code>test_fermi_golden_rule.c</code></li>
   <li><code>test_fft.c</code></li>
