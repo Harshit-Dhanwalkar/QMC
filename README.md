@@ -176,6 +176,9 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_47_ccsd.c</code></li>
   <li><code>eg_48_ccsd_t.c</code></li>
   <li><code>eg_49_general_basis_parser.c</code></li>
+  <li><code>eg_50_ucc.c</code></li>
+  <li><code>eg_51_qpe.c</code></li>
+  <li><code>eg_52_molecular_dft.c</code></li>
 </ul>
 </details>
 

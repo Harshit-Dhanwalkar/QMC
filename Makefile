@@ -25,7 +25,8 @@ endif
 # AddressSanitizer is on by default.
 SANITIZE ?= 1
 ifeq ($(SANITIZE),1)
-    CFLAGS += -fsanitize=address -g -DSANITIZE_ENABLED=1
+    CFLAGS  += -fsanitize=address -g -DSANITIZE_ENABLED=1
+    LDFLAGS += -fsanitize=address
 endif
 
 CFLAGS += -MMD -MP
@@ -112,7 +113,7 @@ CFLAGS += -DQMC_PLOT_BACKEND_NAME=\"$(PLOT_BACKEND)\"
 CFLAGS += -DQMC_LATEX_COMPILER=\"$(LATEX_COMPILER)\"
 BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
-LDFLAGS  = -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
+LDFLAGS += -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
 
 # Additive-only hooks for CI/ad-hoc flag injection
 EXTRA_CFLAGS  ?=
@@ -275,7 +276,10 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_45_noisy_vqe \
               $(BUILD_DIR)/eg_46_geometry_optimization \
               $(BUILD_DIR)/eg_47_ccsd \
-              $(BUILD_DIR)/eg_48_ccsd_t
+              $(BUILD_DIR)/eg_48_ccsd_t \
+              $(BUILD_DIR)/eg_49_general_basis_parser \
+              $(BUILD_DIR)/eg_50_ucc \
+              $(BUILD_DIR)/eg_51_qpe
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -334,7 +338,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_ccsd_t \
               $(BUILD_DIR)/test_ucc \
               $(BUILD_DIR)/test_qpe \
-              $(BUILD_DIR)/test_basis_parser
+              $(BUILD_DIR)/test_basis_parser \
+              $(BUILD_DIR)/test_molecular_dft
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
@@ -375,10 +380,13 @@ directories:
 	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/gnuplot
 	@mkdir -p $(BUILD_DIR)/$(EXPORT_DIR)/matplotlib
 	@mkdir -p $(BUILD_DIR)/$(LATEX_DIR)
+	@mkdir -p $(BUILD_DIR)/tests
+	@mkdir -p $(BUILD_DIR)/examples
+	@mkdir -p $(BUILD_DIR)/benchmarks
 # TODO: generic auto create target subdir for all .o instead of using `directories`
-# $(BUILD_DIR)/%.o: %.c
-# 	@mkdir -p $(dir $@)
-# 	$(CC) $(CFLAGS) -Icore -Iexport -I. -c $< -o $@
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -Icore -Iexport -I. -c $< -o $@
 
 $(OUTPUT_DIR):
 	@mkdir -p $(OUTPUT_DIR)
