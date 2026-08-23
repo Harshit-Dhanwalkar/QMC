@@ -129,9 +129,9 @@ static void test_core_math_exact_h2(void) {
   hf_ref->data[0b1100] = c_real(1.0); // modes 0,1 occupied (MSB-first)/
 
   /*
-   * HACK: hand scan around the known-optimal theta from the Python cross-check
-   * (-0.11295559...) to bracket the minimum without needing a general optimizer
-   * in this test
+   * HACK: hand scan around the known-optimal \theta cross-check
+   * (-0.11295559...) to bracket minimum without needing a general optimizer in
+   * this test
    */
   double best_e = 1e9, best_theta = 0.0;
   for (int s = -200; s <= 200; s++) {
@@ -219,6 +219,7 @@ static void test_ccsd_to_ucc_wiring(void) {
       theta_d[0], e_seed);
   check_true(e_seed >= H2_FCI_ENERGY - 1e-9,
              "CCSD-seeded UCC energy is a variational upper bound on FCI");
+
   check_close(e_seed, H2_FCI_ENERGY, 1e-3,
               "CCSD-seeded (unoptimized) UCC energy is already CCSD-quality "
               "close to FCI");
@@ -247,6 +248,7 @@ static void test_ccsd_to_ucc_wiring(void) {
   check_true(best_e <= e_seed + 1e-12,
              "local scan never finds an energy above the seed itself "
              "(sanity: seed is a valid point in the scanned set)");
+
   check_close(best_e, H2_FCI_ENERGY, 1e-6,
               "best point found near the CCSD seed matches exact FCI to the "
               "same precision as test 1's independent scan");

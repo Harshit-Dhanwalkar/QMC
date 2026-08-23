@@ -10,14 +10,14 @@
  *      matrix must equal the exact electron count.
  *   3. End-to-end total energy on H2/STO-3G and LiH/STO-3G, cross-validated
  *      (Reference: Perdew-Zunger 1981 correlation), lda_xc_energy_density /
- *      lda_xc_potential in dft.c): H2/STO-3G  @ R=1.4 bohr: -1.12132825509958
+ *      lda_xc_potential in dft.c): H2/STO-3G @ R=1.4 bohr: -1.12132825509958
  *      Hartree LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree
  */
 
 #include "../physics/molecular_dft.h"
 #include "../physics/molecular_hf.h"
 #include "../physics/molecular_integrals.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
+#include "../core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,6 +113,7 @@ static void test_grid_integrates_electron_count(void) {
   if (hf && grid) {
     // Build the RHF density matrix from occupied MOs
     double D[6][6];
+
     for (int p = 0; p < 6; p++) {
       for (int q = 0; q < 6; q++) {
         double v = 0.0;
@@ -135,6 +136,7 @@ static void test_grid_integrates_electron_count(void) {
       }
 
       double dens = 0.0;
+
       for (int p = 0; p < 6; p++) {
         for (int q = 0; q < 6; q++) {
           dens += D[p][q] * phi[p] * phi[q];
@@ -184,6 +186,7 @@ static void test_h2_ks_lda_matches_pyscf(void) {
       check(dft->converged, "KS-LDA should converge");
       check_close(dft->total_energy, -1.12132825509958, 1e-5,
                   "H2/STO-3G KS-LDA total energy matches PySCF reference");
+
       molecular_dft_result_free(dft);
     }
   }
@@ -229,6 +232,7 @@ static void test_lih_ks_lda_matches_pyscf(void) {
       check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
                   dft->total_energy, 1e-4,
                   "reported energy components sum to the total energy");
+
       molecular_dft_result_free(dft);
     }
   }
@@ -280,6 +284,11 @@ int main(void) {
   test_lih_ks_lda_matches_pyscf();
   test_invalid_inputs_rejected();
 
-  printf("\n=== %s ===\n", failures == 0 ? "ALL TESTS PASSED" : "FAILURES");
-  return failures == 0 ? 0 : 1;
+  if (failures == 0) {
+    printf("\nAll test_molecular_dft checks passed.\n");
+    return 0;
+  } else {
+    printf("\n%d test_molecular_dhf check(s) FAILED.\n", failures);
+    return 1;
+  }
 }

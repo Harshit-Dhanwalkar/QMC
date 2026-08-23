@@ -3,12 +3,12 @@
  * coordinate-descent optimizer).
  *
  * 1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt(a^2 + b^2)
- *   (2x2 Hermitian, closed form).
+ *    (2x2 Hermitian, closed form).
  * 2. Transverse-field Ising model (n_qubits=3): cross-checked against exact
- *   diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
- *   simple closed form for a small open chain.
+ *    diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has no
+ *    simple closed form for a small open chain.
  * 3. vqe_expectation / vqe_energy fixture checks at fixed (untrained)
- *   parameters.
+ *    parameters.
  * 4. Invalid-input handling.
  */
 

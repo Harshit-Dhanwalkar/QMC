@@ -206,8 +206,8 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
  * survivors/replicas into `next`. Walkers beyond max_population are handled by
  * random subsampling back down to target_population.
  *
- * Parallelized across the walker population. Structured as compute-then-scatter
- * to stay race-free under  OpenMP: pass 1 (parallel) evolves every walker
+ * Parallelized across walker population. Structured as compute-then-scatter
+ * to stay race-free under OpenMP: pass 1 (parallel) evolves every walker
  * independently using its own slot-indexed RNG stream from `walker_streams`
  * (length >= cur->count, provided by caller via rng_jump chaining); pass 2
  * (serial) does prefix-sum-style scatter into `next->data` and accept/energy
@@ -225,10 +225,8 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
                                  int max_population,
                                  rng_state_t *walker_streams,
                                  rng_state_t *control_rng, long *accept_sum,
-                                 long *move_count) {
+                                 long *move_count, long *resample_count) {
   next->count = 0;
-  // double E_L_weighted_sum = 0.0;
-  // long total_copies = 0;
 
   int n = cur->count;
   vmc_walker_t *evolved = malloc((size_t)n * sizeof(vmc_walker_t));
@@ -242,7 +240,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
     free(acc);
     free(EL);
 
-    return E_T; // allocation failure: bail out with E_T unchanged
+    return E_T; // allocation failure: fallback with E_T unchanged
   }
 
 #pragma omp parallel for schedule(dynamic)
@@ -287,6 +285,10 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
    * target_population whenever post-branching count exceeds max_population.
    */
   if (next->count > max_population) {
+    if (resample_count) {
+      (*resample_count)++;
+    }
+
     int n_pool = next->count;
     double step = (double)n_pool / target_population;
     double offset = rng_uniform(control_rng) * step;
@@ -332,8 +334,9 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     return result;
   }
 
-  dmc_population_t *pop_a = dmc_population_alloc(max_population);
-  dmc_population_t *pop_b = dmc_population_alloc(max_population);
+  // Population-control safety valve
+  dmc_population_t *pop_a = dmc_population_alloc(3 * max_population);
+  dmc_population_t *pop_b = dmc_population_alloc(3 * max_population);
   if (!pop_a || !pop_b) {
     dmc_population_free(pop_a);
     dmc_population_free(pop_b);
@@ -383,12 +386,14 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
 
   dmc_population_t *cur = pop_a;
   dmc_population_t *next = pop_b;
-  long accept_sum = 0, move_count = 0;
+  long accept_sum = 0;
+  long move_count = 0;
+  long resample_count = 0;
 
   for (int gen = 0; gen < n_equilibration; gen++) {
     double mean_E_L = run_one_generation(
         cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
-        walker_streams, rng, &accept_sum, &move_count);
+        walker_streams, rng, &accept_sum, &move_count, &resample_count);
     int N = next->count;
 
     E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
@@ -419,7 +424,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     for (int s = 0; s < block_size; s++) {
       double mean_E_L = run_one_generation(
           cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
-          walker_streams, rng, &accept_sum, &move_count);
+          walker_streams, rng, &accept_sum, &move_count, &resample_count);
       int N = next->count;
       E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
 
@@ -477,6 +482,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
       (pop_size_count > 0) ? pop_size_sum / pop_size_count : 0.0;
   result.acceptance_rate =
       (move_count > 0) ? (double)accept_sum / move_count : 0.0;
+  result.n_resamples = resample_count;
 
   dmc_population_free(pop_a);
   dmc_population_free(pop_b);
@@ -532,7 +538,11 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
         n_equilibration, n_blocks, block_size);
   }
 
-  double sum_mixed = 0.0, sum_growth = 0.0, sum_pop = 0.0, sum_acc = 0.0;
+  double sum_mixed = 0.0;
+  double sum_growth = 0.0;
+  double sum_pop = 0.0;
+  double sum_acc = 0.0;
+  long sum_resamples = 0;
   int valid_replicas = 0;
 
   for (int i = 0; i < n_replicas; i++) {
@@ -544,6 +554,8 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
     sum_growth += replica_results[i].energy_growth;
     sum_pop += replica_results[i].mean_population;
     sum_acc += replica_results[i].acceptance_rate;
+    sum_resamples += replica_results[i].n_resamples;
+
     valid_replicas++;
   }
 
@@ -585,6 +597,7 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
   result.n_blocks = n_blocks * valid_replicas;
   result.mean_population = sum_pop / valid_replicas;
   result.acceptance_rate = sum_acc / valid_replicas;
+  result.n_resamples = sum_resamples;
 
   free(streams);
   free(replica_results);

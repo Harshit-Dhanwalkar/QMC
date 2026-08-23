@@ -3,10 +3,10 @@
  * fast path.
  *
  * 1. Discrete Laplacian (diag=2, offdiag=-1): tridiag_eigvals must match known
- *   closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1)).
+ *    closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1)).
  * 2. tridiag_eigvals must agree exactly (same shared core, skipping eigenvector
- *   bookkeeping) with tridiag_eigh's eigenvalues, across several random
- *   tridiagonal matrices.
+ *    bookkeeping) with tridiag_eigh's eigenvalues, across several random
+ *    tridiagonal matrices.
  * 3. tridiag_eigvals's eigenvectors field must be NULL.
  */
 

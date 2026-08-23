@@ -142,7 +142,8 @@ static void test_dmc_run_accuracy(void) {
              "population control holds near target");
 }
 
-/* DMC for a different two-electron ion (Li+, Z=3): must output closer to exact
+/*
+ * DMC for a different two-electron ion (Li+, Z=3): must output closer to exact
  * reference than VMC's own Li+ estimate does, and must respect variational
  * theorem.
  */
@@ -185,9 +186,12 @@ static void test_dmc_run_different_ion(void) {
   }
 }
 
-/* Stress test for comb-resampling population control: with max_population set
- * close to target_population, population control triggers on nearly every
- * generation instead of occasionally
+/*
+ * Regression test for max_population set close enough to target_population that
+ * population control should trigger "on nearly every generation"): with
+ * max_population only 3x target_population and a small tau=0.01, the E_T
+ * feedback controller alone keeps the population close enough to target that
+ * comb resampling is essentially never needed.
  */
 static void test_dmc_frequent_resampling(void) {
   printf("test_dmc_frequent_resampling:\n");
@@ -205,10 +209,10 @@ static void test_dmc_frequent_resampling(void) {
                            n_equilibration, n_blocks, block_size,
                            /*seed=*/20260803ULL);
 
-  printf("  mixed:  %.6f +- %.6f Hartree  (max_population=240, target=200)\n",
-         r.energy_mixed, r.error_mixed);
-  printf("  mean_population=%.2f  acceptance=%.4f\n", r.mean_population,
-         r.acceptance_rate);
+  printf("  mixed:  %.6f +- %.6f Hartree  (max_population=%d, target=%d)\n",
+         r.energy_mixed, r.error_mixed, max_population, target_population);
+  printf("  mean_population=%.2f  acceptance=%.4f  n_resamples=%ld\n",
+         r.mean_population, r.acceptance_rate, r.n_resamples);
 
   double E_exact = -2.9037;
   double tol = RUNNING_ON_VALGRIND ? 0.1 : 0.03;
@@ -219,7 +223,51 @@ static void test_dmc_frequent_resampling(void) {
              "population control holds near target under frequent triggering");
 }
 
-/* n_replicas=1 must reproduce dmc_run exactly, same reason being as analogous
+/*
+ * Stress test for comb-resampling code path itself (not just E_T feedback
+ * controller): forces post-branching population overflow past max_population by
+ * combining a tight target/max_population margin with a large \tau (unphysical
+ * for accurate DMC energies : this is purely a population-control mechanism
+ * test, not a physics accuracy test).
+ */
+static void test_dmc_resampling_engages_under_tight_margin(void) {
+  printf("test_dmc_resampling_engages_under_tight_margin:\n");
+
+  double Z = 2.0, Zeff = 1.6875;
+  double b = 0.35;
+  double tau = 0.1; /* deliberately large: amplifies branching-weight
+                     * variance and weakens the kappa/tau feedback gain, so
+                     * population pressure against the cap is easy to
+                     * reproduce deterministically for a fixed seed */
+  int target_population = RUNNING_ON_VALGRIND ? 30 : 150;
+  int max_population =
+      RUNNING_ON_VALGRIND
+          ? 33
+          : 165; /* only 1.1x target, far below documented-safe ~3x */
+  int n_equilibration = RUNNING_ON_VALGRIND ? 20 : 100;
+  int n_blocks = RUNNING_ON_VALGRIND ? 3 : 10;
+  int block_size = RUNNING_ON_VALGRIND ? 20 : 100;
+
+  dmc_result_t r = dmc_run(Z, Zeff, b, target_population, max_population, tau,
+                           n_equilibration, n_blocks, block_size,
+                           /*seed=*/7ULL);
+
+  printf("  n_resamples=%ld  mean_population=%.2f  energy_mixed=%.4f\n",
+         r.n_resamples, r.mean_population, r.energy_mixed);
+
+  check_true(
+      r.n_resamples > 0,
+      "comb resampling actually engages under a tight max_population margin");
+  check_true(r.mean_population > target_population * 0.1 &&
+                 r.mean_population < max_population * 1.5,
+             "population stays bounded (neither collapsed to ~0 nor "
+             "unboundedly growing) with resampling active");
+  check_true(r.energy_mixed == r.energy_mixed,
+             "energy_mixed is not NaN (sanity check on stressed run)");
+}
+
+/*
+ * n_replicas=1 must reproduce dmc_run exactly, same reason being as analogous
  * VMC regression test: stream 0 has zero rng_jump() calls applied, and both
  * route through same dmc_run_with_rng() population loop. (same parameters, same
  * seed)

@@ -4,13 +4,13 @@
  * extrapolation (ZNE).
  *
  * 1. Zero-noise limit: \gamma1=\gamma2=0 must reproduce vqe.c's pure-state
- *   vqe_energy exactly, since a decoherence rate of zero degenerates the
- *   density-matrix evolution to ordinary unitary conjugation.
+ *    vqe_energy exactly, since a decoherence rate of zero degenerates the
+ *    density-matrix evolution to ordinary unitary conjugation.
  * 2. Physicality: Tr(\rho)=1 and purity in (0,1] at nonzero noise, and purity
- *   strictly decreases as gamma increases (state becomes more mixed).
+ *    strictly decreases as gamma increases (state becomes more mixed).
  * 3. ZNE sanity: on a case with a controlled amount of noise, the extrapolated
- *   energy is closer to the true (noiseless) ground energy than the raw noisy
- *   energy at the base noise level.
+ *    energy is closer to the true (noiseless) ground energy than the raw noisy
+ *    energy at the base noise level.
  * 4. Invalid-input handling.
  */
 

@@ -39,6 +39,9 @@ typedef struct {
   int n_blocks;           /* number of statistics blocks actually completed */
   double mean_population; /* average population size over sampling phase */
   double acceptance_rate; /* overall single-electron move acceptance fraction */
+  long n_resamples; /* number of generations (across equilibration + * sampling)
+                       where post-branching population exceeded max_population
+                       and comb resampling engaged */
 } dmc_result_t;
 
 /* Allocate population buffer with given maximum capacity.
