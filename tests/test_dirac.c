@@ -124,8 +124,77 @@ static int test_free_particle_branches(void) {
 
   eigen_free(eig);
 
-  // Loose: most states should fall in two branches, not the gap.
+  // Loose: most states should fall in two branches, not the gap
   return (n_gap > n_total / 4) ? 1 : 0;
+}
+
+/*
+ * Harmonic V(x) and c taken large (weak-relativistic-coupling limit), Dirac
+ * equation's positive-energy branch must reduce exactly to ordinary
+ * Schrodinger-equation spectrum shifted by the rest-mass energy, E - m * c^2 ->
+ * (n + 1/2) * \hbar*\omega.
+ */
+static int test_nonrelativistic_limit(void) {
+  int N = RUNNING_ON_VALGRIND ? 60 : 150;
+  double L = 20.0;
+  double dx = L / (N - 1);
+  double hbar = 1.0, c = 200.0, m = 1.0, omega = 1.0;
+
+  double *x = malloc(N * sizeof *x);
+  double *V = malloc(N * sizeof *V);
+  for (int i = 0; i < N; i++) {
+    x[i] = -L / 2.0 + i * dx;
+    V[i] = 0.5 * m * omega * omega * x[i] * x[i];
+  }
+
+  eigen_t *eig = dirac_1d(x, N, V, m, hbar, c);
+  free(x);
+  free(V);
+
+  if (!eig) {
+    printf("  FAIL: dirac_1d returned NULL\n");
+    return 1;
+  }
+
+  double mc2 = m * c * c;
+  // Collect the lowest few positive-energy (E > 0) eigenvalues
+  int n_total = eig->n;
+  double *pos = malloc((size_t)n_total * sizeof(double));
+  int n_pos = 0;
+  for (int i = 0; i < n_total; i++) {
+    if (eig->eigenvalues[i] > 0.0) {
+      pos[n_pos++] = eig->eigenvalues[i];
+    }
+  }
+  /* NOTE: eigenvalues from cmatrix_eigh_complex are ascending, so the smallest
+   * n_pos entries are already the lowest positive-energy states. */
+
+  int n_check = RUNNING_ON_VALGRIND ? 1 : 3;
+  int failed = 0;
+  printf("  Non-relativistic limit (c=%.0f, harmonic V, m=omega=hbar=1):\n", c);
+  for (int n = 0; n < n_check; n++) {
+    double exact = (n + 0.5) * hbar * omega;
+    /* each level appears twice (spin/component doubling); check first of the
+     * pair at index 2*n */
+    double shifted = pos[2 * n] - mc2;
+    double err = fabs(shifted - exact);
+    double tol = 0.02 * (n + 1);
+    printf("    n=%d: E-mc^2=%.6f  exact=(n+1/2)=%.6f  err=%.2e  tol=%.2f\n", n,
+           shifted, exact, err, tol);
+    if (err > tol) {
+      failed = 1;
+    }
+  }
+
+  free(pos);
+  eigen_free(eig);
+
+  if (failed) {
+    printf("  FAIL: non-relativistic limit does not match exact QHO "
+           "spectrum\n");
+  }
+
+  return failed;
 }
 
 static int test_dirac_hydrogen_sommerfeld(void) {
@@ -227,6 +296,9 @@ int main(void) {
 
   printf("Free particle +-mc^2 branch structure (qualitative):\n");
   failed += test_free_particle_branches();
+
+  printf("Non-relativistic limit vs. exact harmonic-oscillator spectrum:\n");
+  failed += test_nonrelativistic_limit();
 
   printf("Dirac radial solve vs. exact Sommerfeld hydrogen spectrum:\n");
   failed += test_dirac_hydrogen_sommerfeld();

@@ -67,25 +67,34 @@ klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
 
 void klein_gordon_solution_free(klein_gordon_solution_t *sol);
 
-/* Solve 1D Dirac equation (2-component) for scalar potential:
-   [ c * \sigma_z * p + m * c^2 * \sigma_x + V(x) ] * \phi = E * \phi
-   Where \sigma_x, \sigma_z are Pauli matrices.
-   Returns eigen_t with eigenvalues (energies) and eigenvectors (spinors).
-*/
+/*
+ * Solve 1D Dirac equation (2-component) for scalar potential:
+ * [ c * \sigma_x * p + m * c^2 * \sigma_z + V(x) ] * \phi = E * \phi
+ *
+ * Where
+ *  \sigma_x, \sigma_z are Pauli matrices (Dirac/Bjorken-Drell representation:
+ * mass term \beta=\sigma_z sits on diagonal (m * c^2 / -m * c^2 on two spinor
+ * components), momentum term \alpha = \sigma_x sits off-diagonal (couples two
+ * components via (couples two components via c * p = - i * \hbar * c * d / dx).
+ *
+ * Returns eigen_t with eigenvalues (energies) and eigenvectors (spinors).
+ */
 eigen_t *dirac_1d(const double *x, int N, const double *V, double m,
                   double hbar, double c);
 
 /*
  * Radial Dirac equation for central potential V(r), fixed \kappa
- * (relativistic angular quantum number:
- * \kappa = -(l+1) for j=l+1/2,
- * \kappa = +l for j=l-1/2).
+ * Relativistic angular quantum number:
+ *  \kappa = -(l + 1) for j=l + 1/2
+ *  \kappa = +l       for j = l - 1/2
+ *
  * Solves coupled first-order radial equations
  * for the "large"/"small" radial components :
  *  G(r)= r * g(r),
  *  F(r)= r * f(r):
  *  \hbar * c * (dG/dr) = -\hbar * c * (\kappa / r ) *G + (E - V + m * c^2) * F
  *  \hbar * c * (dF/dr) =  \hbar * c * (\kappa / r ) *F - (E - V - m * c^2) * G
+ *
  * discretized via central differences into a 2N x 2N matrix.
  * Eigenvector columns are 2N-dimensional:
  *  rows [0,N) = G(r), rows [N,2N) = F(r).
