@@ -33,6 +33,7 @@ double *logspace(double start, double end, int n) {
 
   for (int i = 0; i < n; i++) {
     double ratio = i / (double)(n - 1);
+
     arr[i] = pow(10.0, start + ratio * (end - start));
   }
 
@@ -125,6 +126,7 @@ void save_wavefunction(const char *filename, const double *x,
                        const cvector_t *psi, int n) {
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
+
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
@@ -144,6 +146,7 @@ void save_wavefunction(const char *filename, const double *x,
 void save_eigenvalues(const char *filename, const double *eigenvals, int n) {
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
+
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
@@ -163,6 +166,7 @@ void save_potential(const char *filename, const double *x, const double *V,
                     int n) {
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
+
   FILE *f = fopen(path, "w");
   if (!f) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
@@ -178,14 +182,26 @@ void save_potential(const char *filename, const double *x, const double *V,
   fclose(f);
 }
 
+/*
+ * Transform a position-space wavefunction to momentum space via FFT,
+ * normalized to preserve total probability (Parseval's theorem).
+ *   \phi(k_j) = (dx / \sqrt(2 * \pi)) * FFT_raw(\psi_x)[j]
+ * using the RAW (unnormalized) forward FFT, not fft_normalized's unitary
+ * (1 / \sqrt(N)) convention.
+ */
+
 cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
   cvector_t *psi_k = cvector_copy(psi_x);
   if (!psi_k) {
     return NULL;
   }
 
-  fft_normalized(psi_k);
-  fft_shift(psi_k);
+  fft(psi_k); // raw, unnormalized forward transform
+
+  double scale = dx / sqrt(2.0 * M_PI);
+  for (int i = 0; i < psi_k->n; i++) {
+    psi_k->data[i] = c_scale(psi_k->data[i], scale);
+  }
 
   return psi_k;
 }

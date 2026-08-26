@@ -288,6 +288,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_numerov \
               $(BUILD_DIR)/test_rk4 \
               $(BUILD_DIR)/test_fft \
+              $(BUILD_DIR)/test_wavefn \
               $(BUILD_DIR)/test_hydrogen \
               $(BUILD_DIR)/test_helium \
               $(BUILD_DIR)/test_perturbation \

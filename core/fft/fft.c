@@ -23,8 +23,10 @@ static unsigned int bit_reverse(unsigned int x, int log2n) {
 static void bit_reverse_permute(cvector_t *x) {
   int n = x->n;
   int log2n = (int)(log2(n) + 0.5);
+
   for (int i = 0; i < n; i++) {
     int j = bit_reverse(i, log2n);
+
     if (j > i) {
       complex_t tmp = x->data[i];
       x->data[i] = x->data[j];
@@ -33,16 +35,42 @@ static void bit_reverse_permute(cvector_t *x) {
   }
 }
 
+static void naive_dft(cvector_t *x, int inverse) {
+  int n = x->n;
+  complex_t *out = malloc((size_t)n * sizeof(complex_t));
+  if (!out) {
+    return;
+  }
+
+  double sign = inverse ? 1.0 : -1.0;
+  for (int k = 0; k < n; k++) {
+    complex_t sum = {0.0, 0.0};
+
+    for (int j = 0; j < n; j++) {
+      double angle = sign * 2.0 * M_PI * k * j / n;
+      complex_t w = {cos(angle), sin(angle)};
+
+      sum = c_add(sum, c_mul(x->data[j], w));
+    }
+
+    out[k] = sum;
+  }
+
+  memcpy(x->data, out, (size_t)n * sizeof(complex_t));
+  free(out);
+}
+
 // public FFT routines
 void fft(cvector_t *x) {
   int n = x->n;
-  if (n < 2)
+  if (n < 2) {
     return;
+  }
+
   // Check power of two
   if ((n & (n - 1)) != 0) {
-    // HACK:
-    // Not power of two: fallback to naive DFT?
-    // For simplicity return; caller must ensure length is power of two.
+    naive_dft(x, /*inverse=*/0);
+
     return;
   }
 
@@ -58,8 +86,10 @@ void fft(cvector_t *x) {
       for (int j = 0; j < len / 2; j++) {
         complex_t u = x->data[i + j];
         complex_t v = c_mul(x->data[i + j + len / 2], w);
+
         x->data[i + j] = c_add(u, v);
         x->data[i + j + len / 2] = c_sub(u, v);
+
         w = c_mul(w, wlen);
       }
     }
@@ -72,6 +102,7 @@ void ifft(cvector_t *x) {
   for (int i = 0; i < n; i++) {
     x->data[i].im = -x->data[i].im;
   }
+
   fft(x);
 
   for (int i = 0; i < n; i++) {
@@ -101,16 +132,15 @@ void ifft_normalized(cvector_t *x) {
 
 void fft_shift(cvector_t *x) {
   int n = x->n;
-  int half = n / 2;
+  int shift = n / 2;
   cvector_t *tmp = cvector_alloc(n);
 
   if (!tmp) {
     return;
   }
 
-  for (int i = 0; i < half; i++) {
-    tmp->data[i] = x->data[i + half];
-    tmp->data[i + half] = x->data[i];
+  for (int i = 0; i < n; i++) {
+    tmp->data[(i + shift) % n] = x->data[i];
   }
 
   memcpy(x->data, tmp->data, n * sizeof(complex_t));
