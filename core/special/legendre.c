@@ -6,7 +6,7 @@ Legendre polynomials (angular momentum)
 #include <stdlib.h>
 
 /* Legendre polynomials P_l(x) using recurrence:
- *  (l+1)P_{l+1} = (2l+1)x P_l - l P_{l-1}
+ *  (l+1) P_{l+1} = (2l+1) P_l - l P_{l-1}
  * P_0=1, P_1=x
  */
 double legendre(int l, double x) {
@@ -36,8 +36,8 @@ double legendre(int l, double x) {
  * Use recurrence from Numerical Recipes:
  *   P_l^m = (-1)^m * (1 - x^2)^{m/2} d^m/dx^m P_l(x)
  * Implement using recursion in l for fixed m.
-   HACK: for small l, compute via derivative of P_l.
-*/
+ *  HACK: for small l, compute via derivative of P_l.
+ */
 double assoc_legendre(int l, int m, double x) {
   if (m < 0 || m > l) {
     return 0.0;

@@ -1,25 +1,29 @@
 /*
- * Solving and Evolving the Schrodinger Equation: Three Methods, One Physical
- * System
+ * Solving and Evolving the Schrodinger Equation: 4 Methods, One Physical System
  *
- * physics/schrodinger.c exposes four solvers/evolvers; only solve_tise_matrix
- * had any example before this one. This example demonstrates the other three on
+ * physics/schrodinger.c exposes five solvers/evolvers; only solve_tise_matrix
+ * had any example before this one. This example demonstrates the other four on
  * the same physical system (the 1D quantum harmonic oscillator), cross-checking
  * each against either an exact analytic result or against each other:
  *
- *   1. solve_tise_shoot       - Numerov shooting for a specific bound-state
- *                               energy level, checked against the exact
- *                               (n + 1/2)*hbar*omega spectrum.
- *   2. evolve_tdse_crank      - Crank-Nicolson time evolution of a
- *                               coherent-state wavepacket, checked against the
- *                               exact classical trajectory x(t) = x0 *
- *                               \cos(\omega * t) (an exact result for any \hbar
- *                               : Ehrenfest's theorem is exact for a harmonic
- *                               potential).
- *   3. evolve_tdse_split_step - FFT-based split-step evolution of same coherent
- *                               state, cross-checked against both the exact
- *                               trajectory and evolve_tdse_crank's
- *                               independently-discretized result.
+ * 1. solve_tise_shoot       - Numerov shooting for a specific bound-state
+ *                                energy level, checked against the exact
+ *                                (n + 1/2)*hbar*omega spectrum.
+ * 2. solve_tise_shoot_matching - log-derivative-matching shooting (distinct
+ *                                from solve_tise_shoot, whose underlying
+ *                                numerov_shoot() actually diagonalizes a
+ *                                tridiagonal matrix despite its name),
+ *                                cross-checked against both the exact spectrum
+ *                                and solve_tise_shoot's independent
+ *                                diagonalization result.
+ * 3. evolve_tdse_crank      - Crank-Nicolson time evolution of a
+ *                                state, cross-checked against both the exact
+ *                                trajectory and evolve_tdse_crank's
+ *                                independently-discretized result.
+ * 4. evolve_tdse_split_step - FFT-based split-step evolution of same coherent
+ *                                state, cross-checked against both the exact
+ *                                trajectory and evolve_tdse_crank's
+ *                                independently-discretized result.
  */
 
 #include "../core/complex.h"
@@ -60,7 +64,7 @@ static double compute_x_mean(const cvector_t *psi, const double *x, int n) {
 }
 
 int main(void) {
-  printf(" > Three Ways to Solve/Evolve the Harmonic Oscillator\n\n");
+  printf(" > 4 Ways to Solve/Evolve the Harmonic Oscillator\n\n");
 
   double omega = 1.0, mass = 1.0, hbar = 1.0;
 
@@ -97,6 +101,46 @@ int main(void) {
 
   free(x_shoot);
   free(V_shoot);
+
+  // 1.5. solve_tise_shoot_matching: log-derivative-matching shooting
+  printf("\nStep 1.5: solve_tise_shoot_matching - log-derivative-matching "
+         "shooting (distinct from solve_tise_shoot's diagonalization-based "
+         "numerov_shoot)\n\n");
+
+  int n_match = 2000;
+  double L_match = 20.0;
+  double dx_match = L_match / (n_match - 1);
+  double *x_match = malloc((size_t)n_match * sizeof(double));
+  double *V_match = malloc((size_t)n_match * sizeof(double));
+
+  for (int i = 0; i < n_match; i++) {
+    x_match[i] = -L_match / 2.0 + i * dx_match;
+    V_match[i] = 0.5 * omega * omega * x_match[i] * x_match[i];
+  }
+
+  numerov_params_t match_params = {.x = x_match,
+                                   .V = V_match,
+                                   .n = n_match,
+                                   .dx = dx_match,
+                                   .hbar_sq_2m = 0.5};
+
+  const double levels[3] = {0.5, 1.5, 2.5};
+  for (int level = 0; level < 3; level++) {
+    double E_min = levels[level] - 0.4, E_max = levels[level] + 0.4;
+
+    numerov_solution_t *sol =
+        solve_tise_shoot_matching(&match_params, E_min, E_max, 200, 1e-8);
+
+    if (sol) {
+      printf("  n=%d: E_matching = %.6f  (exact = %.6f, diff = %.2e)\n", level,
+             sol->energy, levels[level], fabs(sol->energy - levels[level]));
+
+      numerov_solution_free(sol);
+    }
+  }
+
+  free(x_match);
+  free(V_match);
 
   // 2 & 3. Time evolution of a coherent-state wavepacket
   printf("\nStep 2: evolve_tdse_crank and evolve_tdse_split_step - "

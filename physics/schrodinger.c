@@ -53,6 +53,12 @@ numerov_solution_t *solve_tise_shoot(numerov_params_t *params, double E_guess,
   return numerov_shoot(params, E_guess, E_tol);
 }
 
+numerov_solution_t *solve_tise_shoot_matching(numerov_params_t *params,
+                                              double E_min, double E_max,
+                                              int n_scan, double tol) {
+  return numerov_shoot_matching(params, E_min, E_max, n_scan, tol);
+}
+
 // Crank-Nicolson time evolution
 int evolve_tdse_crank(const double *diag, const double *offdiag, int n,
                       cvector_t *psi, double dt, int steps) {

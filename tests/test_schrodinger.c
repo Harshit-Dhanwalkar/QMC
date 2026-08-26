@@ -335,8 +335,154 @@ static void test_crank_matches_split_step(void) {
   free(offdiag);
 }
 
+static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
+  printf("Test: solve_tise_shoot_matching on the harmonic oscillator matches "
+         "the exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, "
+         "with node counts and parity\n");
+
+  int n = 2000;
+  double L = 20.0;
+  double dx = L / (n - 1);
+  double hbar_sq_2m = 0.5; // \hbar = m = \omega = 1 natural units
+
+  double *x = malloc((size_t)n * sizeof(double));
+  double *V = malloc((size_t)n * sizeof(double));
+  for (int i = 0; i < n; i++) {
+    x[i] = -L / 2.0 + i * dx;
+    V[i] = 0.5 * x[i] * x[i];
+  }
+
+  numerov_params_t params = {
+      .x = x, .V = V, .n = n, .dx = dx, .hbar_sq_2m = hbar_sq_2m};
+
+  const double exact[4] = {0.5, 1.5, 2.5, 3.5};
+  for (int level = 0; level < 4; level++) {
+    double E_min = exact[level] - 0.4;
+    double E_max = exact[level] + 0.4;
+
+    numerov_solution_t *sol =
+        solve_tise_shoot_matching(&params, E_min, E_max, 200, 1e-8);
+
+    char msg[128];
+    snprintf(msg, sizeof(msg),
+             "level %d: bracket [%.2f,%.2f] should find a "
+             "root",
+             level, E_min, E_max);
+
+    check(sol != NULL, msg);
+    if (!sol) {
+      continue;
+    }
+
+    snprintf(msg, sizeof(msg),
+             "level %d energy matches exact (n+1/2)*hbar*omega", level);
+
+    check_close(sol->energy, exact[level], 1e-6, msg);
+
+    int nodes = 0;
+    for (int i = 1; i < n; i++) {
+      if (sol->psi->data[i].re * sol->psi->data[i - 1].re < 0.0 &&
+          fabs(sol->psi->data[i].re) > 1e-6) {
+        nodes++;
+      }
+    }
+    snprintf(msg, sizeof(msg), "level %d has exactly %d node(s)", level, level);
+    check(nodes == level, msg);
+
+    // Normalization: continuum (dx-weighted) norm should be 1
+    double norm = 0.0;
+    for (int i = 0; i < n; i++) {
+      norm += sol->psi->data[i].re * sol->psi->data[i].re;
+    }
+
+    norm *= dx;
+    snprintf(msg, sizeof(msg), "level %d wavefunction is normalized", level);
+
+    check_close(norm, 1.0, 1e-4, msg);
+
+    numerov_solution_free(sol);
+  }
+
+  free(x);
+  free(V);
+}
+
+static void test_solve_tise_shoot_matching_matches_shoot(void) {
+  printf("Test: solve_tise_shoot_matching's ground-state energy matches "
+         "solve_tise_shoot's independent diagonalization-based method");
+
+  int n = 2000;
+  double L = 20.0;
+  double dx = L / (n - 1);
+  double hbar_sq_2m = 0.5;
+
+  double *x = malloc((size_t)n * sizeof(double));
+  double *V = malloc((size_t)n * sizeof(double));
+  for (int i = 0; i < n; i++) {
+    x[i] = -L / 2.0 + i * dx;
+    V[i] = 0.5 * x[i] * x[i];
+  }
+
+  numerov_params_t params = {
+      .x = x, .V = V, .n = n, .dx = dx, .hbar_sq_2m = hbar_sq_2m};
+
+  numerov_solution_t *matching =
+      solve_tise_shoot_matching(&params, 0.1, 0.9, 200, 1e-8);
+  numerov_solution_t *diag = solve_tise_shoot(&params, 0.0, 1e-8);
+
+  check(matching != NULL && diag != NULL,
+        "both methods should find the ground state");
+  if (matching && diag) {
+    check_close(matching->energy, diag->energy, 1e-5,
+                "log-derivative-matching shooting agrees with diagonalization "
+                "on same ground-state energy");
+  }
+
+  if (matching) {
+    numerov_solution_free(matching);
+  }
+  if (diag) {
+    numerov_solution_free(diag);
+  }
+  free(x);
+  free(V);
+}
+
+static void test_solve_tise_shoot_matching_no_root_returns_null(void) {
+  printf("Test: solve_tise_shoot_matching returns NULL when bracket contains "
+         "no eigenvalue\n");
+
+  int n = 2000;
+  double L = 20.0;
+  double dx = L / (n - 1);
+  double *x = malloc((size_t)n * sizeof(double));
+  double *V = malloc((size_t)n * sizeof(double));
+  for (int i = 0; i < n; i++) {
+    x[i] = -L / 2.0 + i * dx;
+    V[i] = 0.5 * x[i] * x[i];
+  }
+
+  numerov_params_t params = {
+      .x = x, .V = V, .n = n, .dx = dx, .hbar_sq_2m = 0.5};
+
+  // [0.6, 0.9] contains no QHO eigenvalue (nearest are 0.5 and 1.5)
+  numerov_solution_t *sol =
+      solve_tise_shoot_matching(&params, 0.6, 0.9, 200, 1e-8);
+
+  check(sol == NULL, "empty bracket should return NULL, not a false match");
+  if (sol) {
+    numerov_solution_free(sol);
+  }
+
+  free(x);
+  free(V);
+}
+
 int main(void) {
   test_solve_tise_shoot_harmonic_oscillator();
+  test_solve_tise_shoot_matching_harmonic_oscillator();
+  test_solve_tise_shoot_matching_matches_shoot();
+  test_solve_tise_shoot_matching_no_root_returns_null();
   test_split_step_norm_conservation();
   test_split_step_coherent_state_hbar_independence();
   test_crank_norm_conservation();
