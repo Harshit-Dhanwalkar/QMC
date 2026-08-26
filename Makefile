@@ -342,7 +342,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_ucc \
               $(BUILD_DIR)/test_qpe \
               $(BUILD_DIR)/test_basis_parser \
-              $(BUILD_DIR)/test_molecular_dft
+              $(BUILD_DIR)/test_molecular_dft \
+              $(BUILD_DIR)/test_special
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot

@@ -1,6 +1,8 @@
 /*
 Hermite polynomials (HO eigenstates)
 */
+#include "../linalg/tridiag_eigh.h"
+#include "../matrix.h"
 #include "special.h"
 #include <math.h>
 #include <stdlib.h>
@@ -48,20 +50,50 @@ double hermite_deriv(int n, double x) {
   return 2.0 * n * hermite(n - 1, x);
 }
 
-// Zeros of H_n (using Newton or asymptotic).
-/*  HACK: For simplicity, return approximated zeros.
-  For n up to ~100, use asymptotic formula or precomputed values.
-  Simple approximation for small n; for larger, use a numerical root finder.
-   Implement a simple bisection using recurrence.
-   TODO: use Golub-Welsch algorithm
-*/
-static double hermite_zero_approx(int n, int k) {
-  // Asymptotic zeros: for large n, zeros ~\sqrt(2n+1) * \cos(\pi *
-  // (4k+3)/(4n+2))
-  double N = (double)n;
-  double theta = M_PI * (4.0 * k + 3.0) / (4.0 * N + 2.0);
+/*
+ * Zeros of physicists' Hermite polynomial H_n, via Golub-Welsch algorithm
+ *
+ * NOTE: Ordering: index 0 is largest (most positive) root, decreasing with k
+ */
+int hermite_zeros_all(int n, double *zeros) {
+  if (n <= 0 || !zeros) {
+    return 0;
+  }
+  if (n == 1) {
+    zeros[0] = 0.0;
+    return 1;
+  }
 
-  return sqrt(2.0 * N + 1.0) * cos(theta);
+  double *diag = calloc((size_t)n, sizeof(double)); // all zero
+  double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  if (!diag || !offdiag) {
+    free(diag);
+    free(offdiag);
+
+    return 0;
+  }
+
+  for (int i = 1; i < n; i++) {
+    offdiag[i - 1] = sqrt(i / 2.0);
+  }
+
+  eigen_t *eig = tridiag_eigvals(diag, offdiag, n);
+
+  free(diag);
+  free(offdiag);
+  if (!eig) {
+    return 0;
+  }
+
+  /* tridiag_eigvals returns ascending order; reverse to match descending
+   * (largest-first) convention. */
+  for (int k = 0; k < n; k++) {
+    zeros[k] = eig->eigenvalues[n - 1 - k];
+  }
+
+  eigen_free(eig);
+
+  return n;
 }
 
 double hermite_zeros(int n, int k) {
@@ -69,23 +101,16 @@ double hermite_zeros(int n, int k) {
     return 0.0;
   }
 
-  // Use approximation as starting point for Newton
-  double x0 = hermite_zero_approx(n, k);
-  // Refine with Newton (H_n(x) = 0)
-  for (int iter = 0; iter < 10; iter++) {
-    double H = hermite(n, x0);
-    double Hp = hermite_deriv(n, x0);
-
-    if (fabs(Hp) < 1e-15) {
-      break;
-    }
-
-    double dx = -H / Hp;
-    x0 += dx;
-    if (fabs(dx) < 1e-12) {
-      break;
-    }
+  double *zeros = malloc((size_t)n * sizeof(double));
+  if (!zeros) {
+    return 0.0;
   }
 
-  return x0;
+  hermite_zeros_all(n, zeros);
+
+  double result = zeros[k];
+
+  free(zeros);
+
+  return result;
 }

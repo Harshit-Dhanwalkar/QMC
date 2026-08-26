@@ -6,9 +6,9 @@ Legendre polynomials (angular momentum)
 #include <stdlib.h>
 
 /* Legendre polynomials P_l(x) using recurrence:
-   (l+1)P_{l+1} = (2l+1)x P_l - l P_{l-1}
-   P_0=1, P_1=x.
-*/
+ *  (l+1)P_{l+1} = (2l+1)x P_l - l P_{l-1}
+ * P_0=1, P_1=x
+ */
 double legendre(int l, double x) {
   if (l < 0) {
     return 0.0;
@@ -33,9 +33,9 @@ double legendre(int l, double x) {
 }
 
 /* Associated Legendre P_l^m(x) using recurrence or relation.
-   Use recurrence from Numerical Recipes:
-   P_l^m = (-1)^m * (1 - x^2)^{m/2} d^m/dx^m P_l(x)
-   Implement using recursion in l for fixed m.
+ * Use recurrence from Numerical Recipes:
+ *   P_l^m = (-1)^m * (1 - x^2)^{m/2} d^m/dx^m P_l(x)
+ * Implement using recursion in l for fixed m.
    HACK: for small l, compute via derivative of P_l.
 */
 double assoc_legendre(int l, int m, double x) {
@@ -80,12 +80,16 @@ double assoc_legendre(int l, int m, double x) {
   return P_cur;
 }
 
-void legendre_array(int l, const double *x, int m, double *P) {
-  if (!x || !P || m <= 0) {
+/*
+ * Evaluate the plain (unassociated, i.e. m=0) Legendre polynomial P_l at n
+ * points x[0..n-1], writing results into P[0..n-1].
+ */
+void legendre_array(int l, const double *x, int n, double *P) {
+  if (!x || !P || n <= 0) {
     return;
   }
 
-  for (int i = 0; i < m; i++) {
+  for (int i = 0; i < n; i++) {
     P[i] = legendre(l, x[i]);
   }
 }

@@ -9,6 +9,7 @@ double hermite(int n, double x);
 void hermite_array(int n, const double *x, int m, double *H);
 double hermite_deriv(int n, double x);
 double hermite_zeros(int n, int k);
+int hermite_zeros_all(int n, double *zeros);
 
 /* Numerically stable normalized Hermite function, via direct recurrence on
  * normalized function */
