@@ -139,7 +139,6 @@ int latex_render_to_png(const char *expr, const char *outpath) {
 }
 
 int latex_render_to_pdf(const char *expr, const char *outpath) {
-  FILE *f = fopen("/tmp/qmc_eq.tex", "w");
   if (!expr || !outpath) {
     return -1;
   }
@@ -408,6 +407,7 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
   if (!res) {
     return NULL;
   }
+
   size_t pos = 0;
 
   pos += (size_t)snprintf(res + pos, est - pos, "\\begin{%s}", type);
@@ -415,6 +415,7 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
     for (int j = 0; j < cols; j++) {
       pos += (size_t)snprintf(res + pos, est - pos, "%s",
                               data[i][j] ? data[i][j] : "0");
+
       if (j < cols - 1) {
         pos += (size_t)snprintf(res + pos, est - pos, " & ");
       }
@@ -434,6 +435,7 @@ void latex_clean_temp(void) {
   const char *exts[] = {"tex", "aux", "log", "pdf"};
   for (int i = 0; i < g_tracked_temp_count; i++) {
     char path[192];
+
     for (size_t e = 0; e < sizeof(exts) / sizeof(exts[0]); e++) {
       snprintf(path, sizeof(path), "/tmp/%.63s.%s", g_tracked_temp_basenames[i],
                exts[e]);
@@ -442,6 +444,7 @@ void latex_clean_temp(void) {
 
     snprintf(path, sizeof(path), "/tmp/%.63s_out-1.png",
              g_tracked_temp_basenames[i]);
+
     remove(path);
   }
 

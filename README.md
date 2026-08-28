@@ -180,6 +180,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_51_qpe.c</code></li>
   <li><code>eg_52_molecular_dft.c</code></li>
   <li><code>eg_53_schrodinger_solvers.c</code></li>
+  <li><code>eg_54_latex_gen.c</code></li>
 </ul>
 </details>
 
@@ -248,6 +249,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
   <li><code>test_qqe.c</code></li>
+  <li><code>test_latex_gen.c</code></li>
 </ul>
 </details>
 
