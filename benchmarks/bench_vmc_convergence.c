@@ -1,17 +1,17 @@
 /*
  * Benchmark: VMC statistical convergence vs. sample count, He atom.
  *
- * Original skeleton used a nonexistent System/WaveFunction/vmc_optimize API.
  * Real entry point is vmc_run(Z, Zeff, b, n_equilibration, n_samples,
- * block_size, step1, step2, seed) -- see physics/vmc.h. "n_samples" there is
+ * block_size, step1, step2, seed) - see physics/vmc.h. "n_samples" there is
  * sweeps per single chain (this file's "walkers" axis), not a walker-count
- * parameter; VMC here is single-walker-chain Metropolis, not a population
- * method (that's DMC's dmc_population_t).
+ * parameter
+ * VMC here is single-walker-chain Metropolis, not a population method
+ * (that's DMC's dmc_population_t).
  *
  * b is fixed at a reasonable pre-optimized value (see eg_28_vmc_helium.c)
- * rather than re-optimized per sample count, so the scan below isolates pure
- * statistical (1/sqrt(N)) convergence and doesn't conflate it with
- * optimizer noise at small sample counts.
+ * rather than re-optimized per sample count, so scan below isolates pure
+ * statistical (1 / \sqrt(N)) convergence and doesn't conflate it with optimizer
+ * noise at small sample counts.
  *
  * USAGE:
  *   make PLOT_BACKEND=NONE SANITIZE=0 build/bench_vmc_convergence
@@ -29,7 +29,10 @@ static double wall_seconds(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
 
-  return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+  double time = ts.tv_sec + ts.tv_nsec * 1e-9;
+
+  // return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
+  return time;
 }
 
 int main(void) {
@@ -54,8 +57,8 @@ int main(void) {
     }
 
     double t0 = wall_seconds();
-    vmc_result_t r = vmc_run(Z, Zeff, b, n_equilibration, n_samples,
-                             block_size, 0.9, 0.9, 1000ULL + (uint64_t)i);
+    vmc_result_t r = vmc_run(Z, Zeff, b, n_equilibration, n_samples, block_size,
+                             0.9, 0.9, 1000ULL + (uint64_t)i);
     double elapsed = wall_seconds() - t0;
 
     double error = fabs(r.mean - exact_energy);

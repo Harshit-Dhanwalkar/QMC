@@ -17,7 +17,7 @@
  * Trial wavefunction:
  *   \Psi_T(r1,r2) = \exp(-Zeff * (r1 + r2)) * \exp(r12 / (2 * (1 + b*r12)))
  *
- * r1=|r1_vec|, r2=|r2_vec|, r12=|r1_vec-r2_vec|.
+ * r1=|r1_vec|, r2=|r2_vec|, r12=|r1_vec - r2_vec|.
  * The Jastrow prefactor 1/2 is fixed by electron-electron cusp condition; only
  * b is optimized. All energies in Hartree atomic units.
  */
@@ -39,10 +39,10 @@ typedef struct {
 /* Unnormalized trial wavefunction value at walker configuration. */
 double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b);
 
-/* Local energy E_L = (H \Psi_T)/\Psi_T at walker configuration, for
+/* Local energy E_L = (H \Psi_T) / \Psi_T at walker configuration, for
  * two-electron atom/ion of nuclear charge Z with trial orbital exponent Zeff.
  *
- * Returns 0.0 if r1, r2, or r12 is degenerate (< 1e-12), which is
+ * Returns 0.0 if r1, r2, or r12 is degenerate (<1e-12), which is
  * probability-zero event during normal sampling
  */
 double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff, double b);
@@ -91,6 +91,31 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
                               int n_equilibration, int n_samples,
                               int block_size, double step_size1,
                               double step_size2, uint64_t master_seed);
+
+/*
+ * Same as vmc_run_parallel, but the caller supplies the already-positioned
+ * starting RNG stream *master_stream (read-only; never mutated or reseeded)
+ * instead of a uint64_t master_seed.
+ * NOTE: Streams for the n_replicas replicas are then rng_jump()'d forward from
+ * *master_stream exactly as vmc_run_parallel jumps forward from
+ * rng_seed(master_seed).
+ *
+ * Intended for hybrid MPI+OpenMP use: each MPI rank calls rng_long_jump()
+ * (core/random.h) some rank-dependent number of times on a single shared
+ * master stream to land on its own non-overlapping 2^192-length partition of
+ * the xoshiro256** period, then passes that positioned stream here so its
+ * n_replicas OpenMP-parallel replicas are rng_jump()'d within that partition.
+ * This gives the same jump-proven non-overlap guarantee across MPI ranks that
+ * vmc_run_parallel already gives across replicas within one process
+ *
+ * Returns an all-zero result if master_stream is NULL, n_replicas < 1,
+ * n_samples <= 0, block_size <= 0, or allocation fails.
+ */
+vmc_result_t vmc_run_parallel_from_stream(const rng_state_t *master_stream,
+                                          int n_replicas, double Z, double Zeff,
+                                          double b, int n_equilibration,
+                                          int n_samples, int block_size,
+                                          double step_size1, double step_size2);
 
 /*
  * Optimize b in [b_min, b_max] via golden_section_minimize over

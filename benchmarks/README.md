@@ -6,9 +6,7 @@ From the repo root:
 ```bash
 make run-benchmarks   # builds + runs bench_accuracy, bench_eigensolver,
                       # bench_vmc_convergence; writes output/bench_<name>.dat
-
 make benchmarks       # just builds them, doesn't run
-
 make build/bench_openmp_parallel   # MPI+OpenMP hybrid -- needs mpicc, built
                                    # separately (see its own section below)
 ```
@@ -53,6 +51,28 @@ Block size is chosen to guarantee at least ~5 blocks even at the smallest sample
 
 ```bash
 ./build/bench_vmc_convergence
+```
+
+## bench_reference_vs_blocked: tridiagonal QL eigenvector cache-optimization
+
+Not included in `make benchmarks`/`run-benchmarks` (it needs explicit `<N> <mode>` arguments, so running it with none as the aggregate loop would just prints a usage message and exits). Build and run it directly:
+
+```bash
+make PLOT_BACKEND=NONE SANITIZE=0 build/bench_reference_vs_blocked
+./build/bench_reference_vs_blocked <N> <mode>
+#   mode = 0       -> reference (unblocked) tridiagonal QL implementation
+#   mode = <block> -> column-blocked variant with that block size (e.g. 64)
+```
+
+Compares wall-clock time between a reference (unblocked) and a column-blocked tridiagonal QL eigenvector computation - both mathematically identical, differing only in memory-access pattern (the blocked variant replays recorded Givens rotations against the eigenvector matrix one column-block at a time, so the working set per pass is `block_size*n` instead of `n*n`). See the file's own header comment for suggested `cachegrind`-based diagnostics.
+
+## instrument_iteration_counts: QL sweep/rotation-count instrumentation
+
+A standalone diagnostic tool (not part of the `bench_%` Makefile pattern - build it directly with `gcc`, as its own header comment documents), counting outer QL sweeps and inner rotation steps on the same clustered-diagonal test matrix `bench_reference_vs_blocked` uses, across increasing `N`. Useful for checking whether the QL algorithm's iteration count itself scales as expected (roughly `O(N)` sweeps) independent of any wall-clock/cache effects.
+
+```bash
+gcc -O2 -o instrument_iteration_counts benchmarks/instrument_iteration_counts.c -lm
+for N in 400 800 1600 3200; do ./instrument_iteration_counts $N; done
 ```
 
 ---

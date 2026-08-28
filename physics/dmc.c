@@ -206,14 +206,15 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
  * survivors/replicas into `next`. Walkers beyond max_population are handled by
  * random subsampling back down to target_population.
  *
- * Parallelized across walker population. Structured as compute-then-scatter
- * to stay race-free under OpenMP: pass 1 (parallel) evolves every walker
- * independently using its own slot-indexed RNG stream from `walker_streams`
- * (length >= cur->count, provided by caller via rng_jump chaining); pass 2
- * (serial) does prefix-sum-style scatter into `next->data` and accept/energy
- * reductions, avoiding any race on next->count that concurrent scatter would
- * create. Population-control resampling still uses a single `control_rng` (one
- * rng_uniform call per generation, serial by nature already).
+ * NOTE: Parallelized across walker population. Structured as
+ * compute-then-scatter to stay race-free under OpenMP: pass 1 (parallel)
+ * evolves every walker independently using its own slot-indexed RNG stream from
+ * `walker_streams` (length >= cur->count, provided by caller via rng_jump
+ * chaining); pass 2 (serial) does prefix-sum-style scatter into `next->data`
+ * and accept/energy reductions, avoiding any race on next->count that
+ * concurrent scatter would create. Population-control resampling still uses a
+ * single `control_rng` (one rng_uniform call per generation, serial by nature
+ * already).
  *
  * Returns population-weighted mean local energy for this generation (for mixed
  * estimator and E_T update), and accumulates acceptance counts into

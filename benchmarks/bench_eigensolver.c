@@ -73,7 +73,7 @@ static cmatrix_t *random_hermitian(int n, rng_state_t *rng) {
   return H;
 }
 
-/* max_i ||H v_i - lambda_i v_i|| / ||v_i|| over all n returned eigenpairs. */
+/* max_i ||H v_i - \\lambda_i v_i|| / ||v_i|| over all n returned eigenpairs. */
 static double max_residual(const cmatrix_t *H, const eigen_t *eig) {
   int n = eig->n;
   double worst = 0.0;
@@ -104,6 +104,7 @@ static double max_residual(const cmatrix_t *H, const eigen_t *eig) {
     double resid2 = 0.0;
     for (int i = 0; i < n; i++) {
       complex_t r = c_sub(Hv->data[i], c_scale(v->data[i], lambda));
+
       resid2 += c_abs2(r);
     }
 

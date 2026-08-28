@@ -1,12 +1,13 @@
 /*
-Instrumentation: counts outer QL sweeps and inner rotation ("i-loop") steps for
-tridiagonal QL algorithm (eigenvalues only), directly on same clustered-diagonal
-test matrix used in wall-clock benchmarks, across increasing N.
-
-USAGE:
-    gcc -O2 -o instrument_iteration_counts instrument_iteration_counts.c -lm
-    for N in 400 800 1600 3200; do ./instrument_iteration_counts $N; done
-*/
+ * Instrumentation: counts outer QL sweeps and inner rotation ("i-loop") steps
+ * for tridiagonal QL algorithm (eigenvalues only), directly on same
+ * clustered-diagonal test matrix used in wall-clock benchmarks, across
+ * increasing N.
+ *
+ * USAGE:
+ *   gcc -O2 -o instrument_iteration_counts instrument_iteration_counts.c -lm
+ *   for N in 400 800 1600 3200; do ./instrument_iteration_counts $N; done
+ */
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +28,17 @@ static double pythag(double a, double b) {
 }
 
 int main(int argc, char **argv) {
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s <N>\n", argv[0]);
+    return 1;
+  }
+
   int n = atoi(argv[1]);
+  if (n < 2) {
+    fprintf(stderr, "N must be >= 2 (got %d)\n", n);
+    return 1;
+  }
+
   double *diag = malloc(n * sizeof(double)),
          *offdiag = malloc((n - 1) * sizeof(double));
 
@@ -116,6 +127,11 @@ int main(int argc, char **argv) {
          n, total_outer, total_i_steps, (double)total_i_steps / ((double)n * n),
          (double)total_i_steps / pow(n, 2.5),
          (double)total_i_steps / ((double)n * n * n), max_iter_seen);
+
+  free(diag);
+  free(offdiag);
+  free(d);
+  free(e);
 
   return 0;
 }

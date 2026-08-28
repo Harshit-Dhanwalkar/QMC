@@ -17,9 +17,11 @@
  *    ansatz.
  */
 
+#include "../core/random.h"
 #include "../physics/helium.h"
 #include "../physics/vmc.h"
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #ifndef RUNNING_ON_VALGRIND
@@ -239,6 +241,86 @@ static void test_vmc_run_parallel_helium(void) {
              "parallel He inter-replica error is a sane, nonzero magnitude");
 }
 
+static void test_vmc_run_parallel_from_stream_matches_master_seed(void) {
+  printf("test_vmc_run_parallel_from_stream_matches_master_seed:\n");
+
+  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  int n_replicas = 4;
+  int n_samples = RUNNING_ON_VALGRIND ? 5000 : 20000;
+  int burn = RUNNING_ON_VALGRIND ? 300 : 1000;
+  int block_size = RUNNING_ON_VALGRIND ? 50 : 100;
+  uint64_t seed = 424242ULL;
+
+  /* rng_seed(seed) then handing the resulting stream to
+   * vmc_run_parallel_from_stream must be bit-identical to just calling
+   * vmc_run_parallel(seed): that's the whole contract being refactored
+   * around, since vmc_run_parallel itself is now a thin wrapper that does
+   * exactly this before calling the shared core. */
+  vmc_result_t r_seed = vmc_run_parallel(n_replicas, Z, Zeff, b, burn,
+                                         n_samples, block_size, 0.9, 0.9, seed);
+
+  rng_state_t stream;
+  rng_seed(&stream, seed);
+  vmc_result_t r_stream = vmc_run_parallel_from_stream(
+      &stream, n_replicas, Z, Zeff, b, burn, n_samples, block_size, 0.9, 0.9);
+
+  check_true(r_seed.mean == r_stream.mean,
+             "from_stream(rng_seed(seed)) bit-identical mean to "
+             "vmc_run_parallel(seed)");
+  check_true(r_seed.error == r_stream.error,
+             "from_stream(rng_seed(seed)) bit-identical error to "
+             "vmc_run_parallel(seed)");
+  check_true(r_seed.n_samples == r_stream.n_samples,
+             "from_stream(rng_seed(seed)) bit-identical n_samples to "
+             "vmc_run_parallel(seed)");
+}
+
+static void
+test_vmc_run_parallel_from_stream_long_jump_ranks_independent(void) {
+  printf("test_vmc_run_parallel_from_stream_long_jump_ranks_independent:\n");
+
+  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  int n_replicas = 2;
+  int n_samples = RUNNING_ON_VALGRIND ? 5000 : 20000;
+  int burn = RUNNING_ON_VALGRIND ? 300 : 1000;
+  int block_size = RUNNING_ON_VALGRIND ? 50 : 100;
+
+  /* NOTE: Simulates the hybrid MPI+OpenMP pattern documented in vmc.h: one
+   * shared master stream, each "rank" long-jumps a distinct number of times to
+   * land on its own non-overlapping partition, then runs its own
+   * OpenMP-parallel replicas from there. With 3 simulated ranks (0, 1, 2
+   * long-jumps from the same root seed) the three resulting VMC energy
+   * estimates must differ (proof any two ranks aren't silently reusing the same
+   * substream) while all three still land within a physically sane range of the
+   * exact ground-state energy. */
+  int n_ranks = 3;
+  double means[3];
+
+  for (int rank = 0; rank < n_ranks; rank++) {
+    rng_state_t stream;
+    rng_seed(&stream, 9001ULL);
+
+    for (int j = 0; j < rank; j++) {
+      rng_long_jump(&stream);
+    }
+
+    vmc_result_t r = vmc_run_parallel_from_stream(
+        &stream, n_replicas, Z, Zeff, b, burn, n_samples, block_size, 0.9, 0.9);
+    means[rank] = r.mean;
+
+    printf("  rank %d (long_jump x%d): E = %.6f Hartree\n", rank, rank, r.mean);
+
+    double E_exact_helium = -2.9037;
+    check_true(r.mean > E_exact_helium - 0.5 && r.mean < 0.0,
+               "rank energy is a sane He-like bound-state estimate");
+  }
+
+  check_true(means[0] != means[1] && means[1] != means[2] &&
+                 means[0] != means[2],
+             "rng_long_jump-separated ranks give distinct (non-overlapping) "
+             "RNG streams");
+}
+
 int main(void) {
   test_local_energy_fixtures();
   test_local_energy_z_neq_zeff_fixture();
@@ -248,6 +330,8 @@ int main(void) {
   test_optimize_b();
   test_vmc_run_parallel_matches_serial_at_one_replica();
   test_vmc_run_parallel_helium();
+  test_vmc_run_parallel_from_stream_matches_master_seed();
+  test_vmc_run_parallel_from_stream_long_jump_ranks_independent();
 
   if (failures == 0) {
     printf("\nAll test_vmc checks passed.\n");

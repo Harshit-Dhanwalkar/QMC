@@ -200,7 +200,10 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
         double g = (d[l + 1] - d[l]) / (2.0 * e[l]);
         double r = pythag(g, 1.0);
         g = d[m] - d[l] + e[l] / (g + (g >= 0 ? fabs(r) : -fabs(r)));
-        double s = 1.0, c = 1.0, p = 0.0;
+
+        double s = 1.0;
+        double c = 1.0;
+        double p = 0.0;
         int i;
 
         for (i = m - 1; i >= l; i--) {
@@ -224,6 +227,7 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
           p = s * r;
           d[i + 1] = g + p;
           g = c * r - b;
+
           record_rot(i, s, c);
         }
 
@@ -271,8 +275,24 @@ static void blocked_eigh(const double *diag, const double *offdiag, int n,
 }
 
 int main(int argc, char **argv) {
+  if (argc < 3) {
+    fprintf(stderr,
+            "Usage: %s <N> <mode>\n"
+            "  N    : matrix size\n"
+            "  mode : 0 for reference (unblocked), or a column-block size "
+            "(e.g. 32, 64, 128, 256) for the blocked variant\n",
+            argv[0]);
+
+    return 1;
+  }
+
   int n = atoi(argv[1]);
   int mode = atoi(argv[2]); // 0=reference, else=block size
+  if (n < 2) {
+    fprintf(stderr, "N must be >= 2 (got %d)\n", n);
+    return 1;
+  }
+
   double *diag = malloc(n * sizeof(double)),
          *offdiag = malloc((n - 1) * sizeof(double));
 
@@ -296,7 +316,12 @@ int main(int argc, char **argv) {
   clock_t t1 = clock();
   printf("N=%5d mode=%-6d time=%8.4fs\n", n, mode,
          (double)(t1 - t0) / CLOCKS_PER_SEC);
+
   fflush(stdout);
+  free(diag);
+  free(offdiag);
+  free(d);
+  free(z);
 
   return 0;
 }

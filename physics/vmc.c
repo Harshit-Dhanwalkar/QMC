@@ -23,12 +23,13 @@ static double dot3(const double a[3], const double b[3]) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
 
-// ln(\Psi_T) = -Zeff * (r1 + r2) + r12/(2 * (1 + b * r12))
+// ln(\Psi_T) = -Zeff * (r1 + r2) + r12 / (2 * (1 + b * r12))
 static double ln_trial_wavefunction(const vmc_walker_t *w, double Zeff,
                                     double b) {
   double r1 = norm3(w->r1);
   double r2 = norm3(w->r2);
   double r12v[3];
+
   sub3(w->r1, w->r2, r12v);
   double r12 = norm3(r12v);
 
@@ -44,16 +45,15 @@ double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b) {
 }
 
 /*
- * Derivation summary (validated against a finite-difference Laplacian to
- * ~1e-5 for Z=Zeff [regression] and Z != Zeff [H-, Li+, Be2+]):
- *
- * NOTE: Let f = \ln(\Psi_T) = -Zeff * (r1 + r2) + u(s), s = |r1-r2|, u(s) =
- * s/(2 * (1 + bs)). For each electron i, -1/2 * lap_i(\Psi) / \Psi = (-1/2) *
- * (lap_i f + |\grad_i f|^2). Summing i=1,2 and adding potential (-Z/r1 - Z/r2 +
- * 1/s), the Zeff^2 orbital-kinetic term and the (-Z/r1 - Z/r2) potential term
- * combine to leave a residual (Zeff - Z) * (1/r1 + 1/r2) cross term whenever
- * Zeff != Z. Every other term is independent of Z, since only the orbital
- * exponent Zeff enters wavefunction envelope.
+ * Derivation summary:
+ *   Let f = \ln(\Psi_T) = -Zeff * (r1 + r2) + u(s), s = |r1 - r2|, u(s) =
+ *   s / (2 * (1 + bs)).
+ *   For each electron i, -1/2 * lap_i(\Psi) / \Psi = (-1/2) * (\lap_i f +
+ *   |\grad_i f|^2). Summing i=1,2 and adding potential (-Z / r1 - Z / r2  + 1 /
+ *   s), the Zeff^2 orbital-kinetic term and the (-Z / r1 - Z / r2) potential
+ *   term combine to leave a residual (Zeff - Z) * (1/r1 + 1/r2) cross term
+ *   whenever Zeff != Z. Every other term is independent of Z, since only the
+ *   orbital exponent Zeff enters wavefunction envelope.
  */
 double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff,
                         double b) {
@@ -152,8 +152,7 @@ void vmc_metropolis_sweep(vmc_walker_t *w, double Zeff, double b,
   }
 }
 
-/* Shared implementation: runs one full VMC chain against an already-seeded
- * rng_state_t. */
+/* Run one full VMC chain against an already-seeded  rng_state_t. */
 // NOTE: vmc_run() seeds a fresh rng and calls this; vmc_run_parallel() calls
 // this once per replica, each replica given its own  rng_jump()-derived stream,
 // so this is only place the sampling loop is written.
@@ -171,7 +170,9 @@ static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   vmc_walker_init(&w, rng, Zeff);
 
   for (int i = 0; i < n_equilibration; i++) {
-    int a1, a2;
+    int a1;
+    int a2;
+
     vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, rng, &a1, &a2);
   }
 
@@ -186,13 +187,15 @@ static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
 
   double sum_E = 0.0, sum_E2 = 0.0;
   int sample_count = 0;
-  int acc1_total = 0, acc2_total = 0;
+  int acc1_total = 0;
+  int acc2_total = 0;
 
   for (int blk = 0; blk < n_blocks; blk++) {
     double block_sum = 0.0;
 
     for (int s = 0; s < block_size; s++) {
       int a1, a2;
+
       vmc_metropolis_sweep(&w, Zeff, b, step_size1, step_size2, rng, &a1, &a2);
       acc1_total += a1;
       acc2_total += a2;
@@ -248,17 +251,17 @@ vmc_result_t vmc_run(double Z, double Zeff, double b, int n_equilibration,
                           block_size, step_size1, step_size2);
 }
 
-vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
-                              int n_equilibration, int n_samples,
-                              int block_size, double step_size1,
-                              double step_size2, uint64_t master_seed) {
+static vmc_result_t
+vmc_run_parallel_core(const rng_state_t *seed_stream, int n_replicas, double Z,
+                      double Zeff, double b, int n_equilibration, int n_samples,
+                      int block_size, double step_size1, double step_size2) {
   vmc_result_t result = {0};
 
   if (n_replicas < 1 || n_samples <= 0 || block_size <= 0) {
     return result;
   }
 
-  // Derive n_replicas provably-independent streams from one master seed,
+  // Derive n_replicas provably-independent streams from one starting stream,
   // serially (jump is cheap: 4*64 xoshiro steps), before opening parallel
   // region : avoids any race on shared RNG state.
   rng_state_t *streams = malloc((size_t)n_replicas * sizeof(rng_state_t));
@@ -271,7 +274,7 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
     return result;
   }
 
-  rng_seed(&streams[0], master_seed);
+  streams[0] = *seed_stream;
   for (int i = 1; i < n_replicas; i++) {
     streams[i] = streams[i - 1];
 
@@ -285,7 +288,7 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
                          block_size, step_size1, step_size2);
   }
 
-  // Combine: pooled mean/variance over all samples (equal n_samples per
+  // NOTE: Combine: pooled mean/variance over all samples (equal n_samples per
   // replica, by construction), and statistically stronger estimate the
   // *inter-replica* standard error, since the replicas are exactly independent
   // (jump-guaranteed), unlike single-chain block-averaging whose validity
@@ -298,6 +301,7 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
     if (replica_results[i].n_samples <= 0) {
       continue;
     }
+
     sum_mean += replica_results[i].mean;
     sum_var += replica_results[i].variance;
     sum_acc1 += replica_results[i].acceptance_rate1;
@@ -309,6 +313,7 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
   if (valid_replicas == 0) {
     free(streams);
     free(replica_results);
+
     return result;
   }
 
@@ -319,6 +324,7 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
     if (replica_results[i].n_samples <= 0) {
       continue;
     }
+
     double d = replica_results[i].mean - grand_mean;
     between_var += d * d;
   }
@@ -340,6 +346,35 @@ vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
   free(replica_results);
 
   return result;
+}
+
+vmc_result_t vmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
+                              int n_equilibration, int n_samples,
+                              int block_size, double step_size1,
+                              double step_size2, uint64_t master_seed) {
+  rng_state_t seed_stream;
+  rng_seed(&seed_stream, master_seed);
+
+  return vmc_run_parallel_core(&seed_stream, n_replicas, Z, Zeff, b,
+                               n_equilibration, n_samples, block_size,
+                               step_size1, step_size2);
+}
+
+vmc_result_t vmc_run_parallel_from_stream(const rng_state_t *master_stream,
+                                          int n_replicas, double Z, double Zeff,
+                                          double b, int n_equilibration,
+                                          int n_samples, int block_size,
+                                          double step_size1,
+                                          double step_size2) {
+  if (!master_stream) {
+    vmc_result_t result = {0};
+
+    return result;
+  }
+
+  return vmc_run_parallel_core(master_stream, n_replicas, Z, Zeff, b,
+                               n_equilibration, n_samples, block_size,
+                               step_size1, step_size2);
 }
 
 typedef struct {

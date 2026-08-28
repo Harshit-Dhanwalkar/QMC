@@ -281,7 +281,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_50_ucc \
               $(BUILD_DIR)/eg_51_qpe \
               $(BUILD_DIR)/eg_52_molecular_dft \
-              $(BUILD_DIR)/eg_53_schrodinger_solvers
+              $(BUILD_DIR)/eg_53_schrodinger_solvers \
+              $(BUILD_DIR)/eg_54_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -344,7 +345,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_qpe \
               $(BUILD_DIR)/test_basis_parser \
               $(BUILD_DIR)/test_molecular_dft \
-              $(BUILD_DIR)/test_special
+              $(BUILD_DIR)/test_special \
+              $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
@@ -413,9 +415,6 @@ BENCH_DIR   = benchmarks
 BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
               $(BUILD_DIR)/bench_eigensolver \
               $(BUILD_DIR)/bench_vmc_convergence
-              # TODO: add :
-              # $(BUILD_DIR)/bench_reference_vs_blocked \
-              # $(BUILD_DIR)/instrument_iteration_counts \
 
 ## Run targets
 examples:   directories $(OUTPUT_DIR) $(EXAMPLES)
