@@ -20,29 +20,33 @@ eigen_t *solve_tise_matrix(double *x, int n, double dx, double hbar_sq_2m,
   if (!x || n < 2 || !V) {
     return NULL;
   }
+
   double coeff = hbar_sq_2m / (dx * dx); // \hbar^2/(2m) / dx^2
 
-  cmatrix_t *H = cmatrix_alloc(n, n);
-  if (!H) {
+  double *diag = malloc((size_t)n * sizeof(double));
+  double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  if (!diag || !offdiag) {
+    free(diag);
+    free(offdiag);
+
     return NULL;
   }
 
   // Fill Hamiltonian: H = -\hbar^2/(2m) d^2/dx^2 + V(x)
   for (int i = 0; i < n; i++) {
     double V_i = V(x[i], params);
-    CMAT(H, i, i) = c_real(2.0 * coeff + V_i);
+    diag[i] = 2.0 * coeff + V(x[i], params);
+  }
 
-    if (i > 0) {
-      CMAT(H, i, i - 1) = c_real(-coeff);
-    }
-    if (i < n - 1) {
-      CMAT(H, i, i + 1) = c_real(-coeff);
-    }
+  for (int i = 0; i < n - 1; i++) {
+    offdiag[i] = -coeff;
   }
 
   // Solve eigenproblem
-  eigen_t *eig = cmatrix_eigh_generic(H);
-  cmatrix_free(H);
+  eigen_t *eig = tridiag_eigh(diag, offdiag, n);
+
+  free(diag);
+  free(offdiag);
 
   return eig;
 }

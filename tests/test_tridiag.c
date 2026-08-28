@@ -15,6 +15,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 static int check_close(double got, double expected, double tol,
                        const char *label) {
@@ -52,6 +53,7 @@ static int test_solve_tise_matrix_vs_dense(void) {
       CMAT(H, i, i + 1) = c_real(-coeff);
     }
   }
+
   eigen_t *eig_old = cmatrix_eigh_generic(H);
 
   cmatrix_free(H);
@@ -72,6 +74,96 @@ static int test_solve_tise_matrix_vs_dense(void) {
 
   eigen_free(eig_new);
   eigen_free(eig_old);
+
+  return fail;
+}
+
+static int test_solve_tise_matrix_eigenvectors_and_performance(void) {
+  int n = 300;
+  double x_min = -10.0, x_max = 10.0;
+  double dx = (x_max - x_min) / (n - 1);
+  double hbar_sq_2m = 0.5;
+  double omega = 1.0;
+
+  double *x = malloc((size_t)n * sizeof *x);
+  for (int i = 0; i < n; i++) {
+    x[i] = x_min + i * dx;
+  }
+
+  clock_t t0 = clock();
+  eigen_t *eig = solve_tise_matrix(x, n, dx, hbar_sq_2m, V_harmonic, &omega);
+  clock_t t1 = clock();
+  double elapsed = (double)(t1 - t0) / CLOCKS_PER_SEC;
+  printf("  solve_tise_matrix(n=%d) took %.4fs (regression guard: must be "
+         "well under the ~1s+ the old dense path took at this size)\n",
+         n, elapsed);
+
+  int fail = 0;
+  if (!eig) {
+    printf("  FAIL: solve_tise_matrix returned NULL\n");
+    return 1;
+  }
+  if (elapsed > 2.0) {
+    printf("  FAIL: took %.4fs, expected well under 2s -- looks like a "
+           "regression back to a dense solver\n",
+           elapsed);
+    fail = 1;
+  }
+
+  // H*v = E*v check for same tridiagonal H, for lowest 3 states
+  double coeff = hbar_sq_2m / (dx * dx);
+  double *diag = malloc((size_t)n * sizeof(double));
+  double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  for (int i = 0; i < n; i++) {
+    diag[i] = 2.0 * coeff + V_harmonic(x[i], &omega);
+  }
+  for (int i = 0; i < n - 1; i++) {
+    offdiag[i] = -coeff;
+  }
+
+  for (int k = 0; k < 3; k++) {
+    double max_resid = 0.0;
+    double norm = 0.0;
+
+    for (int i = 0; i < n; i++) {
+      double v_i = CMAT(eig->eigenvectors, i, k).re;
+      double Hv_i = diag[i] * v_i;
+
+      if (i > 0) {
+        Hv_i += offdiag[i - 1] * CMAT(eig->eigenvectors, i - 1, k).re;
+      }
+      if (i < n - 1) {
+        Hv_i += offdiag[i] * CMAT(eig->eigenvectors, i + 1, k).re;
+      }
+
+      double resid = fabs(Hv_i - eig->eigenvalues[k] * v_i);
+
+      if (resid > max_resid) {
+        max_resid = resid;
+      }
+
+      norm += v_i * v_i;
+    }
+
+    printf("  eigenvector[%d]: max|Hv-Ev|=%.2e, ||v||^2=%.6f (should be "
+           "~1, normalized)\n",
+           k, max_resid, norm);
+    if (max_resid > 1e-6) {
+      printf("  FAIL: eigenvector[%d] does not satisfy H*v=E*v\n", k);
+      fail = 1;
+    }
+
+    if (fabs(norm - 1.0) > 1e-6) {
+      printf("  FAIL: eigenvector[%d] is not normalized\n", k);
+      fail = 1;
+    }
+  }
+
+  free(diag);
+  free(offdiag);
+  free(x);
+  eigen_free(eig);
+
   return fail;
 }
 
@@ -143,6 +235,9 @@ int main(void) {
 
   printf("solve_tise_matrix: optimized vs. dense-Jacobi reference:\n");
   failed += test_solve_tise_matrix_vs_dense();
+
+  printf("solve_tise_matrix : Eigneenvectors and check performance:\n");
+  failed += test_solve_tise_matrix_eigenvectors_and_performance();
 
   printf("klein_gordon_1d: optimized vs. dense-Jacobi reference:\n");
   failed += test_klein_gordon_vs_dense();

@@ -386,6 +386,7 @@ int main(void) {
   test_degenerate_guard();
   test_dmc_run_accuracy();
   test_dmc_frequent_resampling();
+  test_dmc_resampling_engages_under_tight_margin();
   test_dmc_run_different_ion();
   test_dmc_run_parallel_matches_serial_at_one_replica();
   test_dmc_run_deterministic_across_thread_counts();
