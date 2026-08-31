@@ -96,6 +96,17 @@ void molint_normalize_contraction(basis_function_t *bf);
 double basis_function_value(const basis_function_t *bf, const double r[3]);
 
 /*
+ * Analytic gradient (d/dx, d/dy, d/dz) of a contracted Cartesian GTO basis
+ * function at point r. Needed for any GGA-level (gradient-dependent) exchange-
+ * correlation functional on a real-space grid, since the density gradient
+ *  grad n(r) = 2 * \sum_{pq} D_pq * \grad(\phi_p)(r) * \phi_q(r) (D symmetric)
+ * requires each basis function's own gradient, not just its value.
+ * Writes the result into grad[3].
+ */
+void basis_function_gradient(const basis_function_t *bf, const double r[3],
+                             double grad[3]);
+
+/*
  * A molecule: point nuclear charges (atomic units, so charge is in units of
  * |e|, e.g. 1.0 for hydrogen) at fixed 3D centers. Same molecule_t can be
  * paired with any basis set.

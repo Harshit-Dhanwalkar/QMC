@@ -281,8 +281,9 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_50_ucc \
               $(BUILD_DIR)/eg_51_qpe \
               $(BUILD_DIR)/eg_52_molecular_dft \
-              $(BUILD_DIR)/eg_53_schrodinger_solvers \
-              $(BUILD_DIR)/eg_54_latex_gen
+              $(BUILD_DIR)/eg_53_molecular_pbe_dft \
+              $(BUILD_DIR)/eg_54_schrodinger_solvers \
+              $(BUILD_DIR)/eg_55_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \

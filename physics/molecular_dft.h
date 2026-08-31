@@ -85,10 +85,11 @@ typedef struct {
  * on `grid`) and dft.c's lda_xc_energy_density / lda_xc_potential for the
  * pointwise LDA functional.
  *
- * NOTE: `mix` is a linear density-mixing/damping factor in (0,1]: D_new =
- * mix*D_computed + (1-mix)*D_old. Plain unmixed SCF (mix=1.0) converges for
- * simplest systems (e.g. H2) but oscillates for anything with near-degenerate
- * orbitals (e.g. LiH), mix=0.3 is a default
+ * NOTE: `mix` is a linear density-mixing/damping factor in (0,1]:
+ *   D_new = mix * D_computed + (1 - mix) * D_old.
+ * Plain unmixed SCF (mix=1.0) converges for simplest systems (e.g. H2) but
+ * oscillates for anything with near-degenerate orbitals (e.g. LiH), mix=0.3 is
+ * a default
  */
 molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
                                          const molecule_t *mol, int n_electrons,
@@ -96,9 +97,40 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
                                          double mix, double conv_tol,
                                          int max_iter);
 
-/* Convenience wrapper: molecular_ks_lda with mix=0.3, conv_tol=1e-9,
- * max_iter=200 */
+/* molecular_ks_lda with mix=0.3, conv_tol=1e-9, max_iter=200 */
 molecular_dft_result_t *molecular_ks_lda_default(basis_function_t **basis,
+                                                 int n_basis,
+                                                 const molecule_t *mol,
+                                                 int n_electrons,
+                                                 const molecular_grid_t *grid);
+
+/*
+ * Restricted (closed-shell) Kohn-Sham PBE (GGA) SCF: same interface and
+ * approach as molecular_ks_lda, but uses dft.h's pbe_xc_energy_density /
+ * pbe_xc_potential in place of LDA functional, which additionally needs the
+ * density gradient (not just density) at every grid point. That requires each
+ * basis function's gradient (molecular_integrals.h's basis_function_gradient),
+ * not just its value, and GGA Kohn-Sham potential matrix element
+ *   V_pq = \int [ vrho * \phi_p * \phi_q +
+ *                 2 * vsigma*(\grad n).(\phi_q * \grad(\phi_p) +
+ *                 \phi_p * \grad(\phi_q)) ] dr
+ *
+ * Where
+ *   vrho = d(n*eps_xc) / dn
+ *   vsigma = d(n * eps_xc) / dsigma,
+ *   \sigma=|grad n|^2),
+ * in place of LDA's purely-diagonal-in-density V_pq = \int[vxc * \phi_p *
+ * \phi_q]dr.
+ */
+molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
+                                         const molecule_t *mol, int n_electrons,
+                                         const molecular_grid_t *grid,
+                                         double mix, double conv_tol,
+                                         int max_iter);
+
+/* Convenience wrapper: molecular_ks_pbe with mix=0.3, conv_tol=1e-9,
+ * max_iter=200 */
+molecular_dft_result_t *molecular_ks_pbe_default(basis_function_t **basis,
                                                  int n_basis,
                                                  const molecule_t *mol,
                                                  int n_electrons,

@@ -22,7 +22,7 @@
 /* Slater/Dirac LDA exchange, n in electrons/bohr^3 (atomic units). */
 double
 lda_exchange_energy_density(double n);   /* eps_x(n): energy per electron */
-double lda_exchange_potential(double n); /* V_x(n) = d(n*eps_x)/dn */
+double lda_exchange_potential(double n); /* V_x(n) = d(n * eps_x)/dn */
 
 /* PZ81 LDA correlation, unpolarized. */
 double lda_correlation_energy_density_pz81(double n);
@@ -31,6 +31,43 @@ double lda_correlation_potential_pz81(double n);
 /* Sums of the above (what actually enters the Kohn-Sham potential/energy). */
 double lda_xc_energy_density(double n);
 double lda_xc_potential(double n);
+
+/*
+ * PBE (Perdew-Burke-Ernzerhof 1996) GGA exchange-correlation functional.
+ * Reference: Perdew, Burke & Ernzerhof, Phys. Rev. Lett. 77, 3865 (1996).
+ *
+ * NOTE: PBE correlation's enhancement-factor H(rs,t) is analytically
+ * parametrized against Perdew-Wang 1992 (PW92) LDA correlation (Perdew & Wang,
+ * Phys. Rev. B 45, 13244 (1992)) -> NOT PZ81 above; so it needs its own
+ * LDA-correlation base, pw92_correlation_*, distinct from
+ * lda_correlation_*_pz81.
+ *
+ * Unpolarized (\zeta=0, restricted/closed-shell) only
+ *  \sigma = |\grad n|^2 (atomic units).
+ * All energy densities are per-electron (eps_xc(n, \sigma)); multiply by n to
+ * get energy density per volume.
+ */
+double pw92_correlation_energy_density(double n); /* eps_c(n), PW92, zeta=0 */
+double pw92_correlation_potential(double n);      /* d(n*eps_c)/dn */
+
+/* PBE exchange eps_x(n,sigma) and its two functional derivatives:
+ *  vrho = d(n * eps_x) / dn,
+ *  vsigma = d(n*eps_x)/dsigma.
+ */
+double pbe_exchange_energy_density(double n, double sigma);
+void pbe_exchange_potential(double n, double sigma, double *vrho,
+                            double *vsigma);
+
+/* PBE correlation eps_c(n,sigma) = eps_c^PW92(n) + H(n, \sigma), and its two
+ * functional derivatives. */
+double pbe_correlation_energy_density(double n, double sigma);
+void pbe_correlation_potential(double n, double sigma, double *vrho,
+                               double *vsigma);
+
+/* Sums of the above (what actually enters the GGA Kohn-Sham potential/energy).
+ */
+double pbe_xc_energy_density(double n, double sigma);
+void pbe_xc_potential(double n, double sigma, double *vrho, double *vsigma);
 
 typedef struct {
   int n_orbitals;           /* number of doubly-occupied s-orbitals */

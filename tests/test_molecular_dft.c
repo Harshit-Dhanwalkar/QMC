@@ -11,13 +11,17 @@
  *   3. End-to-end total energy on H2/STO-3G and LiH/STO-3G, cross-validated
  *      (Reference: Perdew-Zunger 1981 correlation), lda_xc_energy_density /
  *      lda_xc_potential in dft.c): H2/STO-3G @ R=1.4 bohr: -1.12132825509958
- *      Hartree LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree
+ *      Hartree LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree.
+ *   4. Same end-to-end total-energy cross-validation for PBE GGA functional,
+ *      dft.RKS(xc='pbe') (grids.level=6): H2/STO-3G @ R=1.4 bohr:
+ *      -1.1520643731282254 Hartree; LiH/STO-3G @ R=3.015 bohr:
+ *      -7.9206827623358045 Hartree.
  */
 
+#include "../core/matrix.h"
 #include "../physics/molecular_dft.h"
 #include "../physics/molecular_hf.h"
 #include "../physics/molecular_integrals.h"
-#include "../core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -245,6 +249,114 @@ static void test_lih_ks_lda_matches_pyscf(void) {
   molecule_free(mol);
 }
 
+static void test_h2_ks_pbe_matches_pyscf(void) {
+  printf("Test: H2/STO-3G KS-PBE total energy matches PySCF's "
+         "dft.RKS(xc='pbe') reference (-1.1520643731282254 Hartree)\n");
+
+  double R = 1.4;
+  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  basis_function_t *h0 = molint_basis_sto3g_h(c0);
+  basis_function_t *h1 = molint_basis_sto3g_h(c1);
+  basis_function_t *basis[2] = {h0, h1};
+  const double charges[2] = {1.0, 1.0};
+  double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
+  molecule_t *mol = molecule_alloc(2, charges, centers);
+
+  molecular_grid_t *grid = molecular_grid_build_default(mol);
+  check(grid != NULL, "grid should build");
+
+  if (grid) {
+    molecular_dft_result_t *dft =
+        molecular_ks_pbe_default(basis, 2, mol, 2, grid);
+    check(dft != NULL, "KS-PBE should allocate a result");
+
+    if (dft) {
+      check(dft->converged, "KS-PBE should converge");
+      check_close(dft->total_energy, -1.1520643731282254, 1e-5,
+                  "H2/STO-3G KS-PBE total energy matches PySCF reference");
+
+      molecular_dft_result_free(dft);
+    }
+  }
+
+  molecular_grid_free(grid);
+  basis_function_free(h0);
+  basis_function_free(h1);
+  molecule_free(mol);
+}
+
+static void test_lih_ks_pbe_matches_pyscf(void) {
+  printf("Test: LiH/STO-3G KS-PBE total energy matches PySCF's "
+         "dft.RKS(xc='pbe') reference (-7.9206827623358045 Hartree), "
+         "requires density-mixing convergence\n");
+
+  double R = 3.015;
+  basis_function_t *li_orbs[5];
+  double c_li[3] = {0, 0, 0};
+  double c_h[3] = {0, 0, R};
+
+  molint_basis_sto3g_li(c_li, li_orbs);
+
+  basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
+  basis_function_t *basis[6] = {li_orbs[0], li_orbs[1], li_orbs[2],
+                                li_orbs[3], li_orbs[4], h_orb};
+
+  const double charges[2] = {3.0, 1.0};
+  double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
+  molecule_t *mol = molecule_alloc(2, charges, centers);
+  molecular_grid_t *grid = molecular_grid_build_default(mol);
+
+  check(grid != NULL, "grid should build");
+
+  if (grid) {
+    molecular_dft_result_t *dft =
+        molecular_ks_pbe_default(basis, 6, mol, 4, grid);
+    check(dft != NULL, "KS-PBE should allocate a result");
+
+    if (dft) {
+      check(dft->converged, "KS-PBE should converge (with mixing)");
+      check_close(dft->total_energy, -7.9206827623358045, 1e-5,
+                  "LiH/STO-3G KS-PBE total energy matches PySCF reference");
+
+      check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
+                  dft->total_energy, 1e-4,
+                  "reported energy components sum to the total energy");
+
+      molecular_dft_result_free(dft);
+    }
+  }
+
+  molecular_grid_free(grid);
+  for (int i = 0; i < 5; i++) {
+    basis_function_free(li_orbs[i]);
+  }
+  basis_function_free(h_orb);
+  molecule_free(mol);
+}
+
+static void test_pbe_invalid_inputs_rejected(void) {
+  printf("Test: molecular_ks_pbe rejects invalid inputs cleanly\n");
+
+  double c0[3] = {0, 0, 0};
+  const double charges[1] = {1.0};
+  double centers[1][3] = {{0, 0, 0}};
+  molecule_t *mol = molecule_alloc(1, charges, centers);
+
+  basis_function_t *h0 = molint_basis_sto3g_h(c0);
+  basis_function_t *basis[1] = {h0};
+
+  molecular_grid_t *grid = molecular_grid_build_default(mol);
+
+  check(molecular_ks_pbe(basis, 1, mol, 1, grid, 0.3, 1e-9, 100) == NULL,
+        "odd electron count should be rejected (restricted closed-shell only)");
+  check(molecular_ks_pbe(NULL, 1, mol, 2, grid, 0.3, 1e-9, 100) == NULL,
+        "NULL basis should be rejected");
+
+  molecular_grid_free(grid);
+  basis_function_free(h0);
+  molecule_free(mol);
+}
+
 static void test_invalid_inputs_rejected(void) {
   printf("Test: invalid inputs are rejected cleanly (NULL, not crashes)\n");
 
@@ -283,6 +395,9 @@ int main(void) {
   test_h2_ks_lda_matches_pyscf();
   test_lih_ks_lda_matches_pyscf();
   test_invalid_inputs_rejected();
+  test_h2_ks_pbe_matches_pyscf();
+  test_lih_ks_pbe_matches_pyscf();
+  test_pbe_invalid_inputs_rejected();
 
   if (failures == 0) {
     printf("\nAll test_molecular_dft checks passed.\n");

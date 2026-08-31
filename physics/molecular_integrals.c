@@ -735,6 +735,72 @@ double basis_function_value(const basis_function_t *bf, const double r[3]) {
   return angular * radial;
 }
 
+void basis_function_gradient(const basis_function_t *bf, const double r[3],
+                             double grad[3]) {
+  double dx = r[0] - bf->center[0];
+  double dy = r[1] - bf->center[1];
+  double dz = r[2] - bf->center[2];
+  double r2 = dx * dx + dy * dy + dz * dz;
+
+  // Angular part x^l y^m z^n and its three partial derivatives, e.g.
+  // d/dx (x^l y^m z^n) = l * x^(l-1) y^m z^n (zero when l==0).
+  double px = 1.0, py = 1.0, pz = 1.0;
+  for (int k = 0; k < bf->l; k++) {
+    px *= dx;
+  }
+  for (int k = 0; k < bf->m; k++) {
+    py *= dy;
+  }
+  for (int k = 0; k < bf->n; k++) {
+    pz *= dz;
+  }
+  double angular = px * py * pz;
+
+  double dpx_dx = 0.0, dpy_dy = 0.0, dpz_dz = 0.0;
+  if (bf->l > 0) {
+    double t = 1.0;
+    for (int k = 0; k < bf->l - 1; k++) {
+      t *= dx;
+    }
+    dpx_dx = bf->l * t;
+  }
+  if (bf->m > 0) {
+    double t = 1.0;
+    for (int k = 0; k < bf->m - 1; k++) {
+      t *= dy;
+    }
+    dpy_dy = bf->m * t;
+  }
+  if (bf->n > 0) {
+    double t = 1.0;
+    for (int k = 0; k < bf->n - 1; k++) {
+      t *= dz;
+    }
+    dpz_dz = bf->n * t;
+  }
+
+  double dangular_dx = dpx_dx * py * pz;
+  double dangular_dy = px * dpy_dy * pz;
+  double dangular_dz = px * py * dpz_dz;
+
+  // Radial part \sum_i c_i * \exp(-\alpha_i * r2),
+  // plus weighted sum needed for its chain-rule derivative
+  //  d(radial)/dr2 = -sum_i c_i * \alpha_i * \exp(...).
+  double radial = 0.0;
+  double radial_alpha = 0.0;
+  for (int i = 0; i < bf->n_primitives; i++) {
+    double g = bf->coefficients[i] * exp(-bf->exponents[i] * r2);
+
+    radial += g;
+    radial_alpha += bf->exponents[i] * g;
+  }
+
+  // phi = angular(r) * radial(r2), r2 = dx^2+dy^2+dz^2, d(r2)/dx = 2*dx, etc.
+  grad[0] = dangular_dx * radial + angular * (-2.0 * dx) * radial_alpha;
+  grad[1] = dangular_dy * radial + angular * (-2.0 * dy) * radial_alpha;
+  grad[2] = dangular_dz * radial + angular * (-2.0 * dz) * radial_alpha;
+}
+
 molecule_t *molecule_alloc(int n_atoms, const double *charge,
                            const double center[][3]) {
   if (n_atoms <= 0) {

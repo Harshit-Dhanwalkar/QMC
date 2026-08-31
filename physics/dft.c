@@ -1,6 +1,6 @@
 #include "dft.h"
-#include "../core/linalg/eigen_generic.h"
 #include "../core/complex.h"
+#include "../core/linalg/eigen_generic.h"
 #include "../core/matrix.h"
 #include "../core/vector.h"
 #include "central_potential.h"
@@ -83,6 +83,220 @@ double lda_xc_potential(double n) {
 }
 
 /* ---------------------------------------------------------------------
+ * PW92 LDA correlation (\zeta=0), and PBE GGA exchange-correlation built on it.
+ * Reference: Perdew & Wang, Phys. Rev. B 45, 13244 (1992); Perdew, Burke &
+ * Ernzerhof (PBE), Phys. Rev. Lett. 77, 3865 (1996).
+ * ------------------------------------------------------------------- */
+
+/* PW92's G(rs) parametrization (unpolarized/zeta=0 branch) and its
+ * rs-derivative, both needed (latter for LDA potential and as PBE correlation's
+ * LDA-limit ingredient). Closed forms below (reference PBE subroutine CORPBE):
+ *   Q1 = 2 * A * (b1 * \sqrt(rs) + b2 * rs + b3 * rs^(3/2) + b4 * rs^2),
+ *   ec = -2 * A * (1+ a1 *rs) * \ln(1 + 1 / Q1),
+ * and its derivative follows by direct product + chain rule differentiation of
+ * that closed form.
+ */
+static void pw92_g_and_derivative(double rs, double *g, double *dg_drs) {
+  const double A = 0.031091, a1 = 0.21370;
+  const double b1 = 7.5957, b2 = 3.5876, b3 = 1.6382, b4 = 0.49294;
+
+  double sq = sqrt(rs);
+  double Q0 = -2.0 * A * (1.0 + a1 * rs);
+  double Q1 = 2.0 * A * (b1 * sq + b2 * rs + b3 * rs * sq + b4 * rs * rs);
+  double Q2 = log1p(1.0 / Q1);
+  double Q3 = A * (b1 / sq + 2.0 * b2 + 3.0 * b3 * sq + 4.0 * b4 * rs);
+
+  *g = Q0 * Q2;
+  *dg_drs = -2.0 * A * a1 * Q2 - Q0 * Q3 / (Q1 * Q1 + Q1);
+}
+
+double pw92_correlation_energy_density(double n) {
+  if (n <= 0.0) {
+    return 0.0;
+  }
+
+  double rs = rs_of_density(n);
+  double ec, decdrs;
+
+  pw92_g_and_derivative(rs, &ec, &decdrs);
+
+  return ec;
+}
+
+double pw92_correlation_potential(double n) {
+  if (n <= 0.0) {
+    return 0.0;
+  }
+
+  double rs = rs_of_density(n);
+  double ec, decdrs;
+
+  pw92_g_and_derivative(rs, &ec, &decdrs);
+
+  // V_c = d(n * ec) / dn = ec + n * (dec / drs) * (drs / dn)
+  //     = ec - (rs / 3) * decdrs,
+  // since drs/dn = -rs / (3 * n).
+  return ec - (rs / 3.0) * decdrs;
+}
+
+double pbe_exchange_energy_density(double n, double sigma) {
+  if (n <= 0.0) {
+    return 0.0;
+  }
+
+  const double kappa = 0.804, mu = 0.2195149727645171;
+
+  double kF = cbrt(3.0 * M_PI * M_PI * n);
+  double grad_n = sqrt(sigma);
+  double s = grad_n / (2.0 * kF * n);
+  double u = mu * s * s / kappa;
+  double Fx = 1.0 + kappa - kappa / (1.0 + u);
+
+  return lda_exchange_energy_density(n) * Fx;
+}
+
+void pbe_exchange_potential(double n, double sigma, double *vrho,
+                            double *vsigma) {
+  if (n <= 0.0) {
+    *vrho = 0.0;
+    *vsigma = 0.0;
+    return;
+  }
+
+  const double kappa = 0.804, mu = 0.2195149727645171;
+
+  double kF = cbrt(3.0 * M_PI * M_PI * n);
+  double grad_n = sqrt(sigma);
+  double s = grad_n / (2.0 * kF * n);
+  double u = mu * s * s / kappa;
+  double Fx = 1.0 + kappa - kappa / (1.0 + u);
+  double dFx_ds = 2.0 * mu * s / ((1.0 + u) * (1.0 + u));
+
+  //   s(n, \sigma) = \sqrt(\sigma) / (2 * kF(n) * n)
+  // since kF * n scales as n^(4/3),
+  //   d(s)/dn = -(4/3) * s / n
+  // and d(s) / d\sigma = s / (2 * \sigma) (\sigma>0).
+  double ds_dn = -(4.0 / 3.0) * s / n;
+  double ds_dsigma = sigma > 0.0 ? s / (2.0 * sigma) : 0.0;
+
+  double eps_x_lda = lda_exchange_energy_density(n);
+  double vx_lda = lda_exchange_potential(n); // d(n*eps_x_lda)/dn
+
+  *vrho = vx_lda * Fx + n * eps_x_lda * dFx_ds * ds_dn;
+  *vsigma = n * eps_x_lda * dFx_ds * ds_dsigma;
+}
+
+double pbe_correlation_energy_density(double n, double sigma) {
+  if (n <= 0.0) {
+    return 0.0;
+  }
+
+  const double gamma = (1.0 - M_LN2) / (M_PI * M_PI);
+  const double beta = 0.06672455060314922;
+
+  double rs = rs_of_density(n);
+  double ec;
+  double decdrs;
+
+  pw92_g_and_derivative(rs, &ec, &decdrs);
+
+  double kF = cbrt(3.0 * M_PI * M_PI * n);
+  double ks = sqrt(4.0 * kF / M_PI);
+  double grad_n = sqrt(sigma);
+  double t = grad_n / (2.0 * ks * n);
+  double T2 = t * t;
+
+  double y = exp(-ec / gamma);
+  double B = (beta / gamma) / (y - 1.0);
+  double Q4 = 1.0 + B * T2;
+  double Q5 = 1.0 + B * T2 + B * B * T2 * T2;
+  double X = (beta / gamma) * T2 * Q4 / Q5;
+  double H = gamma * log1p(X);
+
+  return ec + H;
+}
+
+void pbe_correlation_potential(double n, double sigma, double *vrho,
+                               double *vsigma) {
+  if (n <= 0.0) {
+    *vrho = 0.0;
+    *vsigma = 0.0;
+    return;
+  }
+
+  const double gamma = (1.0 - M_LN2) / (M_PI * M_PI);
+  const double beta = 0.06672455060314922;
+
+  double rs = rs_of_density(n);
+  double ec;
+  double decdrs;
+
+  pw92_g_and_derivative(rs, &ec, &decdrs);
+
+  double kF = cbrt(3.0 * M_PI * M_PI * n);
+  double ks = sqrt(4.0 * kF / M_PI);
+  double grad_n = sqrt(sigma);
+  double t = grad_n / (2.0 * ks * n);
+  double T2 = t * t;
+
+  //  B(ec) = (\beta / \gamma) / (\exp(-ec / \gamma) - 1)
+  // and dB/dec by the quotient + chain rule
+  double y = exp(-ec / gamma);
+  double B = (beta / gamma) / (y - 1.0);
+  double dB_dec = beta * y / (gamma * gamma * (y - 1.0) * (y - 1.0));
+
+  double Q4 = 1.0 + B * T2;
+  double Q5 = 1.0 + B * T2 + B * B * T2 * T2;
+  double X = (beta / gamma) * T2 * Q4 / Q5;
+  double H = gamma * log1p(X);
+
+  // X = (beta/gamma) * f(T2,B)/Q5(T2,B), f = T2*Q4 = T2 + B*T2^2.
+  double f = T2 * Q4;
+  double df_dT2 = 1.0 + 2.0 * B * T2;
+  double dQ5_dT2 = B + 2.0 * B * B * T2;
+  double dX_dT2 = (beta / gamma) * (df_dT2 * Q5 - f * dQ5_dT2) / (Q5 * Q5);
+
+  double df_dB = T2 * T2;
+  double dQ5_dB = T2 + 2.0 * B * T2 * T2;
+  double dX_dB = (beta / gamma) * (df_dB * Q5 - f * dQ5_dB) / (Q5 * Q5);
+
+  double dH_dT2 = gamma / (1.0 + X) * dX_dT2;
+  double dH_dB = gamma / (1.0 + X) * dX_dB;
+
+  // Chain rule to n and \sigma:
+  //  T2 = \sigma / (4 * ks(n)^2 * n^2) scales as n^(-7/3)
+  // at fixed \sigma (ks^2 * n^2 ~ n^(7/3)),
+  // so d(T2)/dn = -(7/3) * T2/n;
+  // B depends on n only through ec(rs(n)), drs/dn = -rs/(3n)
+  double drs_dn = -rs / (3.0 * n);
+  double decdn = decdrs * drs_dn;
+
+  double dT2_dn = -(7.0 / 3.0) * T2 / n;
+  double dT2_dsigma = sigma > 0.0 ? T2 / sigma : 1.0 / (4.0 * ks * ks * n * n);
+
+  double dH_dn = dH_dT2 * dT2_dn + dH_dB * dB_dec * decdn;
+  double dH_dsigma = dH_dT2 * dT2_dsigma;
+
+  *vrho = (ec + H) + n * (decdn + dH_dn);
+  *vsigma = n * dH_dsigma;
+}
+
+double pbe_xc_energy_density(double n, double sigma) {
+  return pbe_exchange_energy_density(n, sigma) +
+         pbe_correlation_energy_density(n, sigma);
+}
+
+void pbe_xc_potential(double n, double sigma, double *vrho, double *vsigma) {
+  double vrho_x, vsigma_x, vrho_c, vsigma_c;
+
+  pbe_exchange_potential(n, sigma, &vrho_x, &vsigma_x);
+  pbe_correlation_potential(n, sigma, &vrho_c, &vsigma_c);
+
+  *vrho = vrho_x + vrho_c;
+  *vsigma = vsigma_x + vsigma_c;
+}
+
+/* ---------------------------------------------------------------------
  * SCF machinery : structurally parallel to hartree_fock.c's, with dense Fock
  * exchange (K) matrix replaced by local V_xc(n(r)) diagonal potential.
  * ------------------------------------------------------------------- */
@@ -95,6 +309,7 @@ static void normalize_u(double *u, int N, double dr) {
   if (norm_sq < 1e-300) {
     return;
   }
+
   double norm = sqrt(norm_sq);
   for (int i = 0; i < N; i++) {
     u[i] /= norm;
@@ -125,6 +340,7 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double dr, double Z,
 
     return NULL;
   }
+
   memset(V_H, 0, (size_t)N * sizeof(double));
 
   /* Classical Hartree potential: V_H(r) = sum_k occ_k * Y0_kk(r), occ=2
@@ -228,6 +444,7 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
   if (!u) {
     return NULL;
   }
+
   for (int k = 0; k < n_orbitals; k++) {
     u[k] = malloc((size_t)N * sizeof(double));
   }
@@ -299,7 +516,9 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
       for (int i = 0; i < N; i++) {
         u_new[i] = CMAT(eig->eigenvectors, i, k).re;
       }
+
       normalize_u(u_new, N, dr);
+
       // keep a consistent sign (positive just passs inner boundary)
       if (u_new[1] < 0.0) {
         for (int i = 0; i < N; i++) {
@@ -316,11 +535,13 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
 
       orbital_energies[k] = eig->eigenvalues[k];
     }
+
     eigen_free(eig);
 
     if (iter > 0 && fabs(eps_sum - eps_prev_sum) < tol) {
       converged = 1;
       iter++;
+
       break;
     }
 
