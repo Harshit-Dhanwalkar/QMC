@@ -9,119 +9,120 @@
 
 // Allocation / Free / Copy
 cmatrix_t *cmatrix_alloc(int nrows, int ncols) {
-  cmatrix_t *m = malloc(sizeof(cmatrix_t));
-  if (!m) {
+  cmatrix_t *matrix = malloc(sizeof(cmatrix_t));
+  if (!matrix) {
     return NULL;
   }
 
-  m->data = calloc((size_t)nrows * ncols, sizeof(complex_t));
-  if (!m->data) {
-    free(m);
+  matrix->data = calloc((size_t)nrows * ncols, sizeof(complex_t));
+  if (!matrix->data) {
+    free(matrix);
 
     return NULL;
   }
 
-  m->nrows = nrows;
-  m->ncols = ncols;
+  matrix->nrows = nrows;
+  matrix->ncols = ncols;
 
-  return m;
+  return matrix;
 }
 
-void cmatrix_free(cmatrix_t *m) {
-  if (!m) {
+void cmatrix_free(cmatrix_t *matrix) {
+  if (!matrix) {
     return;
   }
 
-  free(m->data);
-  free(m);
+  free(matrix->data);
+  free(matrix);
 }
 
-cmatrix_t *cmatrix_copy(const cmatrix_t *m) {
-  if (!m) {
+cmatrix_t *cmatrix_copy(const cmatrix_t *matrix) {
+  if (!matrix) {
     return NULL;
   }
 
-  cmatrix_t *c = cmatrix_alloc(m->nrows, m->ncols);
-  if (!c) {
+  cmatrix_t *copy = cmatrix_alloc(matrix->nrows, matrix->ncols);
+  if (!copy) {
     return NULL;
   }
 
-  memcpy(c->data, m->data, (size_t)m->nrows * m->ncols * sizeof(complex_t));
+  memcpy(copy->data, matrix->data,
+         (size_t)matrix->nrows * matrix->ncols * sizeof(complex_t));
 
-  return c;
+  return copy;
 }
 
 // Basic operations
-cmatrix_t *cmatrix_multiply(const cmatrix_t *a, const cmatrix_t *b) {
-  if (!a || !b || a->ncols != b->nrows) {
+cmatrix_t *cmatrix_multiply(const cmatrix_t *left, const cmatrix_t *right) {
+  if (!left || !right || left->ncols != right->nrows) {
     return NULL;
   }
 
-  cmatrix_t *c = cmatrix_alloc(a->nrows, b->ncols);
-  if (!c) {
+  cmatrix_t *copy = cmatrix_alloc(left->nrows, right->ncols);
+  if (!copy) {
     return NULL;
   }
 
-  for (int i = 0; i < a->nrows; i++) {
-    for (int j = 0; j < b->ncols; j++) {
+  for (int i = 0; i < left->nrows; i++) {
+    for (int j = 0; j < right->ncols; j++) {
       complex_t sum = c_zero();
 
-      for (int k = 0; k < a->ncols; k++) {
-        sum = c_add(sum, c_mul(CMAT(a, i, k), CMAT(b, k, j)));
+      for (int k = 0; k < left->ncols; k++) {
+        sum = c_add(sum, c_mul(CMAT(left, i, k), CMAT(right, k, j)));
       }
 
-      CMAT(c, i, j) = sum;
+      CMAT(copy, i, j) = sum;
     }
   }
 
-  return c;
+  return copy;
 }
 
-cmatrix_t *cmatrix_transpose(const cmatrix_t *m) {
-  if (!m) {
+cmatrix_t *cmatrix_transpose(const cmatrix_t *matrix) {
+  if (!matrix) {
     return NULL;
   }
 
-  cmatrix_t *t = cmatrix_alloc(m->ncols, m->nrows);
-  if (!t) {
+  cmatrix_t *transpose = cmatrix_alloc(matrix->ncols, matrix->nrows);
+  if (!transpose) {
     return NULL;
   }
 
-  for (int i = 0; i < m->nrows; i++) {
-    for (int j = 0; j < m->ncols; j++) {
-      CMAT(t, j, i) = CMAT(m, i, j);
+  for (int i = 0; i < matrix->nrows; i++) {
+    for (int j = 0; j < matrix->ncols; j++) {
+      CMAT(transpose, j, i) = CMAT(matrix, i, j);
     }
   }
 
-  return t;
+  return transpose;
 }
 
-cmatrix_t *cmatrix_adjoint(const cmatrix_t *m) {
-  if (!m) {
+cmatrix_t *cmatrix_adjoint(const cmatrix_t *matrix) {
+  if (!matrix) {
     return NULL;
   }
 
-  cmatrix_t *a = cmatrix_transpose(m);
-  if (!a) {
+  cmatrix_t *left = cmatrix_transpose(matrix);
+  if (!left) {
     return NULL;
   }
 
-  for (int i = 0; i < a->nrows; i++) {
-    for (int j = 0; j < a->ncols; j++) {
-      CMAT(a, i, j) = c_conj(CMAT(a, i, j));
+  for (int i = 0; i < left->nrows; i++) {
+    for (int j = 0; j < left->ncols; j++) {
+      CMAT(left, i, j) = c_conj(CMAT(left, i, j));
     }
   }
 
-  return a;
+  return left;
 }
 
-void cmatrix_scale(cmatrix_t *m, complex_t s) {
-  if (!m) {
+void cmatrix_scale(cmatrix_t *matrix, complex_t s) {
+  if (!matrix) {
     return;
   }
 
-  for (int i = 0; i < m->nrows * m->ncols; i++) {
-    m->data[i] = c_mul(m->data[i], s);
+  for (int i = 0; i < matrix->nrows * matrix->ncols; i++) {
+    matrix->data[i] = c_mul(matrix->data[i], s);
   }
 }
 
@@ -163,16 +164,16 @@ cmatrix_t *cmatrix_add(const cmatrix_t *a, const cmatrix_t *b) {
     return NULL;
   }
 
-  cmatrix_t *c = cmatrix_alloc(a->nrows, a->ncols);
-  if (!c) {
+  cmatrix_t *copy = cmatrix_alloc(a->nrows, a->ncols);
+  if (!copy) {
     return NULL;
   }
 
   for (int i = 0; i < a->nrows * a->ncols; i++) {
-    c->data[i] = c_add(a->data[i], b->data[i]);
+    copy->data[i] = c_add(a->data[i], b->data[i]);
   }
 
-  return c;
+  return copy;
 }
 
 // LU decomposition (wrapper)
@@ -234,8 +235,10 @@ void cmatrix_print(const cmatrix_t *m, const char *label) {
   for (int i = 0; i < m->nrows; i++) {
     for (int j = 0; j < m->ncols; j++) {
       complex_t z = CMAT(m, i, j);
+
       printf("(%6.3f %+6.3fi) ", z.re, z.im);
     }
+
     printf("\n");
   }
 }

@@ -12,12 +12,12 @@ linear-optical network
 #include <stdlib.h>
 
 static double factorial_bs(int n) {
-  double r = 1.0;
+  double result = 1.0;
   for (int i = 2; i <= n; i++) {
-    r *= i;
+    result *= i;
   }
 
-  return r;
+  return result;
 }
 
 complex_t boson_sampling_amplitude(const cmatrix_t *U, int M,

@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define INITIAL_CAP 16
+
 /* ---------------------------------------------------------------------
  * Small line/token helpers
  * ------------------------------------------------------------------- */
@@ -126,7 +128,8 @@ static void shell_free(basis_shell_t *s) {
  * Parser
  * ------------------------------------------------------------------- */
 
-/* Splits `line` into up to max_tok whitespace-separated tokens.
+/*
+ * Splits `line` into up to max_tok whitespace-separated tokens.
  *
  * Returns token count.
  */
@@ -193,7 +196,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
       continue;
     }
 
-    /* Tokenize this line (on a scratch copy; strtok mutates). */
+    // Tokenize this line (on a scratch copy; strtok mutates)
     char scratch[256];
     strncpy(scratch, line, sizeof(scratch) - 1);
     scratch[sizeof(scratch) - 1] = '\0';
@@ -217,6 +220,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
       strncpy(cur_symbol, tok[0], sizeof(cur_symbol) - 1);
 
       to_upper_str(cur_symbol);
+
       have_open_element = 1;
       cur_shells.items = NULL;
       cur_shells.count = cur_shells.cap = 0;
@@ -233,6 +237,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
 
     char shell_type[3] = {0};
     strncpy(shell_type, tok[0], 2);
+
     to_upper_str(shell_type);
 
     int n_prim = (int)strtod(tok[1], NULL);
@@ -482,7 +487,7 @@ static int append_shell_functions(const basis_shell_t *sh,
                                   const double center[3],
                                   basis_function_t ***arr, int *count,
                                   int *cap) {
-  int comps[15][3]; /* enough for up to l=4 (15 components) */
+  int comps[15][3]; // enough for up to l=4 (15 components)
 
   if (strcmp(sh->type, "SP") == 0) {
     // S part (l=0) from coef1, P part (l=1) from coef2
@@ -578,7 +583,8 @@ int basis_set_build_atom(const basis_element_t *elem, const double center[3],
   }
 
   basis_function_t **arr = NULL;
-  int count = 0, cap = 0;
+  int count = 0;
+  int cap = 0;
 
   for (int s = 0; s < elem->n_shells; s++) {
     if (!append_shell_functions(&elem->shells[s], center, &arr, &count, &cap)) {
@@ -605,10 +611,11 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
   }
 
   basis_function_t **all = NULL;
-  int total = 0, cap = 0;
+  int total = 0;
+  int cap = 0;
 
-  for (int a = 0; a < n_atoms; a++) {
-    const basis_element_t *elem = basis_set_find_element(bs, symbols[a]);
+  for (int atom_idx = 0; atom_idx < n_atoms; atom_idx++) {
+    const basis_element_t *elem = basis_set_find_element(bs, symbols[atom_idx]);
 
     if (!elem) {
       basis_set_free_functions(all, total);
@@ -618,10 +625,10 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
     }
 
     basis_function_t **atom_fns = NULL;
-    int n_atom_fns = basis_set_build_atom(elem, centers[a], &atom_fns);
+    int n_atom_fns = basis_set_build_atom(elem, centers[atom_idx], &atom_fns);
 
     if (n_atom_fns == 0 && elem->n_shells > 0) {
-      /* Distinguish "genuinely zero shells" (shouldn't happen for a valid
+      /* NOTE: Distinguish "genuinely zero shells" (shouldn't happen for a valid
        * element block) from allocation failure inside basis_set_build_atom:
        * atom_fns is NULL on failure. */
       if (!atom_fns) {
@@ -633,7 +640,7 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
     }
     for (int i = 0; i < n_atom_fns; i++) {
       if (total == cap) {
-        int new_cap = cap == 0 ? 16 : cap * 2;
+        int new_cap = cap == 0 ? INITIAL_CAP : cap * 2;
 
         basis_function_t **tmp = realloc(all, (size_t)new_cap * sizeof(*tmp));
         if (!tmp) {
@@ -658,12 +665,12 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
   return total;
 }
 
-void basis_set_free_functions(basis_function_t **funcs, int n) {
+void basis_set_free_functions(basis_function_t **funcs, int tol_fns) {
   if (!funcs) {
     return;
   }
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < tol_fns; i++) {
     basis_function_free(funcs[i]);
   }
 

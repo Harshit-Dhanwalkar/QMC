@@ -38,11 +38,11 @@
  * reference.
  */
 
+#include "../core/matrix.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
 #include "../export/plot.h"
 #include "../physics/spin_chain.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
