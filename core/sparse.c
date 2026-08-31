@@ -277,3 +277,134 @@ void lanczos_free(lanczos_result_t *res) {
   cmatrix_free(res->vectors);
   free(res);
 }
+
+lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *A,
+                                          const cvector_t *v0, int max_iter,
+                                          double tol) {
+  if (!A || A->nrows != A->ncols || !v0 || v0->n != A->nrows || max_iter < 1 ||
+      tol <= 0.0) {
+    return NULL;
+  }
+
+  int n = A->nrows;
+  int m = (max_iter < n) ? max_iter : n;
+
+  double v0_norm = cvector_norm(v0);
+  if (fabs(v0_norm - 1.0) > 1e-6) {
+    return NULL;
+  }
+
+  cvector_t **v = calloc((size_t)m, sizeof *v);
+  double *alpha = malloc((size_t)m * sizeof *alpha);
+  double *beta = (m > 1) ? malloc((size_t)(m - 1) * sizeof *beta) : NULL;
+  cvector_t *w = cvector_alloc(n);
+  if (!v || !alpha || (m > 1 && !beta) || !w) {
+    free(v);
+    free(alpha);
+    free(beta);
+    cvector_free(w);
+
+    return NULL;
+  }
+
+  v[0] = cvector_copy(v0);
+  if (!v[0]) {
+    free(v);
+    free(alpha);
+    free(beta);
+    cvector_free(w);
+
+    return NULL;
+  }
+
+  int m_eff = 0;
+
+  for (int j = 0; j < m; j++) {
+    sparse_mv(A, v[j], w);
+
+    if (j > 0) {
+      for (int idx = 0; idx < n; idx++) {
+        w->data[idx] =
+            c_sub(w->data[idx], c_scale(v[j - 1]->data[idx], beta[j - 1]));
+      }
+    }
+
+    alpha[j] = cvector_expect(v[j], w); // Re(<v_j, w>)
+
+    for (int idx = 0; idx < n; idx++) {
+      w->data[idx] = c_sub(w->data[idx], c_scale(v[j]->data[idx], alpha[j]));
+    }
+
+    // Full reorthogonalization against every previous Lanczos vector
+    for (int i = 0; i <= j; i++) {
+      complex_t proj = cvector_dot(v[i], w);
+      for (int idx = 0; idx < n; idx++) {
+        w->data[idx] = c_sub(w->data[idx], c_mul(proj, v[i]->data[idx]));
+      }
+    }
+
+    double bj = cvector_norm(w);
+    m_eff = j + 1;
+
+    if (bj < tol || j == m - 1) {
+      break;
+    }
+
+    beta[j] = bj;
+    v[j + 1] = cvector_alloc(n);
+    if (!v[j + 1]) {
+      m_eff = j + 1;
+
+      break;
+    }
+
+    for (int idx = 0; idx < n; idx++) {
+      v[j + 1]->data[idx] = c_scale(w->data[idx], 1.0 / bj);
+    }
+  }
+
+  for (int j = 0; j < m; j++) {
+    if (v[j]) {
+      cvector_free(v[j]);
+    }
+  }
+  free(v);
+  cvector_free(w);
+
+  lanczos_tridiag_t *res = malloc(sizeof *res);
+  if (!res) {
+    free(alpha);
+    free(beta);
+
+    return NULL;
+  }
+
+  res->m = m_eff;
+  res->alpha = realloc(alpha, (size_t)m_eff * sizeof *res->alpha);
+  if (!res->alpha) {
+    res->alpha = alpha; /* realloc to smaller size should not fail, but if it
+                            somehow does, the original block is still valid */
+  }
+
+  if (m_eff > 1) {
+    res->beta = realloc(beta, (size_t)(m_eff - 1) * sizeof *res->beta);
+    if (!res->beta) {
+      res->beta = beta;
+    }
+  } else {
+    res->beta = NULL;
+    free(beta);
+  }
+
+  return res;
+}
+
+void lanczos_tridiag_free(lanczos_tridiag_t *t) {
+  if (!t) {
+    return;
+  }
+
+  free(t->alpha);
+  free(t->beta);
+  free(t);
+}

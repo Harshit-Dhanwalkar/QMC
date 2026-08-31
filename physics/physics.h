@@ -49,6 +49,7 @@
 #include "scattering.h"
 #include "schrodinger.h"
 #include "second_quant.h"
+#include "spin_chain.h"
 #include "molecular_integrals.h"
 #include "molecular_hf.h"
 #include "dft.h"

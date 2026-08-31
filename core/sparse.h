@@ -57,4 +57,31 @@ lanczos_result_t *lanczos_eigs(const sparse_matrix_t *A, int k, int max_iter,
                                double tol);
 void lanczos_free(lanczos_result_t *res);
 
+/* Lanczos tridiagonalization from a caller-supplied starting vector.
+ *
+ * Runs same three-term recurrence with full reorthogonalization starting from
+ * v0, and returns raw tridiagonal coefficients (\alpha, \beta) (instead of
+ * eigenpairs).
+ *
+ * NOTE: v0 must already be normalized (||v0|| = 1); this is caller's
+ * responsibility since normalization constant I0 = <v0|v0> (before normalizing)
+ * is itself physically meaningful (e.g. total spectral weight / static
+ * structure factor) and callers need it separately.
+ *
+ * Returns NULL on invalid input or allocation failure. Otherwise returns a
+ * lanczos_tridiag_t with m \alpha coefficients and m-1 \beta coefficients (m <=
+ * max_iter, fewer if the Krylov subspace collapses early). Free with
+ * lanczos_tridiag_free.
+ */
+typedef struct {
+  int m;
+  double *alpha; /* size m */
+  double *beta;  /* size m-1 (NULL if m == 1) */
+} lanczos_tridiag_t;
+
+lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *A,
+                                          const cvector_t *v0, int max_iter,
+                                          double tol);
+void lanczos_tridiag_free(lanczos_tridiag_t *t);
+
 #endif
