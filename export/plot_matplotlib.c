@@ -69,20 +69,33 @@ static void apply_common_opts(matplotlib_t *mp, const plot_opts_t *opts) {
   char buf[256];
   if (opts && opts->title) {
     py_repr(buf, sizeof buf, opts->title);
+
     matplotlib_cmd(mp, "plt.title(%s)", buf);
   }
 
   if (opts && opts->xlabel) {
     py_repr(buf, sizeof buf, opts->xlabel);
+
     matplotlib_cmd(mp, "plt.xlabel(%s)", buf);
   }
 
   if (opts && opts->ylabel) {
     py_repr(buf, sizeof buf, opts->ylabel);
+
     matplotlib_cmd(mp, "plt.ylabel(%s)", buf);
   }
 
   matplotlib_cmd(mp, "plt.grid(True)");
+}
+
+// NOTE: Must run after all plt.plot() calls
+static void apply_axis_limits(matplotlib_t *mp, const plot_opts_t *opts) {
+  if (opts && (opts->xmin != 0.0 || opts->xmax != 0.0)) {
+    matplotlib_cmd(mp, "plt.xlim(%.10e, %.10e)", opts->xmin, opts->xmax);
+  }
+  if (opts && (opts->ymin != 0.0 || opts->ymax != 0.0)) {
+    matplotlib_cmd(mp, "plt.ylim(%.10e, %.10e)", opts->ymin, opts->ymax);
+  }
 }
 
 int plot_line(const char *filename, plot_format_t format, const double *x,
@@ -127,15 +140,19 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
   if (opts && opts->color) {
     char cbuf[64];
     py_repr(cbuf, sizeof cbuf, opts->color);
+
     matplotlib_cmd(mp, "plt.plot(x, y, linewidth=%g, color=%s)", lw, cbuf);
   } else {
     matplotlib_cmd(mp, "plt.plot(x, y, linewidth=%g)", lw);
   }
 
+  apply_axis_limits(mp, opts);
+
   char path[512], pbuf[600];
   snprintf(path, sizeof path, "%s/%s.%s", QMC_OUTPUT_DIR, filename,
            mpl_ext(format));
   py_repr(pbuf, sizeof pbuf, path);
+
   matplotlib_cmd(mp, "plt.savefig(%s, dpi=100)", pbuf);
   matplotlib_cmd(mp, "plt.close(fig)");
 
@@ -176,6 +193,7 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
   int any_labels = 0;
   for (int s = 0; s < n_series; s++) {
     matplotlib_cmd(mp, "ys%d = []", s);
+
     for (int i = 0; i < n_pts; i++) {
       matplotlib_cmd(mp, "ys%d.append(%.10e)", s, ys[s][i]);
     }
@@ -185,6 +203,7 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
       py_repr(lbuf, sizeof lbuf, labels[s]);
       matplotlib_cmd(mp, "plt.plot(xs, ys%d, linewidth=%g, label=%s)", s, lw,
                      lbuf);
+
       any_labels = 1;
     } else {
       matplotlib_cmd(mp, "plt.plot(xs, ys%d, linewidth=%g)", s, lw);
@@ -195,13 +214,18 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
     matplotlib_cmd(mp, "plt.legend()");
   }
 
-  char path[512], pbuf[600];
+  apply_axis_limits(mp, opts);
+
+  char path[512];
+  char pbuf[600];
   snprintf(path, sizeof path, "%s/%s.%s", QMC_OUTPUT_DIR, filename,
            mpl_ext(format));
   py_repr(pbuf, sizeof pbuf, path);
+
   matplotlib_cmd(mp, "plt.savefig(%s, dpi=100)", pbuf);
   matplotlib_cmd(mp, "plt.close('all')");
 
   matplotlib_close(mp);
+
   return 0;
 }
