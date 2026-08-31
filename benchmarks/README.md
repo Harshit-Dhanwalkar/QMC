@@ -7,8 +7,6 @@ From the repo root:
 make run-benchmarks   # builds + runs bench_accuracy, bench_eigensolver,
                       # bench_vmc_convergence; writes output/bench_<name>.dat
 make benchmarks       # just builds them, doesn't run
-make build/bench_openmp_parallel   # MPI+OpenMP hybrid -- needs mpicc, built
-                                   # separately (see its own section below)
 ```
 
 Add `PLOT_BACKEND=NONE` to any of these if you don't have the GR submodule built and don't want the fallback chain to try GNUPLOT/MATPLOTLIB first.

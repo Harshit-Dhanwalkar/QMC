@@ -216,7 +216,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/ucc.c \
                $(PHYSICS_DIR)/dft.c \
                $(PHYSICS_DIR)/basis_parser.c \
-               $(PHYSICS_DIR)/molecular_dft.c
+               $(PHYSICS_DIR)/molecular_dft.c \
+               $(PHYSICS_DIR)/fci.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -283,7 +284,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_52_molecular_dft \
               $(BUILD_DIR)/eg_53_molecular_pbe_dft \
               $(BUILD_DIR)/eg_54_schrodinger_solvers \
-              $(BUILD_DIR)/eg_55_latex_gen
+              $(BUILD_DIR)/eg_55_fci \
+              $(BUILD_DIR)/eg_56_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -347,6 +349,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_basis_parser \
               $(BUILD_DIR)/test_molecular_dft \
               $(BUILD_DIR)/test_special \
+              $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)

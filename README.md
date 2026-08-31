@@ -121,6 +121,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
+  - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - Optimised linear algebra (LAPACK/BLAS backend).
 
@@ -179,8 +180,10 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_50_ucc.c</code></li>
   <li><code>eg_51_qpe.c</code></li>
   <li><code>eg_52_molecular_dft.c</code></li>
-  <li><code>eg_53_schrodinger_solvers.c</code></li>
-  <li><code>eg_54_latex_gen.c</code></li>
+  <li><code>eg_53_molecular_pbe_dft.c</code></li>
+  <li><code>eg_54_schrodinger_solvers.c</code></li>
+  <li><code>eg_55_fci.c</code></li>
+  <li><code>eg_56_latex_gen.c</code></li>
 </ul>
 </details>
 
@@ -249,6 +252,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
   <li><code>test_qqe.c</code></li>
+  <li><code>test_fci.c</code></li>
   <li><code>test_latex_gen.c</code></li>
 </ul>
 </details>

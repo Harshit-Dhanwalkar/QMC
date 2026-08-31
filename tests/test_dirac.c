@@ -129,10 +129,10 @@ static int test_free_particle_branches(void) {
 }
 
 /*
- * Harmonic V(x) and c taken large (weak-relativistic-coupling limit), Dirac
- * equation's positive-energy branch must reduce exactly to ordinary
- * Schrodinger-equation spectrum shifted by the rest-mass energy, E - m * c^2 ->
- * (n + 1/2) * \hbar*\omega.
+ * Harmonic V(x) and c taken large (weak-relativistic-coupling limit),
+ * Dirac equation's positive-energy branch must reduce exactly to ordinary
+ * Schrodinger-equation spectrum shifted by the rest-mass energy,
+ * E - m * c^2 -> (n + 1/2) * \hbar * \omega.
  */
 static int test_nonrelativistic_limit(void) {
   int N = RUNNING_ON_VALGRIND ? 60 : 150;
@@ -306,11 +306,13 @@ int main(void) {
   printf("2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1):\n");
   failed += test_dirac_j_degeneracy();
 
-  if (failed) {
-    printf("FAILED (%d)\n", failed);
+  if (failed == 0) {
+    printf("\nAll test_dirac checks passed.\n");
+    return 0;
+  } else {
+    printf("\n%d test_dirac check(s) FAILED.\n", failed);
     return 1;
   }
-  printf("PASS\n");
 
   return 0;
 }

@@ -35,7 +35,7 @@ eigen_t *solve_tise_matrix(double *x, int n, double dx, double hbar_sq_2m,
   // Fill Hamiltonian: H = -\hbar^2/(2m) d^2/dx^2 + V(x)
   for (int i = 0; i < n; i++) {
     double V_i = V(x[i], params);
-    diag[i] = 2.0 * coeff + V(x[i], params);
+    diag[i] = 2.0 * coeff + V_i;
   }
 
   for (int i = 0; i < n - 1; i++) {
