@@ -27,10 +27,11 @@
  * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so the ground state is at k=\pi.
  */
 
+#include "../core/matrix.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
 #include "../physics/spin_chain.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
+#include "/home/harshitpd/Documents/GITHUB/QMC/core/complex.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -230,6 +231,160 @@ static void test_continued_fraction_integrates_to_I0(void) {
   spin_sector_free(sec0);
 }
 
+/* Reflection (spatial parity) symmetry: R^2=I, Hermiticity, [H,R]=0, and lower
+ * of the two parity blocks' ground energies must equal the sector's own
+ * (unsplit) ground energy. For both N=6 and N=8, at both momenta that support a
+ * reflection quantum number (k=0 and k=N/2).
+ *
+ * NOTE: This checks ground energies rather than the full spectrum: requesting
+ * every eigenvalue via lanczos_eigs(H, dim, dim, tol) can hit early Lanczos
+ * breakdown (the Krylov sequence's residual falls below tol before reaching
+ * m_eff = dim, particularly for real, highly-symmetric Hamiltonians like these)
+ * and return NULL well short of a full spectrum
+ */
+static void test_reflection_parity(void) {
+  printf("\n-- Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
+         "under parity splitting --\n");
+
+  struct {
+    int N, nup, k;
+    double E0_ref; /* independently known ground energy */
+  } cases[] = {
+      {6, 3, 0, -1.5},      /* k=0 is NOT the N=6 ground sector */
+      {6, 3, 3, -2.802776}, /* N=6 true ground state: k=pi */
+      {8, 4, 0, -3.651093}, /* N=8 true ground state: k=0 */
+      {8, 4, 4, -3.128419}, /* N=8, k=pi (excited relative to k=0) */
+  };
+  const int has_ref[4] = {0, 1, 1, 0};
+
+  for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+    int N = cases[c].N, nup = cases[c].nup, k = cases[c].k;
+    spin_sector_t *sec = spin_sector_build(N, nup, k);
+
+    check(sec != NULL, "sector built");
+    if (!sec) {
+      continue;
+    }
+
+    sparse_matrix_t *H = spin_sector_hamiltonian(sec, 1.0, 1.0, /*pbc=*/1);
+
+    cmatrix_t *R = spin_sector_reflection_matrix(sec);
+    char label[160];
+    snprintf(label, sizeof label, "N=%d k=%d: R non-NULL at a valid momentum",
+             N, k);
+
+    check(R != NULL, label);
+    if (!R) {
+      sparse_free(H);
+      spin_sector_free(sec);
+
+      continue;
+    }
+
+    int dim = sec->dim;
+    double max_r2_err = 0.0, max_herm_err = 0.0;
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        complex_t rr = c_zero();
+
+        for (int m = 0; m < dim; m++) {
+          rr = c_add(rr, c_mul(CMAT(R, i, m), CMAT(R, m, j)));
+        }
+
+        complex_t expect = (i == j) ? c_new(1.0, 0.0) : c_zero();
+        double e = sqrt(c_abs2(c_sub(rr, expect)));
+        if (e > max_r2_err) {
+          max_r2_err = e;
+        }
+
+        double eh = sqrt(c_abs2(c_sub(CMAT(R, i, j), c_conj(CMAT(R, j, i)))));
+        if (eh > max_herm_err) {
+          max_herm_err = eh;
+        }
+      }
+    }
+
+    snprintf(label, sizeof label, "N=%d k=%d: |R^2 - I| within tol", N, k);
+    check_close(max_r2_err, 0.0, 1e-10, label);
+
+    snprintf(label, sizeof label, "N=%d k=%d: |R - R^dagger| within tol", N, k);
+    check_close(max_herm_err, 0.0, 1e-10, label);
+
+    cmatrix_free(R);
+
+    int dim_p, dim_m;
+    cmatrix_t *Hp = spin_sector_parity_project(sec, H, +1, &dim_p);
+    cmatrix_t *Hm = spin_sector_parity_project(sec, H, -1, &dim_m);
+    snprintf(label, sizeof label,
+             "N=%d k=%d: parity block dims sum to sector dim (%d+%d=%d)", N, k,
+             dim_p, dim_m, dim);
+
+    check(dim_p + dim_m == dim, label);
+
+    double best = 1e300;
+    if (dim_p > 0) {
+      sparse_matrix_t *Hps = sparse_from_dense(Hp, 0.0);
+      lanczos_result_t *ep = lanczos_eigs(Hps, 1, dim_p, 1e-12);
+      if (ep && ep->values[0] < best) {
+        best = ep->values[0];
+      }
+
+      lanczos_free(ep);
+      sparse_free(Hps);
+    }
+
+    if (dim_m > 0) {
+      sparse_matrix_t *Hms = sparse_from_dense(Hm, 0.0);
+      lanczos_result_t *em = lanczos_eigs(Hms, 1, dim_m, 1e-12);
+      if (em && em->values[0] < best) {
+        best = em->values[0];
+      }
+
+      lanczos_free(em);
+      sparse_free(Hms);
+    }
+
+    lanczos_result_t *ref = lanczos_eigs(H, 1, dim, 1e-12);
+    snprintf(label, sizeof label,
+             "N=%d k=%d: unsplit ground-energy query succeeded (sanity check "
+             "on reference itself)",
+             N, k);
+
+    check(ref != NULL, label);
+    if (ref) {
+      snprintf(label, sizeof label,
+               "N=%d k=%d: lowest parity-block energy matches unsplit sector's "
+               "ground energy",
+               N, k);
+
+      check_close(best, ref->values[0], 1e-8, label);
+      lanczos_free(ref);
+    }
+
+    if (has_ref[c]) {
+      snprintf(label, sizeof label,
+               "N=%d k=%d: matches independently known ground energy", N, k);
+
+      check_close(best, cases[c].E0_ref, 1e-5, label);
+    }
+
+    cmatrix_free(Hp);
+    cmatrix_free(Hm);
+    sparse_free(H);
+    spin_sector_free(sec);
+  }
+
+  // k=1 on N=6 has no reflection quantum number (only k=0, k=N/2 do)
+  spin_sector_t *bad = spin_sector_build(6, 3, 1);
+  cmatrix_t *Rbad = spin_sector_reflection_matrix(bad);
+
+  check(Rbad == NULL, "reflection_matrix returns NULL at a momentum with no "
+                      "parity quantum number (N=6, k=1)");
+
+  cmatrix_free(Rbad);
+  spin_sector_free(bad);
+}
+
 int main(void) {
   printf("=== Spin-chain symmetry-adapted ED + DSF tests ===\n");
 
@@ -237,6 +392,7 @@ int main(void) {
   test_hamiltonian_hermitian_and_sector_sizes();
   test_szq_sum_rule();
   test_continued_fraction_integrates_to_I0();
+  test_reflection_parity();
 
   if (failures == 0) {
     printf("\nAll test_spin_chain checks passed.\n");

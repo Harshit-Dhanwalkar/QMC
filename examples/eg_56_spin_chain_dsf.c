@@ -3,39 +3,33 @@
  * Symmetry-Adapted Lanczos Continued Fractions
  *
  * physics/spin_chain.c implements translation-symmetry-adapted exact
- * diagonalization of the XXZ ring plus a Lanczos continued-fraction
- * evaluator for S^{zz}(q, omega). tests/test_spin_chain.c already validates
- * every piece in isolation (ground energies vs full-space ED, the S^z_q
- * excitation's sum rule, and the continued fraction's integral-over-omega
- * sum rule). This example is the end-to-end demonstration the module was
- * missing: build the ground state once, sweep the excitation over every
- * momentum transfer q in the Brillouin zone, and plot the resulting
- * S(q, omega) spectrum.
+ * diagonalization of XXZ ring plus a Lanczos continued-fraction evaluator for
+ * S^{zz}(q, \omega). Ground energies vs full-space ED, the S^z_q excitation's
+ * sum rule, and the continued fraction's integral-over-omega sum rule. This
+ * example is end-to-end demonstration of build ground state once, sweep the
+ * excitation over every momentum transfer q in the Brillouin zone, and plot the
+ * resulting S(q, \omega) spectrum.
  *
- * Workflow (mirrors the Lehmann / continued-fraction pipeline described in
- * the module docstring):
- *
+ * Workflow:
  *   1. Ground state |psi_0>, E0: scan every (nup, k) sector and Lanczos
  *      each one for its lowest eigenvalue -- the Heisenberg antiferromagnet's
  *      ground state on a finite ring is always in the nup = N/2 sector, but
  *      we scan everything so this doesn't silently assume that.
  *   2. For each q_index = 0..N-1:
  *        |phi_0> = S^z_q |psi_0>      (spin_apply_szq)
- *        I0 = <phi_0|phi_0>            (equal-time structure factor S(q))
- *        |f0> = |phi_0> / sqrt(I0)     (normalized Lanczos start vector)
- *        (alpha, beta) = Lanczos tridiagonalization of H in the target
- *                        sector, starting from |f0>
+ *        I0 = <phi_0|phi_0>           (equal-time structure factor S(q))
+ *        |f0> = |phi_0> / sqrt(I0)    (normalized Lanczos start vector)
+ *        (\alpha, \beta) = Lanczos tridiagonalization of H in the target
+ *                          sector, starting from |f0>
  *   3. Evaluate the continued fraction on a frequency mesh to get S(q,omega)
  *      for that q, and cross-check that integral(S(q,omega) domega) == I0
- *      (this is the "textbook" quantitative check: the module's f-sum rule).
+ *      (this is theoretical quantitative check: the module's f-sum rule).
  *
- * Physics note: for an N=8 ring the spectrum is still a handful of discrete
- * delta functions broadened by eta, not the smooth two-spinon continuum of
- * the N -> infinity chain -- des Cloizeaux-Pearson's exact lower-bound
- * dispersion omega_LB(q) = (pi/2)*J*|sin(q)| is an infinite-chain result we
- * only expect to *approximately* bound the dominant finite-size peaks, not
- * match them. Print it alongside the peaks purely as a qualitative sanity
- * reference.
+ * NOTE: Physics : for an N=8 ring the spectrum is still a handful of discrete
+ * delta functions broadened by \eta, not the smooth two-spinon continuum of the
+ * N -> \infty chain - des Cloizeaux-Pearson's exact lower-bound dispersion
+ * \omega_{LB}(q) = (\pi / 2) * J * |\sin(q)| is an infinite-chain result, only
+ * expect to approximately bound the dominant finite-size peaks, not match them.
  */
 
 #include "../core/matrix.h"
@@ -48,8 +42,8 @@
 #include <stdlib.h>
 
 #define N_SITES 8
-#define J_COUPLING 1.0 /* isotropic Heisenberg: Jxy = Jz = J */
-#define ETA 0.08       /* Lorentzian broadening */
+#define J_COUPLING 1.0 // isotropic Heisenberg: Jxy = Jz = J
+#define ETA 0.08       // Lorentzian broadening
 #define N_OMEGA 800
 #define OMEGA_MIN -1.0
 #define OMEGA_MAX 9.0
@@ -70,6 +64,7 @@ static double find_ground_state(int N, spin_sector_t **out_sector,
       spin_sector_t *sec = spin_sector_build(N, nup, k);
       if (!sec || sec->dim == 0) {
         spin_sector_free(sec);
+
         continue;
       }
 
@@ -210,16 +205,16 @@ int main(void) {
   }
 
   plot_opts_t opts = {0};
-  opts.title = "S(q, omega) - Heisenberg ring, N=8";
-  opts.xlabel = "omega / J";
-  opts.ylabel = "S(q, omega)";
+  opts.title = "S(q, \\omega) - Heisenberg ring, N=8";
+  opts.xlabel = "\\omega / J";
+  opts.ylabel = "S(q, \\omega)";
   opts.xmin = PLOT_OMEGA_MIN;
   opts.xmax = PLOT_OMEGA_MAX;
 
   plot_lines("spin_chain_dsf", PLOT_FORMAT_PNG, omega, ys, 3, N_OMEGA, labels,
              &opts);
-  printf("\n   Saved spin_chain_dsf.png (S(q,omega) at q = %.3f, %.3f, "
-         "%.3f pi)\n",
+  printf("\n   Saved spin_chain_dsf.png (S(q, \\omega) at q = %.3f, %.3f, %.3f "
+         "\\pi)\n",
          2.0 * q_show[0] / N_SITES, 2.0 * q_show[1] / N_SITES,
          2.0 * q_show[2] / N_SITES);
 
@@ -231,11 +226,11 @@ int main(void) {
 
   plot_opts_t opts2 = {0};
   opts2.title = "Equal-time structure factor S(q) = I0(q)";
-  opts2.xlabel = "q / pi";
+  opts2.xlabel = "q / \\pi";
   opts2.ylabel = "S(q)";
   plot_line("spin_chain_static_sq", PLOT_FORMAT_PNG, q_over_pi, I0_of_q,
             N_SITES, &opts2);
-  printf("   Saved spin_chain_static_sq.png (S(q) peaks at q=pi, the "
+  printf("   Saved spin_chain_static_sq.png (S(q) peaks at q=\\pi, the "
          "antiferromagnetic wavevector, as expected)\n");
 
   free(q_over_pi);

@@ -9,8 +9,8 @@ Variational Monte Carlo for helium ground state.
 #include <stdint.h>
 #include <stdlib.h>
 
-static double norm3(const double v[3]) {
-  return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+static double norm3(const double vec[3]) {
+  return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 }
 
 static void sub3(const double a[3], const double b[3], double out[3]) {
@@ -162,7 +162,7 @@ static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
                                      double step_size1, double step_size2) {
   vmc_result_t result = {0};
 
-  if (n_samples <= 0 || block_size <= 0) {
+  if (Zeff <= 0.0 || n_samples <= 0 || block_size <= 0) {
     return result;
   }
 

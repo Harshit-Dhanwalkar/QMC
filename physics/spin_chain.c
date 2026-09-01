@@ -2,6 +2,7 @@
 #include "../core/complex.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
+#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -418,4 +419,221 @@ double spin_dsf_continued_fraction(const double *alpha, const double *beta,
   complex_t G = c_scale(g, I0);
 
   return -G.im / M_PI;
+}
+
+/* Reflection (spatial parity) symmetry */
+
+/* Reflection R: site j -> N-1-j, applied directly to a computational basis
+ * bitstring.
+ * NOTE: this is a different operation from spin inversion (bit-flip s -> s ^
+ * mask, i.e. S^z_j -> -S^z_j on every site) - two symmetries are independent
+ * and must not be conflated.
+ */
+static uint64_t reflect_bits(uint64_t s, int N) {
+  uint64_t r = 0;
+  for (int j = 0; j < N; j++) {
+    if ((s >> j) & 1ULL) {
+      r |= 1ULL << (N - 1 - j);
+    }
+  }
+  return r;
+}
+
+cmatrix_t *spin_sector_reflection_matrix(const spin_sector_t *sec) {
+  if (!sec) {
+    return NULL;
+  }
+
+  int N = sec->N, dim = sec->dim, k = sec->k;
+  int is_zero = (k == 0);
+  int is_pi = (N % 2 == 0) && (k == N / 2);
+  if (!is_zero && !is_pi) {
+    return NULL; /* no reflection quantum number at this momentum */
+  }
+
+  uint64_t mask = (N == 64) ? ~0ULL : ((1ULL << N) - 1ULL);
+  double theta = 2.0 * M_PI * (double)k / (double)N;
+
+  cmatrix_t *R = cmatrix_alloc(dim, dim);
+  if (!R) {
+    return NULL;
+  }
+  for (int i = 0; i < dim * dim; i++) {
+    R->data[i] = c_zero();
+  }
+
+  /* Derivation: writing normalized momentum state as :
+   *  |k,a> = (\sqrt(R_a) / N) * \sum_{r=0}^{N-1} \exp(-i * \theta * r) T^r
+   *            |rep_a>
+   * and using dihedral relation R T^r = T^{-r} R, one gets :
+   *  R|k,a> = (\sqrt(R_a) / N) * \exp(-i * \theta * l0) * \sum_r \exp(+i *
+   *             \theta * r) T^r |rep_b>
+   *
+   * Where
+   *   rep_b = representative of s0 = R|rep_a>
+   *   T^{l0}(rep_b) = s0
+   *  At k=0 or k=N/2, \theta * r is always an integer multiple of \pi, so
+   * \exp(+i * \theta * r) == \exp(-i* \theta * r) exactly - this is why a
+   * reflection quantum number only exists at these two momenta and sum
+   * collapses to (N / \sqrt(R_b)) |k,b>, giving <k,b|R|k,a> = \sqrt(R_a / R_b)
+   * * \exp(-i * \theta * l0).
+   */
+  for (int a = 0; a < dim; a++) {
+    uint64_t s0 = reflect_bits(sec->rep[a], N);
+    int l0;
+    uint64_t rep_b = find_representative(s0, N, mask, &l0);
+    int b = spin_sector_find(sec, rep_b);
+    if (b < 0) {
+      /* Should not happen: H (and hence sector's compatibility condition) is
+       * reflection-symmetric, so a compatible rep's mirror image is always
+       * itself compatible at k=0/N/2. */
+      cmatrix_free(R);
+
+      return NULL;
+    }
+
+    double Ra = (double)sec->period[a];
+    double Rb = (double)sec->period[b];
+    double phase = -theta * (double)l0;
+    complex_t val = c_scale(c_new(cos(phase), sin(phase)), sqrt(Ra / Rb));
+    CMAT(R, b, a) = val;
+  }
+
+  return R;
+}
+
+cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
+                                      const sparse_matrix_t *H, int parity,
+                                      int *dim_out) {
+  if (!sec || !H || (parity != 1 && parity != -1) || !dim_out) {
+    return NULL;
+  }
+
+  cmatrix_t *R = spin_sector_reflection_matrix(sec);
+  if (!R) {
+    return NULL;
+  }
+
+  int dim = sec->dim;
+
+  cmatrix_t *P = cmatrix_alloc(dim, dim);
+  if (!P) {
+    cmatrix_free(R);
+
+    return NULL;
+  }
+
+  double half_parity = 0.5 * (double)parity;
+  double trace = 0.0;
+
+  for (int i = 0; i < dim; i++) {
+    for (int j = 0; j < dim; j++) {
+      complex_t rij = CMAT(R, i, j);
+      complex_t pij = c_scale(rij, half_parity);
+
+      if (i == j) {
+        pij = c_add(pij, c_new(0.5, 0.0));
+      }
+
+      CMAT(P, i, j) = pij;
+    }
+
+    trace += CMAT(P, i, i).re;
+  }
+
+  cmatrix_free(R);
+
+  int expected_dim = (int)(trace + 0.5); // Tr(P) = rank(P) for a projector
+  *dim_out = expected_dim;
+
+  if (expected_dim <= 0) {
+    cmatrix_free(P);
+
+    return cmatrix_alloc(0, 0);
+  }
+
+  /* NOTE: Modified Gram-Schmidt with pivoting on P's own columns, stopping once
+   * expected_dim orthonormal vectors are found. */
+  cmatrix_t *V = cmatrix_alloc(dim, expected_dim);
+  if (!V) {
+    cmatrix_free(P);
+
+    return NULL;
+  }
+
+  complex_t *col = malloc((size_t)dim * sizeof *col);
+  int accepted = 0;
+  const double norm_tol = 1e-8;
+  for (int c = 0; c < dim && accepted < expected_dim; c++) {
+    for (int i = 0; i < dim; i++) {
+      col[i] = CMAT(P, i, c);
+    }
+
+    for (int a = 0; a < accepted; a++) {
+      complex_t dot = c_zero();
+
+      for (int i = 0; i < dim; i++) {
+        dot = c_add(dot, c_mul(c_conj(CMAT(V, i, a)), col[i]));
+      }
+
+      for (int i = 0; i < dim; i++) {
+        col[i] = c_sub(col[i], c_mul(dot, CMAT(V, i, a)));
+      }
+    }
+
+    double norm2 = 0.0;
+    for (int i = 0; i < dim; i++) {
+      norm2 += c_abs2(col[i]);
+    }
+
+    double norm = sqrt(norm2);
+    if (norm < norm_tol) {
+      continue; // this column was (numerically) already in span
+    }
+
+    for (int i = 0; i < dim; i++) {
+      CMAT(V, i, accepted) = c_scale(col[i], 1.0 / norm);
+    }
+
+    accepted++;
+  }
+
+  free(col);
+  cmatrix_free(P);
+
+  if (accepted != expected_dim) {
+    cmatrix_free(V);
+
+    return NULL;
+  }
+
+  cmatrix_t *Hd = cmatrix_alloc(dim, dim);
+  if (!Hd) {
+    cmatrix_free(V);
+
+    return NULL;
+  }
+
+  for (int i = 0; i < dim * dim; i++) {
+    Hd->data[i] = c_zero();
+  }
+
+  for (int i = 0; i < dim; i++) {
+    for (int idx = H->row_ptr[i]; idx < H->row_ptr[i + 1]; idx++) {
+      int j = H->col_ind[idx];
+
+      CMAT(Hd, i, j) = c_add(CMAT(Hd, i, j), H->values[idx]);
+    }
+  }
+
+  cmatrix_t *Vd = cmatrix_adjoint(V);
+  cmatrix_t *HV = cmatrix_multiply(Hd, V);
+  cmatrix_t *Hblock = (Vd && HV) ? cmatrix_multiply(Vd, HV) : NULL;
+
+  cmatrix_free(V);
+  cmatrix_free(Vd);
+  cmatrix_free(HV);
+  cmatrix_free(Hd);
+
+  return Hblock;
 }
