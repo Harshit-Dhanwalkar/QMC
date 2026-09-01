@@ -128,7 +128,7 @@ jobs:
 
       - name: Run Clang-Tidy
         run: |
-          clang-tidy core/*.c physics/*.c \
+          clang-tidy --config-file=.clang-tidy core/*.c physics/*.c \
             -checks='-*,clang-analyzer-*,bugprone-*,performance-*,portability-*,readability-*' \
             -- -Icore -Iphysics -Iexport -fopenmp
           # clang-tidy core/*.c physics/*.c -checks='default' -- -Icore -Iphysics -Iexport -fopenmp
