@@ -83,11 +83,20 @@ sparse_matrix_t *sparse_from_dense(const cmatrix_t *A, double tol) {
 }
 
 // Matrix-vector multiply
+/* w = A*x for a general sparse matrix in CSR form.
+ *
+ * OpenMP-parallelized via row-based gather: row i's output y->data[i] depends
+ * only on x (read-only here) and A's own i-th CSR row, so each thread owns a
+ * disjoint set of output rows and writes each exactly once. No thread-private
+ * accumulation buffers, no atomics, and no reduction step, since there is
+ * nothing to reduce (contrast with a scatter-style update, where multiple
+ * threads could target the same output index and need synchronization). */
 void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y) {
   if (!A || !x || !y || A->ncols != x->n || A->nrows != y->n) {
     return;
   }
 
+#pragma omp parallel for schedule(guided)
   for (int i = 0; i < A->nrows; i++) {
     complex_t sum = c_zero();
 
@@ -108,9 +117,9 @@ void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y) {
  * NOTE: LANCZOS_SEED below: a random start has high-probability nonzero overlap
  * with every eigenvector
  *
- *   work_j      = A v_j - \beta_{j-1} v_{j-1}
- *   \alpha_j = Re(<v_j, work_j>)          (real for Hermitian A)
- *   work_j     -= \alpha_j v_j
+ *   work_j   = A v_j - \beta_{j-1} v_{j-1}
+ *   \alpha_j = Re(<v_j, work_j>)            (real for Hermitian A)
+ *   work_j  -= \alpha_j v_j
  *   \beta_j  = ||wwork_j||,
  *   v_{j+1}  = work_j / \beta_j
  *

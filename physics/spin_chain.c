@@ -2,7 +2,7 @@
 #include "../core/complex.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/matrix.h"
+#include "../core/matrix.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>

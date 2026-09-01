@@ -27,11 +27,11 @@
  * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so the ground state is at k=\pi.
  */
 
+#include "../core/complex.h"
 #include "../core/matrix.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
 #include "../physics/spin_chain.h"
-#include "/home/harshitpd/Documents/GITHUB/QMC/core/complex.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,10 +58,12 @@ static void check(int cond, const char *msg) {
   }
 }
 
-/* Ground-state energy of the full Heisenberg ring = min over all k sectors of
+/*
+ * Ground-state energy of the full Heisenberg ring = min over all k sectors of
  * lowest eigenvalue of that sector's Hamiltonian. Sz=0 (or nearest integer
  * sector for odd N) always contains the true ground state for antiferromagnetic
- * chain, scan every (nup, k) sector */
+ * chain, scan every (nup, k) sector
+ */
 static double ring_ground_energy(int N) {
   double best = 1e300;
 

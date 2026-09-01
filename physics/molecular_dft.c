@@ -8,6 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const double BECKE_SMOOTH_FACTOR_1 = 1.5;
+static const double BECKE_SMOOTH_FACTOR_2 = 0.5;
+static const double HALF = 0.5;
+
 /* ---------------------------------------------------------------------
  * Becke fuzzy-Voronoi molecular grid
  * ------------------------------------------------------------------- */
@@ -18,10 +22,10 @@
  * application makes s(\mu) flatter near \mu=+-1 (i.e. sharper transition
  * region), giving faster convergence of the resulting cell functions.
  */
-static double becke_smooth(double mu, int iterations) {
-  double f = mu;
+static double becke_smooth(double mu_val, int iterations) {
+  double f = mu_val;
   for (int k = 0; k < iterations; k++) {
-    f = 1.5 * f - 0.5 * f * f * f;
+    f = BECKE_SMOOTH_FACTOR_1 * f - BECKE_SMOOTH_FACTOR_2 * f * f * f;
   }
 
   return f;
@@ -34,36 +38,36 @@ static double becke_smooth(double mu, int iterations) {
  * grid point and reused across all i, avoiding n_atoms^3 repeated distance
  * computations).
  */
-static double becke_cell_unnormalized(int i, const double *dist,
+static double becke_cell_unnormalized(int atom_idx, const double *dist,
                                       const molecule_t *mol) {
-  int n = mol->n_atoms;
-  double P = 1.0;
-  for (int j = 0; j < n; j++) {
-    if (j == i) {
+  int n_atoms = mol->n_atoms;
+  double product = 1.0;
+  for (int j = 0; j < n_atoms; j++) {
+    if (j == atom_idx) {
       continue;
     }
 
-    double dx = mol->center[i][0] - mol->center[j][0];
-    double dy = mol->center[i][1] - mol->center[j][1];
-    double dz = mol->center[i][2] - mol->center[j][2];
+    double dx = mol->center[atom_idx][0] - mol->center[j][0];
+    double dy = mol->center[atom_idx][1] - mol->center[j][1];
+    double dz = mol->center[atom_idx][2] - mol->center[j][2];
     double Rij = sqrt(dx * dx + dy * dy + dz * dz);
-    double mu = (dist[i] - dist[j]) / Rij;
+    double mu = (dist[atom_idx] - dist[j]) / Rij;
     double f3 = becke_smooth(mu, 3);
-    double s = 0.5 * (1.0 - f3);
+    double s_val = HALF * (1.0 - f3);
 
-    P *= s;
+    product *= s_val;
   }
 
-  return P;
+  return product;
 }
 
 /*
  * Becke's normalized atomic partition weight w_i(r) = P_i(r) / \sum_k P_k(r).
  */
-static double becke_weight_at(int i, const double r[3], const molecule_t *mol,
-                              double *dist_scratch) {
-  int n = mol->n_atoms;
-  for (int k = 0; k < n; k++) {
+static double becke_weight_at(int atom_idx, const double r[3],
+                              const molecule_t *mol, double *dist_scratch) {
+    int n_atoms = mol->n_atoms;
+  for (int k = 0; k < n_atoms; k++) {
     double dx = r[0] - mol->center[k][0];
     double dy = r[1] - mol->center[k][1];
     double dz = r[2] - mol->center[k][2];
@@ -71,13 +75,13 @@ static double becke_weight_at(int i, const double r[3], const molecule_t *mol,
     dist_scratch[k] = sqrt(dx * dx + dy * dy + dz * dz);
   }
 
-  double Pi = becke_cell_unnormalized(i, dist_scratch, mol);
+  double Pi = becke_cell_unnormalized(atom_idx, dist_scratch, mol);
   if (Pi == 0.0) {
     return 0.0;
   }
 
   double sum = 0.0;
-  for (int k = 0; k < n; k++) {
+  for (int k = 0; k < n_atoms; k++) {
     sum += becke_cell_unnormalized(k, dist_scratch, mol);
   }
 

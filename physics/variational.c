@@ -10,6 +10,9 @@ Variational method: compute energy and minimize over parameters.
 #include <math.h>
 #include <stdlib.h>
 
+// static const double GOLDEN_RATIO = (1.0 + sqrt(5.0)) / 2.0;
+static const double HALF = 0.5;
+
 // Generic 1D golden-section minimizer
 double golden_section_minimize(double a, double b,
                                double (*f)(double x, void *params),
@@ -36,22 +39,23 @@ double golden_section_minimize(double a, double b,
     }
   }
 
-  return 0.5 * (a + b);
+  return HALF * (a + b);
 }
 
-double variational_energy(const wavefunction_t *wf, potential_fn V,
-                          void *params, double mass) {
-  if (!wf || !V) {
+double variational_energy(const wavefunction_t *wavefn, potential_fn pot,
+                          void *pot_params, double mass) {
+  if (!wavefn || !pot) {
     return 0.0;
   }
 
-  double T = wavefunction_expect_p2(wf) / (2.0 * mass);
+  double T = wavefunction_expect_p2(wavefn) / (2.0 * mass);
   double PE = 0.0;
 
-  for (int i = 0; i < wf->n; i++) {
-    PE += V(wf->x[i], params) * c_abs2(wf->psi->data[i]);
+  for (int i = 0; i < wavefn->n; i++) {
+    PE += pot(wavefn->x[i], pot_params) * c_abs2(wavefn->psi->data[i]);
   }
-  PE *= wf->dx;
+
+  PE *= wavefn->dx;
 
   return T + PE;
 }
@@ -65,18 +69,18 @@ static double variational_closure_eval(double alpha, void *closure_ptr) {
 
 double variational_minimize(double alpha_min, double alpha_max,
                             void (*trial_func)(double alpha,
-                                               wavefunction_t *wf),
-                            wavefunction_t *wf, potential_fn V, void *params,
-                            double mass, double tol) {
-  if (!trial_func || !wf || !V) {
+                                               wavefunction_t *wavefn),
+                            wavefunction_t *wavefn, potential_fn pot,
+                            void *pot_params, double mass, double tol) {
+  if (!trial_func || !wavefn || !pot) {
     return 0.0;
   }
 
-  variational_closure_t closure = {trial_func, wf, V, params, mass};
+  variational_closure_t closure = {trial_func, wavefn, pot, pot_params, mass};
   double alpha_opt = golden_section_minimize(
       alpha_min, alpha_max, variational_closure_eval, &closure, tol);
 
-  trial_func(alpha_opt, wf);
+  trial_func(alpha_opt, wavefn);
 
-  return variational_energy(wf, V, params, mass);
+  return variational_energy(wavefn, pot, pot_params, mass);
 }
