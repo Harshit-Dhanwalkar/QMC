@@ -9,75 +9,84 @@ Diffusion Monte Carlo for two-electron atoms/ions (He, H-, Li+, Be2+, ...).
 #include <stdint.h>
 #include <stdlib.h>
 
-static double norm3(const double v[3]) {
-  return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+static const double CONST_TWO = 2.0;
+
+static double norm3(const double vec[3]) {
+  return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 }
 
-static void sub3(const double a[3], const double b[3], double out[3]) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  out[2] = a[2] - b[2];
+static void sub3(const double vec_a[3], const double vec_b[3], double out[3]) {
+  out[0] = vec_a[0] - vec_b[0];
+  out[1] = vec_a[1] - vec_b[1];
+  out[2] = vec_a[2] - vec_b[2];
 }
 
-static double dot3(const double a[3], const double b[3]) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+static double dot3(const double vec_a[3], const double vec_b[3]) {
+  return vec_a[0] * vec_b[0] + vec_a[1] * vec_b[1] + vec_a[2] * vec_b[2];
 }
 
 /* \ln(\Psi_T)
  * TODO: expose ln_trial_wavefunction from vmc.c/.h instead of duplicating
  * it here, once 2nd consumer (this file) makes duplication */
-static double ln_trial_wavefunction(const vmc_walker_t *w, double Zeff,
-                                    double b) {
-  double r1 = norm3(w->r1);
-  double r2 = norm3(w->r2);
+static double ln_trial_wavefunction(const vmc_walker_t *walker, double Zeff,
+                                    double param_b) {
+  double radius1 = norm3(walker->r1);
+  double radius2 = norm3(walker->r2);
   double r12v[3];
-  sub3(w->r1, w->r2, r12v);
+  sub3(walker->r1, walker->r2, r12v);
   double r12 = norm3(r12v);
 
-  return -Zeff * (r1 + r2) + r12 / (2.0 * (1.0 + b * r12));
+  return -Zeff * (radius1 + radius2) +
+         r12 / (CONST_TWO * (1.0 + param_b * r12));
 }
 
-void dmc_drift_velocity(const vmc_walker_t *w, int which, double Zeff, double b,
-                        double drift_out[3]) {
-  double r1 = norm3(w->r1);
-  double r2 = norm3(w->r2);
+void dmc_drift_velocity(const dmc_drift_params_t *params, double drift_out[3]) {
+  if (!params || !params->walker) {
+    return;
+  }
+  const vmc_walker_t *walker = params->walker;
+  double radius1 = norm3(walker->r1);
+  double radius2 = norm3(walker->r2);
   double r12v[3];
-  sub3(w->r1, w->r2, r12v);
+  sub3(walker->r1, walker->r2, r12v);
   double s = norm3(r12v);
 
-  if (r1 < 1e-12 || r2 < 1e-12 || s < 1e-12) {
+  if (radius1 < 1e-12 || radius2 < 1e-12 || s < 1e-12) {
     // configuration guard
     drift_out[0] = drift_out[1] = drift_out[2] = 0.0;
 
     return;
   }
 
-  double one_plus_bs = 1.0 + b * s;
-  double up = 1.0 / (2.0 * one_plus_bs * one_plus_bs); // u'(s)
+  double one_plus_bs = 1.0 + params->b * s;
+  double up = 1.0 / (CONST_TWO * one_plus_bs * one_plus_bs); // u'(s)
 
-  if (which == 0) {
+  if (params->which == 0) {
     for (int k = 0; k < 3; k++) {
-      drift_out[k] = -Zeff * (w->r1[k] / r1) + up * (r12v[k] / s);
+      drift_out[k] =
+          -params->Zeff * (walker->r1[k] / radius1) + up * (r12v[k] / s);
     }
   } else {
     for (int k = 0; k < 3; k++) {
-      drift_out[k] = -Zeff * (w->r2[k] / r2) - up * (r12v[k] / s);
+      drift_out[k] =
+          -params->Zeff * (walker->r2[k] / radius2) - up * (r12v[k] / s);
     }
   }
 }
 
-int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
-                      double tau, rng_state_t *rng) {
-  if (!w || !rng || (which != 0 && which != 1) || tau <= 0.0) {
+int dmc_move_electron(vmc_walker_t *walker, int which, double Zeff,
+                      double param_b, double tau, rng_state_t *rng) {
+  if (!walker || !rng || (which != 0 && which != 1) || tau <= 0.0) {
     return 0;
   }
 
-  double *moving = (which == 0) ? w->r1 : w->r2;
+  double *moving = (which == 0) ? walker->r1 : walker->r2;
   const double old_pos[3] = {moving[0], moving[1], moving[2]};
 
+  dmc_drift_params_t drift_p_old = {walker, which, Zeff, param_b};
   double drift_old[3];
-  dmc_drift_velocity(w, which, Zeff, b, drift_old);
-  double ln_psi_old = ln_trial_wavefunction(w, Zeff, b);
+  dmc_drift_velocity(&drift_p_old, drift_old);
+  double ln_psi_old = ln_trial_wavefunction(walker, Zeff, param_b);
 
   double sigma = sqrt(tau);
   double proposed[3];
@@ -86,17 +95,17 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
     moving[k] = proposed[k];
   }
 
-  double ln_psi_new = ln_trial_wavefunction(w, Zeff, b);
+  double ln_psi_new = ln_trial_wavefunction(walker, Zeff, param_b);
+  dmc_drift_params_t drift_p_new = {walker, which, Zeff, param_b};
   double drift_new[3];
-  dmc_drift_velocity(w, which, Zeff, b, drift_new);
+  dmc_drift_velocity(&drift_p_new, drift_new);
 
   /*
    * NOTE: Green's function ratio for reverse vs forward drift-diffusion move
    * (normalization prefactors (2 * \pi * \tau)^(-3/2) are identical for forward
    * and reverse and cancel in ratio):
    *  fwd = r' - r - \tau * v(r)
-   *  bwd = r - r' -
-   *  \tau * v(r')
+   *  bwd = r - r' - \tau * v(r')
    *  \ln G(r<-r') - \ln G(r'<-r) = (|fwd|^2 - |bwd|^2) / (2 * \tau)
    * Full log acceptance ratio: 2 * (\ln(Psi') - \ln(Psi)) + that
    * Green's-function term.
@@ -107,15 +116,15 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
     bwd[k] = old_pos[k] - proposed[k] - tau * drift_new[k];
   }
 
-  double log_G_ratio = (dot3(fwd, fwd) - dot3(bwd, bwd)) / (2.0 * tau);
-  double log_ratio = 2.0 * (ln_psi_new - ln_psi_old) + log_G_ratio;
+  double log_G_ratio = (dot3(fwd, fwd) - dot3(bwd, bwd)) / (CONST_TWO * tau);
+  double log_ratio = CONST_TWO * (ln_psi_new - ln_psi_old) + log_G_ratio;
 
   int accept;
   if (log_ratio >= 0.0) {
     accept = 1;
   } else {
-    double u = rng_uniform(rng);
-    accept = (u > 0.0) && (log(u) < log_ratio);
+    double u_val = rng_uniform(rng);
+    accept = (u_val > 0.0) && (log(u_val) < log_ratio);
   }
 
   if (!accept) {
@@ -127,18 +136,18 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
   return accept;
 }
 
-int dmc_branch_walker(vmc_walker_t *w, double Z, double Zeff, double b,
-                      double tau, double E_T, rng_state_t *rng,
+int dmc_branch_walker(vmc_walker_t *walker, double Z_charge, double Zeff,
+                      double param_b, double tau, double E_T, rng_state_t *rng,
                       int *accepted_out) {
-  double E_L_old = vmc_local_energy(w, Z, Zeff, b);
+  double E_L_old = vmc_local_energy(walker, Z_charge, Zeff, param_b);
 
-  int a0 = dmc_move_electron(w, 0, Zeff, b, tau, rng);
-  int a1 = dmc_move_electron(w, 1, Zeff, b, tau, rng);
+  int a0 = dmc_move_electron(walker, 0, Zeff, param_b, tau, rng);
+  int a1 = dmc_move_electron(walker, 1, Zeff, param_b, tau, rng);
   if (accepted_out) {
     *accepted_out = a0 + a1;
   }
 
-  double E_L_new = vmc_local_energy(w, Z, Zeff, b);
+  double E_L_new = vmc_local_energy(walker, Z_charge, Zeff, param_b);
 
   // Trapezoidal average of pre/post-move local energy in branching * weight
   double weight = exp(-tau * (0.5 * (E_L_old + E_L_new) - E_T));
@@ -199,6 +208,7 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
   for (int i = 0; i < target_size; i++) {
     vmc_walker_init(&pop->data[i], rng, Zeff);
   }
+
   pop->count = target_size;
 }
 
@@ -221,8 +231,8 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
  * *accept_sum / *move_count.
  */
 static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
-                                 double Z, double Zeff, double b, double tau,
-                                 double E_T, int target_population,
+                                 double Z_charge, double Zeff, double param_b,
+                                 double tau, double E_T, int target_population,
                                  int max_population,
                                  rng_state_t *walker_streams,
                                  rng_state_t *control_rng, long *accept_sum,
@@ -248,13 +258,13 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   for (int i = 0; i < n; i++) {
     vmc_walker_t w = cur->data[i];
     int accepted;
-    int m = dmc_branch_walker(&w, Z, Zeff, b, tau, E_T, &walker_streams[i],
-                              &accepted);
+    int m = dmc_branch_walker(&w, Z_charge, Zeff, param_b, tau, E_T,
+                              &walker_streams[i], &accepted);
 
     evolved[i] = w;
     mult[i] = m;
     acc[i] = accepted;
-    EL[i] = vmc_local_energy(&w, Z, Zeff, b);
+    EL[i] = vmc_local_energy(&w, Z_charge, Zeff, param_b);
   }
 
   double E_L_weighted_sum = 0.0;
@@ -263,6 +273,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   for (int i = 0; i < n; i++) {
     *accept_sum += acc[i];
     *move_count += 2;
+
     E_L_weighted_sum += EL[i] * mult[i];
     total_copies += mult[i];
 
@@ -300,7 +311,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
       for (int k = 0; k < target_population; k++) {
         int idx = (int)(offset + k * step);
         if (idx >= n_pool) {
-          idx = n_pool - 1; /* floating-point edge-case safety clamp */
+          idx = n_pool - 1; // floating-point edge-case safety clamp
         }
 
         resampled[k] = next->data[idx];
@@ -323,17 +334,20 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   return (total_copies > 0) ? E_L_weighted_sum / total_copies : E_T;
 }
 
-static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
-                                     double b, int target_population,
-                                     int max_population, double tau,
-                                     int n_equilibration, int n_blocks,
-                                     int block_size) {
+static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
+                                     double Zeff, double param_b,
+                                     int target_population, int max_population,
+                                     double tau, int n_equilibration,
+                                     const dmc_block_config_t *blk_cfg) {
   dmc_result_t result = {0};
 
-  if (target_population < 1 || max_population < target_population ||
-      tau <= 0.0 || n_blocks < 1 || block_size < 1) {
+  if (!blk_cfg || target_population < 1 || max_population < target_population ||
+      tau <= 0.0 || blk_cfg->n_blocks < 1 || blk_cfg->block_size < 1) {
     return result;
   }
+
+  int n_blocks = blk_cfg->n_blocks;
+  int block_size = blk_cfg->block_size;
 
   // Population-control safety valve
   dmc_population_t *pop_a = dmc_population_alloc(3 * max_population);
@@ -380,7 +394,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   const double kappa = 0.1;
   double E_T = 0.0;
   for (int i = 0; i < pop_a->count; i++) {
-    E_T += vmc_local_energy(&pop_a->data[i], Z, Zeff, b);
+    E_T += vmc_local_energy(&pop_a->data[i], Z_charge, Zeff, param_b);
   }
 
   E_T /= pop_a->count;
@@ -392,12 +406,13 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   long resample_count = 0;
 
   for (int gen = 0; gen < n_equilibration; gen++) {
-    double mean_E_L = run_one_generation(
-        cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
-        walker_streams, rng, &accept_sum, &move_count, &resample_count);
-    int N = next->count;
+    double mean_E_L =
+        run_one_generation(cur, next, Z_charge, Zeff, param_b, tau, E_T,
+                           target_population, max_population, walker_streams,
+                           rng, &accept_sum, &move_count, &resample_count);
+    int grid_n = next->count;
 
-    E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
+    E_T = mean_E_L - (kappa / tau) * log((double)grid_n / target_population);
 
     dmc_population_t *tmp = cur;
     cur = next;
@@ -420,18 +435,20 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   int pop_size_count = 0;
 
   for (int blk = 0; blk < n_blocks; blk++) {
-    double sum_mixed = 0.0, sum_growth = 0.0;
+    double sum_mixed = 0.0;
+    double sum_growth = 0.0;
 
-    for (int s = 0; s < block_size; s++) {
-      double mean_E_L = run_one_generation(
-          cur, next, Z, Zeff, b, tau, E_T, target_population, max_population,
-          walker_streams, rng, &accept_sum, &move_count, &resample_count);
-      int N = next->count;
-      E_T = mean_E_L - (kappa / tau) * log((double)N / target_population);
+    for (int step = 0; step < block_size; step++) {
+      double mean_E_L =
+          run_one_generation(cur, next, Z_charge, Zeff, param_b, tau, E_T,
+                             target_population, max_population, walker_streams,
+                             rng, &accept_sum, &move_count, &resample_count);
+      int grid_n = next->count;
+      E_T = mean_E_L - (kappa / tau) * log((double)grid_n / target_population);
 
       sum_mixed += mean_E_L;
       sum_growth += E_T;
-      pop_size_sum += N;
+      pop_size_sum += grid_n;
       pop_size_count++;
 
       dmc_population_t *tmp = cur;
@@ -443,7 +460,8 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     block_means_growth[blk] = sum_growth / block_size;
   }
 
-  double mean_mixed = 0.0, mean_growth = 0.0;
+  double mean_mixed = 0.0;
+  double mean_growth = 0.0;
   for (int blk = 0; blk < n_blocks; blk++) {
     mean_mixed += block_means_mixed[blk];
     mean_growth += block_means_growth[blk];
@@ -452,16 +470,18 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   mean_mixed /= n_blocks;
   mean_growth /= n_blocks;
 
-  double err_mixed = 0.0, err_growth = 0.0;
+  double err_mixed = 0.0;
+  double err_growth = 0.0;
   if (n_blocks > 1) {
-    double var_mixed = 0.0, var_growth = 0.0;
+    double var_mixed = 0.0;
+    double var_growth = 0.0;
 
     for (int blk = 0; blk < n_blocks; blk++) {
-      double dm = block_means_mixed[blk] - mean_mixed;
-      double dg = block_means_growth[blk] - mean_growth;
+      double diff_m = block_means_mixed[blk] - mean_mixed;
+      double diff_g = block_means_growth[blk] - mean_growth;
 
-      var_mixed += dm * dm;
-      var_growth += dg * dg;
+      var_mixed += diff_m * diff_m;
+      var_growth += diff_g * diff_g;
     }
 
     var_mixed /= (n_blocks - 1);
@@ -491,20 +511,24 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
   return result;
 }
 
-dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
-                     int max_population, double tau, int n_equilibration,
-                     int n_blocks, int block_size, uint64_t seed) {
+dmc_result_t dmc_run(double Z_charge, double Zeff, double param_b,
+                     int target_population, int max_population, double tau,
+                     int n_equilibration, int n_blocks, int block_size,
+                     uint64_t seed) {
   rng_state_t rng;
   rng_seed(&rng, seed);
 
-  return dmc_run_with_rng(&rng, Z, Zeff, b, target_population, max_population,
-                          tau, n_equilibration, n_blocks, block_size);
+  dmc_block_config_t blk_cfg = {n_blocks, block_size};
+
+  return dmc_run_with_rng(&rng, Z_charge, Zeff, param_b, target_population,
+                          max_population, tau, n_equilibration, &blk_cfg);
 }
 
-dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
-                              int target_population, int max_population,
-                              double tau, int n_equilibration, int n_blocks,
-                              int block_size, uint64_t master_seed) {
+dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
+                              double param_b, int target_population,
+                              int max_population, double tau,
+                              int n_equilibration, int n_blocks, int block_size,
+                              uint64_t master_seed) {
   dmc_result_t result = {0};
 
   if (n_replicas < 1 || target_population < 1 ||
@@ -532,11 +556,13 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
     rng_jump(&streams[i]);
   }
 
+  dmc_block_config_t blk_cfg = {n_blocks, block_size};
+
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_replicas; i++) {
-    replica_results[i] = dmc_run_with_rng(
-        &streams[i], Z, Zeff, b, target_population, max_population, tau,
-        n_equilibration, n_blocks, block_size);
+    replica_results[i] = dmc_run_with_rng(&streams[i], Z_charge, Zeff, param_b,
+                                          target_population, max_population,
+                                          tau, n_equilibration, &blk_cfg);
   }
 
   double sum_mixed = 0.0;
@@ -570,20 +596,22 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
   double grand_mixed = sum_mixed / valid_replicas;
   double grand_growth = sum_growth / valid_replicas;
 
-  double var_mixed = 0.0, var_growth = 0.0;
+  double var_mixed = 0.0;
+  double var_growth = 0.0;
   for (int i = 0; i < n_replicas; i++) {
     if (replica_results[i].n_blocks <= 0) {
       continue;
     }
 
-    double dm = replica_results[i].energy_mixed - grand_mixed;
-    double dg = replica_results[i].energy_growth - grand_growth;
+    double diff_m = replica_results[i].energy_mixed - grand_mixed;
+    double diff_g = replica_results[i].energy_growth - grand_growth;
 
-    var_mixed += dm * dm;
-    var_growth += dg * dg;
+    var_mixed += diff_m * diff_m;
+    var_growth += diff_g * diff_g;
   }
 
-  double err_mixed = 0.0, err_growth = 0.0;
+  double err_mixed = 0.0;
+  double err_growth = 0.0;
   if (valid_replicas > 1) {
     var_mixed /= (valid_replicas - 1);
     var_growth /= (valid_replicas - 1);

@@ -117,7 +117,7 @@ static complex_t permanent_ryser(cmatrix_t *A) {
       col++;
     }
 
-    int bit_turned_on = (gray >> col) & 1ULL;
+    int bit_turned_on = (int)((gray >> col) & 1ULL);
     double s = bit_turned_on ? 1.0 : -1.0;
 
     for (int i = 0; i < n; i++) {

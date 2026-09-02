@@ -18,27 +18,27 @@ complex_t sigma_y[4] = {{0.0, 0.0}, {0.0, -1.0}, {0.0, 1.0}, {0.0, 0.0}};
 complex_t sigma_z[4] = {{1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {-1.0, 0.0}};
 
 // Ladder operators
-complex_t l_plus_op(int l, int m, int m_prime) {
-  if (m_prime != m + 1) {
+complex_t l_plus_op(int orbital_l, int proj_m, int proj_m_prime) {
+  if (proj_m_prime != proj_m + 1) {
     return c_zero();
   }
-  if (m < -l || m >= l) {
+  if (proj_m < -orbital_l || proj_m >= orbital_l) {
     return c_zero();
   }
 
-  double val = sqrt((double)(l - m) * (l + m + 1));
+  double val = sqrt((double)(orbital_l - proj_m) * (orbital_l + proj_m + 1));
 
   return c_real(val);
 }
 
-complex_t l_minus_op(int l, int m, int m_prime) {
-  if (m_prime != m - 1) {
+complex_t l_minus_op(int orbital_l, int proj_m, int proj_m_prime) {
+  if (proj_m_prime != proj_m - 1) {
     return c_zero();
   }
-  if (m <= -l || m > l) {
+  if (proj_m <= -orbital_l || proj_m > orbital_l) {
     return c_zero();
   }
-  double val = sqrt((double)(l + m) * (l - m + 1));
+  double val = sqrt((double)(orbital_l + proj_m) * (orbital_l - proj_m + 1));
 
   return c_real(val);
 }

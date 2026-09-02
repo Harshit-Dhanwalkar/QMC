@@ -17,8 +17,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int check_close(double got, double expected, double tol,
-                       const char *label) {
+// static int check_close(double got, double expected, double tol,
+//                        const char *label) {
+static int check_close(const char *label, double got, double expected,
+                       double tol) {
   double err = fabs(got - expected);
   printf("  %s: got=%.8f expected=%.8f err=%.2e\n", label, got, expected, err);
 
@@ -38,10 +40,10 @@ static int test_hom_dip(void) {
 
   cmatrix_free(U);
 
-  int fail = check_close(p20, 0.5, 1e-10, "P(2,0)");
-  fail |= check_close(p02, 0.5, 1e-10, "P(0,2)");
-  fail |= check_close(p11, 0.0, 1e-10, "P(1,1) HOM dip");
-  fail |= check_close(p20 + p02 + p11, 1.0, 1e-10, "sum");
+  int fail = check_close("P(2,0)", p20, 0.5, 1e-10);
+  fail |= check_close("P(0,2)", p02, 0.5, 1e-10);
+  fail |= check_close("P(1,1) HOM dip", p11, 0.0, 1e-10);
+  fail |= check_close("Sum", p20 + p02 + p11, 1.0, 1e-10);
 
   return fail;
 }
@@ -61,7 +63,7 @@ static int test_unitarity_dft(void) {
 
   cmatrix_free(D);
 
-  return check_close(total, 1.0, 1e-10, "sum over all outputs (DFT_3)");
+  return check_close("Sum over all outputs (DFT_3)", total, 1.0, 1e-10);
 }
 
 static int test_permutation_invariance(void) {
@@ -75,7 +77,7 @@ static int test_permutation_invariance(void) {
 
   cmatrix_free(D);
 
-  return check_close(pa, pb, 1e-12, "P invariant under input photon order");
+  return check_close("P invariant under input photon order", pa, pb, 1e-12);
 }
 
 int main(void) {
@@ -94,7 +96,7 @@ int main(void) {
     printf("FAILED (%d)\n", failed);
     return 1;
   }
-  printf("PASS\n");
+  printf("\nAll test boson samoling checks passed.\n");
 
   return 0;
 }

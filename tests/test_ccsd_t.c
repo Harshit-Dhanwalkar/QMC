@@ -27,8 +27,8 @@
 
 static int failures = 0;
 
-static void check_close(double got, double expected, double tol,
-                        const char *label) {
+static void check_close(const char *label, double got, double expected,
+                        double tol) {
   double err = fabs(got - expected);
   printf("  %s: got=%.10f expected=%.10f err=%.2e\n", label, got, expected,
          err);
@@ -59,7 +59,7 @@ static void run_case(basis_function_t **basis, int n_basis,
     return;
   }
 
-  check_close(hf->total_energy, expected_rhf, 1e-7, "RHF matches reference");
+  check_close("RHF matches reference", hf->total_energy, expected_rhf, 1e-7);
 
   cmatrix_t *Hcore = molecular_core_hamiltonian(basis, n_basis, mol);
   double *eri_ao = molecular_eri_tensor(basis, n_basis);
@@ -80,13 +80,12 @@ static void run_case(basis_function_t **basis, int n_basis,
            ccsdt->ccsd_correlation_energy, ccsdt->perturbative_correction,
            ccsdt->total_energy);
 
-    check_close(ccsdt->ccsd_correlation_energy, expected_ccsd_corr, tol,
-                "CCSD correlation energy matches PySCF reference");
-    check_close(ccsdt->perturbative_correction, expected_pert_t, tol,
-                "(T) correction matches PySCF reference");
-    check_close(ccsdt->total_energy,
-                expected_rhf + expected_ccsd_corr + expected_pert_t, tol,
-                "CCSD(T) total energy self-consistent");
+    check_close("CCSD correlation energy matches reference",
+                ccsdt->ccsd_correlation_energy, expected_ccsd_corr, tol);
+    check_close("(T) correction matches reference",
+                ccsdt->perturbative_correction, expected_pert_t, tol);
+    check_close("CCSD(T) total energy self-consistent", ccsdt->total_energy,
+                expected_rhf + expected_ccsd_corr + expected_pert_t, tol);
 
     free(ccsdt);
   }

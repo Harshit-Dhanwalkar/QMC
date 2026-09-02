@@ -311,7 +311,7 @@ cmatrix_t *embed_single_qubit_op(const complex_t op[4], int n_qubits,
 
 cmatrix_t *lindblad_amplitude_damping_op(int n_qubits, int target,
                                          double gamma) {
-  // sigma_minus = |0><1| : lowers |1> -> |0>
+  // \sigma_{minus} = |0><1| : lowers |1> -> |0>
   const complex_t sigma_minus[4] = {
       {0.0, 0.0}, {1.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
   cmatrix_t *M = embed_single_qubit_op(sigma_minus, n_qubits, target);

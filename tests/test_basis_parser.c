@@ -163,9 +163,9 @@ static void test_build_atom_h_matches_hardcoded(void) {
   check(ref_fn != NULL, "reference builder should succeed");
 
   if (n == 1 && parsed_fns && ref_fn) {
-    /* Self-overlap must be 1.0 (normalization), and parsed function's overlap
-     * with reference hardcoded function must also be exactly 1.0 : identical
-     * functions have unit overlap with themselves. */
+    /* WARN: Self-overlap must be 1.0 (normalization), and parsed function's
+     * overlap with reference hardcoded function must also be exactly 1.0 :
+     * identical functions have unit overlap with themselves. */
     double self_overlap = gto_overlap(parsed_fns[0], parsed_fns[0]);
     check_close(self_overlap, 1.0, 1e-10,
                 "parsed H function is properly normalized (self-overlap=1)");
@@ -393,7 +393,7 @@ static void test_general_d_shell_expansion(void) {
   printf("Test: a synthetic D shell expands into 6 Cartesian components, "
          "each individually normalized\n");
 
-  /* Not a real published basis set : just a single D-shell carbon-like
+  /* WARN: Not a real published basis set : just a single D-shell carbon-like
    * exponent, used purely to exercise l=2 Cartesian expansion beyond the STO-3G
    * s/p-only cases above. */
   const char *text = "C     0\nD   1   1.00\n   0.8   1.0\n****\n";
@@ -427,11 +427,10 @@ static void test_general_d_shell_expansion(void) {
                     "each D component is individually normalized");
 
         total_l_sum += fns[i]->l + fns[i]->m + fns[i]->n;
-
       }
 
-      check(total_l_sum == 12, "all 6 components carry total angular "
-                               "momentum l=2 each (sum=12)");
+      check(total_l_sum == 12,
+            "all 6 components carry total angular momentum l=2 each (sum=12)");
     }
 
     basis_set_free_functions(fns, n);
@@ -441,8 +440,8 @@ static void test_general_d_shell_expansion(void) {
 }
 
 static void test_build_molecule_missing_element_fails(void) {
-  printf("Test: basis_set_build_molecule fails cleanly when an atom's "
-         "element is absent from the basis set\n");
+  printf("Test: basis_set_build_molecule fails cleanly when an atom's element "
+         "is absent from the basis set\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT); // only has H, Li
   check(bs != NULL, "parse should succeed");
@@ -462,7 +461,7 @@ static void test_build_molecule_missing_element_fails(void) {
 }
 
 int main(void) {
-  printf("=== Basis-set-file parser tests ===\n\n");
+  printf("Basis-set-file parser tests n\n");
 
   test_parse_basic_structure();
   test_parsed_values_match_hardcoded_h();
@@ -475,6 +474,11 @@ int main(void) {
   test_general_d_shell_expansion();
   test_build_molecule_missing_element_fails();
 
-  printf("\n=== %s ===\n", failures == 0 ? "ALL TESTS PASSED" : "FAILURES");
-  return failures == 0 ? 0 : 1;
+  if (failures) {
+    printf("FAILED (%d)\n", failures);
+    return 1;
+  }
+  printf("\nAll test basic parser checks passed.\n");
+
+  return 0;
 }

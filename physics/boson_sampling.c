@@ -11,6 +11,8 @@ linear-optical network
 #include <math.h>
 #include <stdlib.h>
 
+#define DFT_FACTOR 2.0
+
 static double factorial_bs(int n) {
   double result = 1.0;
   for (int i = 2; i <= n; i++) {
@@ -20,135 +22,169 @@ static double factorial_bs(int n) {
   return result;
 }
 
-complex_t boson_sampling_amplitude(const cmatrix_t *U, int M,
-                                   const int *input_modes,
-                                   const int *output_modes, int N) {
-  if (!U || U->nrows != M || U->ncols != M || N < 1 || !input_modes ||
+static int validate_mode_indices(const int *input_modes,
+                                 const int *output_modes, int num_particles,
+                                 int num_modes) {
+  for (int idx = 0; idx < num_particles; idx++) {
+    if (input_modes[idx] < 0 || input_modes[idx] >= num_modes ||
+        output_modes[idx] < 0 || output_modes[idx] >= num_modes) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+static int build_mode_rows(const cmatrix_t *unitary_matrix,
+                           const int *input_modes, int num_particles,
+                           cvector_t **mode_rows, cvector_t **orbitals) {
+  for (int idx = 0; idx < num_particles; idx++) {
+    int mode_idx = input_modes[idx];
+    if (!mode_rows[mode_idx]) {
+      mode_rows[mode_idx] = cmatrix_get_row(unitary_matrix, mode_idx);
+    }
+
+    if (!mode_rows[mode_idx]) {
+      return 0;
+    }
+
+    orbitals[idx] = mode_rows[mode_idx];
+  }
+
+  return 1;
+}
+
+static complex_t calculate_permanent(cvector_t **orbitals,
+                                     const int *output_modes,
+                                     int num_particles) {
+  // Logic split to reduce cognitive complexity
+  cmatrix_t *submatrix = cmatrix_alloc(num_particles, num_particles);
+  if (!submatrix) {
+    return c_zero();
+  }
+
+  for (int col = 0; col < num_particles; col++) {
+    int out_mode = output_modes[col];
+    for (int row = 0; row < num_particles; row++) {
+      cmatrix_set(submatrix, row, col, cvector_get(orbitals[row], out_mode));
+    }
+  }
+
+  complex_t perm = cmatrix_permanent(submatrix);
+  cmatrix_free(submatrix);
+
+  return perm;
+}
+
+complex_t boson_sampling_amplitude(const cmatrix_t *unitary_matrix,
+                                   int num_modes, const int *input_modes,
+                                   const int *output_modes, int num_particles) {
+  if (!unitary_matrix || unitary_matrix->nrows != num_modes ||
+      unitary_matrix->ncols != num_modes || num_particles < 1 || !input_modes ||
       !output_modes) {
     return c_zero();
   }
 
-  for (int i = 0; i < N; i++) {
-    if (input_modes[i] < 0 || input_modes[i] >= M || output_modes[i] < 0 ||
-        output_modes[i] >= M) {
-      return c_zero();
-    }
+  if (!validate_mode_indices(input_modes, output_modes, num_particles,
+                             num_modes)) {
+    return c_zero();
   }
 
-  // One row-vector orbital per distinct input mode
-  cvector_t **mode_rows = calloc(M, sizeof *mode_rows);
-  cvector_t **orbitals = malloc(N * sizeof *orbitals);
+  cvector_t **mode_rows =
+      (cvector_t **)calloc((size_t)num_modes, sizeof(cvector_t *));
+  cvector_t **orbitals =
+      (cvector_t **)malloc((size_t)num_particles * sizeof(cvector_t *));
+
   if (!mode_rows || !orbitals) {
-    free(mode_rows);
-    free(orbitals);
+    free((void *)mode_rows);
+    free((void *)orbitals);
 
     return c_zero();
   }
 
-  int ok = 1;
-  for (int i = 0; i < N && ok; i++) {
-    int m = input_modes[i];
-    if (!mode_rows[m]) {
-      mode_rows[m] = cvector_alloc(M);
-      if (!mode_rows[m]) {
-        ok = 0;
-
-        break;
-      }
-
-      for (int j = 0; j < M; j++) {
-        mode_rows[m]->data[j] = CMAT(U, m, j);
-      }
-    }
-
-    orbitals[i] = mode_rows[m];
-  }
+  int is_valid = build_mode_rows(unitary_matrix, input_modes, num_particles,
+                                 mode_rows, orbitals);
 
   complex_t result = c_zero();
-  if (ok) {
-    complex_t raw = bosonic_permanent_value(orbitals, N, output_modes);
+  if (is_valid) {
+    result = calculate_permanent(orbitals, output_modes, num_particles);
 
-    // Output-mode multiplicity factorials
-    double out_mult = 1.0;
-    for (int j = 0; j < N; j++) {
-      int already_counted = 0;
-
-      for (int k = 0; k < j; k++) {
-        if (output_modes[k] == output_modes[j]) {
-          already_counted = 1;
-
-          break;
-        }
+    // Normalize amplitude by occupation factorials
+    int *in_counts = (int *)calloc((size_t)num_modes, sizeof(int));
+    int *out_counts = (int *)calloc((size_t)num_modes, sizeof(int));
+    if (in_counts && out_counts) {
+      for (int i = 0; i < num_particles; i++) {
+        in_counts[input_modes[i]]++;
+        out_counts[output_modes[i]]++;
       }
 
-      if (already_counted) {
-        continue;
+      double factor = 1.0;
+      for (int m = 0; m < num_modes; m++) {
+        factor *= factorial_bs(in_counts[m]) * factorial_bs(out_counts[m]);
       }
 
-      int count = 1;
-      for (int k = j + 1; k < N; k++) {
-        if (output_modes[k] == output_modes[j]) {
-          count++;
-        }
-      }
-
-      out_mult *= factorial_bs(count);
+      result = c_scale(result, 1.0 / sqrt(factor));
     }
 
-    double scale = sqrt(factorial_bs(N) / out_mult);
-    result = c_scale(raw, scale);
+    free(in_counts);
+    free(out_counts);
   }
 
-  for (int m = 0; m < M; m++) {
-    cvector_free(mode_rows[m]);
+  for (int mode_idx = 0; mode_idx < num_modes; mode_idx++) {
+    if (mode_rows[mode_idx]) {
+      cvector_free(mode_rows[mode_idx]);
+    }
   }
 
-  free(mode_rows);
-  free(orbitals);
+  free((void *)mode_rows);
+  free((void *)orbitals);
 
-  return ok ? result : c_zero();
+  return is_valid ? result : c_zero();
 }
 
-double boson_sampling_probability(const cmatrix_t *U, int M,
-                                  const int *input_modes,
-                                  const int *output_modes, int N) {
-  complex_t A = boson_sampling_amplitude(U, M, input_modes, output_modes, N);
+double boson_sampling_probability(const cmatrix_t *unitary_matrix,
+                                  int num_modes, const int *input_modes,
+                                  const int *output_modes, int num_particles) {
+  complex_t amplitude_val = boson_sampling_amplitude(
+      unitary_matrix, num_modes, input_modes, output_modes, num_particles);
 
-  return c_abs2(A);
+  return c_abs_sqr(amplitude_val);
+}
+
+cmatrix_t *dft_unitary(int num_modes) {
+  if (num_modes < 1) {
+    return NULL;
+  }
+
+  cmatrix_t *unitary_matrix = cmatrix_alloc(num_modes, num_modes);
+  if (!unitary_matrix) {
+    return NULL;
+  }
+
+  double norm = 1.0 / sqrt((double)num_modes);
+  for (int row_idx = 0; row_idx < num_modes; row_idx++) {
+    for (int col_idx = 0; col_idx < num_modes; col_idx++) {
+      double theta = 2.0 * M_PI * row_idx * col_idx / num_modes;
+
+      cmatrix_set(unitary_matrix, row_idx, col_idx,
+                  c_scale(c_new(cos(theta), sin(theta)), norm));
+    }
+  }
+
+  return unitary_matrix;
 }
 
 cmatrix_t *beam_splitter_50_50(void) {
-  cmatrix_t *U = cmatrix_alloc(2, 2);
-  if (!U) {
+  cmatrix_t *unitary_matrix = cmatrix_alloc(2, 2);
+  if (!unitary_matrix) {
     return NULL;
   }
 
   double inv_sqrt2 = 1.0 / sqrt(2.0);
-  CMAT(U, 0, 0) = c_real(inv_sqrt2);
-  CMAT(U, 0, 1) = c_real(inv_sqrt2);
-  CMAT(U, 1, 0) = c_real(inv_sqrt2);
-  CMAT(U, 1, 1) = c_real(-inv_sqrt2);
+  CMAT(unitary_matrix, 0, 0) = c_real(inv_sqrt2);
+  CMAT(unitary_matrix, 0, 1) = c_real(inv_sqrt2);
+  CMAT(unitary_matrix, 1, 0) = c_real(inv_sqrt2);
+  CMAT(unitary_matrix, 1, 1) = c_real(-inv_sqrt2);
 
-  return U;
-}
-
-cmatrix_t *dft_unitary(int M) {
-  if (M < 1) {
-    return NULL;
-  }
-
-  cmatrix_t *U = cmatrix_alloc(M, M);
-  if (!U) {
-    return NULL;
-  }
-
-  double norm = 1.0 / sqrt((double)M);
-  for (int j = 0; j < M; j++) {
-    for (int k = 0; k < M; k++) {
-      double theta = 2.0 * M_PI * j * k / M;
-      CMAT(U, j, k) = c_scale(c_new(cos(theta), sin(theta)), norm);
-    }
-  }
-
-  return U;
+  return unitary_matrix;
 }

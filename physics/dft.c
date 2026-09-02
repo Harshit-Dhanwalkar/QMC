@@ -4,11 +4,15 @@
 #include "../core/matrix.h"
 #include "../core/vector.h"
 #include "central_potential.h"
-#include "hartree_fock.h" // reuse compute_Y0: same l=0 Coulomb kernel
+#include "hartree_fock.h" // reuse compute_Y0: l=0 Coulomb kernel
 #include "potentials.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+static const double CONST_THREE = 3.0;
+static const double CONST_FOUR = 4.0;
+static const double CONST_TWO = 2.0;
 
 /* ---------------------------------------------------------------------
  * LDA exchange-correlation functional
@@ -19,7 +23,8 @@ double lda_exchange_energy_density(double n) {
     return 0.0;
   }
 
-  return -(3.0 / 4.0) * pow(3.0 / M_PI, 1.0 / 3.0) * pow(n, 1.0 / 3.0);
+  return -(CONST_THREE / CONST_FOUR) *
+         pow(CONST_THREE / M_PI, 1.0 / CONST_THREE) * pow(n, 1.0 / CONST_THREE);
 }
 
 double lda_exchange_potential(double n) {
@@ -27,11 +32,12 @@ double lda_exchange_potential(double n) {
     return 0.0;
   }
 
-  return -pow(3.0 / M_PI, 1.0 / 3.0) * pow(n, 1.0 / 3.0);
+  return -pow(CONST_THREE / M_PI, 1.0 / CONST_THREE) *
+         pow(n, 1.0 / CONST_THREE);
 }
 
 static double rs_of_density(double n) {
-  return pow(3.0 / (4.0 * M_PI * n), 1.0 / 3.0);
+  return pow(CONST_THREE / (CONST_FOUR * M_PI * n), 1.0 / CONST_THREE);
 }
 
 double lda_correlation_energy_density_pz81(double n) {
@@ -316,80 +322,85 @@ static void normalize_u(double *u, int N, double dr) {
   }
 }
 
-/* Kohn-Sham Hamiltonian matrix at the current density (encoded via u[],
+/*
+ * Kohn-Sham Hamiltonian matrix at the current density (encoded via u[],
  * n_orbitals doubly-occupied orbitals). Diagonal-only potential (kinetic
  * off-diagonals aside), unlike hartree_fock.c's dense exchange matrix.
  */
-static cmatrix_t *build_ks_matrix(const double *r, int N, double dr, double Z,
-                                  double **u, int n_orbitals) {
+static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
+                                  double Z, double **radial_u, int n_orbitals) {
   double coeff = 0.5;
-  double diag_factor = 2.0 * coeff / (dr * dr);
-  double offdiag_factor = -coeff / (dr * dr);
+  double diag_factor = CONST_TWO * coeff / (step_r * step_r);
+  double offdiag_factor = -coeff / (step_r * step_r);
 
-  cmatrix_t *H = cmatrix_alloc(N, N);
-  if (!H) {
+  cmatrix_t *hamiltonian = cmatrix_alloc(N, N);
+  if (!hamiltonian) {
     return NULL;
   }
 
-  double *V_H = malloc((size_t)N * sizeof(double));
-  double *n_dens = malloc((size_t)N * sizeof(double));
+  double *V_H = (double *)malloc((size_t)N * sizeof(double));
+  double *n_dens = (double *)malloc((size_t)N * sizeof(double));
   if (!V_H || !n_dens) {
     free(V_H);
     free(n_dens);
-    cmatrix_free(H);
+    cmatrix_free(hamiltonian);
 
     return NULL;
   }
 
-  memset(V_H, 0, (size_t)N * sizeof(double));
+  for (int i = 0; i < N; i++) {
+    V_H[i] = 0.0;
+  }
 
-  /* Classical Hartree potential: V_H(r) = sum_k occ_k * Y0_kk(r), occ=2
-   * per doubly-occupied orbital -- identical formula/kernel to
-   * hartree_fock.c's direct (J) term, reused verbatim via compute_Y0. */
-  double *Y0 = malloc((size_t)N * sizeof(double));
-  if (!Y0) {
+  /* NOTE: Classical Hartree potential: V_H(r) = sum_k occ_k * Y0_kk(r), occ=2
+   * per doubly-occupied orbital - identical formula/kernel to hartree_fock.c's
+   * direct (J) term, reused verbatim via compute_Y0. */
+  double *coulomb_y0 = (double *)malloc((size_t)N * sizeof(double));
+  if (!coulomb_y0) {
     free(V_H);
     free(n_dens);
-    cmatrix_free(H);
+    cmatrix_free(hamiltonian);
 
     return NULL;
   }
 
   for (int k = 0; k < n_orbitals; k++) {
-    compute_Y0(r, N, dr, u[k], u[k], Y0);
+    compute_Y0(r, N, step_r, radial_u[k], radial_u[k], coulomb_y0);
 
     for (int i = 0; i < N; i++) {
-      V_H[i] += 2.0 * Y0[i];
+      V_H[i] += CONST_TWO * coulomb_y0[i];
     }
   }
 
-  free(Y0);
+  free(coulomb_y0);
 
   // n(r) = \sum_k 2 * u_k(r)^2 / (4 * \pi * r^2): total electron density in
   // electrons/bohr^3, from all doubly-occupied orbitals.
   for (int i = 0; i < N; i++) {
-    double r2 = r[i] * r[i];
+    double radius_sq = r[i] * r[i];
     double u2_sum = 0.0;
 
     for (int k = 0; k < n_orbitals; k++) {
-      u2_sum += u[k][i] * u[k][i];
+      u2_sum += radial_u[k][i] * radial_u[k][i];
     }
 
-    n_dens[i] = (r2 > 0.0) ? 2.0 * u2_sum / (4.0 * M_PI * r2) : 0.0;
+    n_dens[i] = (radius_sq > 0.0)
+                    ? CONST_TWO * u2_sum / (CONST_FOUR * M_PI * radius_sq)
+                    : 0.0;
   }
 
   for (int i = 0; i < N; i++) {
     double Vnuc = (r[i] > 0.0) ? -Z / r[i] : 0.0;
     double Vxc = lda_xc_potential(n_dens[i]);
 
-    CMAT(H, i, i) = c_real(diag_factor + Vnuc + V_H[i] + Vxc);
+    CMAT(hamiltonian, i, i) = c_real(diag_factor + Vnuc + V_H[i] + Vxc);
 
     if (i > 0) {
-      CMAT(H, i, i - 1) = c_real(offdiag_factor);
+      CMAT(hamiltonian, i, i - 1) = c_real(offdiag_factor);
     }
 
     if (i < N - 1) {
-      CMAT(H, i, i + 1) = c_real(offdiag_factor);
+      CMAT(hamiltonian, i, i + 1) = c_real(offdiag_factor);
     }
   }
 
@@ -400,19 +411,18 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double dr, double Z,
    * exactly
    * WARN: avoids -Z/r_min singularity acting as a spurious deep attractive well
    * pinned to a single grid point, which would otherwise dominate the low end
-   * of spectrum.
-   */
+   * of spectrum. */
   for (int j = 0; j < N; j++) {
-    CMAT(H, 0, j) = c_zero();
-    CMAT(H, N - 1, j) = c_zero();
-    CMAT(H, j, 0) = c_zero();
-    CMAT(H, j, N - 1) = c_zero();
+    CMAT(hamiltonian, 0, j) = c_zero();
+    CMAT(hamiltonian, N - 1, j) = c_zero();
+    CMAT(hamiltonian, j, 0) = c_zero();
+    CMAT(hamiltonian, j, N - 1) = c_zero();
   }
 
-  CMAT(H, 0, 0) = c_real(1e6 * diag_factor);
-  CMAT(H, N - 1, N - 1) = c_real(1e6 * diag_factor);
+  CMAT(hamiltonian, 0, 0) = c_real(1e6 * diag_factor);
+  CMAT(hamiltonian, N - 1, N - 1) = c_real(1e6 * diag_factor);
 
-  return H;
+  return hamiltonian;
 }
 
 static void free_orbital_arrays(double **u, int n_orbitals) {

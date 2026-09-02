@@ -28,12 +28,20 @@ double time_fn_linear_ramp(double t, void *params);
  * integrated via classic RK4. \Delta(t) and \Omega(t) may be any caller-
  * supplied time_fn (detuning sweeps, pulse envelopes, chirps, ...).
  *
- * \psi: length-2 state vector, evolved in place from t0 to t0 + steps * dt.
+ * Where :
+ *  \psi: length-2 state vector, evolved in place from t0 to t0 + steps * dt.
+ *
  * Returns 0 on success, -1 on invalid input.
  */
+typedef struct {
+  double t0;
+  double dt;
+  int steps;
+} driven_params_t;
+
 int driven_two_level_evolve(cvector_t *psi, time_fn Delta, void *delta_params,
-                            time_fn Omega, void *omega_params, double t0,
-                            double dt, int steps);
+                            time_fn Omega, void *omega_params,
+                            driven_params_t params);
 
 /*
  * Landau-Zener: for a linearly-swept detuning \Delta(t) = alpha * t through a

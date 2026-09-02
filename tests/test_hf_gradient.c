@@ -24,12 +24,16 @@
 
 static int failures = 0;
 
-static void check_close(double got, double expected, double tol,
-                        const char *label) {
-  double err = fabs(got - expected);
-  printf("  %s: got=%.10f expected=%.10f err=%.2e\n", label, got, expected,
+typedef struct {
+  double value;
+  double tol;
+} target_val_t;
+
+static void check_close(double got, target_val_t target, const char *label) {
+  double err = fabs(got - target.value);
+  printf("  %s: got=%.10f expected=%.10f err=%.2e\n", label, got, target.value,
          err);
-  if (err > tol) {
+  if (err > target.tol) {
     printf("  FAIL: %s\n", label);
     failures++;
   }
@@ -63,7 +67,7 @@ static void test_boys_large_x_regression(void) {
     snprintf(label, sizeof(label), "F_%d(%.2f) matches independent reference",
              cases[i].n, cases[i].x);
 
-    check_close(F[cases[i].n], cases[i].expected, 1e-8, label);
+    check_close(F[cases[i].n], (target_val_t){cases[i].expected, 1e-8}, label);
 
     free(F);
   }
@@ -95,17 +99,19 @@ static void test_gradient_integral_primitives(void) {
   gto_overlap_grad_a(a, b, grad);
 
   double fd = (gto_overlap(ap, b) - gto_overlap(am, b)) / (2 * h);
-  check_close(grad[0], fd, 1e-8, "overlap grad_a matches finite difference");
+  check_close(grad[0], (target_val_t){fd, 1e-8},
+              "overlap grad_a matches finite difference");
 
   gto_kinetic_grad_a(a, b, grad);
   fd = (gto_kinetic(ap, b) - gto_kinetic(am, b)) / (2 * h);
-  check_close(grad[0], fd, 1e-8, "kinetic grad_a matches finite difference");
+  check_close(grad[0], (target_val_t){fd, 1e-8},
+              "kinetic grad_a matches finite difference");
 
   gto_nuclear_attraction_grad_a(a, b, centerC, grad);
   fd = (gto_nuclear_attraction(ap, b, centerC) -
         gto_nuclear_attraction(am, b, centerC)) /
        (2 * h);
-  check_close(grad[0], fd, 1e-8,
+  check_close(grad[0], (target_val_t){fd, 1e-8},
               "nuclear-attraction grad_a matches finite difference");
 
   gto_nuclear_attraction_grad_C(a, b, centerC, grad);
@@ -114,7 +120,7 @@ static void test_gradient_integral_primitives(void) {
   fd = (gto_nuclear_attraction(a, b, Cx_plus) -
         gto_nuclear_attraction(a, b, Cx_minus)) /
        (2 * h);
-  check_close(grad[0], fd, 1e-8,
+  check_close(grad[0], (target_val_t){fd, 1e-8},
               "nuclear-attraction grad_C (point charge) matches finite "
               "difference");
 
@@ -126,7 +132,8 @@ static void test_gradient_integral_primitives(void) {
       basis_function_alloc(0, 0, 0, centerD, 1, alphas_b, coeffs_b);
   gto_eri_grad_a(a, b, c, d, grad);
   fd = (gto_eri(ap, b, c, d) - gto_eri(am, b, c, d)) / (2 * h);
-  check_close(grad[0], fd, 1e-8, "ERI grad_a matches finite difference");
+  check_close(grad[0], (target_val_t){fd, 1e-8},
+              "ERI grad_a matches finite difference");
 
   basis_function_free(a);
   basis_function_free(b);
@@ -197,7 +204,7 @@ static void test_h2_gradient_vs_finite_difference(void) {
     char label[64];
     snprintf(label, sizeof(label), "H2 R=%.2f analytic matches FD", R0);
 
-    check_close(analytic, fd, 1e-6, label);
+    check_close(analytic, (target_val_t){fd, 1e-6}, label);
   }
 
   // translational invariance: sum of forces on both atoms must vanish
@@ -224,7 +231,7 @@ static void test_h2_gradient_vs_finite_difference(void) {
   basis_function_free(h1);
 }
 
-static void lih_energy_and_grad(double R, double *E_out, double grad_out[6]) {
+static void lih_energy_and_grad(double *E_out, double R, double grad_out[6]) {
   double cLi[3] = {0, 0, 0}, cH[3] = {0, 0, R};
 
   basis_function_t *li[5];
@@ -267,17 +274,17 @@ static void test_lih_gradient_vs_finite_difference(void) {
     double R0 = Rs[i];
     double Ep, Em;
 
-    lih_energy_and_grad(R0 + h, &Ep, NULL);
-    lih_energy_and_grad(R0 - h, &Em, NULL);
+    lih_energy_and_grad(&Ep, R0 + h, NULL);
+    lih_energy_and_grad(&Em, R0 - h, NULL);
 
     double fd = (Ep - Em) / (2 * h);
     double grad[6];
 
-    lih_energy_and_grad(R0, NULL, grad);
+    lih_energy_and_grad(NULL, R0, grad);
 
     char label[64];
     snprintf(label, sizeof(label), "LiH R=%.2f analytic matches FD", R0);
-    check_close(grad[5], fd, 1e-6, label);
+    check_close(grad[5], (target_val_t){fd, 1e-6}, label);
 
     char label2[96];
     snprintf(label2, sizeof(label2),
@@ -303,8 +310,7 @@ static void test_h2_equilibrium_bond_length(void) {
   }
 
   double Req = 0.5 * (lo + hi);
-  printf("  H2/STO-3G equilibrium bond length (via gradient root): %.4f "
-         "bohr\n",
+  printf("  H2/STO-3G equilibrium bond length (via gradient root): %.4f bohr\n",
          Req);
   // Literature STO-3G/RHF H2 equilibrium is ~1.34-1.40 bohr
   check_true(Req > 1.3 && Req < 1.45,

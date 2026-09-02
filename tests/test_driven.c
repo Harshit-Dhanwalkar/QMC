@@ -42,9 +42,9 @@ static int test_constant_matches_rabi_exact(void) {
   cvector_t *psi_exact = cvector_alloc(2);
   psi_exact->data[0] = c_real(1.0);
 
-  int fail =
-      driven_two_level_evolve(psi_driven, time_fn_constant, &Delta,
-                              time_fn_constant, &Omega, 0.0, dt, steps) != 0;
+  driven_params_t params = {0.0, dt, steps};
+  int fail = driven_two_level_evolve(psi_driven, time_fn_constant, &Delta,
+                                     time_fn_constant, &Omega, params) != 0;
   fail |= rabi_evolve_exact(psi_exact, T, Omega, Delta) != 0;
 
   fail |= check_close(c_abs2(psi_driven->data[1]), c_abs2(psi_exact->data[1]),
@@ -73,7 +73,7 @@ static int test_landau_zener(void) {
   int fail = 0;
   double Omega = 1.0;
 
-  // Fast sweep: large alpha -> near-diabatic passage -> P(stay in state0) -> 1
+  // Fast sweep: large \alpha -> near-diabatic passage -> P(stay in state0) -> 1
   {
     double alpha = 20.0;
     double T = 10.0,
@@ -81,16 +81,18 @@ static int test_landau_zener(void) {
     int steps = (int)(2.0 * T / dt);
     cvector_t *psi = cvector_alloc(2);
     psi->data[0] = c_real(1.0);
+
+    driven_params_t params = {-T, dt, steps};
     driven_two_level_evolve(psi, time_fn_linear_ramp, &alpha, time_fn_constant,
-                            &Omega, -T, dt, steps);
+                            &Omega, params);
     double p_diabatic = c_abs2(psi->data[0]);
     double p_lz = landau_zener_probability(Omega, alpha);
     fail |= check_close(p_diabatic, p_lz, 0.02,
-                        "Landau-Zener fast sweep (alpha=20, near-diabatic)");
+                        "Landau-Zener fast sweep (\\alpha=20, near-diabatic)");
     cvector_free(psi);
   }
 
-  // Slow sweep: small alpha -> near-adiabatic passage -> P(stay in state0) -> 0
+  // Slow sweep: small \alpha -> near-adiabatic passage -> P(stay in state0) -> 0
   {
     double alpha = 0.3;
     double T = 40.0,
@@ -98,12 +100,14 @@ static int test_landau_zener(void) {
     int steps = (int)(2.0 * T / dt);
     cvector_t *psi = cvector_alloc(2);
     psi->data[0] = c_real(1.0);
+
+    driven_params_t params = {-T, dt, steps};
     driven_two_level_evolve(psi, time_fn_linear_ramp, &alpha, time_fn_constant,
-                            &Omega, -T, dt, steps);
+                            &Omega, params);
     double p_diabatic = c_abs2(psi->data[0]);
     double p_lz = landau_zener_probability(Omega, alpha);
     fail |= check_close(p_diabatic, p_lz, 0.02,
-                        "Landau-Zener slow sweep (alpha=0.3, near-adiabatic)");
+                        "Landau-Zener slow sweep (\\alpha=0.3, near-adiabatic)");
     cvector_free(psi);
   }
 

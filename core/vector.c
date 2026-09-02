@@ -38,14 +38,14 @@ cvector_t *cvector_copy(const cvector_t *v) {
     return NULL;
   }
 
-  memcpy(copy->data, v->data, v->n * sizeof(complex_t));
+  memcpy(copy->data, v->data, v->n * sizeof(complex_t)); // NOLINT
 
   return copy;
 }
 
 complex_t cvector_dot(const cvector_t *a, const cvector_t *b) {
   if (a->n != b->n) {
-    fprintf(stderr, "Error: vector size mismatch in dot product\n");
+    fprintf(stderr, "Error: vector size mismatch in dot product\n"); // NOLINT
 
     return c_zero();
   }
@@ -68,8 +68,9 @@ double cvector_norm(const cvector_t *v) {
 }
 
 void cvector_normalize(cvector_t *v) {
+  static const double NORM_EPSILON = 1e-15;
   double norm = cvector_norm(v);
-  if (norm > 1e-15) {
+  if (norm > NORM_EPSILON) {
     for (int i = 0; i < v->n; i++) {
       v->data[i] = c_scale(v->data[i], 1.0 / norm);
     }

@@ -8,6 +8,18 @@
 
 #define INITIAL_CAP 16
 
+void basis_set_free_functions(basis_function_t **funcs, int num_funcs) {
+  if (!funcs) {
+    return;
+  }
+
+  for (int i = 0; i < num_funcs; i++) {
+    basis_function_free(funcs[i]);
+  }
+
+  free((void *)funcs); // NOLINT: explicit cast for multi-level pointer
+}
+
 /* ---------------------------------------------------------------------
  * Small line/token helpers
  * ------------------------------------------------------------------- */
@@ -571,7 +583,6 @@ static int append_shell_functions(const basis_shell_t *sh,
 
   return 1;
 }
-
 int basis_set_build_atom(const basis_element_t *elem, const double center[3],
                          basis_function_t ***out) {
   if (!elem || !out) {
@@ -586,8 +597,9 @@ int basis_set_build_atom(const basis_element_t *elem, const double center[3],
   int count = 0;
   int cap = 0;
 
-  for (int s = 0; s < elem->n_shells; s++) {
-    if (!append_shell_functions(&elem->shells[s], center, &arr, &count, &cap)) {
+  for (int shell_idx = 0; shell_idx < elem->n_shells; shell_idx++) {
+    if (!append_shell_functions(&elem->shells[shell_idx], center, &arr, &count,
+                                &cap)) {
       basis_set_free_functions(arr, count);
       *out = NULL;
 
@@ -596,13 +608,36 @@ int basis_set_build_atom(const basis_element_t *elem, const double center[3],
   }
 
   *out = arr;
+
   return count;
 }
 
-int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
+static int append_atom_functions(basis_function_t ***all_fns, int *total,
+                                 int *cap, basis_function_t **atom_fns,
+                                 int n_atom_fns) {
+  for (int i = 0; i < n_atom_fns; i++) {
+    if (*total == *cap) {
+      int new_cap = *cap == 0 ? INITIAL_CAP : *cap * 2;
+      void *realloc_ptr = realloc((void *)*all_fns,
+                                  (size_t)new_cap * sizeof(basis_function_t *));
+      if (!realloc_ptr) {
+        return 0;
+      }
+
+      *all_fns = (basis_function_t **)realloc_ptr;
+      *cap = new_cap;
+    }
+
+    (*all_fns)[(*total)++] = atom_fns[i];
+  }
+  return 1;
+}
+
+int basis_set_build_molecule(const basis_set_t *basis_set,
+                             const char *const symbols[],
                              const double centers[][3], int n_atoms,
                              basis_function_t ***out) {
-  if (!bs || !symbols || !centers || n_atoms <= 0 || !out) {
+  if (!basis_set || !symbols || !centers || n_atoms <= 0 || !out) {
     if (out) {
       *out = NULL;
     }
@@ -615,8 +650,8 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
   int cap = 0;
 
   for (int atom_idx = 0; atom_idx < n_atoms; atom_idx++) {
-    const basis_element_t *elem = basis_set_find_element(bs, symbols[atom_idx]);
-
+    const basis_element_t *elem =
+        basis_set_find_element(basis_set, symbols[atom_idx]);
     if (!elem) {
       basis_set_free_functions(all, total);
       *out = NULL;
@@ -627,52 +662,28 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
     basis_function_t **atom_fns = NULL;
     int n_atom_fns = basis_set_build_atom(elem, centers[atom_idx], &atom_fns);
 
-    if (n_atom_fns == 0 && elem->n_shells > 0) {
+    if (n_atom_fns == 0 && elem->n_shells > 0 && !atom_fns) {
       /* NOTE: Distinguish "genuinely zero shells" (shouldn't happen for a valid
        * element block) from allocation failure inside basis_set_build_atom:
        * atom_fns is NULL on failure. */
-      if (!atom_fns) {
-        basis_set_free_functions(all, total);
-        *out = NULL;
+      basis_set_free_functions(all, total);
+      *out = NULL;
 
-        return 0;
-      }
-    }
-    for (int i = 0; i < n_atom_fns; i++) {
-      if (total == cap) {
-        int new_cap = cap == 0 ? INITIAL_CAP : cap * 2;
-
-        basis_function_t **tmp = realloc(all, (size_t)new_cap * sizeof(*tmp));
-        if (!tmp) {
-          basis_set_free_functions(atom_fns, n_atom_fns);
-          basis_set_free_functions(all, total);
-          *out = NULL;
-
-          return 0;
-        }
-
-        all = tmp;
-        cap = new_cap;
-      }
-
-      all[total++] = atom_fns[i];
+      return 0;
     }
 
-    free(atom_fns);
+    if (!append_atom_functions(&all, &total, &cap, atom_fns, n_atom_fns)) {
+      basis_set_free_functions(atom_fns, n_atom_fns);
+      basis_set_free_functions(all, total);
+      *out = NULL;
+
+      return 0;
+    }
+
+    free((void *)atom_fns);
   }
 
   *out = all;
+
   return total;
-}
-
-void basis_set_free_functions(basis_function_t **funcs, int tol_fns) {
-  if (!funcs) {
-    return;
-  }
-
-  for (int i = 0; i < tol_fns; i++) {
-    basis_function_free(funcs[i]);
-  }
-
-  free(funcs);
 }

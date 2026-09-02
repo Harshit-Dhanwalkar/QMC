@@ -10,6 +10,9 @@ Hydrogen fine structure: spin-orbit coupling + known closed-form formula.
 #include <math.h>
 #include <stdlib.h>
 
+static const double HALF = 0.5;
+static const double TWO = 2.0;
+
 double spin_orbit_ls_expect(int l, int j_2) {
   double j = j_2 / 2.0;
   double ll = (double)l;
@@ -72,43 +75,49 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
   // L.S = Lz*Sz + 1/2*(L+ S- + L- S+), evaluated on CG-coupled state.
   double energy = 0.0;
   for (int i1 = 0; i1 < dim1; i1++) {
-    int m1 = i1 - l; // orbital m
+    int m_orb = i1 - l; // orbital m
     for (int i2 = 0; i2 < dim2; i2++) {
       int m2_2 = -j2_2 + 2 * i2; // spin m, doubled: -1 (down) or +1 (up)
-      double m2 = m2_2 / 2.0;
+      double m_spin = m2_2 / TWO;
       double c_here = v->data[i1 * dim2 + i2].re;
       if (c_here == 0.0) {
         continue;
       }
 
-      // Diagonal Lz*Sz
-      energy += c_here * c_here * m1 * m2;
+      // Diagonal Lz * Sz
+      energy += c_here * c_here * m_orb * m_spin;
 
-      // L+ S-: valid when m1 can be raised (m1+1<=l) and m2 can be
-      // lowered (only from spin-up, m2=+1/2, down to -1/2).
-      if (m1 + 1 <= l && m2_2 - 2 >= -j2_2) {
-        int i1p = i1 + 1, i2p = i2 - 1;
+      // L+ S-: valid when m_orb can be raised (m_{orb} + 1<=l) and m2_2 can be
+      // lowered (only from spin-up, m_{spin} = +1/2, down to -1/2).
+      if (m_orb + 1 <= l && m2_2 - 2 >= -j2_2) {
+        int i1p = i1 + 1;
+        int i2p = i2 - 1;
         double c_prime = v->data[i1p * dim2 + i2p].re;
         if (c_prime != 0.0) {
-          double Lplus = l_plus_op(l, m1, m1 + 1).re; // <l,m1+1|L+|l,m1>
+          double Lplus =
+              l_plus_op(l, m_orb, m_orb + 1).re; // <l,m_{orb} + 1|L+|l,m_{orb}>
           double Sminus =
-              sqrt((0.5 + m2) * (0.5 - m2 + 1.0)); // <s,m2-1|S-|s,m2>
+              sqrt((HALF + m_spin) *
+                   (HALF - m_spin + 1.0)); // <s,m_{spin} - 1|S-|s,m_{spin}>
 
-          energy += c_here * c_prime * 0.5 * Lplus * Sminus;
+          energy += c_here * c_prime * HALF * Lplus * Sminus;
         }
       }
 
-      // L- S+: valid when m1 can be lowered (m1-1>=-l) and m2 can be
-      // raised (only from spin-down, m2=-1/2, up to +1/2).
-      if (m1 - 1 >= -l && m2_2 + 2 <= j2_2) {
-        int i1m = i1 - 1, i2m = i2 + 1;
+      // L- S+: valid when m_orb can be lowered (m_{orb} - 1>=-l) and m2_2 can
+      // be raised (only from spin-down, m_{spin} = -1/2, up to +1/2).
+      if (m_orb - 1 >= -l && m2_2 + 2 <= j2_2) {
+        int i1m = i1 - 1;
+        int i2m = i2 + 1;
         double c_prime = v->data[i1m * dim2 + i2m].re;
         if (c_prime != 0.0) {
-          double Lminus = l_minus_op(l, m1, m1 - 1).re; // <l,m1-1|L-|l,m1>
+          double Lminus =
+              l_minus_op(l, m_orb, m_orb - 1).re; // <l,m_{orb} - 1|L-|l,m_{orb}>
           double Splus =
-              sqrt((0.5 - m2) * (0.5 + m2 + 1.0)); // <s,m2+1|S+|s,m2>
+              sqrt((HALF - m_spin) *
+                   (HALF + m_spin + 1.0)); // <s,m_{spin} + 1|S+|s,m_{spin}>
 
-          energy += c_here * c_prime * 0.5 * Lminus * Splus;
+          energy += c_here * c_prime * HALF * Lminus * Splus;
         }
       }
     }

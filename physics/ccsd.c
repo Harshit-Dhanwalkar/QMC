@@ -8,8 +8,8 @@
 #define IDX4(arr, nso, p, q, r, s)                                             \
   (arr)[(((size_t)(p) * (nso) + (q)) * (nso) + (r)) * (nso) + (s)]
 
-static int spin_of(int p) { return p % 2; }
-static int spatial_of(int p) { return p / 2; }
+static int spin_of(int orb_idx) { return orb_idx % 2; }
+static int spatial_of(int orb_idx) { return orb_idx / 2; }
 
 /*
  * Antisymmetrized physicist-notation spin-orbital integrals from the
@@ -22,52 +22,63 @@ static int spatial_of(int p) { return p / 2; }
  */
 static double *build_antisymmetrized(int n_spatial, const double *eri_mo,
                                      int nso) {
-  double *v = calloc((size_t)nso * nso * nso * nso, sizeof(double));
-  if (!v) {
+  double *v_tensor =
+      (double *)calloc((size_t)nso * nso * nso * nso, sizeof(double));
+  if (!v_tensor) {
     return NULL;
   }
 
-  for (int p = 0; p < nso; p++) {
-    int sp = spin_of(p), Pp = spatial_of(p);
+  for (int p_idx = 0; p_idx < nso; p_idx++) {
+    int spin_p = spin_of(p_idx);
+    int spatial_p = spatial_of(p_idx);
 
-    for (int q = 0; q < nso; q++) {
-      int sq = spin_of(q), Pq = spatial_of(q);
+    for (int q_idx = 0; q_idx < nso; q_idx++) {
+      int spin_q = spin_of(q_idx);
+      int spatial_q = spatial_of(q_idx);
 
-      for (int r = 0; r < nso; r++) {
-        int sr = spin_of(r), Pr = spatial_of(r);
+      for (int r_idx = 0; r_idx < nso; r_idx++) {
+        int spin_r = spin_of(r_idx);
+        int spatial_r = spatial_of(r_idx);
 
-        for (int s = 0; s < nso; s++) {
-          int ss = spin_of(s), Ps = spatial_of(s);
-          double v1 = (sp == sr && sq == ss)
-                          ? MOLINT_ERI(eri_mo, n_spatial, Pp, Pr, Pq, Ps)
-                          : 0.0;
-          double v2 = (sp == ss && sq == sr)
-                          ? MOLINT_ERI(eri_mo, n_spatial, Pp, Ps, Pq, Pr)
-                          : 0.0;
+        for (int s_idx = 0; s_idx < nso; s_idx++) {
+          int spin_s = spin_of(s_idx);
+          int spatial_s = spatial_of(s_idx);
 
-          IDX4(v, nso, p, q, r, s) = v1 - v2;
+          double v1_val = (spin_p == spin_r && spin_q == spin_s)
+                              ? MOLINT_ERI(eri_mo, n_spatial, spatial_p,
+                                           spatial_r, spatial_q, spatial_s)
+                              : 0.0;
+          double v2_val = (spin_p == spin_s && spin_q == spin_r)
+                              ? MOLINT_ERI(eri_mo, n_spatial, spatial_p,
+                                           spatial_s, spatial_q, spatial_r)
+                              : 0.0;
+
+          IDX4(v_tensor, nso, p_idx, q_idx, r_idx, s_idx) = v1_val - v2_val;
         }
       }
     }
   }
 
-  return v;
+  return v_tensor;
 }
 
 /* \tau_ij^ab = t2_ijab + t1_ia * t1_jb - t1_ib * t1_ja (full antisymmetrized
  * T1xT1 product, used in Wmnij/Wabef/T2-update). */
-static double tau_full(const double *t1, const double *t2, int nso, int i,
-                       int j, int a, int b) {
-  return IDX4(t2, nso, i, j, a, b) + IDX2(t1, nso, i, a) * IDX2(t1, nso, j, b) -
-         IDX2(t1, nso, i, b) * IDX2(t1, nso, j, a);
+static double tau_full(const double *t1_amp, const double *t2_amp, int nso,
+                       int occ_i, int occ_j, int virt_a, int virt_b) {
+  return IDX4(t2_amp, nso, occ_i, occ_j, virt_a, virt_b) +
+         IDX2(t1_amp, nso, occ_i, virt_a) * IDX2(t1_amp, nso, occ_j, virt_b) -
+         IDX2(t1_amp, nso, occ_i, virt_b) * IDX2(t1_amp, nso, occ_j, virt_a);
 }
 
 // \tau-\tilde_ij^ab = t2_ijab + 0.5*(t1_ia*t1_jb - t1_ib*t1_ja)
-static double tau_tilde(const double *t1, const double *t2, int nso, int i,
-                        int j, int a, int b) {
-  return IDX4(t2, nso, i, j, a, b) +
-         0.5 * (IDX2(t1, nso, i, a) * IDX2(t1, nso, j, b) -
-                IDX2(t1, nso, i, b) * IDX2(t1, nso, j, a));
+static double tau_tilde(const double *t1_amp, const double *t2_amp, int nso,
+                        int occ_i, int occ_j, int virt_a, int virt_b) {
+  return IDX4(t2_amp, nso, occ_i, occ_j, virt_a, virt_b) +
+         0.5 * (IDX2(t1_amp, nso, occ_i, virt_a) *
+                    IDX2(t1_amp, nso, occ_j, virt_b) -
+                IDX2(t1_amp, nso, occ_i, virt_b) *
+                    IDX2(t1_amp, nso, occ_j, virt_a));
 }
 
 typedef struct {

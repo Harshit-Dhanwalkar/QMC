@@ -11,9 +11,10 @@ extern complex_t sigma_y[4];
 extern complex_t sigma_z[4];
 
 /* Ladder operators for angular momentum: L_{\pm} = L_x \pm i L_y */
-complex_t l_plus_op(int l, int m,
-                    int m_prime); // matrix element <l,m+1|L_+|l,m>
-complex_t l_minus_op(int l, int m, int m_prime); // <l,m-1|L_-|l,m>
+complex_t l_plus_op(int orbital_l, int proj_m,
+                    int proj_m_prime); // matrix element <l,m+1|L_+|l,m>
+complex_t l_minus_op(int orbital_l, int proj_m,
+                     int proj_m_prime); // matrix element <l,m-1|L_-|l,m>
 
 /* Matrix representation of L^2, L_z for a given l (dimension 2l+1) */
 cmatrix_t *l2_matrix(int l);

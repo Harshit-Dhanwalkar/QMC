@@ -108,6 +108,6 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
 /* Frees an array of basis_function_t* (and the array itself) as returned by
  * basis_set_build_atom / basis_set_build_molecule.
  */
-void basis_set_free_functions(basis_function_t **funcs, int n);
+void basis_set_free_functions(basis_function_t **funcs, int num_funcs);
 
 #endif

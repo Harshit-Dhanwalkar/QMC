@@ -44,11 +44,24 @@ typedef struct {
                        and comb resampling engaged */
 } dmc_result_t;
 
-/* Allocate population buffer with given maximum capacity.
+/*
+ * Allocate population buffer with given maximum capacity.
  *
  * Returns NULL on allocation failure. count starts at 0; call
  * dmc_population_init to fill it.
  */
+typedef struct {
+  const vmc_walker_t *walker;
+  int which;
+  double Zeff;
+  double b;
+} dmc_drift_params_t;
+
+typedef struct {
+  int n_blocks;
+  int block_size;
+} dmc_block_config_t;
+
 dmc_population_t *dmc_population_alloc(int capacity);
 void dmc_population_free(dmc_population_t *pop);
 
@@ -61,8 +74,7 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
 /* Drift velocity v = \grad_r(\ln(\Psi_T)) for electron `which` (0 or 1) at
  * walker's current configuration, written into drift_out[3].
  */
-void dmc_drift_velocity(const vmc_walker_t *w, int which, double Zeff, double b,
-                        double drift_out[3]);
+void dmc_drift_velocity(const dmc_drift_params_t *params, double drift_out[3]);
 
 /*
  * Attempt single-electron Metropolis-corrected drift-diffusion move:
@@ -76,8 +88,8 @@ void dmc_drift_velocity(const vmc_walker_t *w, int which, double Zeff, double b,
  *
  * Returns 1 if accepted, 0 if rejected.
  */
-int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
-                      double tau, rng_state_t *rng);
+int dmc_move_electron(vmc_walker_t *walker, int which, double Zeff,
+                      double param_b, double tau, rng_state_t *rng);
 
 /*
  * One full DMC generation for single walker (nuclear charge Z, trial orbital
@@ -90,8 +102,8 @@ int dmc_move_electron(vmc_walker_t *w, int which, double Zeff, double b,
  * non-NULL. *w is left at its post-move configuration regardless of returned
  * multiplicity.
  */
-int dmc_branch_walker(vmc_walker_t *w, double Z, double Zeff, double b,
-                      double tau, double E_T, rng_state_t *rng,
+int dmc_branch_walker(vmc_walker_t *walker, double Z_charge, double Zeff,
+                      double param_b, double tau, double E_T, rng_state_t *rng,
                       int *accepted_out);
 
 /*
@@ -107,9 +119,10 @@ int dmc_branch_walker(vmc_walker_t *w, double Z, double Zeff, double b,
  * should be at least ~3*target_population to avoid frequent,
  * statistics-distorting subsampling under normal branching fluctuations.
  */
-dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
-                     int max_population, double tau, int n_equilibration,
-                     int n_blocks, int block_size, uint64_t seed);
+dmc_result_t dmc_run(double Z_charge, double Zeff, double param_b,
+                     int target_population, int max_population, double tau,
+                     int n_equilibration, int n_blocks, int block_size,
+                     uint64_t seed);
 
 /*
  * Same physics as dmc_run, but runs n_replicas fully independent DMC
@@ -117,9 +130,9 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
  * branching/E_T feedback) and combines them, parallelized over OpenMP threads
  * when built with -fopenmp.
  *
- * Replica i's stream is master_seed's rng_jump()'d i times, giving exact
+ * NOTE: Replica i's stream is master_seed's rng_jump()'d i times, giving exact
  * independence between replicas. Both error_mixed and error_growth are
- * *inter-replica* standard error (std of the n_replicas independent replica
+ * inter-replica standard error (std of the n_replicas independent replica
  * energies, divided by \sqrt(n_replicas)), which does not depend on
  * n_blocks/block_size being large enough to average out a population's
  * branching-correlation time, unlike dmc_run's single-population block error.
@@ -128,9 +141,10 @@ dmc_result_t dmc_run(double Z, double Zeff, double b, int target_population,
  * back to an all-zero result if n_replicas < 1 or the usual dmc_run validity
  * conditions fail, or on allocation failure.
  */
-dmc_result_t dmc_run_parallel(int n_replicas, double Z, double Zeff, double b,
-                              int target_population, int max_population,
-                              double tau, int n_equilibration, int n_blocks,
-                              int block_size, uint64_t master_seed);
+dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
+                              double param_b, int target_population,
+                              int max_population, double tau,
+                              int n_equilibration, int n_blocks, int block_size,
+                              uint64_t master_seed);
 
 #endif

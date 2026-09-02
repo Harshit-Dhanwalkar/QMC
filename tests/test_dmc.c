@@ -52,8 +52,11 @@ static void test_drift_velocity_fixtures(void) {
     double b = 0.2;
     double d0[3], d1[3];
 
-    dmc_drift_velocity(&w, 0, 2.0, b, d0);
-    dmc_drift_velocity(&w, 1, 2.0, b, d1);
+    dmc_drift_params_t p0 = {&w, 0, 2.0, b};
+    dmc_drift_params_t p1 = {&w, 1, 2.0, b};
+
+    dmc_drift_velocity(&p0, d0);
+    dmc_drift_velocity(&p1, d1);
     check_close(d0[0], -1.7448979591836733, 1e-9, "drift0[0] case 1");
     check_close(d0[1], 0.0, 1e-9, "drift0[1] case 1");
     check_close(d1[0], 1.7448979591836733, 1e-9, "drift1[0] case 1");
@@ -63,8 +66,11 @@ static void test_drift_velocity_fixtures(void) {
     double b = 0.15;
     double d0[3], d1[3];
 
-    dmc_drift_velocity(&w, 0, 2.0, b, d0);
-    dmc_drift_velocity(&w, 1, 2.0, b, d1);
+    dmc_drift_params_t p0 = {&w, 0, 2.0, b};
+    dmc_drift_params_t p1 = {&w, 1, 2.0, b};
+
+    dmc_drift_velocity(&p0, d0);
+    dmc_drift_velocity(&p1, d1);
     check_close(d0[0], -1.2797877515194125, 1e-9, "drift0[0] case 2");
     check_close(d0[1], -1.0874706800473128, 1e-9, "drift0[1] case 2");
     check_close(d0[2], 0.5347435312603125, 1e-9, "drift0[2] case 2");
@@ -80,7 +86,9 @@ static void test_degenerate_guard(void) {
   vmc_walker_t w = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}};
   double d[3];
 
-  dmc_drift_velocity(&w, 0, 2.0, 0.2, d);
+  dmc_drift_params_t p0 = {&w, 0, 2.0, 0.2};
+
+  dmc_drift_velocity(&p0, d);
   check_true(isfinite(d[0]) && isfinite(d[1]) && isfinite(d[2]) &&
                  d[0] == 0.0 && d[1] == 0.0 && d[2] == 0.0,
              "r1->0 configuration returns finite zero-vector guard");

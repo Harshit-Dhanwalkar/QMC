@@ -6,18 +6,20 @@ xoshiro256** PRNG and derived distributions.
 #include <math.h>
 #include <stdint.h>
 
-static inline uint64_t rotl(const uint64_t x, int k) {
-  return (x << k) | (x >> (64 - k));
+static inline uint64_t rotl(const uint64_t val, int shift) {
+  return (val << shift) | (val >> (64 - shift));
 }
 
-/* SplitMix64, used only to expand single seed into 4 well-mixed
- * xoshiro256** state words. */
+/*
+ * SplitMix64, used only to expand single seed into 4 well-mixed xoshiro256**
+ * state words.
+ */
 static uint64_t splitmix64_next(uint64_t *state) {
-  uint64_t z = (*state += 0x9E3779B97F4A7C15ULL);
-  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-  z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+  uint64_t state_val = (*state += 0x9E3779B97F4A7C15ULL);
+  state_val = (state_val ^ (state_val >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  state_val = (state_val ^ (state_val >> 27)) * 0x94D049BB133111EBULL;
 
-  return z ^ (z >> 31);
+  return state_val ^ (state_val >> 31);
 }
 
 void rng_seed(rng_state_t *rng, uint64_t seed) {
@@ -36,13 +38,13 @@ void rng_seed(rng_state_t *rng, uint64_t seed) {
 
 uint64_t rng_next_u64(rng_state_t *rng) {
   const uint64_t result = rotl(rng->s[1] * 5, 7) * 9;
-  const uint64_t t = rng->s[1] << 17;
+  const uint64_t temp_val = rng->s[1] << 17;
 
   rng->s[2] ^= rng->s[0];
   rng->s[3] ^= rng->s[1];
   rng->s[1] ^= rng->s[2];
   rng->s[0] ^= rng->s[3];
-  rng->s[2] ^= t;
+  rng->s[2] ^= temp_val;
   rng->s[3] = rotl(rng->s[3], 45);
 
   return result;
@@ -53,8 +55,8 @@ double rng_uniform(rng_state_t *rng) {
   return (double)(rng_next_u64(rng) >> 11) * (1.0 / 9007199254740992.0);
 }
 
-double rng_uniform_range(rng_state_t *rng, double a, double b) {
-  return a + (b - a) * rng_uniform(rng);
+double rng_uniform_range(rng_state_t *rng, double min_val, double max_val) {
+  return min_val + (max_val - min_val) * rng_uniform(rng);
 }
 
 double rng_gaussian(rng_state_t *rng) {
@@ -64,19 +66,20 @@ double rng_gaussian(rng_state_t *rng) {
     return rng->cached_gaussian;
   }
 
-  double u1, u2;
+  double rand1;
+  double rand2;
   do {
-    u1 = rng_uniform(rng);
-  } while (u1 <= 1e-300); // avoid log(0)
-  u2 = rng_uniform(rng);
+    rand1 = rng_uniform(rng);
+  } while (rand1 <= 1e-300); // avoid log(0)
+  rand2 = rng_uniform(rng);
 
-  double r = sqrt(-2.0 * log(u1));
-  double theta = 2.0 * M_PI * u2;
+  double radius = sqrt(-2.0 * log(rand1));
+  double theta = 2.0 * M_PI * rand2;
 
-  rng->cached_gaussian = r * sin(theta);
+  rng->cached_gaussian = radius * sin(theta);
   rng->has_cached_gaussian = 1;
 
-  return r * cos(theta);
+  return radius * cos(theta);
 }
 
 double rng_gaussian_scaled(rng_state_t *rng, double mean, double sigma) {
@@ -87,23 +90,27 @@ void rng_jump(rng_state_t *rng) {
   static const uint64_t JUMP[] = {0x180ec6d33cfd0aba, 0xd5a61266f0c9392c,
                                   0xa9582618e03fc9aa, 0x39abdc4529b1661c};
 
-  uint64_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+  uint64_t state0 = 0;
+  uint64_t state1 = 0;
+  uint64_t state2 = 0;
+  uint64_t state3 = 0;
   for (int i = 0; i < 4; i++) {
-    for (int b = 0; b < 64; b++) {
-      if (JUMP[i] & (UINT64_C(1) << b)) {
-        s0 ^= rng->s[0];
-        s1 ^= rng->s[1];
-        s2 ^= rng->s[2];
-        s3 ^= rng->s[3];
+    for (int bit_idx = 0; bit_idx < 64; bit_idx++) {
+      if (JUMP[i] & (UINT64_C(1) << bit_idx)) {
+        state0 ^= rng->s[0];
+        state1 ^= rng->s[1];
+        state2 ^= rng->s[2];
+        state3 ^= rng->s[3];
       }
+
       rng_next_u64(rng);
     }
   }
 
-  rng->s[0] = s0;
-  rng->s[1] = s1;
-  rng->s[2] = s2;
-  rng->s[3] = s3;
+  rng->s[0] = state0;
+  rng->s[1] = state1;
+  rng->s[2] = state2;
+  rng->s[3] = state3;
 
   /* NOTE: A stream that gets jumped mid-sequence should not carry a Box-Muller
    * spare deviate computed from pre-jump stream into the post-jump stream. */
@@ -114,23 +121,27 @@ void rng_long_jump(rng_state_t *rng) {
   static const uint64_t LONG_JUMP[] = {0x76e15d3efefdcbbf, 0xc5004e441c522fb3,
                                        0x77710069854ee241, 0x39109bb02acbe635};
 
-  uint64_t s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+  uint64_t state0 = 0;
+  uint64_t state1 = 0;
+  uint64_t state2 = 0;
+  uint64_t state3 = 0;
   for (int i = 0; i < 4; i++) {
-    for (int b = 0; b < 64; b++) {
-      if (LONG_JUMP[i] & (UINT64_C(1) << b)) {
-        s0 ^= rng->s[0];
-        s1 ^= rng->s[1];
-        s2 ^= rng->s[2];
-        s3 ^= rng->s[3];
+    for (int bit_idx = 0; bit_idx < 64; bit_idx++) {
+      if (LONG_JUMP[i] & (UINT64_C(1) << bit_idx)) {
+        state0 ^= rng->s[0];
+        state1 ^= rng->s[1];
+        state2 ^= rng->s[2];
+        state3 ^= rng->s[3];
       }
+
       rng_next_u64(rng);
     }
   }
 
-  rng->s[0] = s0;
-  rng->s[1] = s1;
-  rng->s[2] = s2;
-  rng->s[3] = s3;
+  rng->s[0] = state0;
+  rng->s[1] = state1;
+  rng->s[2] = state2;
+  rng->s[3] = state3;
 
   rng->has_cached_gaussian = 0;
 }

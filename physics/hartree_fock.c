@@ -15,10 +15,11 @@ Restricted Hartree-Fock for closed-shell, s-orbitals-only atoms/ions.
 #include <string.h>
 
 // Rectangle-rule quadrature normalization: \int u^2 dr = 1.
-static void normalize_u(double *u, int N, double dr) {
+static void normalize_u(double *wavefunction, int num_points,
+                        double grid_spacing) {
   double norm_sq = 0.0;
-  for (int i = 0; i < N; i++) {
-    norm_sq += u[i] * u[i] * dr;
+  for (int i = 0; i < num_points; i++) {
+    norm_sq += wavefunction[i] * wavefunction[i] * grid_spacing;
   }
 
   if (norm_sq < 1e-300) {
@@ -26,8 +27,8 @@ static void normalize_u(double *u, int N, double dr) {
   }
 
   double norm = sqrt(norm_sq);
-  for (int i = 0; i < N; i++) {
-    u[i] /= norm;
+  for (int i = 0; i < num_points; i++) {
+    wavefunction[i] /= norm;
   }
 }
 

@@ -47,7 +47,7 @@ cmatrix_t *cmatrix_copy(const cmatrix_t *matrix) {
   }
 
   memcpy(copy->data, matrix->data,
-         (size_t)matrix->nrows * matrix->ncols * sizeof(complex_t));
+         (size_t)matrix->nrows * matrix->ncols * sizeof(complex_t)); // NOLINT
 
   return copy;
 }
@@ -116,37 +116,38 @@ cmatrix_t *cmatrix_adjoint(const cmatrix_t *matrix) {
   return left;
 }
 
-void cmatrix_scale(cmatrix_t *matrix, complex_t s) {
+void cmatrix_scale(cmatrix_t *matrix, complex_t scalar) {
   if (!matrix) {
     return;
   }
 
   for (int i = 0; i < matrix->nrows * matrix->ncols; i++) {
-    matrix->data[i] = c_mul(matrix->data[i], s);
+    matrix->data[i] = c_mul(matrix->data[i], scalar);
   }
 }
 
-/* Dense matrix-vector product y = A*x (matches sparse_mv's naming/convention
+/*
+ * Dense matrix-vector product y = A*x (matches sparse_mv's naming/convention
  * for sparse case).
  *
  * Returns a allocated vector, or NULL on dimension  mismatch/allocation
  * failure.
  */
-cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x) {
-  if (!a || !x || a->ncols != x->n) {
+cvector_t *cmatrix_mv(const cmatrix_t *mat, const cvector_t *vec) {
+  if (!mat || !vec || mat->ncols != vec->n) {
     return NULL;
   }
 
-  cvector_t *y = cvector_alloc(a->nrows);
+  cvector_t *y = cvector_alloc(mat->nrows);
   if (!y) {
     return NULL;
   }
 
-  for (int i = 0; i < a->nrows; i++) {
+  for (int i = 0; i < mat->nrows; i++) {
     complex_t sum = c_zero();
 
-    for (int j = 0; j < a->ncols; j++) {
-      sum = c_add(sum, c_mul(CMAT(a, i, j), x->data[j]));
+    for (int j = 0; j < mat->ncols; j++) {
+      sum = c_add(sum, c_mul(CMAT(mat, i, j), vec->data[j]));
     }
 
     y->data[i] = sum;
@@ -155,61 +156,63 @@ cvector_t *cmatrix_mv(const cmatrix_t *a, const cvector_t *x) {
   return y;
 }
 
-/* Element-wise matrix sum c = a + b.
+/*
+ * Element-wise matrix sum c = a + b.
  *
  * Returns NULL on dimension mismatch or allocation failure.
  */
-cmatrix_t *cmatrix_add(const cmatrix_t *a, const cmatrix_t *b) {
-  if (!a || !b || a->nrows != b->nrows || a->ncols != b->ncols) {
+cmatrix_t *cmatrix_add(const cmatrix_t *mat_a, const cmatrix_t *mat_b) {
+  if (!mat_a || !mat_b || mat_a->nrows != mat_b->nrows ||
+      mat_a->ncols != mat_b->ncols) {
     return NULL;
   }
 
-  cmatrix_t *copy = cmatrix_alloc(a->nrows, a->ncols);
+  cmatrix_t *copy = cmatrix_alloc(mat_a->nrows, mat_a->ncols);
   if (!copy) {
     return NULL;
   }
 
-  for (int i = 0; i < a->nrows * a->ncols; i++) {
-    copy->data[i] = c_add(a->data[i], b->data[i]);
+  for (int i = 0; i < mat_a->nrows * mat_a->ncols; i++) {
+    copy->data[i] = c_add(mat_a->data[i], mat_b->data[i]);
   }
 
   return copy;
 }
 
 // LU decomposition (wrapper)
-void cmatrix_lu_decomp(cmatrix_t *a, int *pivot) {
-  if (!a || !pivot) {
+void cmatrix_lu_decomp(cmatrix_t *mat, int *pivot) {
+  if (!mat || !pivot) {
     return;
   }
 
-  int *p = lu_decompose(a);
+  int *p = lu_decompose(mat);
   if (p) {
-    memcpy(pivot, p, a->nrows * sizeof(int));
+    memcpy(pivot, p, mat->nrows * sizeof(int)); // NOLINT
 
     free(p);
   }
 }
 
-// Solve A x = b (uses LU)
-cvector_t *cmatrix_solve(cmatrix_t *a, const cvector_t *b) {
-  if (!a || !b || a->nrows != a->ncols || a->nrows != b->n) {
+// Solve A x = b (uses LU) [mat vec = vec_b]
+cvector_t *cmatrix_solve(cmatrix_t *mat, const cvector_t *vec_b) {
+  if (!mat || !vec_b || mat->nrows != mat->ncols || mat->nrows != vec_b->n) {
     return NULL;
   }
 
-  int *pivot = lu_decompose(a);
+  int *pivot = lu_decompose(mat);
   if (!pivot) {
     return NULL;
   }
 
-  cvector_t *x = cvector_alloc(a->nrows);
-  if (!x) {
+  cvector_t *vec = cvector_alloc(mat->nrows);
+  if (!vec) {
     free(pivot);
 
     return NULL;
   }
 
-  if (lu_solve(a, pivot, b, x) != 0) {
-    cvector_free(x);
+  if (lu_solve(mat, pivot, vec_b, vec) != 0) {
+    cvector_free(vec);
     free(pivot);
 
     return NULL;
@@ -217,24 +220,80 @@ cvector_t *cmatrix_solve(cmatrix_t *a, const cvector_t *b) {
 
   free(pivot);
 
-  return x;
+  return vec;
+}
+
+// Set
+cvector_t *cmatrix_get_row(const cmatrix_t *matrix, int row) {
+  if (!matrix || row < 0 || row >= matrix->nrows) {
+    return NULL;
+  }
+
+  cvector_t *row_vec = cvector_alloc(matrix->ncols);
+  if (!row_vec) {
+    return NULL;
+  }
+
+  for (int col = 0; col < matrix->ncols; col++) {
+    row_vec->data[col] = CMAT(matrix, row, col);
+  }
+
+  return row_vec;
+}
+
+// Ryser's algorithm for computing the matrix permanent
+complex_t cmatrix_permanent(const cmatrix_t *matrix) {
+  if (!matrix || matrix->nrows != matrix->ncols) {
+    return c_zero();
+  }
+
+  int n = matrix->nrows;
+  if (n == 0) {
+    return c_one();
+  }
+
+  complex_t perm = c_zero();
+  unsigned long long total_subsets = 1ULL << n;
+
+  for (unsigned long long s = 1; s < total_subsets; s++) {
+    int set_bits = __builtin_popcountll(s);
+    complex_t row_prod = c_one();
+
+    for (int i = 0; i < n; i++) {
+      complex_t col_sum = c_zero();
+      for (int j = 0; j < n; j++) {
+        if (s & (1ULL << j)) {
+          col_sum = c_add(col_sum, CMAT(matrix, i, j));
+        }
+      }
+      row_prod = c_mul(row_prod, col_sum);
+    }
+
+    if ((n - set_bits) % 2 == 0) {
+      perm = c_add(perm, row_prod);
+    } else {
+      perm = c_sub(perm, row_prod);
+    }
+  }
+
+  return perm;
 }
 
 // Print
-void cmatrix_print(const cmatrix_t *m, const char *label) {
+void cmatrix_print(const cmatrix_t *mat, const char *label) {
   if (label) {
     printf("%s:\n", label);
   }
 
-  if (!m) {
+  if (!mat) {
     printf("NULL matrix\n");
 
     return;
   }
 
-  for (int i = 0; i < m->nrows; i++) {
-    for (int j = 0; j < m->ncols; j++) {
-      complex_t z = CMAT(m, i, j);
+  for (int i = 0; i < mat->nrows; i++) {
+    for (int j = 0; j < mat->ncols; j++) {
+      complex_t z = CMAT(mat, i, j);
 
       printf("(%6.3f %+6.3fi) ", z.re, z.im);
     }

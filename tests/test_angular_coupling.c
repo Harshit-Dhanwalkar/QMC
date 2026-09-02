@@ -144,22 +144,33 @@ static int test_l1_s_half(void) {
 
 // Direct numerical quadrature of triple spherical-harmonic integral
 // (independent cross-check of gaunt_coefficient()'s CG-derived formula)
-static complex_t triple_harmonic_integral_numeric(int l, int m, int k, int q,
-                                                  int lp, int mp, int n_theta,
-                                                  int n_phi) {
-  double dtheta = M_PI / n_theta;
-  double dphi = 2.0 * M_PI / n_phi;
+typedef struct {
+  int l, m;
+} spherical_mode_t;
+
+typedef struct {
+  int n_theta;
+  int n_phi;
+} grid_res_t;
+
+static complex_t triple_harmonic_integral_numeric(spherical_mode_t y1,
+                                                  spherical_mode_t y2,
+                                                  spherical_mode_t y3,
+                                                  grid_res_t grid) {
+  double dtheta = M_PI / grid.n_theta;
+  double dphi = 2.0 * M_PI / grid.n_phi;
   complex_t sum = c_zero();
 
-  for (int it = 0; it < n_theta; it++) {
+  for (int it = 0; it < grid.n_theta; it++) {
     double theta = (it + 0.5) * dtheta;
     double sin_theta = sin(theta);
-    for (int ip = 0; ip < n_phi; ip++) {
+
+    for (int ip = 0; ip < grid.n_phi; ip++) {
       double phi = (ip + 0.5) * dphi;
 
-      complex_t Ylm_conj = c_conj(spherical_harmonic(l, m, theta, phi));
-      complex_t Ykq = spherical_harmonic(k, q, theta, phi);
-      complex_t Ylpmp = spherical_harmonic(lp, mp, theta, phi);
+      complex_t Ylm_conj = c_conj(spherical_harmonic(y1.l, y1.m, theta, phi));
+      complex_t Ykq = spherical_harmonic(y2.l, y2.m, theta, phi);
+      complex_t Ylpmp = spherical_harmonic(y3.l, y3.m, theta, phi);
 
       complex_t prod = c_mul(c_mul(Ylm_conj, Ykq), Ylpmp);
       sum = c_add(sum, c_scale(prod, sin_theta * dtheta * dphi));
@@ -172,7 +183,7 @@ static complex_t triple_harmonic_integral_numeric(int l, int m, int k, int q,
 static int test_gaunt_coefficient(void) {
   int fail = 0;
   double tol = 5e-3; // quadrature grid
-  int n_theta = 60, n_phi = 60;
+  grid_res_t grid = {.n_theta = 60, .n_phi = 60};
 
   // {l, m, k, l', m'}
   int cases[][5] = {
@@ -189,8 +200,11 @@ static int test_gaunt_coefficient(void) {
 
     double c_analytic = gaunt_coefficient(l, m, k, lp, mp);
 
-    complex_t integral =
-        triple_harmonic_integral_numeric(l, m, k, q, lp, mp, n_theta, n_phi);
+    spherical_mode_t y1 = {.l = l, .m = m};
+    spherical_mode_t y2 = {.l = k, .m = q};
+    spherical_mode_t y3 = {.l = lp, .m = mp};
+
+    complex_t integral = triple_harmonic_integral_numeric(y1, y2, y3, grid);
     double c_numeric = sqrt(4.0 * M_PI / (2.0 * k + 1.0)) * integral.re;
 
     char label[64];

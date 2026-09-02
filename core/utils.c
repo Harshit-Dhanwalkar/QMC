@@ -12,42 +12,45 @@
 #define QMC_OUTPUT_DIR "output"
 #endif
 
-double *linspace(double start, double end, int n) {
-  double *arr = malloc(n * sizeof(double));
+#define LOG_BASE_TEN 10.0
+#define PATH_BUFFER_SIZE 512
+
+double *linspace(double start, double end, int num_elements) {
+  double *arr = malloc(num_elements * sizeof(double));
   if (!arr) {
     return NULL;
   }
 
-  for (int i = 0; i < n; i++) {
-    arr[i] = start + i * (end - start) / (n - 1);
+  for (int i = 0; i < num_elements; i++) {
+    arr[i] = start + i * (end - start) / (num_elements - 1);
   }
 
   return arr;
 }
 
-double *logspace(double start, double end, int n) {
-  double *arr = malloc(n * sizeof(double));
+double *logspace(double start, double end, int num_elements) {
+  double *arr = malloc(num_elements * sizeof(double));
   if (!arr) {
     return NULL;
   }
 
-  for (int i = 0; i < n; i++) {
-    double ratio = i / (double)(n - 1);
+  for (int i = 0; i < num_elements; i++) {
+    double ratio = i / (double)(num_elements - 1);
 
-    arr[i] = pow(10.0, start + ratio * (end - start));
+    arr[i] = pow(LOG_BASE_TEN, start + ratio * (end - start));
   }
 
   return arr;
 }
 
 int *range(int start, int end) {
-  int n = end - start;
-  int *arr = malloc(n * sizeof(int));
+  int num_elements = end - start;
+  int *arr = malloc(num_elements * sizeof(int));
   if (!arr) {
     return NULL;
   }
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < num_elements; i++) {
     arr[i] = start + i;
   }
 
@@ -75,7 +78,8 @@ double compute_norm_squared(const cvector_t *psi, double dx) {
 double expectation_value(const cvector_t *psi, const cvector_t *op_psi,
                          double dx) {
   if (psi->n != op_psi->n) {
-    fprintf(stderr, "Error: vector size mismatch in expectation_value\n");
+    fprintf(stderr,
+            "Error: vector size mismatch in expectation_value\n"); // NOLINT
 
     return 0.0;
   }
@@ -124,68 +128,70 @@ double expectation_momentum(const cvector_t *psi_k, const double *k,
 
 void save_wavefunction(const char *filename, const double *x,
                        const cvector_t *psi, int n) {
-  char path[512];
-  snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
+  char path[PATH_BUFFER_SIZE];
+  snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename); // NOLINT
 
-  FILE *f = fopen(path, "w");
-  if (!f) {
+  FILE *file_ptr = fopen(path, "w");
+  if (!file_ptr) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;
   }
 
-  fprintf(f, "# x  |\\psi|^2  Re(\\psi)  Im(\\psi)\n");
+  fprintf(file_ptr, "# x  |\\psi|^2  Re(\\psi)  Im(\\psi)\n"); // NOLINT
   for (int i = 0; i < n; i++) {
-    fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", x[i], c_abs2(psi->data[i]),
+    fprintf(file_ptr, "%.6e  %.6e  %.6e  %.6e\n", x[i], c_abs2(psi->data[i]),
             psi->data[i].re, psi->data[i].im);
   }
 
-  fclose(f);
+  fclose(file_ptr);
 }
 
 void save_eigenvalues(const char *filename, const double *eigenvals, int n) {
-  char path[512];
+  char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
-  FILE *f = fopen(path, "w");
-  if (!f) {
+  FILE *file_ptr = fopen(path, "w");
+  if (!file_ptr) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;
   }
 
-  fprintf(f, "# n  Energy\n");
+  fprintf(file_ptr, "# n  Energy\n");
   for (int i = 0; i < n; i++) {
-    fprintf(f, "%d  %.6e\n", i + 1, eigenvals[i]);
+    fprintf(file_ptr, "%d  %.6e\n", i + 1, eigenvals[i]);
   }
 
-  fclose(f);
+  fclose(file_ptr);
 }
 
-void save_potential(const char *filename, const double *x, const double *V,
+void save_potential(const char *filename, const double *x, const double *pot,
                     int n) {
-  char path[512];
+  char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
-  FILE *f = fopen(path, "w");
-  if (!f) {
+  FILE *file_ptr = fopen(path, "w");
+  if (!file_ptr) {
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;
   }
 
-  fprintf(f, "# x  V(x)\n");
+  fprintf(file_ptr, "# x  V(x)\n"); // V = pot
   for (int i = 0; i < n; i++) {
-    fprintf(f, "%.6e  %.6e\n", x[i], V[i]);
+    fprintf(file_ptr, "%.6e  %.6e\n", x[i], pot[i]);
   }
 
-  fclose(f);
+  fclose(file_ptr);
 }
 
 /*
  * Transform a position-space wavefunction to momentum space via FFT,
  * normalized to preserve total probability (Parseval's theorem).
+ *
  *   \phi(k_j) = (dx / \sqrt(2 * \pi)) * FFT_raw(\psi_x)[j]
+ *
  * using the RAW (unnormalized) forward FFT, not fft_normalized's unitary
  * (1 / \sqrt(N)) convention.
  */

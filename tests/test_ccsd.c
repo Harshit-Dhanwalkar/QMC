@@ -25,8 +25,8 @@
 
 static int failures = 0;
 
-static void check_close(double got, double expected, double tol,
-                        const char *label) {
+static void check_close(const char *label, double got, double expected,
+                        double tol) {
   double err = fabs(got - expected);
   printf("  %s: got=%.10f expected=%.10f err=%.2e\n", label, got, expected,
          err);
@@ -58,8 +58,8 @@ static void test_h2_ccsd_matches_fci(void) {
 
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 2, mol);
   double *eri_ao = molecular_eri_tensor(basis, 2);
-  double *h_mo = malloc(4 * sizeof(double));
-  double *eri_mo = malloc(16 * sizeof(double));
+  double *h_mo = malloc(4UL * sizeof(double));
+  double *eri_mo = malloc(16UL * sizeof(double));
 
   molecular_ao_to_mo(h_ao, eri_ao, res->C, 2, h_mo, eri_mo);
 
@@ -68,8 +68,8 @@ static void test_h2_ccsd_matches_fci(void) {
   check_true(ccsd->converged, "H2 CCSD converges");
 
   // independent reference 1: at same geometry
-  check_close(ccsd->total_energy, -1.1372759436170439, 1e-8,
-              "H2 CCSD matches independent PySCF CCSD");
+  check_close("H2 CCSD matches independent PySCF CCSD", ccsd->total_energy,
+              -1.1372759436170439, 1e-8);
 
   // independent reference 2: exact FCI diagonalization - CCSD should be exact
   // here (2-electron system)
@@ -84,8 +84,8 @@ static void test_h2_ccsd_matches_fci(void) {
     }
   }
 
-  check_close(ccsd->total_energy, e_fci, 1e-8,
-              "H2 CCSD matches this project's own exact FCI (exact for 2e-)");
+  check_close("H2 CCSD matches this project's own exact FCI (exact for 2e-)",
+              ccsd->total_energy, e_fci, 1e-8);
 
   eigen_free(eig);
   cmatrix_free(H_fci);
@@ -126,13 +126,13 @@ static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
   molecular_hf_result_t *res = molecular_rhf(basis, 4, mol, 4, 1e-12, 300);
 
   check_true(res->converged, "asymmetric H4 RHF converges");
-  check_close(res->total_energy, -1.7475190952474993, 1e-7,
-              "asymmetric H4 RHF");
+  check_close("asymmetric H4 RHF", res->total_energy, -1.7475190952474993,
+              1e-7);
 
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 4, mol);
   double *eri_ao = molecular_eri_tensor(basis, 4);
-  double *h_mo = malloc(16 * sizeof(double));
-  double *eri_mo = malloc(4 * 4 * 4 * 4 * sizeof(double));
+  double *h_mo = malloc(16UL * sizeof(double));
+  double *eri_mo = malloc(4UL * 4UL * 4UL * 4UL * sizeof(double));
 
   molecular_ao_to_mo(h_ao, eri_ao, res->C, 4, h_mo, eri_mo);
 
@@ -140,8 +140,8 @@ static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
                                  res->total_energy, 1e-12, 150);
 
   check_true(ccsd->converged, "asymmetric H4 CCSD converges");
-  check_close(ccsd->total_energy, -1.7894541829894628, 1e-7,
-              "asymmetric H4 CCSD");
+  check_close("asymmetric H4 CCSD", ccsd->total_energy, -1.7894541829894628,
+              1e-7);
   check_true(
       ccsd->total_energy < res->total_energy - 1e-4,
       "CCSD correlation energy is a real, non-trivial lowering below RHF");
@@ -179,12 +179,12 @@ static void test_lih_ccsd_vs_pyscf(void) {
   molecular_hf_result_t *res = molecular_rhf(basis, 6, mol, 4, 1e-12, 300);
 
   check_true(res->converged, "LiH RHF converges");
-  check_close(res->total_energy, -7.862009272120229, 1e-7, "LiH RHF");
+  check_close("LiH RHF", res->total_energy, -7.862009272120229, 1e-7);
 
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
-  double *h_mo = malloc(36 * sizeof(double));
-  double *eri_mo = malloc(6 * 6 * 6 * 6 * sizeof(double));
+  double *h_mo = malloc(36UL * sizeof(double));
+  double *eri_mo = malloc(6UL * 6UL * 6UL * 6UL * sizeof(double));
 
   molecular_ao_to_mo(h_ao, eri_ao, res->C, 6, h_mo, eri_mo);
 
@@ -192,15 +192,15 @@ static void test_lih_ccsd_vs_pyscf(void) {
                                       0, res->total_energy, 1e-12, 200);
 
   check_true(ccsd_full->converged, "LiH (full) CCSD converges");
-  check_close(ccsd_full->total_energy, -7.882384455686598, 1e-6,
-              "LiH (full) CCSD matches independent PySCF CCSD");
+  check_close("LiH (full) CCSD matches independent PySCF CCSD",
+              ccsd_full->total_energy, -7.882384455686598, 1e-6);
 
   ccsd_result_t *ccsd_frozen = ccsd_run(6, h_mo, eri_mo, res->orbital_energies,
                                         4, 1, res->total_energy, 1e-12, 200);
 
   check_true(ccsd_frozen->converged, "LiH (frozen-core) CCSD converges");
-  check_close(ccsd_frozen->total_energy, -7.882167498191367, 1e-6,
-              "LiH (frozen-core) CCSD frozen-core CCSD");
+  check_close("LiH (frozen-core) CCSD frozen-core CCSD",
+              ccsd_frozen->total_energy, -7.882167498191367, 1e-6);
   check_true(ccsd_frozen->total_energy > ccsd_full->total_energy - 1e-3,
              "frozen-core CCSD stays close to full-space CCSD (Li 1s core is "
              "nearly inert)");

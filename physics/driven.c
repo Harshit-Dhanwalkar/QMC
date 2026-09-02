@@ -10,14 +10,16 @@ sweeps, and lab-frame driving beyond the rotating-wave approximation (RWA).
 #include <math.h>
 #include <stdlib.h>
 
-double time_fn_constant(double t, void *params) {
+static const double HALF = 0.5;
+
+double time_fn_constant(double time, void *params) {
   return params ? *(double *)params : 0.0;
 }
 
-double time_fn_linear_ramp(double t, void *params) {
+double time_fn_linear_ramp(double time, void *params) {
   double alpha = params ? *(double *)params : 0.0;
 
-  return alpha * t;
+  return alpha * time;
 }
 
 // Context for rotating-frame RHS
@@ -30,37 +32,37 @@ typedef struct {
 
 // -i * H(t) * \psi for
 // H(t) = (1/2) * [[\Delta(t), \Omega(t)],[\Omega(t), -\Delta(t)]]
-static void rotating_frame_rhs(double t, const cvector_t *y, cvector_t *dydt,
-                               void *params) {
-  driven_rwa_ctx_t *c = (driven_rwa_ctx_t *)params;
-  double D = c->Delta(t, c->delta_params);
-  double O = c->Omega(t, c->omega_params);
+static void rotating_frame_rhs(double time, const cvector_t *state,
+                               cvector_t *dydt, void *params) {
+  driven_rwa_ctx_t *ctx = (driven_rwa_ctx_t *)params;
+  double detuning = ctx->Delta(time, ctx->delta_params);
+  double rabi_freq = ctx->Omega(time, ctx->omega_params);
 
-  complex_t H_psi0 =
-      c_add(c_scale(y->data[0], 0.5 * D), c_scale(y->data[1], 0.5 * O));
-  complex_t H_psi1 =
-      c_add(c_scale(y->data[0], 0.5 * O), c_scale(y->data[1], -0.5 * D));
+  complex_t H_psi0 = c_add(c_scale(state->data[0], HALF * detuning),
+                           c_scale(state->data[1], HALF * rabi_freq));
+  complex_t H_psi1 = c_add(c_scale(state->data[0], HALF * rabi_freq),
+                           c_scale(state->data[1], -HALF * detuning));
 
   dydt->data[0] = c_mul(c_imag(-1.0), H_psi0);
   dydt->data[1] = c_mul(c_imag(-1.0), H_psi1);
 }
 
 int driven_two_level_evolve(cvector_t *psi, time_fn Delta, void *delta_params,
-                            time_fn Omega, void *omega_params, double t0,
-                            double dt, int steps) {
-  if (!psi || psi->n != 2 || !Delta || !Omega || steps < 0) {
+                            time_fn Omega, void *omega_params,
+                            driven_params_t params) {
+  if (!psi || psi->n != 2 || !Delta || !Omega || params.steps < 0) {
     return -1;
   }
 
   driven_rwa_ctx_t ctx = {Delta, delta_params, Omega, omega_params};
-  double t = t0;
+  double time = params.t0;
 
-  for (int s = 0; s < steps; s++) {
-    if (rk4_step(t, dt, psi, rotating_frame_rhs, &ctx) != 0) {
+  for (int s = 0; s < params.steps; s++) {
+    if (rk4_step(time, params.dt, psi, rotating_frame_rhs, &ctx) != 0) {
       return -1;
     }
 
-    t += dt;
+    time += params.dt;
   }
 
   return 0;
@@ -106,14 +108,14 @@ int driven_two_level_evolve_lab_frame(cvector_t *psi, double omega0,
   }
 
   driven_lab_ctx_t ctx = {omega0, Omega0, omega_L, phase};
-  double t = t0;
+  double time = t0;
 
   for (int s = 0; s < steps; s++) {
-    if (rk4_step(t, dt, psi, lab_frame_rhs, &ctx) != 0) {
+    if (rk4_step(time, dt, psi, lab_frame_rhs, &ctx) != 0) {
       return -1;
     }
 
-    t += dt;
+    time += dt;
   }
 
   return 0;
