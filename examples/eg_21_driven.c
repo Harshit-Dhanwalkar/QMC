@@ -33,8 +33,14 @@ int main(void) {
       int steps = (int)(2.0 * T / dt);
       cvector_t *psi = cvector_alloc(2);
       psi->data[0] = c_real(1.0);
+
+      driven_params_t params = {.t0 = -T, .dt = dt, .steps = steps};
+
       driven_two_level_evolve(psi, time_fn_linear_ramp, &alpha,
-                              time_fn_constant, &Omega, -T, dt, steps);
+                              time_fn_constant, &Omega, params);
+
+      driven_two_level_evolve(psi, time_fn_linear_ramp, &alpha,
+                              time_fn_constant, &Omega, params);
 
       double p_diabatic = c_abs2(psi->data[0]);
       printf("   %10.2f  %14.6f  %14.6e\n", alpha, p_diabatic,

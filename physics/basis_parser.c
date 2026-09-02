@@ -94,46 +94,49 @@ typedef struct {
   int count, cap;
 } shell_vec_t;
 
-static int elem_vec_push(elem_vec_t *v, basis_element_t e) {
-  if (v->count == v->cap) {
-    int new_cap = v->cap == 0 ? 8 : v->cap * 2;
-    basis_element_t *tmp = realloc(v->items, (size_t)new_cap * sizeof(*tmp));
+static int elem_vec_push(elem_vec_t *vec, basis_element_t elem) {
+  if (vec->count == vec->cap) {
+    int new_cap = vec->cap == 0 ? 8 : vec->cap * 2;
+    basis_element_t *tmp = realloc(vec->items, (size_t)new_cap * sizeof(*tmp));
 
     if (!tmp) {
       return 0;
     }
 
-    v->items = tmp;
-    v->cap = new_cap;
+    vec->items = tmp;
+    vec->cap = new_cap;
   }
 
-  v->items[v->count++] = e;
+  vec->items[vec->count++] = elem;
 
   return 1;
 }
 
-static int shell_vec_push(shell_vec_t *v, basis_shell_t s) {
-  if (v->count == v->cap) {
-    int new_cap = v->cap == 0 ? 4 : v->cap * 2;
-    basis_shell_t *tmp = realloc(v->items, (size_t)new_cap * sizeof(*tmp));
+static int shell_vec_push(shell_vec_t *vec, basis_shell_t shell) {
+  if (vec->count == vec->cap) {
+    int new_cap = vec->cap == 0 ? 4 : vec->cap * 2;
+    basis_shell_t *tmp = realloc(vec->items, (size_t)new_cap * sizeof(*tmp));
 
     if (!tmp) {
       return 0;
     }
 
-    v->items = tmp;
-    v->cap = new_cap;
+    vec->items = tmp;
+    vec->cap = new_cap;
   }
 
-  v->items[v->count++] = s;
+  vec->items[vec->count++] = shell;
 
   return 1;
 }
 
-static void shell_free(basis_shell_t *s) {
-  free(s->exps);
-  free(s->coef1);
-  free(s->coef2);
+static void shell_free(basis_shell_t *shell) {
+  if (!shell) {
+    return;
+  }
+  free(shell->exps);
+  free(shell->coef1);
+  free(shell->coef2);
 }
 
 /* ---------------------------------------------------------------------
@@ -197,6 +200,12 @@ basis_set_t *basis_set_parse_string(const char *text) {
         if (!elem_vec_push(&elems, e)) {
           ok = 0;
         }
+
+        // Free old shells and reset
+        for (int i = 0; i < cur_shells.count; i++) {
+          shell_free(&cur_shells.items[i]);
+        }
+        free(cur_shells.items);
 
         cur_shells.items = NULL;
         cur_shells.count = cur_shells.cap = 0;
@@ -474,11 +483,11 @@ const basis_element_t *basis_set_find_element(const basis_set_t *bs,
  * used by molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes
  * into out[][3], returns the count.
  */
-static int cartesian_components(int l, int out[][3]) {
+static int cartesian_components(int l_quantum, int out[][3]) {
   int n = 0;
-  for (int lx = l; lx >= 0; lx--) {
-    for (int ly = l - lx; ly >= 0; ly--) {
-      int lz = l - lx - ly;
+  for (int lx = l_quantum; lx >= 0; lx--) {
+    for (int ly = l_quantum - lx; ly >= 0; ly--) {
+      int lz = l_quantum - lx - ly;
 
       out[n][0] = lx;
       out[n][1] = ly;
