@@ -172,47 +172,81 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
   }
 
   const double degeneracy_tol_rel = 1e-12;
-  const double degeneracy_tol_floor = 1e-15;
+  double spectrum_scale = 0.0;
+  for (int t = 0; t < m2; t++) {
+    double a = fabs(eig2n->eigenvalues[t]);
+    if (a > spectrum_scale) {
+      spectrum_scale = a;
+    }
+  }
+
+  const double degeneracy_tol_floor =
+      100.0 * 2.220446049250313e-16 * spectrum_scale;
+  const double pairing_tol_factor = 100.0;
+
+  int n_pairs = m2 / 2;
+  double *pair_lambda = malloc((size_t)n_pairs * sizeof *pair_lambda);
+  int *pair_col0 = malloc((size_t)n_pairs * sizeof *pair_col0);
+  int *pair_col1 = malloc((size_t)n_pairs * sizeof *pair_col1);
+  if (!pair_lambda || !pair_col0 || !pair_col1) {
+    free(pair_lambda);
+    free(pair_col0);
+    free(pair_col1);
+    free(order);
+    cmatrix_free(result->eigenvectors);
+    free(result->eigenvalues);
+    free(result);
+    eigen_free(eig2n);
+
+    return NULL;
+  }
+  for (int p = 0; p < n_pairs; p++) {
+    int i0 = order[2 * p], i1 = order[2 * p + 1];
+    double v0 = eig2n->eigenvalues[i0], v1 = eig2n->eigenvalues[i1];
+    pair_lambda[p] = 0.5 * (v0 + v1);
+    pair_col0[p] = i0;
+    pair_col1[p] = i1;
+    (void)pairing_tol_factor;
+  }
+
   int k_out = 0;
-  int idx = 0;
+  int pidx = 0;
 
-  while (idx < m2 && k_out < n) {
-    int cluster_start = idx;
-    int cluster_end = idx + 1;
+  while (pidx < n_pairs && k_out < n) {
+    int group_start = pidx;
+    int group_end = pidx + 1;
+    double ref = pair_lambda[group_start];
 
-    const int max_cluster_size = 8;
-    while (cluster_end < m2 && cluster_end - cluster_start < max_cluster_size) {
-      double lo = eig2n->eigenvalues[order[cluster_end - 1]];
-      double hi = eig2n->eigenvalues[order[cluster_end]];
-      double local_scale = fabs(lo) > fabs(hi) ? fabs(lo) : fabs(hi);
+    const int max_group_pairs = 16;
+    while (group_end < n_pairs && group_end - group_start < max_group_pairs) {
+      double hi = pair_lambda[group_end];
+      double local_scale = fabs(ref) > fabs(hi) ? fabs(ref) : fabs(hi);
       double gap_tol = degeneracy_tol_rel * local_scale + degeneracy_tol_floor;
-      if (fabs(hi - lo) >= gap_tol) {
+
+      if (fabs(hi - ref) >= gap_tol) {
         break;
       }
 
-      cluster_end++;
+      group_end++;
     }
 
-    if (cluster_end - cluster_start >= max_cluster_size) {
-      /* Round down to an even boundary so the fallback below still pairs
-       * cleanly; leave any odd remainder for the next cluster to pick up. */
-      cluster_end = cluster_start + ((cluster_end - cluster_start) / 2) * 2;
-    }
-
-    int cluster_size = cluster_end - cluster_start; // always even (>=2)
-    int m_needed = cluster_size / 2;
-
+    int m_needed = group_end - group_start;
     double lambda_sum = 0.0;
-    for (int t = cluster_start; t < cluster_end; t++) {
-      lambda_sum += eig2n->eigenvalues[order[t]];
+
+    for (int p = group_start; p < group_end; p++) {
+      lambda_sum += pair_lambda[p];
     }
 
-    double lambda = lambda_sum / cluster_size;
+    double lambda = lambda_sum / m_needed;
+    int cluster_size = 2 * m_needed;
 
     // Complex candidate vectors z_t = x_t + i*y_t for every real eigenvector in
     // this cluster
     complex_t *z = malloc((size_t)cluster_size * n * sizeof(complex_t));
     if (!z) {
+      free(pair_lambda);
+      free(pair_col0);
+      free(pair_col1);
       free(order);
       cmatrix_free(result->eigenvectors);
       free(result->eigenvalues);
@@ -222,14 +256,19 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
       return NULL;
     }
 
-    for (int t = 0; t < cluster_size; t++) {
-      int col = order[cluster_start + t];
+    for (int p = group_start; p < group_end; p++) {
+      int t = 2 * (p - group_start);
+      const int cols[2] = {pair_col0[p], pair_col1[p]};
 
-      for (int i = 0; i < n; i++) {
-        double x = CMAT(eig2n->eigenvectors, i, col).re;
-        double y = CMAT(eig2n->eigenvectors, i + n, col).re;
+      for (int c = 0; c < 2; c++) {
+        int col = cols[c];
 
-        z[t * n + i] = c_add(c_real(x), c_imag(y));
+        for (int i = 0; i < n; i++) {
+          double x = CMAT(eig2n->eigenvectors, i, col).re;
+          double y = CMAT(eig2n->eigenvectors, i + n, col).re;
+
+          z[(t + c) * n + i] = c_add(c_real(x), c_imag(y));
+        }
       }
     }
 
@@ -280,9 +319,12 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
     }
 
     k_out += m_needed;
-    idx = cluster_end;
+    pidx = group_end;
   }
 
+  free(pair_lambda);
+  free(pair_col0);
+  free(pair_col1);
   free(order);
   eigen_free(eig2n);
 

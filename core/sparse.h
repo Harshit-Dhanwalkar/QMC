@@ -15,18 +15,20 @@ typedef struct {
 
 /* Create/destroy */
 sparse_matrix_t *sparse_alloc(int nrows, int ncols, int nnz);
-void sparse_free(sparse_matrix_t *A);
+void sparse_free(sparse_matrix_t *sp_mat);
 
 /* Build from dense matrix (extract entries with |value| > tol) */
-sparse_matrix_t *sparse_from_dense(const cmatrix_t *A, double tol);
+sparse_matrix_t *sparse_from_dense(const cmatrix_t *sp_mat, double tol);
 
-/* Sparse matrix-vector multiply: y = A * x */
-void sparse_mv(const sparse_matrix_t *A, const cvector_t *x, cvector_t *y);
+/* Sparse matrix-vector multiply: y = sp_mat * x */
+void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
+               cvector_t *out_vec);
 
 /* For Hermitian (real symmetric) */
-static inline void sparse_mv_hermitian(const sparse_matrix_t *A,
-                                       const cvector_t *x, cvector_t *y) {
-  sparse_mv(A, x, y);
+static inline void sparse_mv_hermitian(const sparse_matrix_t *sp_mat,
+                                       const cvector_t *in_vec,
+                                       cvector_t *out_vec) {
+  sparse_mv(sp_mat, in_vec, out_vec);
 }
 
 /* Lanczos for lowest eigenvalues */
@@ -38,11 +40,11 @@ typedef struct {
 
 /*
  * Lanczos iteration for k algebraically lowest eigenvalues/vectors of Hermitian
- * sparse matrix A, via a real tridiagonal Krylov projection with full
+ * sparse matrix `sp_mat`, via a real tridiagonal Krylov projection with full
  * reorthogonalization.
  *
- * k       : number of lowest eigenvalues wanted.(1 <= k <= A->nrows)
- * max_iter: Lanczos steps to run (>= k); internally capped at A->nrows, since
+ * k       : number of lowest eigenvalues wanted.(1 <= k <= sp_mat->nrows)
+ * max_iter: Lanczos steps to run (>= k); internally capped at sp_mat->nrows, since
  *           the Krylov subspace can't exceed problem dimension.
  * tol     : breakdown threshold for residual norm \beta_j; if \beta_j falls
  *           below this, invariant subspace found so far is used as-is.
@@ -53,8 +55,8 @@ typedef struct {
  * and their eigenvectors as columns of an n x k cmatrix_t. Free with
  * lanczos_free.
  */
-lanczos_result_t *lanczos_eigs(const sparse_matrix_t *A, int k, int max_iter,
-                               double tol);
+lanczos_result_t *lanczos_eigs(const sparse_matrix_t *sp_mat, int k,
+                               int max_iter, double tol);
 void lanczos_free(lanczos_result_t *res);
 
 /* Lanczos tridiagonalization from a caller-supplied starting vector.
@@ -79,9 +81,9 @@ typedef struct {
   double *beta;  /* size m-1 (NULL if m == 1) */
 } lanczos_tridiag_t;
 
-lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *A,
+lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
                                           const cvector_t *v0, int max_iter,
                                           double tol);
-void lanczos_tridiag_free(lanczos_tridiag_t *t);
+void lanczos_tridiag_free(lanczos_tridiag_t *tridiag);
 
 #endif

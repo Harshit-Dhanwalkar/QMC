@@ -303,18 +303,18 @@ void lanczos_free(lanczos_result_t *res) {
 }
 
 lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
-                                          const cvector_t *v0, int max_iter,
+                                          const cvector_t *vec0, int max_iter,
                                           double tol) {
-  if (!sp_mat || sp_mat->nrows != sp_mat->ncols || !v0 ||
-      v0->n != sp_mat->nrows || max_iter < 1 || tol <= 0.0) {
+  if (!sp_mat || sp_mat->nrows != sp_mat->ncols || !vec0 ||
+      vec0->n != sp_mat->nrows || max_iter < 1 || tol <= 0.0) {
     return NULL;
   }
 
   int rows = sp_mat->nrows;
   int krylov_dim = (max_iter < rows) ? max_iter : rows;
 
-  double v0_norm = cvector_norm(v0);
-  if (fabs(v0_norm - 1.0) > 1e-6) {
+  double vec0_norm = cvector_norm(vec0);
+  if (fabs(vec0_norm - 1.0) > 1e-6) {
     return NULL;
   }
 
@@ -332,7 +332,7 @@ lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
     return NULL;
   }
 
-  vecs[0] = cvector_copy(v0);
+  vecs[0] = cvector_copy(vec0);
   if (!vecs[0]) {
     free(vecs);
     free(alpha);
@@ -412,33 +412,15 @@ lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
   res->alpha = alpha;
   res->beta = beta; // \beta may be NULL if m_eff == 1
 
-  // res->m = m_eff;
-  // res->alpha = realloc(alpha, (size_t)m_eff * sizeof *res->alpha);
-  // if (!res->alpha) {
-  //   res->alpha = alpha; /* realloc to smaller size should not fail, but if it
-  //                          somehow does, the original block is still valid */
-  // }
-  //
-  // if (m_eff > 1) {
-  //   res->beta = realloc(beta, (size_t)(m_eff - 1) * sizeof *res->beta);
-  //   if (!res->beta) {
-  //     res->beta = beta;
-  //   }
-  // } else {
-  //   res->beta = NULL;
-  //
-  //   free(beta);
-  // }
-
   return res;
 }
 
-void lanczos_tridiag_free(lanczos_tridiag_t *t) {
-  if (!t) {
+void lanczos_tridiag_free(lanczos_tridiag_t *tridiag) {
+  if (!tridiag) {
     return;
   }
 
-  free(t->alpha);
-  free(t->beta);
-  free(t);
+  free(tridiag->alpha);
+  free(tridiag->beta);
+  free(tridiag);
 }

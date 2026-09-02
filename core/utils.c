@@ -66,17 +66,17 @@ void normalize_wavefunction(cvector_t *psi) {
   }
 }
 
-double compute_norm_squared(const cvector_t *psi, double dx) {
+double compute_norm_squared(const cvector_t *psi, double deltax) {
   double norm_sq = 0.0;
   for (int i = 0; i < psi->n; i++) {
     norm_sq += c_abs2(psi->data[i]);
   }
 
-  return norm_sq * dx;
+  return norm_sq * deltax;
 }
 
 double expectation_value(const cvector_t *psi, const cvector_t *op_psi,
-                         double dx) {
+                         double deltax) {
   if (psi->n != op_psi->n) {
     fprintf(stderr,
             "Error: vector size mismatch in expectation_value\n"); // NOLINT
@@ -89,44 +89,44 @@ double expectation_value(const cvector_t *psi, const cvector_t *op_psi,
     result = c_add(result, c_mul(c_conj(psi->data[i]), op_psi->data[i]));
   }
 
-  return result.re * dx;
+  return result.re * deltax;
 }
 
-double expectation_position(const cvector_t *psi, const double *x, double dx) {
+double expectation_position(const cvector_t *psi, const double *x, double deltax) {
   double expect = 0.0;
   for (int i = 0; i < psi->n; i++) {
     expect += x[i] * c_abs2(psi->data[i]);
   }
 
-  return expect * dx;
+  return expect * deltax;
 }
 
 double expectation_position_squared(const cvector_t *psi, const double *x,
-                                    double dx) {
+                                    double deltax) {
   double expect = 0.0;
   for (int i = 0; i < psi->n; i++) {
     expect += x[i] * x[i] * c_abs2(psi->data[i]);
   }
 
-  return expect * dx;
+  return expect * deltax;
 }
 
 // Momentum expectation: given momentum-space wavefunction \psi_k and k grid
-double expectation_momentum(const cvector_t *psi_k, const double *k,
-                            double dk) {
-  if (!psi_k || !k) {
+double expectation_momentum(const cvector_t *psi_k, const double *grid_k,
+                            double deltak) {
+  if (!psi_k || !grid_k) {
     return 0.0;
   }
 
   double sum = 0.0;
   for (int i = 0; i < psi_k->n; i++) {
-    sum += k[i] * c_abs2(psi_k->data[i]);
+    sum += grid_k[i] * c_abs2(psi_k->data[i]);
   }
 
-  return sum * dk;
+  return sum * deltak;
 }
 
-void save_wavefunction(const char *filename, const double *x,
+void save_wavefunction(const char *filename, const double *posx,
                        const cvector_t *psi, int n) {
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename); // NOLINT
@@ -140,14 +140,15 @@ void save_wavefunction(const char *filename, const double *x,
 
   fprintf(file_ptr, "# x  |\\psi|^2  Re(\\psi)  Im(\\psi)\n"); // NOLINT
   for (int i = 0; i < n; i++) {
-    fprintf(file_ptr, "%.6e  %.6e  %.6e  %.6e\n", x[i], c_abs2(psi->data[i]),
+    fprintf(file_ptr, "%.6e  %.6e  %.6e  %.6e\n", posx[i], c_abs2(psi->data[i]),
             psi->data[i].re, psi->data[i].im);
   }
 
   fclose(file_ptr);
 }
 
-void save_eigenvalues(const char *filename, const double *eigenvals, int n) {
+void save_eigenvalues(const char *filename, const double *eigenvals,
+                      int n_tol) {
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
@@ -159,15 +160,15 @@ void save_eigenvalues(const char *filename, const double *eigenvals, int n) {
   }
 
   fprintf(file_ptr, "# n  Energy\n");
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n_tol; i++) {
     fprintf(file_ptr, "%d  %.6e\n", i + 1, eigenvals[i]);
   }
 
   fclose(file_ptr);
 }
 
-void save_potential(const char *filename, const double *x, const double *pot,
-                    int n) {
+void save_potential(const char *filename, const double *posx, const double *pot,
+                    int n_tol) {
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
@@ -179,8 +180,8 @@ void save_potential(const char *filename, const double *x, const double *pot,
   }
 
   fprintf(file_ptr, "# x  V(x)\n"); // V = pot
-  for (int i = 0; i < n; i++) {
-    fprintf(file_ptr, "%.6e  %.6e\n", x[i], pot[i]);
+  for (int i = 0; i < n_tol; i++) {
+    fprintf(file_ptr, "%.6e  %.6e\n", posx[i], pot[i]);
   }
 
   fclose(file_ptr);
@@ -190,13 +191,13 @@ void save_potential(const char *filename, const double *x, const double *pot,
  * Transform a position-space wavefunction to momentum space via FFT,
  * normalized to preserve total probability (Parseval's theorem).
  *
- *   \phi(k_j) = (dx / \sqrt(2 * \pi)) * FFT_raw(\psi_x)[j]
+ *   \phi(k_j) = (deltax / \sqrt(2 * \pi)) * FFT_raw(\psi_x)[j]
  *
  * using the RAW (unnormalized) forward FFT, not fft_normalized's unitary
  * (1 / \sqrt(N)) convention.
  */
 
-cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
+cvector_t *position_to_momentum(const cvector_t *psi_x, double deltax) {
   cvector_t *psi_k = cvector_copy(psi_x);
   if (!psi_k) {
     return NULL;
@@ -204,7 +205,7 @@ cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
 
   fft(psi_k); // raw, unnormalized forward transform
 
-  double scale = dx / sqrt(2.0 * M_PI);
+  double scale = deltax / sqrt(2.0 * M_PI);
   for (int i = 0; i < psi_k->n; i++) {
     psi_k->data[i] = c_scale(psi_k->data[i], scale);
   }
@@ -212,19 +213,19 @@ cvector_t *position_to_momentum(const cvector_t *psi_x, double dx) {
   return psi_k;
 }
 
-cvector_t *cvector_from_matrix_column(const cmatrix_t *m, int col) {
-  if (!m || col < 0 || col >= m->ncols) {
+cvector_t *cvector_from_matrix_column(const cmatrix_t *mat, int col) {
+  if (!mat || col < 0 || col >= mat->ncols) {
     return NULL;
   }
 
-  cvector_t *v = cvector_alloc(m->nrows);
-  if (!v) {
+  cvector_t *vec = cvector_alloc(mat->nrows);
+  if (!vec) {
     return NULL;
   }
 
-  for (int i = 0; i < m->nrows; i++) {
-    v->data[i] = CMAT(m, i, col);
+  for (int i = 0; i < mat->nrows; i++) {
+    vec->data[i] = CMAT(mat, i, col);
   }
 
-  return v;
+  return vec;
 }

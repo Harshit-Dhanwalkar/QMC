@@ -1,0 +1,18 @@
+---
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  portability-*,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -bugprone-multi-level-implicit-pointer-conversion,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+CheckOptions:
+  - key: readability-identifier-length.MinimumLength
+    value: 1
+  - key: clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+    value: false
+WarningsAsErrors: ''
