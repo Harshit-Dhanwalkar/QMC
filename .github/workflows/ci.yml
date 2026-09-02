@@ -126,15 +126,22 @@ jobs:
                    --inline-suppr \
                    -I core -I physics -I export .
 
-      - name: Install bear and generate compilation database
+      # - name: Install bear and generate compilation database
+      #   run: |
+      #     sudo apt-get install -y bear
+      #     bear -- make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+      - name: Install compiledb
+        run: pip install compiledb
+
+      - name: Generate compilation database
         run: |
-          sudo apt-get install -y bear
-          bear -- make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+          make clean
+          compiledb make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
 
       - name: Run Clang-Tidy
         run: |
           clang-tidy -p . --config-file=.clang-tidy -warnings-as-errors=-* \
-            $(find core physics export -name "*.c" -not -path "*/build/*")
+            $(find $(pwd)/core $(pwd)/physics $(pwd)/export -name "*.c" -not -path "*/build/*")
 
   valgrind-check:
     runs-on: ubuntu-latest
