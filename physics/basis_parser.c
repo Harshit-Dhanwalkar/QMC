@@ -201,12 +201,6 @@ basis_set_t *basis_set_parse_string(const char *text) {
           ok = 0;
         }
 
-        // Free old shells and reset
-        for (int i = 0; i < cur_shells.count; i++) {
-          shell_free(&cur_shells.items[i]);
-        }
-        free(cur_shells.items);
-
         cur_shells.items = NULL;
         cur_shells.count = cur_shells.cap = 0;
         have_open_element = 0;
@@ -364,7 +358,9 @@ basis_set_t *basis_set_parse_string(const char *text) {
       shell_free(&cur_shells.items[i]);
     }
 
-    free(cur_shells.items);
+    if (cur_shells.items) {
+      free(cur_shells.items);
+    }
 
     for (int i = 0; i < elems.count; i++) {
       for (int j = 0; j < elems.items[i].n_shells; j++) {
@@ -396,6 +392,9 @@ basis_set_t *basis_set_parse_string(const char *text) {
 
   bs->n_elements = elems.count;
   bs->elements = elems.items;
+
+  elems.items = NULL;
+  elems.count = elems.cap = 0;
 
   return bs;
 }
