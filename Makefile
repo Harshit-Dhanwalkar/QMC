@@ -288,7 +288,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_54_schrodinger_solvers \
               $(BUILD_DIR)/eg_55_fci \
               $(BUILD_DIR)/eg_56_spin_chain_dsf \
-              $(BUILD_DIR)/eg_57_latex_gen
+              $(BUILD_DIR)/eg_57_ising_chain \
+              $(BUILD_DIR)/eg_58_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -354,6 +355,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_special \
               $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_spin_chain \
+               $(BUILD_DIR)/test_ising_chain \
               $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)

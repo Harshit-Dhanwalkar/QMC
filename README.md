@@ -166,13 +166,13 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_36_quantum_algorithms.c</code></li>
   <li><code>eg_37_second_quant.c</code></li>
   <li><code>eg_38_landau_levels.c</code></li>
-  <li><code>eg_39_openmp_qmc</code></li>
+  <li><code>eg_39_openmp_qmc.c</code></li>
   <li><code>eg_40_molecular_integrals.c</code></li>
   <li><code>eg_41_dft_atoms.c</code></li>
   <li><code>eg_42_h2_vqe.c</code></li>
   <li><code>eg_43_h4_vqe.c</code></li>
   <li><code>eg_44_lih_vqe.c</code></li>
-  <li><code>eg_45_vqe_nosiy.c</code></li>
+  <li><code>eg_45_noisy_vqe.c</code></li>
   <li><code>eg_46_geometry_optimization.c</code></li>
   <li><code>eg_47_ccsd.c</code></li>
   <li><code>eg_48_ccsd_t.c</code></li>
@@ -183,7 +183,9 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_53_molecular_pbe_dft.c</code></li>
   <li><code>eg_54_schrodinger_solvers.c</code></li>
   <li><code>eg_55_fci.c</code></li>
-  <li><code>eg_56_latex_gen.c</code></li>
+  <li><code>eg_56_spin_chain_dsf.c</code></li>
+  <li><code>eg_57_ising_chain.c</code></li>
+  <li><code>eg_58_latex_gen.c</code></li>
 </ul>
 </details>
 
@@ -191,69 +193,77 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 <summary>Unit tests for each topic.</summary>
 <ul>
   <li><code>test_angular_coupling.c</code></li>
+  <li><code>test_basis_parser.c</code></li>
   <li><code>test_boson_sampling.c</code></li>
   <li><code>test_ccsd.c</code></li>
   <li><code>test_ccsd_t.c</code></li>
-  <li><code>test_ucc.c</code></li>
   <li><code>test_central_potential.c</code></li>
   <li><code>test_central_potential_3d.c</code></li>
   <li><code>test_complex.c</code></li>
   <li><code>test_complex_eigh.c</code></li>
   <li><code>test_crank_nicolson.c</code></li>
+  <li><code>test_dft.c</code></li>
   <li><code>test_dirac.c</code></li>
   <li><code>test_dmc.c</code></li>
-  <li><code>test_schrodinger.c</code></li>
   <li><code>test_driven.c</code></li>
+  <li><code>test_fci.c</code></li>
   <li><code>test_fermi_golden_rule.c</code></li>
   <li><code>test_fft.c</code></li>
-  <li><code>test_wavefn.c</code></li>
   <li><code>test_fine_structure.c</code></li>
+  <li><code>test_fuzz_molecular_integrals.c</code></li>
+  <li><code>test_geometry_optimization.c</code></li>
   <li><code>test_grplot.c</code></li>
+  <li><code>test_h2_vqe.c</code></li>
   <li><code>test_hartree_fock.c</code></li>
   <li><code>test_helium.c</code></li>
+  <li><code>test_hf_gradient.c</code></li>
   <li><code>test_hydrogen.c</code></li>
   <li><code>test_identical.c</code></li>
+  <li><code>test_ising_chain.c</code></li>
   <li><code>test_klein_gordon.c</code></li>
   <li><code>test_lanczos.c</code></li>
+  <li><code>test_latex_gen.c</code></li>
   <li><code>test_lattice.c</code></li>
   <li><code>test_lattice_chern.c</code></li>
+  <li><code>test_lih.c</code></li>
   <li><code>test_lindblad.c</code></li>
   <li><code>test_matrix.c</code></li>
+  <li><code>test_molecular_dft.c</code></li>
+  <li><code>test_molecular_hf.c</code></li>
+  <li><code>test_molecular_integrals.c</code></li>
   <li><code>test_mp2.c</code></li>
   <li><code>test_numerov.c</code></li>
+  <li><code>test_openmp_qmc.c</code></li>
   <li><code>test_perturbation.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
-  <li><code>test_quantum_algorithms.c</code></li>
   <li><code>test_qec.c</code></li>
-  <li><code>test_qubits.c</code></li>
+  <li><code>test_qpe.c</code></li>
+  <li><code>test_quantum_algorithms.c</code></li>
   <li><code>test_quantum_info.c</code></li>
+  <li><code>test_qubits.c</code></li>
   <li><code>test_rabi.c</code></li>
   <li><code>test_random.c</code></li>
   <li><code>test_rk4.c</code></li>
   <li><code>test_scattering.c</code></li>
+  <li><code>test_schrodinger.c</code></li>
   <li><code>test_second_quant.c</code></li>
-  <li><code>test_molecular_integrals.c</code></li>
-  <li><code>test_molecular_integrals_fuzz.c</code></li>
-  <li><code>test_basis_parser.c</code></li>
-  <li><code>test_special.c</code></li>
-  <li><code>test_dft.c</code></li>
-  <li><code>test_h2_vqe.c</code></li>
-  <li><code>test_molecular_hf.c</code></li>
-  <li><code>test_hf_gradient.c</code></li>
-  <li><code>test_uhf.c</code></li>
-  <li><code>test_lih.c</code></li>
   <li><code>test_soft.c</code></li>
+  <li><code>test_special.c</code></li>
+  <li><code>test_spin_chain.c</code></li>
+  <li><code>test_spin_chain_dsf.c</code></li>
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
+  <li><code>test_ucc.c</code></li>
+  <li><code>test_uhf.c</code></li>
+  <li><code>test_uncertainty.c</code></li>
+  <li><code>test_variational.c</code></li>
   <li><code>test_vmc.c</code></li>
   <li><code>test_vqe.c</code></li>
   <li><code>test_vqe_noisy.c</code></li>
+  <li><code>test_wavefn.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
-  <li><code>test_qqe.c</code></li>
-  <li><code>test_fci.c</code></li>
-  <li><code>test_latex_gen.c</code></li>
 </ul>
 </details>
 

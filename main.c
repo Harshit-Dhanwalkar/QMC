@@ -59,6 +59,19 @@ static const demo_entry_t demos[] = {
     {"build/eg_43_h4_vqe", "H4 chain: general N-basis RHF, FCI, and VQE at 8 qubits"},
     {"build/eg_44_lih_vqe", "LiH: p-orbitals, frozen-core reduction, and VQE at 10 qubits"},
     {"build/eg_45_noisy_vqe", "H2 Noisy VQE: T1/T2 decoherence and zero-noise extrapolation (ZNE)"},
+    {"build/eg_46_geometry_optimization", "Molecular geometry optimization via HF/DFT energy gradients"},
+    {"build/eg_47_ccsd", "Coupled-Cluster Singles and Doubles (CCSD)"},
+    {"build/eg_48_ccsd_t", "Coupled-Cluster Singles, Doubles, and Triples CCSD(T)"},
+    {"build/eg_49_general_basis_parser", "General Gaussian basis set parser and integral evaluator"},
+    {"build/eg_50_ucc", "Unitary Coupled-Cluster (UCCSD) ansatz generation for VQE"},
+    {"build/eg_51_qpe", "Quantum Phase Estimation (QPE) for molecular Hamiltonians"},
+    {"build/eg_52_molecular_dft", "Kohn-Sham molecular DFT solver (LDA/VWN)"},
+    {"build/eg_53_molecular_pbe_dft", "Molecular DFT with GGA functionals (PBE)"},
+    {"build/eg_54_schrodinger_solvers", "Comprehensive 1D/3D Schrödinger eigensolvers comparison"},
+    {"build/eg_55_fci", "Full Configuration Interaction (FCI) exact diagonalization"},
+    {"build/eg_56_spin_chain_dsf", "Dynamic structure factor for 1D Heisenberg spin chains"},
+    {"build/eg_57_ising_chain", "Transverse-field Ising chain exact diagonalization and Jordan-Wigner"},
+    {"build/eg_58_latex_gen", "Automated LaTeX matrix and equation code generator"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));
