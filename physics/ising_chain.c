@@ -381,3 +381,77 @@ double ising_entanglement_entropy(const cmatrix_t *psi, int N, int L_A) {
 
   return S;
 }
+
+cmatrix_t *ising_hamiltonian_dense(int N, double J, double h, int pbc) {
+  if (N <= 0 || N > 30) {
+    return NULL;
+  }
+
+  uint32_t dim = 1u << N;
+  int nbonds = pbc ? N : N - 1;
+
+  cmatrix_t *H = cmatrix_alloc((int)dim, (int)dim);
+  if (!H) {
+    return NULL;
+  }
+  for (uint32_t i = 0; i < dim * dim; i++) {
+    H->data[i] = c_zero();
+  }
+
+  /* NOTE: Each iteration s only ever writes into column s of dense matrix *
+   * (row s itself for diagonal, and up to N other rows - always distinct from
+   * each other, since XOR-ing s with N different single-bit masks always gives
+   * N distinct results - for off-diagonal X flips), and different iterations
+   * never share a column index, so this is safe to parallelize despite being a
+   * dense "scatter" rather than row-based CSR gather used elsewhere in this
+   * module: no two threads ever write to the same memory location. */
+#pragma omp parallel for schedule(guided)
+  for (uint32_t s = 0; s < dim; s++) {
+    double diag = 0.0;
+
+    for (int b = 0; b < nbonds; b++) {
+      int j = b, k = (b + 1) % N;
+
+      diag += -J * sz_bit(s, j) * sz_bit(s, k);
+    }
+
+    CMAT(H, (int)s, (int)s) = c_new(diag, 0.0);
+
+    for (int i = 0; i < N; i++) {
+      uint32_t t = s ^ (1u << i);
+
+      CMAT(H, (int)t, (int)s) = c_new(-h, 0.0);
+    }
+  }
+
+  return H;
+}
+
+double ising_loschmidt_echo(const eigen_t *eig_f, const cmatrix_t *psi_i,
+                            double t) {
+  if (!eig_f || !psi_i || eig_f->n != psi_i->nrows || psi_i->ncols != 1) {
+    return NAN;
+  }
+
+  int dim = eig_f->n;
+
+  /* <\psi_i|\exp(-i * H_f * t)|\psi_i> = \sum_n |c_n|^2 * \exp(-i * E_n * t),
+   * Where c_n = <n|\psi_i> are \psi_i's coefficients in H_f's eigenbasis and
+   * avoids ever forming \exp(-i * H_f * t) as a matrix. */
+  complex_t amplitude = c_zero();
+  for (int n = 0; n < dim; n++) {
+    complex_t c_n = c_zero();
+
+    for (int i = 0; i < dim; i++) {
+      c_n = c_add(c_n, c_mul(c_conj(CMAT(eig_f->eigenvectors, i, n)),
+                             CMAT(psi_i, i, 0)));
+    }
+
+    double p_n = c_abs2(c_n);
+    double phase = -eig_f->eigenvalues[n] * t;
+
+    amplitude = c_add(amplitude, c_scale(c_new(cos(phase), sin(phase)), p_n));
+  }
+
+  return c_abs2(amplitude);
+}

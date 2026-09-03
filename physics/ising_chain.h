@@ -94,4 +94,36 @@ cmatrix_t *ising_reduced_density_matrix(const cmatrix_t *psi, int N, int L_A);
  */
 double ising_entanglement_entropy(const cmatrix_t *psi, int N, int L_A);
 
+/*
+ * Dense N x N counterpart of ising_hamiltonian, for small-N calculations that
+ * need a FULL eigendecomposition (e.g. quench dynamics below) rather than just
+ * the lowest few eigenpairs Lanczos gives. Same Hamiltonian, same conventions;
+ * returns NULL for the same invalid inputs. Intended for N small enough that
+ * dim=2^N is comfortably diagonalizable dense
+ */
+cmatrix_t *ising_hamiltonian_dense(int N, double J, double h, int pbc);
+
+/*
+ * Loschmidt echo L(t) = |<\psi_i| \exp(-i * H_f * t) |\psi_i>|^2 following a
+ * sudden ("quantum quench") change of the transverse field, given H_f's full
+ * eigendecomposition eig_f (e.g. from cmatrix_eigh_complex on
+ * ising_hamiltonian_dense's output) and the pre-quench state \psi_i (typically
+ * the ground-state eigenvector of a different hamiltonian, at pre-quench field
+ * value h_i != h_f).
+ *
+ * Exact identities that hold for any valid Hermitian H_f and pure state \psi_i
+ * not specific to TFIM : L(0) = 1 always; if \psi_i happens to already be an
+ * eigenvector of H_f (trivial "no quench" case), L(t) = 1 for all t; and L(t)
+ * admits short-time expansion
+ *
+ *   L(t) = 1 - t^2 * Var(H_f)_{\psi_i} + O(t^4)
+ *
+ * Where
+ *  Var(H_f)_{\psi_i} = <\psi_i|H_f^2|\psi_i> - <\psi_i|H_f|\psi_i>^2
+ *
+ * Returns NAN if eig_f or \psi_i is NULL, or if their dimensions don't match.
+ */
+double ising_loschmidt_echo(const eigen_t *eig_f, const cmatrix_t *psi_i,
+                            double t);
+
 #endif

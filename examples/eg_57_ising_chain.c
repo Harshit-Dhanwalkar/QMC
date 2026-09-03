@@ -16,6 +16,7 @@
  */
 
 #include "../core/complex.h"
+#include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
 #include "../core/sparse.h"
 #include "../export/plot.h"
@@ -156,6 +157,53 @@ int main(void) {
             &opts3);
   printf("   Saved ising_entanglement.png (should peak near h/J=1, critical "
          "point, and fall off in both phases)\n");
+
+  /* Quantum quench: prepare the ground state at h_i deep in ferromagnetic
+   * phase, then suddenly switch the Hamiltonian to h_f deep in paramagnetic
+   * phase, and track Loschmidt echo L(t) = |<\psi(0)|\psi(t)>|^2. A quench
+   * across critical point typically shows L(t) dropping sharply from 1 and
+   * developing oscillations / near-recurrences, unlike a quench that stays
+   * within one phase. */
+  int N_q = 8;
+  double h_i = 0.3, h_f = 3.0;
+  int dim_q = 1 << N_q;
+
+  sparse_matrix_t *Hi = ising_hamiltonian(N_q, J_COUPLING, h_i, 1);
+  lanczos_result_t *gs_i = lanczos_eigs(Hi, 1, dim_q, 1e-12);
+  const cmatrix_t *psi_i = gs_i->vectors;
+
+  cmatrix_t *Hf_dense = ising_hamiltonian_dense(N_q, J_COUPLING, h_f, 1);
+  eigen_t *eig_f = cmatrix_eigh_complex(Hf_dense);
+
+  int N_T_POINTS = 200;
+  double T_MAX = 5.0;
+  double *t_vals = malloc((size_t)N_T_POINTS * sizeof *t_vals);
+  double *L_vals = malloc((size_t)N_T_POINTS * sizeof *L_vals);
+  for (int i = 0; i < N_T_POINTS; i++) {
+    t_vals[i] = (T_MAX * i) / (N_T_POINTS - 1);
+    L_vals[i] = ising_loschmidt_echo(eig_f, psi_i, t_vals[i]);
+  }
+
+  plot_opts_t opts4 = {0};
+  opts4.title = "Loschmidt echo after a quench across h_c (N=8)";
+  opts4.xlabel = "t (1/J)";
+  opts4.ylabel = "L(t) = |<\\psi(0)|\\psi(t)>|^2";
+
+  char subtitle[64];
+  snprintf(subtitle, sizeof subtitle, "h: %.1f -> %.1f", h_i, h_f);
+  plot_line("ising_loschmidt_echo", PLOT_FORMAT_PNG, t_vals, L_vals, N_T_POINTS,
+            &opts4);
+
+  printf("   Saved ising_loschmidt_echo.png (quench %s : L(t) should start at "
+         "1 and drop sharply)\n",
+         subtitle);
+
+  free(t_vals);
+  free(L_vals);
+  eigen_free(eig_f);
+  cmatrix_free(Hf_dense);
+  lanczos_free(gs_i);
+  sparse_free(Hi);
 
   free(S_mid);
   free(E0_numeric);

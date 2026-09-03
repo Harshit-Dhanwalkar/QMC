@@ -22,6 +22,7 @@
  */
 
 #include "../core/complex.h"
+#include "../core/linalg/complex_eigh.h"
 #include "../core/sparse.h"
 #include "../physics/ising_chain.h"
 #include "matrix.h"
@@ -301,6 +302,109 @@ static void test_entanglement_entropy(void) {
   }
 }
 
+/* Quench dynamics: exact, parameter-independent identities that must hold for
+ * any hermitian H_f and pure state \psi_i, checked here for the TFIM's
+ * ising_hamiltonian_dense + ising_loschmidt_echo. L(0)=1 and the no-quench
+ * identity are exact to machine precision; short-time Taylor expansion is
+ * checked only in the regime where the O(t^4) correction is itself below the
+ * comparison tolerance (t=1e-4, 1e-3), and not at larger t where that
+ * correction becomes visible */
+static void test_quench_dynamics(void) {
+  printf("\n-- Quench dynamics: Loschmidt echo exact identities --\n");
+
+  int N = 8;
+  double J = 1.0, h_i = 0.5, h_f = 2.0;
+  int dim = 1 << N;
+
+  sparse_matrix_t *Hi_sparse = ising_hamiltonian(N, J, h_i, 1);
+  lanczos_result_t *gs_i = lanczos_eigs(Hi_sparse, 1, dim, 1e-12);
+  check(gs_i != NULL, "pre-quench ground state found");
+  if (!gs_i) {
+    sparse_free(Hi_sparse);
+
+    return;
+  }
+
+  const cmatrix_t *psi_i = gs_i->vectors;
+
+  cmatrix_t *Hf_dense = ising_hamiltonian_dense(N, J, h_f, 1);
+  check(Hf_dense != NULL, "post-quench dense Hamiltonian built");
+
+  eigen_t *eig_f = cmatrix_eigh_complex(Hf_dense);
+  check(eig_f != NULL, "post-quench Hamiltonian diagonalized");
+
+  if (eig_f) {
+    double L0 = ising_loschmidt_echo(eig_f, psi_i, 0.0);
+    check_close(L0, 1.0, 1e-9, "L(0) = 1 exactly");
+
+    /* Var(H_f) in the pre-quench state, computed independently of
+     * ising_loschmidt_echo via direct matrix-vector products, for short-time
+     * Taylor cross-check. */
+    cmatrix_t *Hpsi = cmatrix_alloc(dim, 1);
+    for (int i = 0; i < dim; i++) {
+      complex_t s = c_zero();
+
+      for (int j = 0; j < dim; j++) {
+        s = c_add(s, c_mul(CMAT(Hf_dense, i, j), CMAT(psi_i, j, 0)));
+      }
+
+      CMAT(Hpsi, i, 0) = s;
+    }
+
+    double E_mean = 0.0, E2_mean = 0.0;
+    for (int i = 0; i < dim; i++) {
+      complex_t e_i = c_mul(c_conj(CMAT(psi_i, i, 0)), CMAT(Hpsi, i, 0));
+
+      E_mean += e_i.re;
+      E2_mean += c_abs2(CMAT(Hpsi, i, 0));
+    }
+
+    double var_Hf = E2_mean - E_mean * E_mean;
+
+    cmatrix_free(Hpsi);
+
+    double small_ts[] = {1e-4, 1e-3};
+    for (size_t k = 0; k < sizeof(small_ts) / sizeof(small_ts[0]); k++) {
+      double t = small_ts[k];
+      double L_t = ising_loschmidt_echo(eig_f, psi_i, t);
+      double L_taylor = 1.0 - t * t * var_Hf;
+      char label[128];
+      snprintf(label, sizeof label,
+               "t=%.0e: L(t) matches short-time Taylor expansion [1 - t^2 * "
+               "Var(H_f)]",
+               t);
+      check_close(L_t, L_taylor, 1e-8, label);
+    }
+
+    /* No-quench identity: if \psi_i is (numerically) an eigenvector of H_f
+     * itself, L(t)=1 for all t. Use h_f == h_i here so \psi_i is an eigenstate
+     * of this H_f, not h_f=2.0 one above. */
+    cmatrix_t *Hsame_dense = ising_hamiltonian_dense(N, J, h_i, 1);
+    eigen_t *eig_same = cmatrix_eigh_complex(Hsame_dense);
+    if (eig_same) {
+      double t_tests[] = {0.5, 1.0, 5.0};
+
+      for (size_t k = 0; k < sizeof(t_tests) / sizeof(t_tests[0]); k++) {
+        double L_same = ising_loschmidt_echo(eig_same, psi_i, t_tests[k]);
+        char label[128];
+        snprintf(label, sizeof label,
+                 "no-quench (h_f=h_i) t=%.1f: L(t) = 1 for all t", t_tests[k]);
+
+        check_close(L_same, 1.0, 1e-8, label);
+      }
+
+      eigen_free(eig_same);
+    }
+
+    cmatrix_free(Hsame_dense);
+    eigen_free(eig_f);
+  }
+
+  cmatrix_free(Hf_dense);
+  lanczos_free(gs_i);
+  sparse_free(Hi_sparse);
+}
+
 int main(void) {
   printf("=== Transverse-Field Ising Model: ED + exact solution tests ===\n");
 
@@ -308,6 +412,7 @@ int main(void) {
   test_hermiticity();
   test_z2_parity_reduction();
   test_entanglement_entropy();
+  test_quench_dynamics();
   test_invalid_input();
 
   if (failures == 0) {
