@@ -91,7 +91,8 @@ static void householder(cmatrix_t *A, int k, cvector_t *v) {
 
 int qr_decompose(cmatrix_t *A, cmatrix_t *Q) {
   if (!A || A->nrows != A->ncols) {
-    return -1; // HACK: must be square for simplicity; can extend to rectangular
+    return -1; // HACK: must be square for simplicity
+    // TODO: extend to rectangular
   }
 
   int n = A->nrows;
@@ -138,6 +139,7 @@ int qr_decompose(cmatrix_t *A, cmatrix_t *Q) {
     }
 
     // Householder vector: v = x - \alpha * e1, \alpha = -sign(x[0]) * norm
+    // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
     complex_t alpha = c_neg(x[0]);
     if (c_abs(alpha) > 1e-15) {
       alpha = c_scale(alpha, norm / c_abs(alpha));

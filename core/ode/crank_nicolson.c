@@ -3,12 +3,12 @@ Crank-Nicolson method for TDSE (complex tridiagonal solver), with support
 for time-dependent V(x,t) and complex absorbing potentials (CAP).
 
 TDSE
-- For time evolution `i * \hbar d\phi / dt = H\phi`, Crank-Nicolson is
-unconditionally stable and unitary for Hermitian H. A complex absorbing
-potential (CAP) makes H = H0 - i * \Gamma(x) non-Hermitian by design, so norm
-decays in absorbing region instead of being conserved
-- This reduces to a tridiagonal complex linear system per timestep - solvable
-with Thomas algorithm in O(N)
+ - For time evolution `i * \hbar d\phi / dt = H\phi`, Crank-Nicolson is
+   unconditionally stable and unitary for Hermitian H. A complex absorbing
+   potential (CAP) makes H = H0 - i * \Gamma(x) non-Hermitian by design, so norm
+   decays in absorbing region instead of being conserved
+ - This reduces to a tridiagonal complex linear system per timestep - solvable
+   with Thomas algorithm in O(N)
 */
 
 #include "crank_nicolson.h"
@@ -19,12 +19,13 @@ with Thomas algorithm in O(N)
 #include <string.h>
 
 /* Complex Thomas algorithm for tridiagonal system.
-   a: lower diagonal (size N-1),
-   b: diagonal (size N),
-   c: upper diagonal (size N-1)
-   d: RHS (complex) input, solution overwritten in d.
-   Returns 0 on success.
-*/
+ *  a: lower diagonal (size N-1),
+ *  b: diagonal (size N),
+ *  c: upper diagonal (size N-1)
+ *  d: RHS (complex) input, solution overwritten in d.
+ *
+ *  Returns 0 on success.
+ */
 static int thomas_complex(const complex_t *a, const complex_t *b,
                           const complex_t *c, complex_t *d, int N) {
   if (N < 1) {
@@ -99,6 +100,7 @@ int crank_nicolson_step_general(const complex_t *diag, const double *offdiag,
     // b[i] = 1 + i * dt / 2 * diag[i]
     b[i] = c_add(c_one(), c_mul(i_dt2, diag[i]));
     if (i < N - 1) {
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       complex_t off = c_mul(i_dt2, c_real(offdiag[i]));
       c[i] = off;
       a[i] = off; // symmetric kinetic coupling

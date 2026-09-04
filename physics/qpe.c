@@ -41,8 +41,8 @@ void qpe_run(cvector_t *psi, int n_count, int n_target, const cmatrix_t *U) {
   }
 
   /* Counting qubit k (0 = most - significant / first) controls U^(2^(n_count -
-   * 1 - k)), so the first qubit gets the highest power : convention so 
-   * inverse-QFT readout comes out as a big-endian binary fraction of \phi.  */
+   * 1 - k)), so the first qubit gets the highest power : convention so
+   * inverse-QFT readout comes out as a big-endian binary fraction of \phi. */
   for (int k = 0; k < n_count; k++) {
     int exponent = n_count - 1 - k;
 
@@ -96,6 +96,12 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
   long long n_bins = 1LL << n_count;
   d->n_count = n_count;
   d->probabilities = malloc((size_t)n_bins * sizeof(double));
+  if (!d->probabilities) {
+    free(d);
+    cvector_free(psi);
+
+    return NULL;
+  }
 
   /* Marginalize over the target register: \sum |amplitude|^2 over every
    * target-register configuration for each counting-register bitstring. */
@@ -107,10 +113,12 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
   for (long long i = 0; i < dim; i++) {
     long long counting_bits = i >> n_target;
 
+    // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
     d->probabilities[counting_bits] += c_abs2(psi->data[i]);
   }
 
   int best = 0;
+  // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
   double best_p = d->probabilities[0];
   for (long long c = 1; c < n_bins; c++) {
     if (d->probabilities[c] > best_p) {

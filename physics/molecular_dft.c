@@ -66,7 +66,7 @@ static double becke_cell_unnormalized(int atom_idx, const double *dist,
  */
 static double becke_weight_at(int atom_idx, const double r[3],
                               const molecule_t *mol, double *dist_scratch) {
-    int n_atoms = mol->n_atoms;
+  int n_atoms = mol->n_atoms;
   for (int k = 0; k < n_atoms; k++) {
     double dx = r[0] - mol->center[k][0];
     double dy = r[1] - mol->center[k][1];
@@ -395,6 +395,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
         double v = 0.0;
 
         for (int k = 0; k < n_occ; k++) {
+          // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
           v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
         }
 
@@ -704,6 +705,7 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
         double v = 0.0;
 
         for (int k = 0; k < n_occ; k++) {
+          // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
           v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
         }
 

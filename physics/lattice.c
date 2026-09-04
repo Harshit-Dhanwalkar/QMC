@@ -381,10 +381,6 @@ int lattice_hofstadter_chern_numbers(int p, int q, double t, int n_k,
 
     if (!U[i]) {
       for (int ii = 0; ii < i; ii++) {
-        for (int jj = 0; jj < n_k; jj++) {
-          cmatrix_free(U[ii][jj]);
-        }
-
         free(U[ii]);
       }
 

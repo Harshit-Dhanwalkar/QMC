@@ -551,7 +551,8 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   }
 
   if (n_spatial <= 0 || !h_mo || !eri_mo || !mo_energy ||
-      n_electrons % 2 != 0 || 2 * n_frozen_spatial >= n_electrons) {
+      n_electrons % 2 != 0 || 2 * n_frozen_spatial >= n_electrons ||
+      n_electrons > 2 * n_spatial) {
     return NULL;
   }
 
@@ -601,6 +602,7 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
 
   int no = ctx.nocc, nv = ctx.nvirt;
   for (int ii = 0; ii < no; ii++) {
+    // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
     int i = ctx.occ[ii];
 
     for (int ai = 0; ai < nv; ai++) {

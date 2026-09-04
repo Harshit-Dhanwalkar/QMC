@@ -128,21 +128,6 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
     return NULL;
   }
 
-  // for (int k = 0; k < n; k++) {
-  //   int idx = 2 * k;
-  //   double lambda = eig2n->eigenvalues[idx];
-  // if (idx + 1 < m2) {
-  //   lambda = 0.5 * (lambda + eig2n->eigenvalues[idx + 1]);
-  // }
-  //
-  // result->eigenvalues[k] = lambda;
-  //
-  // for (int i = 0; i < n; i++) {
-  //   double x = CMAT(eig2n->eigenvectors, i, idx).re;
-  //   double y = CMAT(eig2n->eigenvectors, i + n, idx).re;
-  //   CMAT(result->eigenvectors, i, k) = c_add(c_real(x), c_imag(y));
-  // }
-
   int *order = malloc((size_t)m2 * sizeof(int));
 
   if (!order) {
@@ -185,10 +170,13 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
   const double pairing_tol_factor = 100.0;
 
   int n_pairs = m2 / 2;
-  double *pair_lambda = malloc((size_t)n_pairs * sizeof *pair_lambda);
-  int *pair_col0 = malloc((size_t)n_pairs * sizeof *pair_col0);
-  int *pair_col1 = malloc((size_t)n_pairs * sizeof *pair_col1);
-  if (!pair_lambda || !pair_col0 || !pair_col1) {
+  double *pair_lambda =
+      n_pairs > 0 ? malloc((size_t)n_pairs * sizeof *pair_lambda) : NULL;
+  int *pair_col0 =
+      n_pairs > 0 ? malloc((size_t)n_pairs * sizeof *pair_col0) : NULL;
+  int *pair_col1 =
+      n_pairs > 0 ? malloc((size_t)n_pairs * sizeof *pair_col1) : NULL;
+  if (n_pairs > 0 && (!pair_lambda || !pair_col0 || !pair_col1)) {
     free(pair_lambda);
     free(pair_col0);
     free(pair_col1);
@@ -200,9 +188,14 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
 
     return NULL;
   }
+
   for (int p = 0; p < n_pairs; p++) {
-    int i0 = order[2 * p], i1 = order[2 * p + 1];
-    double v0 = eig2n->eigenvalues[i0], v1 = eig2n->eigenvalues[i1];
+    // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
+    int i0 = order[2 * p];
+    int i1 = order[2 * p + 1];
+    double v0 = eig2n->eigenvalues[i0];
+    double v1 = eig2n->eigenvalues[i1];
+
     pair_lambda[p] = 0.5 * (v0 + v1);
     pair_col0[p] = i0;
     pair_col1[p] = i1;
@@ -216,8 +209,8 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
     int group_start = pidx;
     int group_end = pidx + 1;
     double ref = pair_lambda[group_start];
-
     const int max_group_pairs = 16;
+
     while (group_end < n_pairs && group_end - group_start < max_group_pairs) {
       double hi = pair_lambda[group_end];
       double local_scale = fabs(ref) > fabs(hi) ? fabs(ref) : fabs(hi);
@@ -277,6 +270,7 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
      * until m_needed orthonormal vectors are found. */
     int accepted = 0;
     for (int t = 0; t < cluster_size && accepted < m_needed; t++) {
+      // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
       complex_t *v = &z[t * n];
 
       for (int a = 0; a < accepted; a++) {

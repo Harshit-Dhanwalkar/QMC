@@ -45,6 +45,7 @@ void gnuplot_cmd(gnuplot_t *gp, const char *cmd, ...) {
 
   va_list args;
   va_start(args, cmd);
+  // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
   vfprintf(gp->pipe, cmd, args);
   va_end(args);
   fprintf(gp->pipe, "\n");

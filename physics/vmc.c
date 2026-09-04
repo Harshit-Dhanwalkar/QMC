@@ -185,7 +185,8 @@ static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
     }
   }
 
-  double sum_E = 0.0, sum_E2 = 0.0;
+  double sum_E = 0.0;
+  double sum_E2 = 0.0;
   int sample_count = 0;
   int acc1_total = 0;
   int acc2_total = 0;
@@ -293,7 +294,10 @@ vmc_run_parallel_core(const rng_state_t *seed_stream, int n_replicas, double Z,
   // *inter-replica* standard error, since the replicas are exactly independent
   // (jump-guaranteed), unlike single-chain block-averaging whose validity
   // depends on block_size safely exceeding an unmeasured autocorrelation time.
-  double sum_mean = 0.0, sum_var = 0.0, sum_acc1 = 0.0, sum_acc2 = 0.0;
+  double sum_mean = 0.0;
+  double sum_var = 0.0;
+  double sum_acc1 = 0.0;
+  double sum_acc2 = 0.0;
   long total_samples = 0;
   int valid_replicas = 0;
 

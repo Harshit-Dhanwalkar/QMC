@@ -197,12 +197,13 @@ basis_set_t *basis_set_parse_string(const char *text) {
 
         e.n_shells = cur_shells.count;
         e.shells = cur_shells.items;
-        if (!elem_vec_push(&elems, e)) {
+        if (elem_vec_push(&elems, e)) {
+          cur_shells.items = NULL;
+          cur_shells.count = cur_shells.cap = 0;
+        } else {
           ok = 0;
         }
 
-        cur_shells.items = NULL;
-        cur_shells.count = cur_shells.cap = 0;
         have_open_element = 0;
       }
 
@@ -344,11 +345,13 @@ basis_set_t *basis_set_parse_string(const char *text) {
 
     e.n_shells = cur_shells.count;
     e.shells = cur_shells.items;
-    if (!elem_vec_push(&elems, e)) {
+    if (elem_vec_push(&elems, e)) {
+      cur_shells.items = NULL;
+      cur_shells.count = 0;
+      cur_shells.cap = 0;
+    } else {
       ok = 0;
     }
-
-    cur_shells.items = NULL;
   }
 
   free(buf);

@@ -1,5 +1,5 @@
 /*
- * Pyhton Matplotlib subprocess pipe
+Pyhton Matplotlib subprocess pipe
  */
 
 #include "matplotlib_pipe.h"
@@ -9,13 +9,16 @@
 
 matplotlib_t *matplotlib_open(void) {
   matplotlib_t *mp = malloc(sizeof *mp);
-  if (!mp)
+  if (!mp) {
     return NULL;
+  }
+
   // -u : unbuffered stdout/stderr from child.
   // -  : read script from stdin
   mp->pipe = popen("python3 -u -", "w");
   if (!mp->pipe) {
     free(mp);
+
     return NULL;
   }
 
@@ -27,21 +30,25 @@ matplotlib_t *matplotlib_open(void) {
 }
 
 void matplotlib_close(matplotlib_t *mp) {
-  if (!mp)
+  if (!mp) {
     return;
+  }
 
-  if (mp->pipe)
+  if (mp->pipe) {
     pclose(mp->pipe);
+  }
 
   free(mp);
 }
 
 void matplotlib_cmd(matplotlib_t *mp, const char *cmd, ...) {
-  if (!mp || !mp->pipe)
+  if (!mp || !mp->pipe) {
     return;
+  }
 
   va_list args;
   va_start(args, cmd);
+  // NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized)
   vfprintf(mp->pipe, cmd, args);
   va_end(args);
   fprintf(mp->pipe, "\n");

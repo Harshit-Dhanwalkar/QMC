@@ -240,6 +240,11 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   next->count = 0;
 
   int n = cur->count;
+  if (n <= 0) {
+    // No walkers to evolve (population died out)
+    return E_T;
+  }
+
   vmc_walker_t *evolved = malloc((size_t)n * sizeof(vmc_walker_t));
   int *mult = malloc((size_t)n * sizeof(int));
   int *acc = malloc((size_t)n * sizeof(int));

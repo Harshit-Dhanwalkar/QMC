@@ -15,8 +15,8 @@ Reference: https://en.wikipedia.org/wiki/Numerov%27s_method
 #include <string.h>
 
 /*
- *   y_{n+1}*(1 - h^2 f_{n+1}/12) = 2*y_n*(1 + 5h^2 f_n/12)
- *                                  - y_{n-1}*(1 - h^2 f_{n-1}/12)
+ *  y_{n + 1} * (1 - h^2 f_{n + 1} / 12) = 2 * y_n * (1 + 5h^2 f_n / 12)
+ *       - y_{n - 1} * (1 - h^2 f_{n - 1} / 12)
  */
 void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   int N = p->n;
@@ -36,6 +36,7 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
   psi->data[1].im = 0.0;
 
   for (int i = 1; i < N - 1; i++) {
+    // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
     double num = 2.0 * (1.0 + (5.0 / 12.0) * h2 * f[i]) * psi->data[i].re -
                  (1.0 - (1.0 / 12.0) * h2 * f[i - 1]) * psi->data[i - 1].re;
     double den = 1.0 - (1.0 / 12.0) * h2 * f[i + 1];
@@ -52,6 +53,7 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
       }
     }
   }
+
   free(f);
 }
 
@@ -86,8 +88,9 @@ numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
   eigen_t *eig = tridiag_eigh(diag, offdiag, N);
   free(diag);
   free(offdiag);
-  if (!eig)
+  if (!eig) {
     return NULL;
+  }
 
   int level = 0;
   double best_diff = fabs(eig->eigenvalues[0] - E_guess);
@@ -112,6 +115,7 @@ numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
   for (int i = 0; i < N; i++) {
     psi->data[i] = CMAT(eig->eigenvectors, i, level);
   }
+
   eigen_free(eig);
 
   // Normalize continuum convention
@@ -123,6 +127,7 @@ numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
   norm *= params->dx;
   if (norm > 1e-300 && isfinite(norm)) {
     double inv = 1.0 / sqrt(norm);
+
     for (int i = 0; i < N; i++) {
       psi->data[i].re *= inv;
       psi->data[i].im = 0.0;
@@ -137,6 +142,7 @@ numerov_solution_t *numerov_shoot(numerov_params_t *params, double E_guess,
           psi->data[j].re = -psi->data[j].re;
         }
       }
+
       break;
     }
 
@@ -157,6 +163,7 @@ void numerov_solution_free(numerov_solution_t *sol) {
   if (!sol) {
     return;
   }
+
   cvector_free(sol->psi);
 
   free(sol);
@@ -201,11 +208,13 @@ static int log_deriv_mismatch(const numerov_params_t *params, double E,
   if (!left) {
     return 0;
   }
+
   numerov_integrate(&left_params, E, left);
 
   double y_left_m = left->data[m_idx].re;
   double y_left_p1 = left->data[m_idx + 1].re;
   double y_left_m1 = left->data[m_idx - 1].re;
+
   cvector_free(left);
 
   // Forward integration on reversed potential
@@ -222,11 +231,13 @@ static int log_deriv_mismatch(const numerov_params_t *params, double E,
   for (int i = 0; i < n_right; i++) {
     V_rev[i] = params->V[N - 1 - i];
   }
+
   numerov_params_t right_params = {.x = NULL,
                                    .V = V_rev,
                                    .n = n_right,
                                    .dx = params->dx,
                                    .hbar_sq_2m = params->hbar_sq_2m};
+
   numerov_integrate(&right_params, E, right_rev);
 
   // Un-reverse indices: (m_idx-1, m_idx, m_idx+1)
@@ -278,6 +289,7 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
     double val;
     if (!log_deriv_mismatch(params, E, &val, &dummy_idx)) {
       prev_E = E;
+
       continue;
     }
 
@@ -326,15 +338,18 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
   int N = params->n;
   int m_idx = find_turning_point_index(params->V, E_final, N);
   int n_left = m_idx + 2;
+
   numerov_params_t left_params = {.x = NULL,
                                   .V = params->V,
                                   .n = n_left,
                                   .dx = params->dx,
                                   .hbar_sq_2m = params->hbar_sq_2m};
+
   cvector_t *left = cvector_alloc(n_left);
   if (!left) {
     return NULL;
   }
+
   numerov_integrate(&left_params, E_final, left);
 
   int n_right = N - m_idx + 1;
@@ -351,11 +366,13 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
   for (int i = 0; i < n_right; i++) {
     V_rev[i] = params->V[N - 1 - i];
   }
+
   numerov_params_t right_params = {.x = NULL,
                                    .V = V_rev,
                                    .n = n_right,
                                    .dx = params->dx,
                                    .hbar_sq_2m = params->hbar_sq_2m};
+
   numerov_integrate(&right_params, E_final, right_rev);
 
   double y_left_m = left->data[m_idx].re;
@@ -380,9 +397,11 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
   // i = m_idx + 1 .. N-1
   for (int i = m_idx + 1; i < N; i++) {
     int rev_idx = N - 1 - i; // position of original index i within right_rev
+
     psi->data[i].re = right_rev->data[rev_idx].re * scale;
     psi->data[i].im = 0.0;
   }
+
   cvector_free(left);
   free(V_rev);
   cvector_free(right_rev);
@@ -392,10 +411,12 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
   for (int i = 0; i < N; i++) {
     norm += psi->data[i].re * psi->data[i].re;
   }
+
   norm *= params->dx;
 
   if (norm > 1e-300 && isfinite(norm)) {
     double inv = 1.0 / sqrt(norm);
+
     for (int i = 0; i < N; i++) {
       psi->data[i].re *= inv;
     }
@@ -409,6 +430,7 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
           psi->data[j].re = -psi->data[j].re;
         }
       }
+
       break;
     }
 

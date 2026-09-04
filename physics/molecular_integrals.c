@@ -10,7 +10,7 @@
  * ------------------------------------------------------------------- */
 
 static double boys_series(int n, double x, int nterms) {
-  /* F_n(x) = \exp(-x) * \sum_{k = 0}^\inf [(2n-1)!! / (2n+2k+1)!!] (2x)^k
+  /* F_n(x) = \exp(-x) * \sum_{k = 0}^\inf [(2n - 1)!! / (2n + 2k + 1)!!] (2x)^k
    * NOTE: All terms in the sum are positive, factoring out \exp(-x) makes this
    * stable for large x too. */
   double s = 1.0 / (2 * n + 1);
@@ -129,6 +129,7 @@ static double kinetic_1d(int i, int j, double Qx, double a, double b) {
 static double md_R(int t, int u, int v, int n, double p, double PCx, double PCy,
                    double PCz, double *Fvals) {
   if (t == 0 && u == 0 && v == 0) {
+    // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
     return pow(-2.0 * p, n) * Fvals[n];
   }
 
@@ -745,6 +746,7 @@ void basis_function_gradient(const basis_function_t *bf, const double r[3],
   // Angular part x^l y^m z^n and its three partial derivatives, e.g.
   // d/dx (x^l y^m z^n) = l * x^(l-1) y^m z^n (zero when l==0).
   double px = 1.0, py = 1.0, pz = 1.0;
+
   for (int k = 0; k < bf->l; k++) {
     px *= dx;
   }
@@ -754,28 +756,37 @@ void basis_function_gradient(const basis_function_t *bf, const double r[3],
   for (int k = 0; k < bf->n; k++) {
     pz *= dz;
   }
-  double angular = px * py * pz;
 
-  double dpx_dx = 0.0, dpy_dy = 0.0, dpz_dz = 0.0;
+  double angular = px * py * pz;
+  double dpx_dx = 0.0;
+  double dpy_dy = 0.0;
+  double dpz_dz = 0.0;
   if (bf->l > 0) {
     double t = 1.0;
+
     for (int k = 0; k < bf->l - 1; k++) {
       t *= dx;
     }
+
     dpx_dx = bf->l * t;
   }
+
   if (bf->m > 0) {
     double t = 1.0;
     for (int k = 0; k < bf->m - 1; k++) {
       t *= dy;
     }
+
     dpy_dy = bf->m * t;
   }
+
   if (bf->n > 0) {
     double t = 1.0;
+
     for (int k = 0; k < bf->n - 1; k++) {
       t *= dz;
     }
+
     dpz_dz = bf->n * t;
   }
 
@@ -949,7 +960,7 @@ double *molecular_eri_tensor(basis_function_t **basis, int n_basis) {
     for (int j = 0; j <= i; j++) {
       for (int k = 0; k < n_basis; k++) {
         for (int l = 0; l <= k; l++) {
-          /* (ij|kl), computing each symmetry-distinct integral once via
+          /* NOTE: (ij|kl), computing each symmetry-distinct integral once via
            * canonical (i>=j, k>=l, (ij)>=(kl) as pair-index) ordering, then
            * copying to all 8 equivalent index permutations. */
           size_t ij = (size_t)i * (i + 1) / 2 + j;

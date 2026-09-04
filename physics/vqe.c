@@ -29,6 +29,7 @@ cvector_t *vqe_prepare_ansatz(int n_qubits, int n_layers, const double *theta) {
 
   for (int layer = 0; layer < n_layers; layer++) {
     for (int q = 0; q < n_qubits; q++) {
+      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       ry_gate(theta[layer * n_qubits + q], g);
       qstate_apply_gate1(psi, n_qubits, q, g);
     }

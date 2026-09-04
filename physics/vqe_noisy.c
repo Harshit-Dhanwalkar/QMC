@@ -36,7 +36,8 @@ static cmatrix_t *dm_conjugate_free(const cmatrix_t *U, cmatrix_t *rho) {
 
 /*
  * NOTE: CNOT conjugation on a density matrix via the permutation formula:
- *  \rho'[i][j] = \rho[perm(i)][perm(j)],
+ *  \rho'[i][j] = \rho[perm(i)][perm(j)]
+ *
  * Where
  *  perm flips target's bit whenever control's bit is 1 (0-indexed, qubit 0 =
  *  leftmost/MSB).
@@ -105,7 +106,7 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
   }
 
   int n_ops = 2 * n_qubits;
-  cmatrix_t **L = malloc((size_t)n_ops * sizeof *L);
+  cmatrix_t **L = calloc((size_t)n_ops, sizeof *L);
   if (!L) {
     cmatrix_free(rho);
     cmatrix_free(Hzero);

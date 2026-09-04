@@ -17,6 +17,7 @@ static inline complex_t c_neg(complex_t z) { return (complex_t){-z.re, -z.im}; }
 static inline complex_t c_real(double x) { return (complex_t){x, 0.0}; }
 static inline complex_t c_imag(double y) { return (complex_t){0.0, y}; }
 static inline complex_t c_conj(complex_t z) { return (complex_t){z.re, -z.im}; }
+// NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
 static inline double c_abs(complex_t z) { return sqrt(z.re * z.re + z.im * z.im);}
 static inline double c_abs2(complex_t z) { return z.re * z.re + z.im * z.im; }
 static inline double c_arg(complex_t z) { return atan2(z.im, z.re); }

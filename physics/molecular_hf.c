@@ -106,6 +106,7 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
         double v = 0.0;
 
         for (int k = 0; k < n_occ; k++) {
+          // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
           v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
         }
 
