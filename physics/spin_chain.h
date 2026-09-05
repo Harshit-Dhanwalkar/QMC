@@ -23,8 +23,8 @@
  *
  * NOTE: Only two symmetries are exploited here: total S^z (fixed by choosing
  * number of up spins, nup) and translation (fixed by choosing a momentum index
- * k in units of 2 * \pi / N).
- * WARN: Point-group parity / spin-inversion are not implemented
+ * k in units of 2 * \pi / N). Reflection (spatial parity) and spin-inversion
+ * are also available as further block-diagonalizations on top of these.
  */
 
 typedef struct {
@@ -140,5 +140,41 @@ cmatrix_t *spin_sector_reflection_matrix(const spin_sector_t *sec);
 cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
                                       const sparse_matrix_t *H, int parity,
                                       int *dim_out);
+
+/* ---- Spin-inversion (global spin-flip) symmetry --------------------------
+ *
+ * I: flip every spin (bit-complement the state). Unlike reflection, I commutes
+ * exactly with translation, so it preserves momentum k for *any* k (not just
+ * 0/N/2) - but it maps the nup sector to the (N-nup) sector, so it's only a
+ * symmetry of a fixed sector at half filling (N even, nup = N/2).
+ */
+
+/* Builds the spin-inversion operator I as a dense sec->dim x sec->dim unitary
+ * matrix in the same translation-symmetry-adapted basis as
+ * spin_sector_hamiltonian(sec, ...).
+ *
+ * Returns NULL if sec is not at half filling (N odd, or nup != N/2) - I would
+ * map this sector to a different (N-nup) sector, so no single-valued inversion
+ * quantum number exists there (not a bug: that's the actual symmetry content of
+ * the problem). Also returns NULL on allocation failure.
+ */
+cmatrix_t *spin_sector_inversion_matrix(const spin_sector_t *sec);
+
+/* Sector Hamiltonian H onto subspace where the inversion operator above has
+ * eigenvalue `parity` (must be exactly +1 or -1), returning a dense Hamiltonian
+ * of the resulting (generally much smaller) dimension in  *dim_out.
+ * Diagonalizing this block instead of the full sector reproduces exactly the
+ * subset of sec's spectrum with that inversion parity.
+ *
+ * WARN: Unlike spin_sector_parity_project, this works at any momentum k (as
+ * long as sec is at half filling).
+ * Returns NULL if sec isn't at half filling, if parity isn't +-1, or on
+ * allocation failure. If the requested parity subspace is empty, returns a
+ * valid 0x0 cmatrix_t with *dim_out = 0 (not NULL: that's reserved for the
+ * error cases above).
+ */
+cmatrix_t *spin_sector_inversion_project(const spin_sector_t *sec,
+                                         const sparse_matrix_t *H, int parity,
+                                         int *dim_out);
 
 #endif

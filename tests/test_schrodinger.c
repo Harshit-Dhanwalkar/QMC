@@ -48,7 +48,7 @@ static void check_close(double got, double expected, double tol,
 
 static void test_solve_tise_shoot_harmonic_oscillator(void) {
   printf("Test: solve_tise_shoot on the harmonic oscillator matches exact "
-         "(n+1/2)*hbar*omega energies and cross-validates against "
+         "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
          "solve_tise_matrix\n");
 
   int n = 800;
@@ -121,6 +121,7 @@ static void test_solve_tise_shoot_harmonic_oscillator(void) {
  * x(t) = x0 * \cos(\omega * t) is an exact result (Ehrenfest's theorem is exact
  * for any harmonic potential) for any \hbar, mass, \omega
  */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void make_coherent_state(cvector_t *psi, const double *x, int n,
                                 double x0, double hbar, double mass,
                                 double omega) {
@@ -134,6 +135,7 @@ static void make_coherent_state(cvector_t *psi, const double *x, int n,
   }
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static double compute_norm(const cvector_t *psi, int n, double dx) {
   double s = 0.0;
   for (int i = 0; i < n; i++) {
@@ -144,6 +146,7 @@ static double compute_norm(const cvector_t *psi, int n, double dx) {
   return s * dx;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static double compute_x_mean(const cvector_t *psi, const double *x, int n,
                              double dx) {
   double s = 0.0, norm = 0.0;

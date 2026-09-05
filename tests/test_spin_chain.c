@@ -387,14 +387,168 @@ static void test_reflection_parity(void) {
   spin_sector_free(bad);
 }
 
+/* Spin-inversion (global spin-flip) symmetry: I^2=I, Hermiticity, [H,I]=0, and
+ * lower of two parity blocks' ground energies must equal sector's own (unsplit)
+ * ground energy. Checked at half filling (required for I to be a symmetry of a
+ * fixed sector) across every momentum k, since, unlike reflection R, I isn't
+ * restricted to k=0/N/2
+ */
+static void test_spin_inversion(void) {
+  printf("\n-- Spin inversion: I^2=I, [H,I]=0, ground energy preserved under "
+         "parity splitting, at every k (half filling) --\n");
+
+  struct {
+    int N, nup;
+    double E0_ref; // independently known full-ring ground energy
+  } cases[] = {
+      {6, 3, -2.802776},
+      {8, 4, -3.651093},
+  };
+
+  for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+    int N = cases[c].N, nup = cases[c].nup;
+    double best_over_all_k = 1e300;
+
+    for (int k = 0; k < N; k++) {
+      spin_sector_t *sec = spin_sector_build(N, nup, k);
+      char label[160];
+
+      snprintf(label, sizeof label, "N=%d k=%d: sector built", N, k);
+      check(sec != NULL, label);
+      if (!sec) {
+        continue;
+      }
+
+      sparse_matrix_t *H = spin_sector_hamiltonian(sec, 1.0, 1.0, /*pbc=*/1);
+      cmatrix_t *I = spin_sector_inversion_matrix(sec);
+
+      snprintf(label, sizeof label,
+               "N=%d k=%d: inversion_matrix non-NULL at half filling", N, k);
+      check(I != NULL, label);
+      if (!I) {
+        sparse_free(H);
+        spin_sector_free(sec);
+
+        continue;
+      }
+
+      int dim = sec->dim;
+      double max_i2_err = 0.0, max_herm_err = 0.0;
+      for (int i = 0; i < dim; i++) {
+        for (int j = 0; j < dim; j++) {
+          complex_t ii = c_zero();
+
+          for (int m = 0; m < dim; m++) {
+            ii = c_add(ii, c_mul(CMAT(I, i, m), CMAT(I, m, j)));
+          }
+
+          complex_t expect = (i == j) ? c_new(1.0, 0.0) : c_zero();
+          double e = sqrt(c_abs2(c_sub(ii, expect)));
+          if (e > max_i2_err) {
+            max_i2_err = e;
+          }
+
+          double eh = sqrt(c_abs2(c_sub(CMAT(I, i, j), c_conj(CMAT(I, j, i)))));
+          if (eh > max_herm_err) {
+            max_herm_err = eh;
+          }
+        }
+      }
+
+      snprintf(label, sizeof label, "N=%d k=%d: |I^2 - I| within tol", N, k);
+      check_close(max_i2_err, 0.0, 1e-10, label);
+
+      snprintf(label, sizeof label, "N=%d k=%d: |I - I^\\dagger| within tol", N,
+               k);
+      check_close(max_herm_err, 0.0, 1e-10, label);
+
+      cmatrix_free(I);
+
+      int dim_p, dim_m;
+      cmatrix_t *Hp = spin_sector_inversion_project(sec, H, +1, &dim_p);
+      cmatrix_t *Hm = spin_sector_inversion_project(sec, H, -1, &dim_m);
+      snprintf(label, sizeof label,
+               "N=%d k=%d: inversion block dims sum to sector dim (%d+%d=%d)",
+               N, k, dim_p, dim_m, dim);
+      check(dim_p + dim_m == dim, label);
+
+      double best = 1e300;
+      if (dim_p > 0) {
+        sparse_matrix_t *Hps = sparse_from_dense(Hp, 0.0);
+        lanczos_result_t *ep = lanczos_eigs(Hps, 1, dim_p, 1e-12);
+        if (ep && ep->values[0] < best) {
+          best = ep->values[0];
+        }
+
+        lanczos_free(ep);
+        sparse_free(Hps);
+      }
+
+      if (dim_m > 0) {
+        sparse_matrix_t *Hms = sparse_from_dense(Hm, 0.0);
+        lanczos_result_t *em = lanczos_eigs(Hms, 1, dim_m, 1e-12);
+        if (em && em->values[0] < best) {
+          best = em->values[0];
+        }
+
+        lanczos_free(em);
+        sparse_free(Hms);
+      }
+
+      lanczos_result_t *ref = lanczos_eigs(H, 1, dim, 1e-12);
+      snprintf(label, sizeof label,
+               "N=%d k=%d: unsplit ground-energy query succeeded (sanity check "
+               "on reference)",
+               N, k);
+      check(ref != NULL, label);
+      if (ref) {
+        snprintf(label, sizeof label,
+                 "N=%d k=%d: lowest inversion-block energy matches unsplit "
+                 "sector's ground energy",
+                 N, k);
+        check_close(best, ref->values[0], 1e-8, label);
+        lanczos_free(ref);
+      }
+
+      if (best < best_over_all_k) {
+        best_over_all_k = best;
+      }
+
+      cmatrix_free(Hp);
+      cmatrix_free(Hm);
+      sparse_free(H);
+      spin_sector_free(sec);
+    }
+
+    char label[160];
+    snprintf(label, sizeof label,
+             "N=%d: best inversion-split ground energy over all k matches "
+             "independently known ring ground energy",
+             N);
+    check_close(best_over_all_k, cases[c].E0_ref, 1e-5, label);
+  }
+
+  // Not half filling: inversion maps this sector to a different (N-nup) sector,
+  // so no single-valued inversion quantum number exists here.
+  spin_sector_t *unbalanced = spin_sector_build(6, 2, 0);
+  cmatrix_t *Ibad = spin_sector_inversion_matrix(unbalanced);
+
+  check(Ibad == NULL,
+        "inversion_matrix returns NULL away from half filling (N=6, nup=2)");
+
+  cmatrix_free(Ibad);
+  spin_sector_free(unbalanced);
+}
+
 int main(void) {
-  printf("=== Spin-chain symmetry-adapted ED + DSF tests ===\n");
+  printf(" > Spin-chain symmetry-adapted ED + DSF tests\n");
 
   test_ground_energies();
   test_hamiltonian_hermitian_and_sector_sizes();
   test_szq_sum_rule();
   test_continued_fraction_integrates_to_I0();
   test_reflection_parity();
+  test_spin_inversion();
 
   if (failures == 0) {
     printf("\nAll test_spin_chain checks passed.\n");

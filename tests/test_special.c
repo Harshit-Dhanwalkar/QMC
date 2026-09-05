@@ -126,7 +126,7 @@ static void test_hermite_zeros_all_matches_per_index(void) {
 }
 
 static void test_legendre_array_basic(void) {
-  printf("Test: legendre_array evaluates the plain (m=0) Legendre polynomial "
+  printf(" > Test: legendre_array evaluates the plain (m=0) Legendre polynomial "
          "at each point");
 
   const double x[4] = {-1.0, -0.5, 0.0, 1.0};

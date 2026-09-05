@@ -1,8 +1,8 @@
 #include "spin_chain.h"
 #include "../core/complex.h"
+#include "../core/matrix.h"
 #include "../core/sparse.h"
 #include "../core/vector.h"
-#include "../core/matrix.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -51,6 +51,7 @@ static uint64_t find_representative(uint64_t s, int N, uint64_t mask,
   }
 
   // translate^{lbest}(s) == best (== rep), so s == translate^{N-lbest}(rep)
+  // NOLINTNEXTLINE(clang-analyzer-core.DivideZero)
   *l_out = (N - lbest) % N;
 
   return best;
@@ -502,23 +503,14 @@ cmatrix_t *spin_sector_reflection_matrix(const spin_sector_t *sec) {
   return R;
 }
 
-cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
-                                      const sparse_matrix_t *H, int parity,
-                                      int *dim_out) {
-  if (!sec || !H || (parity != 1 && parity != -1) || !dim_out) {
-    return NULL;
-  }
-
-  cmatrix_t *R = spin_sector_reflection_matrix(sec);
-  if (!R) {
-    return NULL;
-  }
-
-  int dim = sec->dim;
+static cmatrix_t *sector_project_by_involution(const sparse_matrix_t *H,
+                                               cmatrix_t *U, int parity,
+                                               int *dim_out) {
+  int dim = U->nrows;
 
   cmatrix_t *P = cmatrix_alloc(dim, dim);
   if (!P) {
-    cmatrix_free(R);
+    cmatrix_free(U);
 
     return NULL;
   }
@@ -528,8 +520,8 @@ cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
 
   for (int i = 0; i < dim; i++) {
     for (int j = 0; j < dim; j++) {
-      complex_t rij = CMAT(R, i, j);
-      complex_t pij = c_scale(rij, half_parity);
+      complex_t uij = CMAT(U, i, j);
+      complex_t pij = c_scale(uij, half_parity);
 
       if (i == j) {
         pij = c_add(pij, c_new(0.5, 0.0));
@@ -541,7 +533,7 @@ cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
     trace += CMAT(P, i, i).re;
   }
 
-  cmatrix_free(R);
+  cmatrix_free(U);
 
   int expected_dim = (int)(trace + 0.5); // Tr(P) = rank(P) for a projector
   *dim_out = expected_dim;
@@ -636,4 +628,101 @@ cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
   cmatrix_free(Hd);
 
   return Hblock;
+}
+
+cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
+                                      const sparse_matrix_t *H, int parity,
+                                      int *dim_out) {
+  if (!sec || !H || (parity != 1 && parity != -1) || !dim_out) {
+    return NULL;
+  }
+
+  cmatrix_t *R = spin_sector_reflection_matrix(sec);
+  if (!R) {
+    return NULL;
+  }
+
+  return sector_project_by_involution(H, R, parity, dim_out);
+}
+
+/* ---- Spin-inversion (global spin-flip) symmetry --------------------------
+ *
+ * NOTE: I: flip every spin (bit-complement the whole word). I commutes exactly
+ * with translation (T and bit-complement act on completely independent aspects
+ * of the state - position vs value - so they trivially commute), which means I
+ * preserves momentum k for *any* k The only restriction is that I maps the nup
+ * sector to the (N-nup) sector, so it's only a symmetry of a *fixed* (nup, k)
+ * sector when nup == N-nup, i.e. at half filling (N even, nup = N/2)
+ */
+
+static uint64_t invert_bits(uint64_t s, int N, uint64_t mask) {
+  (void)N;
+
+  return (~s) & mask;
+}
+
+cmatrix_t *spin_sector_inversion_matrix(const spin_sector_t *sec) {
+  if (!sec || sec->N % 2 != 0 || sec->nup != sec->N / 2) {
+    return NULL; // not half filling: I maps this sector to a different one
+  }
+
+  int N = sec->N, dim = sec->dim, k = sec->k;
+  uint64_t mask = (N == 64) ? ~0ULL : ((1ULL << N) - 1ULL);
+  double theta = 2.0 * M_PI * (double)k / (double)N;
+
+  cmatrix_t *I = cmatrix_alloc(dim, dim);
+  if (!I) {
+    return NULL;
+  }
+  for (int idx = 0; idx < dim * dim; idx++) {
+    I->data[idx] = c_zero();
+  }
+
+  /* Derivation:
+   *  I|k,a> = (\sqrt(R_a) / N) * \sum_r \exp(-i* \theta * r) T^r I|rep_a> =
+   * (\sqrt(R_a) / N) * \sum_r \exp(-i * \theta * r) T^r|s0>, s0 = I(rep_a)
+   *
+   * (using [T,I]=0 to move I past T^r). Writing s0 = T^{l0}(rep_b) and
+   * reindexing r' = r+l0 gives I|k,a> = \sqrt(R_a / R_b) * \exp(+i * \theta *
+   * l0)  * |k,b> - same momentum k as |k,a> (unlike reflection, which needs k
+   * -> -k and hence only closes at k=0/N/2), and phase sign is opposite
+   * reflection's because I commutes with T^r exactly instead of anti-commuting
+   * (R T^r = T^{-r} R).
+   */
+  for (int a = 0; a < dim; a++) {
+    uint64_t s0 = invert_bits(sec->rep[a], N, mask);
+    int l0;
+    uint64_t rep_b = find_representative(s0, N, mask, &l0);
+    int b = spin_sector_find(sec, rep_b);
+    if (b < 0) {
+      /* Should not happen: at half filling, I(s) always has popcount N/2 too,
+       * so its representative is always in this same sector. */
+      cmatrix_free(I);
+
+      return NULL;
+    }
+
+    double Ra = (double)sec->period[a];
+    double Rb = (double)sec->period[b];
+    double phase = theta * (double)l0;
+    complex_t val = c_scale(c_new(cos(phase), sin(phase)), sqrt(Ra / Rb));
+    CMAT(I, b, a) = val;
+  }
+
+  return I;
+}
+
+cmatrix_t *spin_sector_inversion_project(const spin_sector_t *sec,
+                                         const sparse_matrix_t *H, int parity,
+                                         int *dim_out) {
+  if (!sec || !H || (parity != 1 && parity != -1) || !dim_out) {
+    return NULL;
+  }
+
+  cmatrix_t *I = spin_sector_inversion_matrix(sec);
+  if (!I) {
+    return NULL;
+  }
+
+  return sector_project_by_involution(H, I, parity, dim_out);
 }

@@ -176,7 +176,8 @@ jobs:
           cppcheck --enable=warning,style,performance,portability \
                    --error-exitcode=1 \
                    --inline-suppr \
-                   -I core -I physics -I export .
+                   -I core -I physics -I export \
+                   -i third_party -i build .
 
       # - name: Install bear and generate compilation database
       #   run: |
@@ -193,7 +194,8 @@ jobs:
       - name: Run Clang-Tidy
         run: |
           clang-tidy -p . --config-file=.clang-tidy -warnings-as-errors=clang-analyzer-* \
-             $(find $(pwd)/core $(pwd)/physics $(pwd)/export -name "*.c" -not -path "*/build/*")
+            find $(pwd)/core $(pwd)/physics $(pwd)/export -name "*.c" \
+                 -not -path "*/third_party/*" -not -path "*/build/*"
 
   valgrind-check:
     runs-on: ubuntu-latest
