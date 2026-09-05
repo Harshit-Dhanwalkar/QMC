@@ -6,6 +6,9 @@
  * finite-difference/dense-diagonalization solve on a finite radial grid, not a
  * converged calculation, so tolerances are meaningful but grid-tolerant, not
  * tight to several decimal places.
+ *
+ * Cross-checked against References: RHF limit, Szabo & Ostlund, Pekeris (1959),
+ * Hartree and arXiv:2202.00647, Table II
  */
 
 #include "../core/utils.h"
@@ -19,9 +22,9 @@
 #define RUNNING_ON_VALGRIND 0
 #endif
 
-#define HELIUM_EXACT_NONREL -2.903724      // Pekeris (1959), Hartree
-#define HELIUM_HF -2.861680                // RHF limit, Szabo & Ostlund
-#define HELIUM_VWN_LDA_REFERENCE -2.834836 // arXiv:2202.00647, Table II
+#define HELIUM_EXACT_NONREL -2.903724
+#define HELIUM_HF -2.861680
+#define HELIUM_VWN_LDA_REFERENCE -2.834836
 
 static int failures = 0;
 

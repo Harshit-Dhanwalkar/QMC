@@ -29,6 +29,7 @@ int main() {
 
     return 1;
   }
+
   if (At->nrows != 3 || At->ncols != 2) {
     printf("FAIL: transpose dimensions\n");
 
@@ -37,6 +38,7 @@ int main() {
 
     return 1;
   }
+
   if (c_abs(c_sub(CMAT(At, 0, 0), c_real(1.0))) > 1e-12) {
     printf("FAIL: transpose value\n");
 

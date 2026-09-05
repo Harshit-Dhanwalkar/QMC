@@ -10,12 +10,13 @@
  *      matrix must equal the exact electron count.
  *   3. End-to-end total energy on H2/STO-3G and LiH/STO-3G, cross-validated
  *      (Reference: Perdew-Zunger 1981 correlation), lda_xc_energy_density /
- *      lda_xc_potential in dft.c): H2/STO-3G @ R=1.4 bohr: -1.12132825509958
- *      Hartree LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree.
+ *      lda_xc_potential in dft.c):
+ *      H2/STO-3G @ R=1.4 bohr   : -1.12132825509958  Hartree
+ *      LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree
  *   4. Same end-to-end total-energy cross-validation for PBE GGA functional,
- *      dft.RKS(xc='pbe') (grids.level=6): H2/STO-3G @ R=1.4 bohr:
- *      -1.1520643731282254 Hartree; LiH/STO-3G @ R=3.015 bohr:
- *      -7.9206827623358045 Hartree.
+ *      dft.RKS(xc='pbe') (grids.level=6):
+ *      H2/STO-3G @ R=1.4 bohr   :  -1.1520643731282254 Hartree
+ *      LiH/STO-3G @ R=3.015 bohr: -7.9206827623358045 Hartree
  */
 
 #include "../core/matrix.h"
@@ -166,8 +167,8 @@ static void test_grid_integrates_electron_count(void) {
 }
 
 static void test_h2_ks_lda_matches_pyscf(void) {
-  printf("Test: H2/STO-3G KS-LDA total energy matches PySCF's "
-         "dft.RKS(xc='lda,pz') reference (-1.12132825509958 Hartree)\n");
+  printf("Test: H2/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
+         "reference (-1.12132825509958 Hartree)\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
@@ -189,7 +190,7 @@ static void test_h2_ks_lda_matches_pyscf(void) {
     if (dft) {
       check(dft->converged, "KS-LDA should converge");
       check_close(dft->total_energy, -1.12132825509958, 1e-5,
-                  "H2/STO-3G KS-LDA total energy matches PySCF reference");
+                  "H2/STO-3G KS-LDA total energy matches reference");
 
       molecular_dft_result_free(dft);
     }
@@ -202,8 +203,8 @@ static void test_h2_ks_lda_matches_pyscf(void) {
 }
 
 static void test_lih_ks_lda_matches_pyscf(void) {
-  printf("Test: LiH/STO-3G KS-LDA total energy matches PySCF's "
-         "dft.RKS(xc='lda,pz') reference (-7.79120636378942 Hartree), "
+  printf("Test: LiH/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
+         "reference (-7.79120636378942 Hartree), "
          "requires density-mixing convergence\n");
 
   double R = 3.015;
@@ -231,7 +232,7 @@ static void test_lih_ks_lda_matches_pyscf(void) {
     if (dft) {
       check(dft->converged, "KS-LDA should converge (with mixing)");
       check_close(dft->total_energy, -7.79120636378942, 1e-5,
-                  "LiH/STO-3G KS-LDA total energy matches PySCF reference");
+                  "LiH/STO-3G KS-LDA total energy matches reference");
 
       check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
                   dft->total_energy, 1e-4,
@@ -250,8 +251,8 @@ static void test_lih_ks_lda_matches_pyscf(void) {
 }
 
 static void test_h2_ks_pbe_matches_pyscf(void) {
-  printf("Test: H2/STO-3G KS-PBE total energy matches PySCF's "
-         "dft.RKS(xc='pbe') reference (-1.1520643731282254 Hartree)\n");
+  printf("Test: H2/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
+         "reference (-1.1520643731282254 Hartree)\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
@@ -273,7 +274,7 @@ static void test_h2_ks_pbe_matches_pyscf(void) {
     if (dft) {
       check(dft->converged, "KS-PBE should converge");
       check_close(dft->total_energy, -1.1520643731282254, 1e-5,
-                  "H2/STO-3G KS-PBE total energy matches PySCF reference");
+                  "H2/STO-3G KS-PBE total energy matches reference");
 
       molecular_dft_result_free(dft);
     }
@@ -286,9 +287,9 @@ static void test_h2_ks_pbe_matches_pyscf(void) {
 }
 
 static void test_lih_ks_pbe_matches_pyscf(void) {
-  printf("Test: LiH/STO-3G KS-PBE total energy matches PySCF's "
-         "dft.RKS(xc='pbe') reference (-7.9206827623358045 Hartree), "
-         "requires density-mixing convergence\n");
+  printf("Test: LiH/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
+         "reference (-7.9206827623358045 Hartree), requires density-mixing "
+         "convergence\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -316,7 +317,7 @@ static void test_lih_ks_pbe_matches_pyscf(void) {
     if (dft) {
       check(dft->converged, "KS-PBE should converge (with mixing)");
       check_close(dft->total_energy, -7.9206827623358045, 1e-5,
-                  "LiH/STO-3G KS-PBE total energy matches PySCF reference");
+                  "LiH/STO-3G KS-PBE total energy matches reference");
 
       check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
                   dft->total_energy, 1e-4,

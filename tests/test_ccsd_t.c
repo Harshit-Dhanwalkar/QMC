@@ -99,10 +99,13 @@ static void run_case(basis_function_t **basis, int n_basis,
 
 static void test_h2_pert_t_exactly_zero(void) {
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
+
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
+
   const double charge[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
@@ -120,11 +123,13 @@ static void test_asymmetric_h4(void) {
   double c1[3] = {0.9, 0.3, 0.1};
   double c2[3] = {1.7, -0.4, 0.6};
   double c3[3] = {2.9, 0.5, -0.3};
+
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *h2 = molint_basis_sto3g_h(c2);
   basis_function_t *h3 = molint_basis_sto3g_h(c3);
   basis_function_t *basis[4] = {h0, h1, h2, h3};
+
   const double charge[4] = {1.0, 1.0, 1.0, 1.0};
   double centers[4][3];
   for (int d = 0; d < 3; d++) {
@@ -151,9 +156,11 @@ static void test_lih(void) {
   double li_center[3] = {0, 0, 0};
   basis_function_t *li[5];
   molint_basis_sto3g_li(li_center, li);
+
   double h_center[3] = {0, 0, R};
   basis_function_t *h = molint_basis_sto3g_h(h_center);
   basis_function_t *basis[6] = {li[0], li[1], li[2], li[3], li[4], h};
+
   const double charge[2] = {3.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charge, centers);

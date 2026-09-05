@@ -71,15 +71,15 @@ static void test_li_atom_uhf(void) {
          uhf->iterations);
   check_true(uhf->converged, "Li UHF converges");
   check_close(uhf->total_energy, -7.3155259813, 1e-6,
-              "Li UHF matches independent PySCF reference");
+              "Li UHF matches independent reference");
   check_close(uhf->spin_squared, 0.75, 1e-6,
               "<S^2> = Sz(Sz+1) exactly: no spin contamination for Li");
 
-  // n_alpha=n_beta edge case: closed-shell UHF on Li+ (2 electrons, singlet)
-  // should reduce to \alpha and \beta MOs being numerically identical (both
-  // spin channels see the same Fock operator when densities are equal), and its
-  // energy should match closed-shell RHF run on the same 2-electron system as
-  // an internal consistency check.
+  // NOTE: n_alpha=n_beta edge case: closed-shell UHF on Li+ (2 electrons,
+  // singlet) should reduce to \alpha and \beta MOs being numerically identical
+  // (both spin channels see the same Fock operator when densities are equal),
+  // and its energy should match closed-shell RHF run on the same 2-electron
+  // system as an internal consistency check.
   molecular_uhf_result_t *uhf_liplus =
       molecular_uhf(li, 5, mol, 1, 1, 1e-10, 300);
   molecular_hf_result_t *rhf_liplus = molecular_rhf(li, 5, mol, 2, 1e-10, 300);
@@ -91,9 +91,9 @@ static void test_li_atom_uhf(void) {
     check_close(uhf_liplus->spin_squared, 0.0, 1e-8,
                 "<S^2> = 0 exactly for a closed-shell singlet");
   }
+
   molecular_uhf_result_free(uhf_liplus);
   molecular_hf_result_free(rhf_liplus);
-
   molecular_uhf_result_free(uhf);
   molecule_free(mol);
   for (int i = 0; i < 5; i++) {

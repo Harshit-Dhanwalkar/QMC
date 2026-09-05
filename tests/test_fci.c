@@ -4,25 +4,19 @@
  * This module formalizes a pattern previously duplicated by hand across 5 test
  * files: build full Fock-space molecular Hamiltonian and diagonalize it, but
  * properly restricted to a fixed electron-number sector rather than
- * diagonalizing whole Fock space and trusting the true ground state happens to
- * also be the global minimum across every particle-number sector.
+ * diagonalizing whole Fock space and trusting true ground state happens to also
+ * be global minimum across every particle-number sector.
  *
  * Validation:
- *   1. H2/STO-3G and LiH/STO-3G FCI ground energies against PySCF's
- *      fci.FCI(mf).kernel() (same RHF/STO-3G references already used
- *      throughout this project's test suite):
- *        H2/STO-3G  @ R=1.4 bohr:   -1.1372759436 Hartree
- *        LiH/STO-3G @ R=3.015 bohr: -7.8823949575 Hartree
- *   2. Cross-validated against the FULL, unrestricted Fock-space
- *      diagonalization approach the old duplicated test code used (build
- *      second_quant_build_molecular_hamiltonian directly, diagonalize the
- *      whole thing, take eigenvalues[0]) -- confirms the sector-restricted
- *      result is identical to what that approach already got right for
- *      these bound-molecule cases, while being smaller/faster.
- *   3. Ground-state electron-number expectation value equals exactly the
- *      requested n_electrons (sanity check that the sector restriction
- *      didn't accidentally include/exclude the wrong basis states).
- *   4. Frozen-core FCI on LiH matches an independent PySCF frozen-core FCI
+ *   1. H2/STO-3G and LiH/STO-3G FCI ground energies against
+ *      fci.FCI(mf).kernel() (same RHF/STO-3G references):
+ *      H2/STO-3G  @ R=1.4 bohr  : -1.1372759436 Hartree
+ *      LiH/STO-3G @ R=3.015 bohr: -7.8823949575 Hartree
+ *   2. Cross-validated against unrestricted Fock-space diagonalization approach
+ *   3. Ground-state electron-number expectation value equals exactly requested
+ *      n_electrons (sanity check that the sector restriction didn't
+ *      accidentally include/exclude the wrong basis states).
+ *   4. Frozen-core FCI on LiH matches an independent frozen-core FCI
  *      calculation.
  *   5. Invalid-input handling.
  */
@@ -57,7 +51,7 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_h2_fci_matches_pyscf(void) {
-  printf("Test: H2/STO-3G FCI ground energy matches PySCF's fci.FCI "
+  printf("Test: H2/STO-3G FCI ground energy matches fci.FCI "
          "reference (-1.1372759436 Hartree)\n");
 
   double R = 1.4;
@@ -81,10 +75,10 @@ static void test_h2_fci_matches_pyscf(void) {
   fci_result_t *fci = fci_solve(2, h_mo, eri_mo, Enuc, 2);
   check(fci != NULL, "fci_solve should succeed");
   if (fci) {
-    check(fci->dim == 6, "2-electron-in-4-spin-orbital sector dim = "
-                         "C(4,2) = 6");
+    check(fci->dim == 6,
+          "2-electron-in-4-spin-orbital sector dim = C(4,2) = 6");
     check_close(fci->ground_energy, -1.1372759436, 1e-6,
-                "H2/STO-3G FCI ground energy matches PySCF");
+                "H2/STO-3G FCI ground energy");
 
     // electron-number sanity check
     double N_expect = 0.0;
@@ -124,8 +118,8 @@ static void test_h2_fci_matches_pyscf(void) {
 }
 
 static void test_lih_fci_matches_pyscf_and_full_fock_space(void) {
-  printf("Test: LiH/STO-3G FCI matches PySCF (-7.8823949575 Hartree) and "
-         "the unrestricted full-Fock-space diagonalization approach duplicated "
+  printf("Test: LiH/STO-3G FCI matches reference -7.8823949575 Hartree and "
+         "unrestricted full-Fock-space diagonalization approach duplicated "
          "test code used\n");
 
   double R = 3.015;
@@ -179,7 +173,7 @@ static void test_lih_fci_matches_pyscf_and_full_fock_space(void) {
 
 static void test_lih_frozen_core_fci(void) {
   printf("Test: LiH/STO-3G frozen-core FCI (freeze Li 1s) matches an "
-         "independent PySCF frozen-core FCI calculation\n");
+         "independent frozen-core FCI calculation\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -210,7 +204,7 @@ static void test_lih_frozen_core_fci(void) {
   if (fci) {
     printf("  Frozen-core FCI energy: %.8f Hartree\n", fci->ground_energy);
     check_close(fci->ground_energy, -7.882167498160469, 1e-5,
-                "frozen-core FCI matches independent PySCF CASCI reference");
+                "frozen-core FCI matches independent CASCI reference");
 
     check(fci->ground_energy > -7.8823949575 - 1e-6,
           "frozen-core FCI energy is above (less negative than, i.e. a "

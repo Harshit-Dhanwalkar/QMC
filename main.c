@@ -67,12 +67,14 @@ static const demo_entry_t demos[] = {
     {"build/eg_51_qpe", "Quantum Phase Estimation (QPE) for molecular Hamiltonians"},
     {"build/eg_52_molecular_dft", "Kohn-Sham molecular DFT solver (LDA/VWN)"},
     {"build/eg_53_molecular_pbe_dft", "Molecular DFT with GGA functionals (PBE)"},
-    {"build/eg_54_schrodinger_solvers", "Comprehensive 1D/3D Schrödinger eigensolvers comparison"},
-    {"build/eg_55_fci", "Full Configuration Interaction (FCI) exact diagonalization"},
-    {"build/eg_56_spin_chain_dsf", "Dynamic structure factor for 1D Heisenberg spin chains"},
-    {"build/eg_57_ising_chain", "Transverse-field Ising chain exact diagonalization and Jordan-Wigner"},
-    {"build/eg_58_uhf_openshell", "Unrestricted Hartree-Fock: open-shell radicals (H, Li doublet, Li+)"},
-    {"build/eg_59_latex_gen", "Automated LaTeX matrix and equation code generator"},
+    {"build/eg_54_molecular_mp2", "General molecular MP2 (beyond s-orbitals): LiH with/without frozen core"},
+    {"build/eg_55_schrodinger_solvers", "Comprehensive 1D/3D Schrödinger eigensolvers comparison"},
+    {"build/eg_56_fci", "Full Configuration Interaction (FCI) exact diagonalization"},
+    {"build/eg_57_spin_chain_dsf", "Dynamic structure factor for 1D Heisenberg spin chains"},
+    {"build/eg_58_ising_chain", "Transverse-field Ising chain exact diagonalization and Jordan-Wigner"},
+    {"build/eg_59_uhf_openshell", "Unrestricted Hartree-Fock: open-shell radicals (H, Li doublet, Li+)"},
+    {"build/eg_60_latex_gen", "Automated LaTeX matrix and equation code generator"},
+
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

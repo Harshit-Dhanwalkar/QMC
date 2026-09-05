@@ -17,7 +17,10 @@
 #include "../core/utils.h"
 #include "../core/vector.h"
 #include "../physics/hartree_fock.h"
+#include "../physics/molecular_hf.h"
+#include "../physics/molecular_integrals.h"
 #include "../physics/mp2.h"
+#include "matrix.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -211,10 +214,92 @@ static void test_invalid_input(void) {
   free(r);
 }
 
+// General (non s-only) closed-shell MP2, checked against an independent
+// reference on LiH/STO-3G at R=3.015 bohr (mol = gto.M(atom='Li 0 0 0; H 0
+// 0 3.015', basis='sto-3g', unit='bohr'); pyscf.mp.MP2(scf.RHF(mol))):
+//   RHF total energy:      -7.862009272120222
+//   MP2 corr (no frozen):  -0.012868323831743156
+//   MP2 corr (frozen=1):   -0.012640335346251669
+static void test_molecular_mp2_lih(void) {
+  printf("test_molecular_mp2_lih:\n");
+
+  double R = 3.015;
+  double c_li[3] = {0.0, 0.0, 0.0};
+  double c_h[3] = {0.0, 0.0, R};
+
+  basis_function_t *li_orbs[5];
+  molint_basis_sto3g_li(c_li, li_orbs);
+  basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
+
+  basis_function_t *basis[6] = {li_orbs[0], li_orbs[1], li_orbs[2],
+                                li_orbs[3], li_orbs[4], h_orb};
+  const double charges[2] = {3.0, 1.0};
+  double centers[2][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, R}};
+  molecule_t *mol = molecule_alloc(2, charges, centers);
+
+  molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, 1e-12, 200);
+  check_true(hf != NULL && hf->converged, "LiH RHF converges");
+
+  if (hf) {
+    check_close(hf->total_energy, -7.862009272120222, 1e-7,
+                "RHF total energy matches reference");
+
+    cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
+    double *eri_ao = molecular_eri_tensor(basis, 6);
+    double *h_mo = malloc(36 * sizeof(double));
+    double *eri_mo = malloc(6 * 6 * 6 * 6 * sizeof(double));
+    molecular_ao_to_mo(h_ao, eri_ao, hf->C, 6, h_mo, eri_mo);
+
+    molecular_mp2_result_t mp2_full =
+        molecular_mp2(6, eri_mo, hf->orbital_energies, 4, 0, hf->total_energy);
+    check_close(mp2_full.e_mp2, -0.012868323831743156, 1e-6,
+                "E_MP2 (no frozen core)");
+    check_true(mp2_full.n_occ == 2 && mp2_full.n_virt == 4,
+               "n_occ/n_virt reported correctly (no frozen core)");
+
+    molecular_mp2_result_t mp2_fc =
+        molecular_mp2(6, eri_mo, hf->orbital_energies, 4, 1, hf->total_energy);
+    check_close(mp2_fc.e_mp2, -0.012640335346251669, 1e-6,
+                "E_MP2 (frozen core=1)");
+    check_true(mp2_fc.n_occ == 1 && mp2_fc.n_virt == 4,
+               "n_occ/n_virt reported correctly (frozen core=1)");
+
+    // Invalid input handling.
+    molecular_mp2_result_t bad1 =
+        molecular_mp2(0, eri_mo, hf->orbital_energies, 4, 0, hf->total_energy);
+    check_true(bad1.e_mp2 == 0.0, "n_basis<=0 rejected");
+
+    molecular_mp2_result_t bad2 =
+        molecular_mp2(6, NULL, hf->orbital_energies, 4, 0, hf->total_energy);
+    check_true(bad2.e_mp2 == 0.0, "NULL eri_mo rejected");
+
+    molecular_mp2_result_t bad3 =
+        molecular_mp2(6, eri_mo, hf->orbital_energies, 3, 0, hf->total_energy);
+    check_true(bad3.e_mp2 == 0.0, "odd n_electrons rejected");
+
+    molecular_mp2_result_t bad4 =
+        molecular_mp2(6, eri_mo, hf->orbital_energies, 4, 2, hf->total_energy);
+    check_true(bad4.e_mp2 == 0.0, "n_frozen_spatial >= n_occ_total rejected");
+
+    free(h_mo);
+    free(eri_mo);
+    free(eri_ao);
+    cmatrix_free(h_ao);
+    molecular_hf_result_free(hf);
+  }
+
+  for (int i = 0; i < 5; i++) {
+    basis_function_free(li_orbs[i]);
+  }
+  basis_function_free(h_orb);
+  molecule_free(mol);
+}
+
 int main(void) {
   test_synthetic_fixture();
   test_invalid_input();
   test_helium_mp2_physical_sanity();
+  test_molecular_mp2_lih();
 
   if (failures == 0) {
     printf("\nAll test_mp2 checks passed.\n");

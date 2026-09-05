@@ -181,12 +181,13 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_51_qpe.c</code></li>
   <li><code>eg_52_molecular_dft.c</code></li>
   <li><code>eg_53_molecular_pbe_dft.c</code></li>
-  <li><code>eg_54_schrodinger_solvers.c</code></li>
-  <li><code>eg_55_fci.c</code></li>
-  <li><code>eg_56_spin_chain_dsf.c</code></li>
-  <li><code>eg_57_ising_chain.c</code></li>
-  <li><code>eg_58_uhf_openshell.c</code></li>
-  <li><code>eg_59_latex_gen.c</code></li>
+  <li><code>eg_54_molecular_mp2.c</code></li>
+  <li><code>eg_55_schrodinger_solvers.c</code></li>
+  <li><code>eg_56_fci.c</code></li>
+  <li><code>eg_57_spin_chain_dsf.c</code></li>
+  <li><code>eg_58_ising_chain.c</code></li>
+  <li><code>eg_59_uhf_openshell.c</code></li>
+  <li><code>eg_60_latex_gen.c</code></li>
 </ul>
 </details>
 

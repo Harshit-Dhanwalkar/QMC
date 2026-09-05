@@ -11,10 +11,10 @@
  *   1. The hydrogen atom (1 electron - the simplest possible open shell,
  *      no beta electrons at all).
  *   2. The lithium atom's doublet ground state (2 alpha, 1 beta - a real
- *      radical), checked against an independent PySCF reference.
- *   3. Li+ (2 electrons, closed-shell) run through the *same* UHF code
- *      with n_alpha = n_beta, to show that UHF reduces to RHF exactly
- *      when there's nothing asymmetric left to describe.
+ *      radical), checked against an independent reference.
+ *   3. Li+ (2 electrons, closed-shell) run through same UHF code with n_alpha =
+ *      n_beta, to show that UHF reduces to RHF exactly when there's nothing
+ *      asymmetric left to describe.
  */
 
 #include "../physics/molecular_hf.h"
@@ -97,7 +97,7 @@ int main(void) {
          doublet->iterations);
   printf("  E_total = %.10f Hartree\n", doublet->total_energy);
   printf(
-      "  (independent PySCF reference: -7.3155259813 Hartree, |diff| = %.2e)\n",
+      "  (independent reference: -7.3155259813 Hartree, |diff| = %.2e)\n",
       fabs(doublet->total_energy - (-7.3155259813)));
 
   printf("  alpha orbital energies:");

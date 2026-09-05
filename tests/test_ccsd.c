@@ -45,10 +45,14 @@ static void check_true(int cond, const char *label) {
 
 static void test_h2_ccsd_matches_fci(void) {
   printf("test_h2_ccsd_matches_fci:\n");
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, 1.4};
+
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, 1.4};
+
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
+
   const double charges[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, 1.4}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
@@ -67,11 +71,11 @@ static void test_h2_ccsd_matches_fci(void) {
                                  res->total_energy, 1e-12, 100);
   check_true(ccsd->converged, "H2 CCSD converges");
 
-  // independent reference 1: at same geometry
-  check_close("H2 CCSD matches independent PySCF CCSD", ccsd->total_energy,
+  // Independent reference 1: at same geometry
+  check_close("H2 CCSD matches independent CCSD", ccsd->total_energy,
               -1.1372759436170439, 1e-8);
 
-  // independent reference 2: exact FCI diagonalization - CCSD should be exact
+  // Independent reference 2: exact FCI diagonalization - CCSD should be exact
   // here (2-electron system)
   cmatrix_t *H_fci =
       second_quant_build_molecular_hamiltonian(2, h_mo, eri_mo, 1.0 / 1.4);
@@ -102,18 +106,20 @@ static void test_h2_ccsd_matches_fci(void) {
 
 static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
   printf("test_h4_asymmetric_ccsd_vs_pyscf:\n");
+
   // Arbitrary non-collinear, no-symmetry geometry
   double c0[3] = {0, 0, 0};
   double c1[3] = {0.9, 0.3, 0.1};
   double c2[3] = {1.7, -0.4, 0.6};
   double c3[3] = {2.9, 0.5, -0.3};
+
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *h2 = molint_basis_sto3g_h(c2);
   basis_function_t *h3 = molint_basis_sto3g_h(c3);
   basis_function_t *basis[4] = {h0, h1, h2, h3};
-  const double charges[4] = {1.0, 1.0, 1.0, 1.0};
 
+  const double charges[4] = {1.0, 1.0, 1.0, 1.0};
   double centers[4][3];
   for (int d = 0; d < 3; d++) {
     centers[0][d] = c0[d];
@@ -161,10 +167,12 @@ static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
 
 static void test_lih_ccsd_vs_pyscf(void) {
   printf("test_lih_ccsd_vs_pyscf:\n");
-  /* LiH/STO-3G, R=3.015 bohr: a real degenerate-orbital system (2px/2py
-   * exactly degenerate by symmetry) */
+
+  /* LiH/STO-3G, R=3.015 bohr: a real degenerate-orbital system (2px/2py exactly
+   * degenerate by symmetry) */
   double cLi[3] = {0, 0, 0};
   double cH[3] = {0, 0, 3.015};
+
   basis_function_t *li[5];
 
   molint_basis_sto3g_li(cLi, li);
@@ -192,7 +200,7 @@ static void test_lih_ccsd_vs_pyscf(void) {
                                       0, res->total_energy, 1e-12, 200);
 
   check_true(ccsd_full->converged, "LiH (full) CCSD converges");
-  check_close("LiH (full) CCSD matches independent PySCF CCSD",
+  check_close("LiH (full) CCSD matches independent CCSD",
               ccsd_full->total_energy, -7.882384455686598, 1e-6);
 
   ccsd_result_t *ccsd_frozen = ccsd_run(6, h_mo, eri_mo, res->orbital_energies,

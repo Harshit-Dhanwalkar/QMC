@@ -5,6 +5,7 @@ restricted.
 
 #include "mp2.h"
 #include "hartree_fock.h"
+#include "molecular_integrals.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -106,6 +107,57 @@ mp2_result_t mp2_correlation_energy(const hf_result_t *hf, const double *r,
   result.e_total = hf->total_energy + e_mp2;
   result.n_occ = n_occ;
   result.n_virt = n_virtual;
+
+  return result;
+}
+
+molecular_mp2_result_t molecular_mp2(int n_basis, const double *eri_mo,
+                                     const double *mo_energy, int n_electrons,
+                                     int n_frozen_spatial, double e_rhf) {
+  molecular_mp2_result_t result = {0};
+
+  if (n_basis <= 0 || !eri_mo || !mo_energy || n_electrons % 2 != 0 ||
+      n_frozen_spatial < 0) {
+    return result;
+  }
+
+  int n_occ_total = n_electrons / 2;
+  if (n_occ_total <= n_frozen_spatial || n_occ_total > n_basis) {
+    return result;
+  }
+
+  int n_virt = n_basis - n_occ_total;
+  if (n_virt < 1) {
+    return result;
+  }
+
+  double e_mp2 = 0.0;
+
+  for (int i = n_frozen_spatial; i < n_occ_total; i++) {
+    for (int j = n_frozen_spatial; j < n_occ_total; j++) {
+      for (int a = n_occ_total; a < n_basis; a++) {
+        for (int b = n_occ_total; b < n_basis; b++) {
+          double iajb = MOLINT_ERI(eri_mo, n_basis, i, a, j, b);
+          double ibja = MOLINT_ERI(eri_mo, n_basis, i, b, j, a);
+
+          double denom =
+              mo_energy[i] + mo_energy[j] - mo_energy[a] - mo_energy[b];
+
+          if (fabs(denom) < 1e-12) {
+            continue;
+          }
+
+          e_mp2 += iajb * (2.0 * iajb - ibja) / denom;
+        }
+      }
+    }
+  }
+
+  result.e_rhf = e_rhf;
+  result.e_mp2 = e_mp2;
+  result.e_total = e_rhf + e_mp2;
+  result.n_occ = n_occ_total - n_frozen_spatial;
+  result.n_virt = n_virt;
 
   return result;
 }
