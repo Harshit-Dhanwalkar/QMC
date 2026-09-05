@@ -71,7 +71,8 @@ static const demo_entry_t demos[] = {
     {"build/eg_55_fci", "Full Configuration Interaction (FCI) exact diagonalization"},
     {"build/eg_56_spin_chain_dsf", "Dynamic structure factor for 1D Heisenberg spin chains"},
     {"build/eg_57_ising_chain", "Transverse-field Ising chain exact diagonalization and Jordan-Wigner"},
-    {"build/eg_58_latex_gen", "Automated LaTeX matrix and equation code generator"},
+    {"build/eg_58_uhf_openshell", "Unrestricted Hartree-Fock: open-shell radicals (H, Li doublet, Li+)"},
+    {"build/eg_59_latex_gen", "Automated LaTeX matrix and equation code generator"},
 };
 
 static const int n_demos = (int)(sizeof(demos) / sizeof(demos[0]));

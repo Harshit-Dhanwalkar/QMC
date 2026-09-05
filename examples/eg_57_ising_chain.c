@@ -32,7 +32,8 @@
 
 /* <\sigma^x_0> in ground state, from its Lanczos eigenvector.
  *  \sigma^x_0 flips bit 0 of computational basis, so
- *  <\psi|\sigma^x_0|\psi> = \sum_s conj(\psi[s]) * \psi[s^1]. */
+ *  <\psi|\sigma^x_0|\psi> = \sum_s conj(\psi[s]) * \psi[s^1] 
+ */
 static double transverse_magnetization(const cmatrix_t *psi, int dim) {
   complex_t acc = c_zero();
 
@@ -92,9 +93,9 @@ int main(void) {
              labels1, &opts);
   printf("\n   Saved ising_ground_energy.png (two curves should overlap)\n");
 
-  /* Transverse magnetization order parameter across transition, for 2 system
-   * sizes to show finite-size crossover sharpening toward true N->infty phase
-   * transition at h_c=J. */
+  /* NOTE: Transverse magnetization order parameter across transition, for 2
+   * system sizes to show finite-size crossover sharpening toward true N->\infty
+   * phase transition at h_c=J. */
   const int Ns[2] = {6, 10};
   double *mag[2];
   for (int n_idx = 0; n_idx < 2; n_idx++) {
@@ -158,7 +159,7 @@ int main(void) {
   printf("   Saved ising_entanglement.png (should peak near h/J=1, critical "
          "point, and fall off in both phases)\n");
 
-  /* Quantum quench: prepare the ground state at h_i deep in ferromagnetic
+  /* NOTE: Quantum quench: prepare the ground state at h_i deep in ferromagnetic
    * phase, then suddenly switch the Hamiltonian to h_f deep in paramagnetic
    * phase, and track Loschmidt echo L(t) = |<\psi(0)|\psi(t)>|^2. A quench
    * across critical point typically shows L(t) dropping sharply from 1 and

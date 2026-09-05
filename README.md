@@ -185,7 +185,8 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_55_fci.c</code></li>
   <li><code>eg_56_spin_chain_dsf.c</code></li>
   <li><code>eg_57_ising_chain.c</code></li>
-  <li><code>eg_58_latex_gen.c</code></li>
+  <li><code>eg_58_uhf_openshell.c</code></li>
+  <li><code>eg_59_latex_gen.c</code></li>
 </ul>
 </details>
 
