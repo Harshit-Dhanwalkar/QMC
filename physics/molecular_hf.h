@@ -73,7 +73,7 @@ typedef struct {
 
 /*
  * Run UHF for a general basis/molecule. n_alpha and n_beta may differ
- * (open-shell); n_alpha,n_beta >= 0, n_alpha+n_beta >= 1,
+ * (open-shell); n_alpha,n_beta >= 0, n_alpha + n_beta >= 1,
  * max(n_alpha,n_beta) <= n_basis. tol/max_iter as in molecular_rhf.
  *
  * Returns NULL on invalid input or allocation failure.
@@ -87,9 +87,9 @@ void molecular_uhf_result_free(molecular_uhf_result_t *res);
 /*
  * NOTE: AO -> MO transform for both one-electron core Hamiltonian and
  * two-electron integral tensor, via RHF (or any other) MO coefficient matrix C.
- * h_mo must be preallocated n_basis*n_basis.
- * eri_mo must be preallocated n_basis^4 (both row-major / MOLINT_ERI
- * flat-indexed).
+ *  - h_mo must be preallocated n_basis*n_basis
+ *  - eri_mo must be preallocated n_basis^4 (both row-major / MOLINT_ERI
+ *    flat-indexed)
  *
  * WARN: since it is only ever used here on same small active spaces
  * second_quant_build_molecular_hamiltonian is already restricted to. Nnot
@@ -98,6 +98,24 @@ void molecular_uhf_result_free(molecular_uhf_result_t *res);
 void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
                         const cmatrix_t *C, int n_basis, double *h_mo,
                         double *eri_mo);
+
+/*
+ * General (mixed-coefficient) two-electron AO -> MO integral transform:
+ * MOLINT_ERI(eri_mo, n, i, j, k, l) is the \bra pair (i,j) transformed with
+ * C_bra and the ket pair (k,l) transformed with C_ket. molecular_ao_to_mo's ERI
+ * transform is the special case C_bra == C_ket == C (same-spin, e.g. RHF, or a
+ * single UHF spin channel's own (aa|aa)/(bb|bb) integrals).
+ *
+ * The general (mixed) case is needed for a UHF-based post-HF method's
+ * opposite-spin block, e.g. UMP2's (i_alpha a_alpha | j_beta b_beta) term:
+ *  pass C_bra = C_alpha, C_ket = C_beta
+ *
+ * eri_mo must be preallocated n_basis^4 (MOLINT_ERI flat-indexed, as in
+ * molecular_ao_to_mo).
+ */
+void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
+                                  const cmatrix_t *C_ket, int n_basis,
+                                  double *eri_mo);
 
 /*
  * Analytic RHF nuclear gradient / forces (Reference Pulay 1969).

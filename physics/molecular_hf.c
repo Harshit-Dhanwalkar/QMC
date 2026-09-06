@@ -506,6 +506,53 @@ void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
   }
 }
 
+void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
+                                  const cmatrix_t *C_ket, int n_basis,
+                                  double *eri_mo) {
+  int n = n_basis;
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      for (int k = 0; k < n; k++) {
+        for (int l = 0; l < n; l++) {
+          double v = 0.0;
+
+          for (int p = 0; p < n; p++) {
+            double cip = CMAT(C_bra, p, i).re;
+
+            if (cip == 0.0) {
+              continue;
+            }
+
+            for (int q = 0; q < n; q++) {
+              double cjq = CMAT(C_bra, q, j).re;
+
+              if (cjq == 0.0) {
+                continue;
+              }
+
+              for (int r = 0; r < n; r++) {
+                double ckr = CMAT(C_ket, r, k).re;
+
+                if (ckr == 0.0) {
+                  continue;
+                }
+
+                for (int s = 0; s < n; s++) {
+                  v += cip * cjq * ckr * CMAT(C_ket, s, l).re *
+                       MOLINT_ERI(eri_ao, n, p, q, r, s);
+                }
+              }
+            }
+          }
+
+          MOLINT_ERI(eri_mo, n, i, j, k, l) = v;
+        }
+      }
+    }
+  }
+}
+
 /*
  * NOTE: Analytic RHF nuclear gradient (Reference :Pulay 1969 / Szabo & Ostlund
  * eq. 3.184; Helgaker, Jorgensen & Olsen ch. 10).

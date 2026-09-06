@@ -11,7 +11,6 @@
 #include <string.h>
 
 // Allocation / Free
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 sparse_matrix_t *sparse_alloc(int nrows, int ncols, int nnz) {
   sparse_matrix_t *sp_mat = malloc(sizeof(sparse_matrix_t));
   if (!sp_mat) {
@@ -87,12 +86,14 @@ sparse_matrix_t *sparse_from_dense(const cmatrix_t *sp_mat, double tol) {
 // Matrix-vector multiply
 /* w = sp_mat * x for a general sparse matrix in CSR form.
  *
- * OpenMP-parallelized via row-based gather: row i's output y->data[i] depends
- * only on x (read-only here) and A's own i-th CSR row, so each thread owns a
- * disjoint set of output rows and writes each exactly once. No thread-private
- * accumulation buffers, no atomics, and no reduction step, since there is
- * nothing to reduce (contrast with a scatter-style update, where multiple
- * threads could target the same output index and need synchronization). */
+ * NOTE: OpenMP-parallelized via row-based gather: row i's output y->data[i]
+ * depends only on x (read-only here) and sp_mat's own i-th CSR row, so each
+ * thread owns a disjoint set of output rows and writes each exactly once. No
+ * thread-private accumulation buffers, no atomics, and no reduction step, since
+ * there is nothing to reduce (contrast with a scatter-style update, where
+ * multiple threads could target the same output index and need
+ * synchronization).
+ */
 void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
                cvector_t *out_vec) {
   if (!sp_mat || !in_vec || !out_vec || sp_mat->ncols != in_vec->n ||
@@ -123,7 +124,7 @@ void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
  * with every eigenvector
  *
  *   work_j   = sp_mat v_j - \beta_{j-1} v_{j-1}
- *   \alpha_j = Re(<v_j, work_j>)            (real for Hermitian A)
+ *   \alpha_j = Re(<v_j, work_j>)            (real for Hermitian sp_mat)
  *   work_j  -= \alpha_j v_j
  *   \beta_j  = ||wwork_j||,
  *   v_{j+1}  = work_j / \beta_j

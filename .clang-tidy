@@ -9,7 +9,8 @@ Checks: >
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
   -bugprone-multi-level-implicit-pointer-conversion,
-  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -bugprone-easily-swappable-parameters
 CheckOptions:
   - key: readability-identifier-length.MinimumLength
     value: 1

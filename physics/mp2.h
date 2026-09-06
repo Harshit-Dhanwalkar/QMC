@@ -84,4 +84,62 @@ molecular_mp2_result_t molecular_mp2(int n_basis, const double *eri_mo,
                                      const double *mo_energy, int n_electrons,
                                      int n_frozen_spatial, double e_rhf);
 
+typedef struct {
+  double e_uhf;   // input UHF total energy, Hartree
+  double e_mp2;   // UMP2 correlation correction, Hartree (expected <= 0)
+  double e_total; // e_uhf + e_mp2
+  double e_aa;    // same-spin (alpha-alpha) contribution
+  double e_bb;    // same-spin (beta-beta) contribution
+  double e_ab;    // opposite-spin (alpha-beta) contribution; e_mp2 = e_aa +
+                  // e_bb + e_ab
+} molecular_ump2_result_t;
+
+/*
+ * Unrestricted (UHF-based) MP2 correlation energy - post-HF partner to
+ * molecular_uhf(), letting open-shell radicals/cations/anions/triplets get a
+ * correlation correction the same way molecular_mp2() does for RHF's
+ * closed-shell reference. Spin-orbital MP2 restricted to real, unmixed spin
+ * blocks (Reference: Szabo & Ostlund Ch. 6, spin-orbital formulation
+ * specialized to the alpha/beta block structure a real (not
+ * complex/generalized) UHF reference has):
+ *
+ *   E_UMP2 = E_aa + E_bb + E_ab
+ *   E_aa = (1/4) \sum_{i,j occ-alpha} \sum_{a,b virt-alpha}
+ *          [(ia|jb) - (ib|ja)]^2 / (eps_i + eps_j - eps_a - eps_b)
+ *   E_bb = same, all-beta
+ *   E_ab = \sum_{i occ-alpha} \sum_{j occ-beta} \sum_{a virt-alpha}
+ *          \sum_{b virt-beta} (ia|jb)^2 / (eps_i + eps_j - eps_a - eps_b)
+ *
+ * NOTE: E_ab has no exchange/antisymmetrization term: alpha and beta electrons
+ * are distinguishable, so there's no (ib|ja)-type contribution to subtract - i
+ * is alpha-only, j is beta-only, so "ib" and "ja" would mix spins within a
+ * single spatial integral, which isn't a valid same-integral exchange partner
+ * here.)
+ *
+ * eri_aaaa, eri_bbbb: n_basis^4 same-spin MO integrals, each built via
+ * molecular_ao_to_mo(..., C_alpha, ...) / (..., C_beta, ...) respectively (or
+ * molecular_ao_to_mo_eri_mixed with C_bra==C_ket).
+ *  - eri_aabb: n_basis^4 mixed-spin MO integrals from
+ *              molecular_ao_to_mo_eri_mixed(eri_ao, C_alpha, C_beta, n_basis,
+ *              eri_aabb)
+ * - bra pair (i,a) in the alpha basis, ket pair (j,b) in the beta basis
+ *
+ * mo_energy_alpha, mo_energy_beta: n_basis UHF orbital energies per spin
+ * n_alpha, n_beta                : occupied \alpha/\beta counts (as in
+ *                                  molecular_uhf)
+ * n_frozen_alpha, n_frozen_beta  : lowest-energy occupied orbitals of each spin
+ *                                  to exclude from correlation (0 for none)
+ * e_uhf                          : converged UHF total energy, folded into
+ *                                  e_total for convenience
+ *
+ * Returns a zeroed molecular_ump2_result_t (e_mp2=0) on invalid input:
+ * n_basis<=0, any NULL array, n_alpha/n_beta out of [n_frozen, n_basis] range,
+ * or n_alpha < n_beta.
+ */
+molecular_ump2_result_t
+molecular_ump2(int n_basis, const double *eri_aaaa, const double *eri_bbbb,
+               const double *eri_aabb, const double *mo_energy_alpha,
+               const double *mo_energy_beta, int n_alpha, int n_beta,
+               int n_frozen_alpha, int n_frozen_beta, double e_uhf);
+
 #endif

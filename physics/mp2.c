@@ -161,3 +161,95 @@ molecular_mp2_result_t molecular_mp2(int n_basis, const double *eri_mo,
 
   return result;
 }
+
+molecular_ump2_result_t
+molecular_ump2(int n_basis, const double *eri_aaaa, const double *eri_bbbb,
+               const double *eri_aabb, const double *mo_energy_alpha,
+               const double *mo_energy_beta, int n_alpha, int n_beta,
+               int n_frozen_alpha, int n_frozen_beta, double e_uhf) {
+  molecular_ump2_result_t result = {0};
+
+  if (n_basis <= 0 || !eri_aaaa || !eri_bbbb || !eri_aabb || !mo_energy_alpha ||
+      !mo_energy_beta || n_frozen_alpha < 0 || n_frozen_beta < 0 ||
+      n_alpha < n_beta) {
+    return result;
+  }
+
+  if (n_alpha <= n_frozen_alpha || n_alpha > n_basis ||
+      (n_beta > 0 && n_beta <= n_frozen_beta) || n_beta > n_basis) {
+    return result;
+  }
+
+  double e_aa = 0.0;
+  for (int i = n_frozen_alpha; i < n_alpha; i++) {
+    for (int j = n_frozen_alpha; j < n_alpha; j++) {
+      for (int a = n_alpha; a < n_basis; a++) {
+        for (int b = n_alpha; b < n_basis; b++) {
+          double iajb = MOLINT_ERI(eri_aaaa, n_basis, i, a, j, b);
+          double ibja = MOLINT_ERI(eri_aaaa, n_basis, i, b, j, a);
+          double diff = iajb - ibja;
+
+          double denom = mo_energy_alpha[i] + mo_energy_alpha[j] -
+                         mo_energy_alpha[a] - mo_energy_alpha[b];
+
+          if (fabs(denom) < 1e-12) {
+            continue;
+          }
+
+          e_aa += 0.25 * diff * diff / denom;
+        }
+      }
+    }
+  }
+
+  double e_bb = 0.0;
+  for (int i = n_frozen_beta; i < n_beta; i++) {
+    for (int j = n_frozen_beta; j < n_beta; j++) {
+      for (int a = n_beta; a < n_basis; a++) {
+        for (int b = n_beta; b < n_basis; b++) {
+          double iajb = MOLINT_ERI(eri_bbbb, n_basis, i, a, j, b);
+          double ibja = MOLINT_ERI(eri_bbbb, n_basis, i, b, j, a);
+          double diff = iajb - ibja;
+
+          double denom = mo_energy_beta[i] + mo_energy_beta[j] -
+                         mo_energy_beta[a] - mo_energy_beta[b];
+
+          if (fabs(denom) < 1e-12) {
+            continue;
+          }
+
+          e_bb += 0.25 * diff * diff / denom;
+        }
+      }
+    }
+  }
+
+  double e_ab = 0.0;
+  for (int i = n_frozen_alpha; i < n_alpha; i++) {
+    for (int j = n_frozen_beta; j < n_beta; j++) {
+      for (int a = n_alpha; a < n_basis; a++) {
+        for (int b = n_beta; b < n_basis; b++) {
+          double iajb = MOLINT_ERI(eri_aabb, n_basis, i, a, j, b);
+
+          double denom = mo_energy_alpha[i] + mo_energy_beta[j] -
+                         mo_energy_alpha[a] - mo_energy_beta[b];
+
+          if (fabs(denom) < 1e-12) {
+            continue;
+          }
+
+          e_ab += iajb * iajb / denom;
+        }
+      }
+    }
+  }
+
+  result.e_uhf = e_uhf;
+  result.e_aa = e_aa;
+  result.e_bb = e_bb;
+  result.e_ab = e_ab;
+  result.e_mp2 = e_aa + e_bb + e_ab;
+  result.e_total = e_uhf + result.e_mp2;
+
+  return result;
+}

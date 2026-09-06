@@ -295,11 +295,96 @@ static void test_molecular_mp2_lih(void) {
   molecule_free(mol);
 }
 
+// Unrestricted (UHF-based) MP2 on the lithium atom doublet (2 \alpha, 1 \beta),
+// reference (mol = gto.M(atom='Li 0 0 0', basis='sto-3g', spin=1);
+// mp.UMP2(scf.UHF(mol))):
+//   UHF total energy:        -7.315525981281088
+//   UMP2 corr energy:        -0.0002564094444800904
+static void test_molecular_ump2_li(void) {
+  printf("test_molecular_ump2_li:\n");
+
+  double c_li[3] = {0.0, 0.0, 0.0};
+  basis_function_t *li_orbs[5];
+  molint_basis_sto3g_li(c_li, li_orbs);
+
+  const double charges[1] = {3.0};
+  double centers[1][3] = {{0.0, 0.0, 0.0}};
+  molecule_t *mol = molecule_alloc(1, charges, centers);
+
+  molecular_uhf_result_t *uhf =
+      molecular_uhf(li_orbs, 5, mol, 2, 1, 1e-12, 300);
+  check_true(uhf != NULL && uhf->converged, "Li doublet UHF converges");
+
+  if (uhf) {
+    check_close(uhf->total_energy, -7.315525981281088, 1e-7,
+                "UHF total energy matches reference");
+
+    cmatrix_t *h_ao = molecular_core_hamiltonian(li_orbs, 5, mol);
+    double *eri_ao = molecular_eri_tensor(li_orbs, 5);
+
+    double *eri_aaaa = malloc(5 * 5 * 5 * 5 * sizeof(double));
+    double *eri_bbbb = malloc(5 * 5 * 5 * 5 * sizeof(double));
+    double *eri_aabb = malloc(5 * 5 * 5 * 5 * sizeof(double));
+    double *h_mo_scratch = malloc(25 * sizeof(double));
+
+    molecular_ao_to_mo(h_ao, eri_ao, uhf->C_alpha, 5, h_mo_scratch, eri_aaaa);
+    molecular_ao_to_mo(h_ao, eri_ao, uhf->C_beta, 5, h_mo_scratch, eri_bbbb);
+    molecular_ao_to_mo_eri_mixed(eri_ao, uhf->C_alpha, uhf->C_beta, 5,
+                                 eri_aabb);
+
+    molecular_ump2_result_t ump2 = molecular_ump2(
+        5, eri_aaaa, eri_bbbb, eri_aabb, uhf->orbital_energies_alpha,
+        uhf->orbital_energies_beta, 2, 1, 0, 0, uhf->total_energy);
+
+    check_close(ump2.e_mp2, -0.0002564094444800904, 1e-6,
+                "E_UMP2 matches reference");
+    check_close(ump2.e_aa, 0.0, 1e-10,
+                "E_aa is exactly 0 (only 1 occupied alpha pair below the 2s/2p "
+                "near-degeneracy - no same-spin excitation available in this "
+                "minimal basis)");
+    check_close(ump2.e_bb, 0.0, 1e-10,
+                "E_bb is exactly 0 (single beta electron: no i!=j pair to "
+                "correlate against)");
+    check_close(ump2.e_mp2, ump2.e_aa + ump2.e_bb + ump2.e_ab, 1e-12,
+                "e_mp2 == e_aa + e_bb + e_ab");
+
+    // Invalid input handling
+    molecular_ump2_result_t bad1 = molecular_ump2(
+        0, eri_aaaa, eri_bbbb, eri_aabb, uhf->orbital_energies_alpha,
+        uhf->orbital_energies_beta, 2, 1, 0, 0, uhf->total_energy);
+    check_true(bad1.e_mp2 == 0.0, "n_basis<=0 rejected");
+
+    molecular_ump2_result_t bad2 = molecular_ump2(
+        5, NULL, eri_bbbb, eri_aabb, uhf->orbital_energies_alpha,
+        uhf->orbital_energies_beta, 2, 1, 0, 0, uhf->total_energy);
+    check_true(bad2.e_mp2 == 0.0, "NULL eri_aaaa rejected");
+
+    molecular_ump2_result_t bad3 = molecular_ump2(
+        5, eri_aaaa, eri_bbbb, eri_aabb, uhf->orbital_energies_alpha,
+        uhf->orbital_energies_beta, 1, 2, 0, 0, uhf->total_energy);
+    check_true(bad3.e_mp2 == 0.0, "n_alpha < n_beta rejected");
+
+    free(h_mo_scratch);
+    free(eri_aabb);
+    free(eri_bbbb);
+    free(eri_aaaa);
+    free(eri_ao);
+    cmatrix_free(h_ao);
+    molecular_uhf_result_free(uhf);
+  }
+
+  for (int i = 0; i < 5; i++) {
+    basis_function_free(li_orbs[i]);
+  }
+  molecule_free(mol);
+}
+
 int main(void) {
   test_synthetic_fixture();
   test_invalid_input();
   test_helium_mp2_physical_sanity();
   test_molecular_mp2_lih();
+  test_molecular_ump2_li();
 
   if (failures == 0) {
     printf("\nAll test_mp2 checks passed.\n");
