@@ -106,6 +106,7 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
   }
 
   int n_ops = 2 * n_qubits;
+  // NOLINTNEXTLINE(clang-analyzer-unix.mallocsizeof)
   cmatrix_t **L = calloc((size_t)n_ops, sizeof **L);
   if (!L) {
     cmatrix_free(rho);

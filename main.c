@@ -73,8 +73,9 @@ static const demo_entry_t demos[] = {
     {"build/eg_57_spin_chain_dsf", "Dynamic structure factor for 1D Heisenberg spin chains"},
     {"build/eg_58_ising_chain", "Transverse-field Ising chain exact diagonalization and Jordan-Wigner"},
     {"build/eg_59_uhf_openshell", "Unrestricted Hartree-Fock: open-shell radicals (H, Li doublet, Li+)"},
-    {"build/eg_60_ump2", "UMP2: post-HF correlation energy for open-shell radicals (Li doublet)"},
-    {"build/eg_61_latex_gen", "Automated LaTeX matrix and equation code generator"},
+    {"build/eg_60_uhf_geometry_optimization", "Analytic UHF nuclear gradient: open-shell geometry optimization (LiH+)"},
+    {"build/eg_61_ump2", "UMP2: post-HF correlation energy for open-shell radicals (Li doublet)"},
+    {"build/eg_62_latex_gen", "Automated LaTeX matrix and equation code generator"},
 
 };
 

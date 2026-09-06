@@ -134,4 +134,32 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
                                const molecule_t *mol, const int *atom_of_basis,
                                const molecular_hf_result_t *scf);
 
+/*
+ * Analytic UHF nuclear gradient / forces - the open-shell generalization of
+ * molecular_rhf_gradient(), for radicals/open-shell cations/anions where
+ * molecular_rhf() doesn't apply. Reuses the exact same derivative-integral
+ * primitives (they're purely geometric derivatives of the AO integrals,
+ * independent of RHF vs UHF); only the density-matrix construction and the
+ * two-particle density Gamma differ:
+ *
+ *   P^total = P^alpha + P^beta   (P^sigma_uv = sum_{i occ-sigma} C^sigma_ui
+ *                                 C^sigma_vi, no factor of 2: each spin-
+ *                                 orbital holds exactly one electron)
+ *   W = W^alpha + W^beta         (same sum, weighted by that spin's
+ *                                 orbital energy)
+ *   Gamma_uvls = 0.5 * (P^total_uv * P^total_ls)
+ *                - 0.5 * (P^alpha_ul * P^alpha_vs + P^beta_ul * P^beta_vs)
+ *
+ * NOTE: Same conventions as molecular_rhf_gradient: atom_of_basis[i] maps
+ * basis[i] to its atom index (-1 excludes it from AO-center chain-rule terms).
+ * scf must be a converged molecular_uhf result for the same basis/mol.
+ *
+ * Returns a newly allocated flat n_atoms*3 array (grad[3 * A + d] = dE /
+ * dR_A[d]), caller frees with free(). Returns NULL on invalid input, an
+ * unconverged scf result, or allocation failure.
+ */
+double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
+                               const molecule_t *mol, const int *atom_of_basis,
+                               const molecular_uhf_result_t *scf);
+
 #endif

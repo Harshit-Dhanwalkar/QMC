@@ -160,7 +160,7 @@ void lattice_2d_square_analytic(int nx, int ny, double epsilon0, double t,
   free(cos_x);
   free(cos_y);
 
-  qsort(E_out, (size_t)(nx * ny), sizeof(double), cmp_double);
+  qsort(E_out, (size_t)nx * ny, sizeof(double), cmp_double);
 }
 
 cmatrix_t *lattice_build_anderson_1d(int n_sites, double t, double disorder_W,

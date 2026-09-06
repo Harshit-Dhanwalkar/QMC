@@ -291,8 +291,9 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_57_spin_chain_dsf \
               $(BUILD_DIR)/eg_58_ising_chain \
               $(BUILD_DIR)/eg_59_uhf_openshell \
-              $(BUILD_DIR)/eg_60_ump2 \
-              $(BUILD_DIR)/eg_61_latex_gen
+              $(BUILD_DIR)/eg_60_uhf_geometry_optimization
+              $(BUILD_DIR)/eg_61_ump2 \
+              $(BUILD_DIR)/eg_62_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \

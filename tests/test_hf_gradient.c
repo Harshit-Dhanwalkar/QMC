@@ -317,12 +317,129 @@ static void test_h2_equilibrium_bond_length(void) {
              "equilibrium bond length matches literature STO-3G/RHF range");
 }
 
+// UHF gradient (open-shell generalization of molecular_rhf_gradient).
+// LiH+ cation, doublet (2 \alpha, 1 \beta)
+static void lih_cation_energy_and_grad(double *E_out, double R,
+                                       double grad_out[6]) {
+  double cLi[3] = {0, 0, 0}, cH[3] = {0, 0, R};
+
+  basis_function_t *li[5];
+  molint_basis_sto3g_li(cLi, li);
+  basis_function_t *h = molint_basis_sto3g_h(cH);
+  basis_function_t *basis[6] = {li[0], li[1], li[2], li[3], li[4], h};
+
+  const double charges[2] = {3.0, 1.0};
+  double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
+  molecule_t *mol = molecule_alloc(2, charges, centers);
+  // LiH+: 3 electrons, doublet (2 alpha, 1 beta)
+  molecular_uhf_result_t *res = molecular_uhf(basis, 6, mol, 2, 1, 1e-14, 500);
+  if (E_out) {
+    *E_out = res->total_energy;
+  }
+  if (grad_out) {
+    const int atom_of_basis[6] = {0, 0, 0, 0, 0, 1};
+    double *grad = molecular_uhf_gradient(basis, 6, mol, atom_of_basis, res);
+
+    for (int i = 0; i < 6; i++) {
+      grad_out[i] = grad[i];
+    }
+
+    free(grad);
+  }
+
+  molecular_uhf_result_free(res);
+  molecule_free(mol);
+  for (int i = 0; i < 5; i++) {
+    basis_function_free(li[i]);
+  }
+  basis_function_free(h);
+}
+
+static void test_uhf_gradient_vs_finite_difference(void) {
+  printf("test_uhf_gradient_vs_finite_difference:\n");
+  double Rs[] = {2.5, 3.015, 3.5, 4.0};
+  double h = 1e-4;
+
+  for (size_t i = 0; i < sizeof(Rs) / sizeof(Rs[0]); i++) {
+    double R0 = Rs[i];
+    double Ep, Em;
+
+    lih_cation_energy_and_grad(&Ep, R0 + h, NULL);
+    lih_cation_energy_and_grad(&Em, R0 - h, NULL);
+
+    double fd = (Ep - Em) / (2 * h);
+    double grad[6];
+
+    lih_cation_energy_and_grad(NULL, R0, grad);
+
+    char label[64];
+    snprintf(label, sizeof(label), "LiH+ (UHF) R=%.3f analytic matches FD", R0);
+    check_close(grad[5], (target_val_t){fd, 1e-6}, label);
+
+    char label2[96];
+    snprintf(label2, sizeof(label2),
+             "LiH+ (UHF) R=%.3f sum of forces vanishes (translational "
+             "invariance)",
+             R0);
+    check_true(fabs(grad[2] + grad[5]) < 1e-9, label2);
+  }
+
+  // Reduction check: at a closed-shell UHF solution (n_alpha == n_beta),
+  // molecular_uhf_gradient's Gamma formula must numerically match
+  // molecular_rhf_gradient's for the exact same system
+  {
+    double R = 3.015;
+    double cLi[3] = {0, 0, 0}, cH[3] = {0, 0, R};
+    basis_function_t *li[5];
+    molint_basis_sto3g_li(cLi, li);
+    basis_function_t *h_orb = molint_basis_sto3g_h(cH);
+    basis_function_t *basis[6] = {li[0], li[1], li[2], li[3], li[4], h_orb};
+
+    const double charges[2] = {3.0, 1.0};
+    double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
+    molecule_t *mol = molecule_alloc(2, charges, centers);
+    const int atom_of_basis[6] = {0, 0, 0, 0, 0, 1};
+
+    molecular_hf_result_t *rhf = molecular_rhf(basis, 6, mol, 4, 1e-14, 500);
+    molecular_uhf_result_t *uhf =
+        molecular_uhf(basis, 6, mol, 2, 2, 1e-14, 500);
+
+    double *grad_rhf =
+        molecular_rhf_gradient(basis, 6, mol, atom_of_basis, rhf);
+    double *grad_uhf =
+        molecular_uhf_gradient(basis, 6, mol, atom_of_basis, uhf);
+
+    double max_err = 0.0;
+    for (int i = 0; i < 6; i++) {
+      double e = fabs(grad_rhf[i] - grad_uhf[i]);
+      if (e > max_err) {
+        max_err = e;
+      }
+    }
+
+    check_close(max_err, (target_val_t){0.0, 1e-8},
+                "LiH R=3.015 closed-shell UHF gradient (n_alpha=n_beta) "
+                "matches RHF gradient exactly, component-by-component");
+
+    free(grad_rhf);
+    free(grad_uhf);
+    molecular_hf_result_free(rhf);
+    molecular_uhf_result_free(uhf);
+    molecule_free(mol);
+    for (int i = 0; i < 5; i++) {
+      basis_function_free(li[i]);
+    }
+    basis_function_free(h_orb);
+  }
+}
+
 int main(void) {
   test_boys_large_x_regression();
   test_gradient_integral_primitives();
   test_h2_gradient_vs_finite_difference();
   test_lih_gradient_vs_finite_difference();
   test_h2_equilibrium_bond_length();
+  test_uhf_gradient_vs_finite_difference();
 
   if (failures > 0) {
     printf("\n%d test_hf_gradient check(s) FAILED.\n", failures);

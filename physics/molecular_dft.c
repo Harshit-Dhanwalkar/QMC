@@ -536,7 +536,7 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
     for (int p = 0; p < n; p++) {
       ao_vals[g * n + p] = basis_function_value(basis[p], r);
-      basis_function_gradient(basis[p], r, &ao_grads[(g * n + p) * 3]);
+      basis_function_gradient(basis[p], r, &ao_grads[((size_t)g * n + p) * 3]);
     }
   }
 
@@ -649,11 +649,15 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
         double v = 0.0;
 
         for (int g = 0; g < ng; g++) {
-          double ap = ao_vals[g * n + p], aq = ao_vals[g * n + q];
-          const double *gp = &ao_grads[(g * n + p) * 3];
-          const double *gq = &ao_grads[(g * n + q) * 3];
-          double dgx = dens_grad[g * 3 + 0], dgy = dens_grad[g * 3 + 1],
-                 dgz = dens_grad[g * 3 + 2];
+          double ap = ao_vals[g * n + p];
+          double aq = ao_vals[g * n + q];
+          size_t idx = ((size_t)g * n + p) * 3;
+          const double *gp = &ao_grads[idx];
+          const double *gq = &ao_grads[idx];
+
+          double dgx = dens_grad[g * 3 + 0];
+          double dgy = dens_grad[g * 3 + 1];
+          double dgz = dens_grad[g * 3 + 2];
 
           double grad_dot = dgx * (aq * gp[0] + ap * gq[0]) +
                             dgy * (aq * gp[1] + ap * gq[1]) +
@@ -705,7 +709,6 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
         double v = 0.0;
 
         for (int k = 0; k < n_occ; k++) {
-          // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
           v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
         }
 

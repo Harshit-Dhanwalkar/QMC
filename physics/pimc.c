@@ -499,7 +499,7 @@ static pimc_result_t pimc_run_with_rng(rng_state_t *rng, double Z, int P,
   result.error_virial = err_virial;
   result.n_blocks = n_blocks;
   result.acceptance_rate =
-      (move_count > 0) ? (double)accept_sum / move_count : 0.0;
+      (move_count > 0) ? (double)accept_sum / (double)move_count : 0.0;
 
   pimc_walker_free(w);
 

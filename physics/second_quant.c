@@ -71,7 +71,7 @@ static cmatrix_t *jw_operator(int mode, int n_modes, const complex_t *local) {
     return NULL;
   }
 
-  const complex_t **gates = malloc((size_t)n_modes * sizeof *gates);
+  const complex_t **gates = malloc((size_t)n_modes * sizeof(complex_t *));
   for (int k = 0; k < mode; k++) {
     gates[k] = Z2;
   }

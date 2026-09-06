@@ -767,3 +767,208 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
 
   return grad;
 }
+
+double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
+                               const molecule_t *mol, const int *atom_of_basis,
+                               const molecular_uhf_result_t *scf) {
+  if (!basis || n_basis <= 0 || !mol || !atom_of_basis || !scf ||
+      !scf->C_alpha || !scf->C_beta || !scf->orbital_energies_alpha ||
+      !scf->orbital_energies_beta || !scf->converged) {
+    return NULL;
+  }
+
+  int n = n_basis;
+  int n_atoms = mol->n_atoms;
+
+  double *grad = calloc((size_t)n_atoms * 3, sizeof(double));
+  if (!grad) {
+    return NULL;
+  }
+
+  // NOTE: Per-spin one-electron densities P^sigma_uv = sum_{i occ-sigma}
+  // C^sigma_ui C^sigma_vi (no factor of 2), their sum P^total, and the matching
+  // energy-weighted densities W^sigma / their sum W.
+  double *Pa = malloc((size_t)n * n * sizeof(double));
+  double *Pb = malloc((size_t)n * n * sizeof(double));
+  double *Pt = malloc((size_t)n * n * sizeof(double));
+  double *W = malloc((size_t)n * n * sizeof(double));
+  if (!Pa || !Pb || !Pt || !W) {
+    free(Pa);
+    free(Pb);
+    free(Pt);
+    free(W);
+    free(grad);
+
+    return NULL;
+  }
+
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      double pa_uv = 0.0, wa_uv = 0.0;
+
+      for (int i = 0; i < scf->n_alpha; i++) {
+        double cu = CMAT(scf->C_alpha, u, i).re;
+        double cv = CMAT(scf->C_alpha, v, i).re;
+
+        pa_uv += cu * cv;
+        wa_uv += scf->orbital_energies_alpha[i] * cu * cv;
+      }
+
+      double pb_uv = 0.0, wb_uv = 0.0;
+
+      for (int i = 0; i < scf->n_beta; i++) {
+        double cu = CMAT(scf->C_beta, u, i).re;
+        double cv = CMAT(scf->C_beta, v, i).re;
+
+        pb_uv += cu * cv;
+        wb_uv += scf->orbital_energies_beta[i] * cu * cv;
+      }
+
+      Pa[u * n + v] = pa_uv;
+      Pb[u * n + v] = pb_uv;
+      Pt[u * n + v] = pa_uv + pb_uv;
+      W[u * n + v] = wa_uv + wb_uv;
+    }
+  }
+
+  // Nuclear-nuclear repulsion: closed form (identical to the RHF case)
+  for (int A = 0; A < n_atoms; A++) {
+    for (int B = 0; B < n_atoms; B++) {
+      if (B == A) {
+        continue;
+      }
+
+      const double Rvec[3] = {mol->center[A][0] - mol->center[B][0],
+                              mol->center[A][1] - mol->center[B][1],
+                              mol->center[A][2] - mol->center[B][2]};
+      double dist2 = Rvec[0] * Rvec[0] + Rvec[1] * Rvec[1] + Rvec[2] * Rvec[2];
+      double dist3 = dist2 * sqrt(dist2);
+      double pref = -mol->charge[A] * mol->charge[B] / dist3;
+
+      for (int d = 0; d < 3; d++) {
+        grad[3 * A + d] += pref * Rvec[d];
+      }
+    }
+  }
+
+  // One-electron (kinetic + nuclear-attraction) and overlap contributions:
+  // identical structure to the RHF case, but with P^total/W in place of
+  // RHF's (factor-of-2) P/W.
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      double p_uv = Pt[u * n + v];
+      double w_uv = W[u * n + v];
+      if (p_uv == 0.0 && w_uv == 0.0) {
+        continue;
+      }
+
+      int atom_u = atom_of_basis[u];
+      int atom_v = atom_of_basis[v];
+
+      double gT[3], gS[3];
+      if (atom_u >= 0) {
+        gto_kinetic_grad_a(basis[u], basis[v], gT);
+        gto_overlap_grad_a(basis[u], basis[v], gS);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * atom_u + d] += p_uv * gT[d];
+          grad[3 * atom_u + d] -= w_uv * gS[d];
+        }
+
+        for (int A = 0; A < n_atoms; A++) {
+          double gV[3];
+          gto_nuclear_attraction_grad_a(basis[u], basis[v], mol->center[A], gV);
+
+          for (int d = 0; d < 3; d++) {
+            grad[3 * atom_u + d] += p_uv * (-mol->charge[A]) * gV[d];
+          }
+        }
+      }
+
+      if (atom_v >= 0) {
+        gto_kinetic_grad_a(basis[v], basis[u], gT);
+        gto_overlap_grad_a(basis[v], basis[u], gS);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * atom_v + d] += p_uv * gT[d];
+          grad[3 * atom_v + d] -= w_uv * gS[d];
+        }
+
+        for (int A = 0; A < n_atoms; A++) {
+          double gV[3];
+          gto_nuclear_attraction_grad_a(basis[v], basis[u], mol->center[A], gV);
+
+          for (int d = 0; d < 3; d++) {
+            grad[3 * atom_v + d] += p_uv * (-mol->charge[A]) * gV[d];
+          }
+        }
+      }
+
+      for (int A = 0; A < n_atoms; A++) {
+        double gC[3];
+        gto_nuclear_attraction_grad_C(basis[u], basis[v], mol->center[A], gC);
+
+        for (int d = 0; d < 3; d++) {
+          grad[3 * A + d] += p_uv * (-mol->charge[A]) * gC[d];
+        }
+      }
+    }
+  }
+
+  // Two-electron (ERI) contribution: Gamma_uvls = 0.5*(P^t_uv * P^t_ls) -
+  // 0.5*(P^a_ul*P^a_vs + P^b_ul*P^b_vs) (UHF two-particle density; reduces
+  // exactly to the RHF formula when P^a = P^b = P_RHF/2).
+  for (int u = 0; u < n; u++) {
+    for (int v = 0; v < n; v++) {
+      for (int l = 0; l < n; l++) {
+        for (int s = 0; s < n; s++) {
+          double gamma =
+              0.5 *
+              (Pt[u * n + v] * Pt[l * n + s] -
+               (Pa[u * n + l] * Pa[v * n + s] + Pb[u * n + l] * Pb[v * n + s]));
+          if (gamma == 0.0) {
+            continue;
+          }
+
+          const int atoms4[4] = {atom_of_basis[u], atom_of_basis[v],
+                                 atom_of_basis[l], atom_of_basis[s]};
+          basis_function_t *bfs4[4] = {basis[u], basis[v], basis[l], basis[s]};
+
+          for (int slot = 0; slot < 4; slot++) {
+            int A = atoms4[slot];
+            if (A < 0) {
+              continue;
+            }
+
+            double gE[3];
+            switch (slot) {
+            case 0:
+              gto_eri_grad_a(bfs4[0], bfs4[1], bfs4[2], bfs4[3], gE);
+              break;
+            case 1:
+              gto_eri_grad_a(bfs4[1], bfs4[0], bfs4[2], bfs4[3], gE);
+              break;
+            case 2:
+              gto_eri_grad_a(bfs4[2], bfs4[3], bfs4[0], bfs4[1], gE);
+              break;
+            default:
+              gto_eri_grad_a(bfs4[3], bfs4[2], bfs4[0], bfs4[1], gE);
+              break;
+            }
+
+            for (int d = 0; d < 3; d++) {
+              grad[3 * A + d] += gamma * gE[d];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  free(Pa);
+  free(Pb);
+  free(Pt);
+  free(W);
+
+  return grad;
+}
