@@ -273,7 +273,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   }
 
   double E_L_weighted_sum = 0.0;
-  long total_copies = 0;
+  double total_copies = 0;
 
   for (int i = 0; i < n; i++) {
     *accept_sum += acc[i];
@@ -336,7 +336,7 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
     next->count = target_population;
   }
 
-  return (total_copies > 0) ? E_L_weighted_sum / total_copies : E_T;
+  return (total_copies > 0) ? E_L_weighted_sum / (double)total_copies : E_T;
 }
 
 static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
@@ -507,7 +507,7 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
   result.mean_population =
       (pop_size_count > 0) ? pop_size_sum / pop_size_count : 0.0;
   result.acceptance_rate =
-      (move_count > 0) ? (double)accept_sum / move_count : 0.0;
+      (move_count > 0) ? (double)accept_sum / (double)move_count : 0.0;
   result.n_resamples = resample_count;
 
   dmc_population_free(pop_a);

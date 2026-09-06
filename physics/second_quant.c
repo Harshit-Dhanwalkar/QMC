@@ -20,7 +20,10 @@ static const complex_t SIGMA_MINUS[4] = {{0, 0}, {1, 0}, {0, 0}, {0, 0}};
  * Returns a freshly allocated cmatrix_t
  */
 static cmatrix_t *kron2(const cmatrix_t *A, const cmatrix_t *B) {
-  int ra = A->nrows, ca = A->ncols, rb = B->nrows, cb = B->ncols;
+  int ra = A->nrows;
+  int ca = A->ncols;
+  int rb = B->nrows;
+  int cb = B->ncols;
   cmatrix_t *out = cmatrix_alloc(ra * rb, ca * cb);
 
   for (int i = 0; i < ra; i++) {
@@ -171,7 +174,8 @@ cmatrix_t *second_quant_build_hopping_hamiltonian(int n_modes,
 
     // Hopping: -t * (a_i^\dagger a_{i+1} + a_{i+1}^\dagger a_i)
     for (int i = 0; i + 1 < n_modes; i++) {
-      int sign1, sign2;
+      int sign1;
+      int sign2;
 
       // a_i^\dagger a_{i+1}: annihilate mode i+1, create mode i
       int mid = direct_annihilate(state, i + 1, n_modes, &sign1);
@@ -242,7 +246,8 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
       }
 
       for (int state = 0; state < dim; state++) {
-        int sign1, sign2;
+        int sign1;
+        int sign2;
         int mid = direct_annihilate(state, q, n_modes, &sign1);
 
         if (mid < 0) {
@@ -295,7 +300,11 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
           }
 
           for (int state = 0; state < dim; state++) {
-            int sign1, sign2, sign3, sign4;
+            int sign1;
+            int sign2;
+            int sign3;
+            int sign4;
+
             int mid1 = direct_annihilate(state, r, n_modes, &sign1);
             if (mid1 < 0) {
               continue;

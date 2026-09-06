@@ -32,7 +32,7 @@ static double parse_double_token(const char *tok) {
   for (i = 0; i < sizeof(buf) - 1 && tok[i] != '\0'; i++) {
     char c = tok[i];
 
-    buf[i] = (c == 'D' || c == 'd') ? 'e' : c;
+    buf[i] = (char)(c == 'D' || c == 'd') ? 'e' : c;
   }
 
   buf[i] = '\0';
@@ -98,7 +98,6 @@ static int elem_vec_push(elem_vec_t *vec, basis_element_t elem) {
   if (vec->count == vec->cap) {
     int new_cap = vec->cap == 0 ? 8 : vec->cap * 2;
     basis_element_t *tmp = realloc(vec->items, (size_t)new_cap * sizeof(*tmp));
-
     if (!tmp) {
       return 0;
     }
@@ -116,7 +115,6 @@ static int shell_vec_push(shell_vec_t *vec, basis_shell_t shell) {
   if (vec->count == vec->cap) {
     int new_cap = vec->cap == 0 ? 4 : vec->cap * 2;
     basis_shell_t *tmp = realloc(vec->items, (size_t)new_cap * sizeof(*tmp));
-
     if (!tmp) {
       return 0;
     }
@@ -134,6 +132,7 @@ static void shell_free(basis_shell_t *shell) {
   if (!shell) {
     return;
   }
+
   free(shell->exps);
   free(shell->coef1);
   free(shell->coef2);
@@ -330,6 +329,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
     sh.coef2 = coef2;
     if (!shell_vec_push(&cur_shells, sh)) {
       shell_free(&sh);
+
       ok = 0;
       break;
     }
@@ -421,7 +421,12 @@ basis_set_t *basis_set_parse_file(const char *path) {
     return NULL;
   }
 
-  rewind(fp);
+  // rewind(fp);
+  if (fseek(fp, 0, SEEK_SET) != 0) {
+    fclose(fp);
+
+    return NULL;
+  }
 
   char *buf = malloc((size_t)size + 1);
   if (!buf) {
@@ -481,9 +486,9 @@ const basis_element_t *basis_set_find_element(const basis_set_t *bs,
  * ------------------------------------------------------------------- */
 
 /* Enumerate the (l+1)(l+2)/2 Cartesian (lx,ly,lz) components of angular
- * momentum l, in decreasing-lx canonical order (matches the convention already
- * used by molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes
- * into out[][3], returns the count.
+ * momentum l, in decreasing-lx canonical order (convention used by
+ * molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes into
+ * out[][3], returns the count.
  */
 static int cartesian_components(int l_quantum, int out[][3]) {
   int n = 0;
@@ -502,9 +507,11 @@ static int cartesian_components(int l_quantum, int out[][3]) {
   return n;
 }
 
-/* Appends one shell's expanded, normalized basis functions into a growable
- * basis_function_t* array. Returns 1 on success, 0 on failure (out params left
- * unmodified on failure other than partial growth).
+/* NOTE: Appends one shell's expanded, normalized basis functions into a
+ * growable basis_function_t* array.
+ *
+ * Returns 1 on success, 0 on failure (out params left unmodified on failure
+ * other than partial growth).
  */
 static int append_shell_functions(const basis_shell_t *sh,
                                   const double center[3],
@@ -525,9 +532,10 @@ static int append_shell_functions(const basis_shell_t *sh,
     if (*count == *cap) {
       int new_cap = *cap == 0 ? 8 : *cap * 2;
 
-      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
+      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(**tmp));
       if (!tmp) {
         basis_function_free(s_fn);
+
         return 0;
       }
 
@@ -550,9 +558,10 @@ static int append_shell_functions(const basis_shell_t *sh,
       if (*count == *cap) {
         int new_cap = *cap == 0 ? 8 : *cap * 2;
 
-        basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
+        basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(**tmp));
         if (!tmp) {
           basis_function_free(p_fn);
+
           return 0;
         }
 
@@ -579,9 +588,10 @@ static int append_shell_functions(const basis_shell_t *sh,
     if (*count == *cap) {
       int new_cap = *cap == 0 ? 8 : *cap * 2;
 
-      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
+      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(**tmp));
       if (!tmp) {
         basis_function_free(fn);
+
         return 0;
       }
 
@@ -641,6 +651,7 @@ static int append_atom_functions(basis_function_t ***all_fns, int *total,
 
     (*all_fns)[(*total)++] = atom_fns[i];
   }
+
   return 1;
 }
 
@@ -665,6 +676,7 @@ int basis_set_build_molecule(const basis_set_t *basis_set,
         basis_set_find_element(basis_set, symbols[atom_idx]);
     if (!elem) {
       basis_set_free_functions(all, total);
+
       *out = NULL;
 
       return 0;
@@ -678,6 +690,7 @@ int basis_set_build_molecule(const basis_set_t *basis_set,
        * element block) from allocation failure inside basis_set_build_atom:
        * atom_fns is NULL on failure. */
       basis_set_free_functions(all, total);
+
       *out = NULL;
 
       return 0;
@@ -686,6 +699,7 @@ int basis_set_build_molecule(const basis_set_t *basis_set,
     if (!append_atom_functions(&all, &total, &cap, atom_fns, n_atom_fns)) {
       basis_set_free_functions(atom_fns, n_atom_fns);
       basis_set_free_functions(all, total);
+
       *out = NULL;
 
       return 0;

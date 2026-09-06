@@ -190,9 +190,8 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
   }
 
   for (int p = 0; p < n_pairs; p++) {
-    // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
-    int i0 = order[2 * p];
-    int i1 = order[2 * p + 1];
+    int i0 = order[(size_t)2 * p];
+    int i1 = order[(size_t)2 * p + 1];
     double v0 = eig2n->eigenvalues[i0];
     double v1 = eig2n->eigenvalues[i1];
 
@@ -270,8 +269,7 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
      * until m_needed orthonormal vectors are found. */
     int accepted = 0;
     for (int t = 0; t < cluster_size && accepted < m_needed; t++) {
-      // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
-      complex_t *v = &z[t * n];
+      complex_t *v = &z[(size_t)t * n];
 
       for (int a = 0; a < accepted; a++) {
         complex_t dot = c_zero();

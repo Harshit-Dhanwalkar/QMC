@@ -106,7 +106,7 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
   }
 
   int n_ops = 2 * n_qubits;
-  cmatrix_t **L = calloc((size_t)n_ops, sizeof *L);
+  cmatrix_t **L = calloc((size_t)n_ops, sizeof **L);
   if (!L) {
     cmatrix_free(rho);
     cmatrix_free(Hzero);
@@ -116,10 +116,10 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
 
   int alloc_ok = 1;
   for (int q = 0; q < n_qubits && alloc_ok; q++) {
-    L[2 * q] = lindblad_amplitude_damping_op(n_qubits, q, gamma1);
-    L[2 * q + 1] = lindblad_dephasing_op(n_qubits, q, gamma2);
+    L[(size_t)2 * q] = lindblad_amplitude_damping_op(n_qubits, q, gamma1);
+    L[(size_t)2 * q + 1] = lindblad_dephasing_op(n_qubits, q, gamma2);
 
-    if (!L[2 * q] || !L[2 * q + 1]) {
+    if (!L[(size_t)2 * q] || !L[(size_t)2 * q + 1]) {
       alloc_ok = 0;
     }
   }

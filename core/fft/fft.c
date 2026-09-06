@@ -25,7 +25,7 @@ static void bit_reverse_permute(cvector_t *x) {
   int log2n = (int)(log2(n) + 0.5);
 
   for (int i = 0; i < n; i++) {
-    int j = bit_reverse(i, log2n);
+    int j = (int)bit_reverse(i, log2n);
 
     if (j > i) {
       complex_t tmp = x->data[i];

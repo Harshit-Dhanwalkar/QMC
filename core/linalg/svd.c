@@ -104,7 +104,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
     }
 
     V->nrows = V->ncols = n;
-    V->data = calloc(n * n, sizeof(complex_t));
+    V->data = calloc((size_t)n * n, sizeof(complex_t));
     if (!V->data) {
       free(idx);
       eigen_free(eig);
@@ -133,7 +133,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
 
     U->nrows = m;
     U->ncols = n;
-    U->data = calloc(m * n, sizeof(complex_t));
+    U->data = calloc((size_t)m * n, sizeof(complex_t));
     if (!U->data) {
       free(idx);
       eigen_free(eig);

@@ -45,9 +45,11 @@ double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b) {
 }
 
 /*
- * Derivation summary:
- *   Let f = \ln(\Psi_T) = -Zeff * (r1 + r2) + u(s), s = |r1 - r2|, u(s) =
- *   s / (2 * (1 + bs)).
+ * NOTE: Derivation summary:
+ *   Let f = \ln(\Psi_T) = -Zeff * (r1 + r2) + u(s)
+ *       s = |r1 - r2|
+ *       u(s) = s / (2 * (1 + bs))
+ *
  *   For each electron i, -1/2 * lap_i(\Psi) / \Psi = (-1/2) * (\lap_i f +
  *   |\grad_i f|^2). Summing i=1,2 and adding potential (-Z / r1 - Z / r2  + 1 /
  *   s), the Zeff^2 orbital-kinetic term and the (-Z / r1 - Z / r2) potential
@@ -94,6 +96,13 @@ double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff,
 
 void vmc_walker_init(vmc_walker_t *w, rng_state_t *rng, double Zeff) {
   if (!w || !rng || Zeff <= 0.0) {
+    if (w) {
+      for (int k = 0; k < 3; k++) {
+        w->r1[k] = 0.0;
+        w->r2[k] = 0.0;
+      }
+    }
+
     return;
   }
 
