@@ -69,10 +69,36 @@ vqe_result_t vqe_run(int n_qubits, int n_layers, const cmatrix_t *H,
 /*
  * Build dense (2^n_qubits x 2^n_qubits) Hamiltonian of 1D transverse-field
  * Ising model on an open chain of n_qubits sites:
- *   H = -J * \sum_{i = 0}^{n - 2} Z_i Z_{i + 1}  -  h * sum_{i = 0}^{n - 1} X_i
+ *   H = -J * \sum_{i = 0}^{n - 2} Z_i Z_{i + 1}  -  h * \sum_{i = 0}^{n - 1} X_i
  *
  * Returns NULL if n_qubits < 1.
  */
 cmatrix_t *vqe_build_tfim(int n_qubits, double J, double h);
+
+/*
+ * General Pauli-string Hamiltonian builder:
+ *   H = \sum_t coeff_t * P_t
+ *
+ * Where
+ *  each P_t is a tensor product of single-qubit Pauli operators (I, X, Y, Z)
+ * given as an n_qubits-character string, one character per qubit in
+ * left-to-right = qubit-0-to-qubit-(n_qubits-1) convention (qubit 0 is the
+ * string's first character/the matrix's MSB).
+ *  Real coefficients only: any real linear combination of Hermitian Pauli
+ * strings is automatically Hermitian, so every H this can build is a valid
+ * Hamiltonian.
+ *
+ * pauli_strings: array of n_terms strings, each exactly n_qubits characters
+ *                from the set {'I','X','Y','Z'} (case-sensitive),
+ *                NUL-terminated
+ * coefficients : array of n_terms real coefficients, coefficients[t] pairs with
+ *                pauli_strings[t]
+ *
+ * Returns NULL if n_qubits < 1, n_terms < 1, either array is NULL, any string
+ * has the wrong length or an invalid character, or on allocation failure.
+ */
+cmatrix_t *vqe_build_pauli_hamiltonian(int n_qubits,
+                                       const char *const *pauli_strings,
+                                       const double *coefficients, int n_terms);
 
 #endif

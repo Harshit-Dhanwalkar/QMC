@@ -75,7 +75,8 @@ static const demo_entry_t demos[] = {
     {"build/eg_59_uhf_openshell", "Unrestricted Hartree-Fock: open-shell radicals (H, Li doublet, Li+)"},
     {"build/eg_60_uhf_geometry_optimization", "Analytic UHF nuclear gradient: open-shell geometry optimization (LiH+)"},
     {"build/eg_61_ump2", "UMP2: post-HF correlation energy for open-shell radicals (Li doublet)"},
-    {"build/eg_62_latex_gen", "Automated LaTeX matrix and equation code generator"},
+    {"build/eg_62_vqe_pauli_hamiltonian", "VQE with a general Pauli-string Hamiltonian: the XXZ chain"},
+    {"build/eg_latex_gen", "Automated LaTeX matrix and equation code generator"},
 
 };
 

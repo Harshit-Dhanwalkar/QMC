@@ -184,3 +184,106 @@ cmatrix_t *vqe_build_tfim(int n_qubits, double J, double h) {
 
   return H;
 }
+
+cmatrix_t *vqe_build_pauli_hamiltonian(int n_qubits,
+                                       const char *const *pauli_strings,
+                                       const double *coefficients,
+                                       int n_terms) {
+  if (n_qubits < 1 || n_terms < 1 || !pauli_strings || !coefficients) {
+    return NULL;
+  }
+
+  for (int t = 0; t < n_terms; t++) {
+    const char *s = pauli_strings[t];
+    if (!s) {
+      return NULL;
+    }
+
+    int k;
+    for (k = 0; k < n_qubits; k++) {
+      char c = s[k];
+      if (c != 'I' && c != 'X' && c != 'Y' && c != 'Z') {
+        return NULL;
+      }
+    }
+
+    if (s[k] != '\0') {
+      return NULL; // wrong length (too long)
+    }
+  }
+
+  int dim = 1 << n_qubits;
+  cmatrix_t *H = cmatrix_alloc(dim, dim);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int i = 0; i < dim * dim; i++) {
+    H->data[i] = c_zero();
+  }
+
+  /* NOTE: <i|P|j> = prod_k <i_k|P_k|j_k>, computed one qubit at a time: I/Z are
+   * diagonal per-qubit (nonzero only when i_k == j_k), X/Y are off-diagonal
+   * per-qubit (nonzero only when i_k != j_k). The whole matrix element is 0
+   * unless every qubit's local factor is nonzero, in which case it's the
+   * product of those n_qubits factors. Bit position convention matches
+   * vqe_build_tfim: qubit 0 = leftmost string character = MSB (bit n_qubits-1-k
+   * for qubit k).
+   */
+  for (int t = 0; t < n_terms; t++) {
+    const char *s = pauli_strings[t];
+    double coeff = coefficients[t];
+
+    for (int i = 0; i < dim; i++) {
+      for (int j = 0; j < dim; j++) {
+        complex_t factor = c_new(coeff, 0.0);
+        int nonzero = 1;
+
+        for (int k = 0; k < n_qubits && nonzero; k++) {
+          int bitpos = n_qubits - 1 - k;
+          int bi = (i >> bitpos) & 1;
+          int bj = (j >> bitpos) & 1;
+          char op = s[k];
+
+          switch (op) {
+          case 'I':
+            if (bi != bj) {
+              nonzero = 0;
+            }
+            break;
+          case 'Z':
+            if (bi != bj) {
+              nonzero = 0;
+            } else {
+              factor = c_scale(factor, bi ? -1.0 : 1.0);
+            }
+            break;
+          case 'X':
+            if (bi == bj) {
+              nonzero = 0;
+            }
+            break;
+          case 'Y':
+            if (bi == bj) {
+              nonzero = 0;
+            } else {
+              // <0|Y|1> = -i, <1|Y|0> = +i
+              double sign = (bi == 0) ? -1.0 : 1.0;
+              factor = c_mul(factor, c_new(0.0, sign));
+            }
+            break;
+          default:
+            nonzero = 0; // unreachable: validated above
+            break;
+          }
+        }
+
+        if (nonzero) {
+          CMAT(H, i, j) = c_add(CMAT(H, i, j), factor);
+        }
+      }
+    }
+  }
+
+  return H;
+}
