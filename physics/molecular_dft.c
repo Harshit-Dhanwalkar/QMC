@@ -599,11 +599,13 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
     // (D symmetric)
     for (int g = 0; g < ng; g++) {
       double v = 0.0;
-      double gx = 0.0, gy = 0.0, gz = 0.0;
+      double gx = 0.0;
+      double gy = 0.0;
+      double gz = 0.0;
 
       for (int p = 0; p < n; p++) {
         double ap = ao_vals[g * n + p];
-        const double *gp = &ao_grads[(g * n + p) * 3];
+        const double *gp = &ao_grads[((size_t)g * n + p) * 3];
 
         for (int q = 0; q < n; q++) {
           double Dpq = D[p * n + q];
@@ -651,9 +653,9 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
         for (int g = 0; g < ng; g++) {
           double ap = ao_vals[g * n + p];
           double aq = ao_vals[g * n + q];
-          size_t idx = ((size_t)g * n + p) * 3;
-          const double *gp = &ao_grads[idx];
-          const double *gq = &ao_grads[idx];
+
+          const double *gp = &ao_grads[((size_t)g * n + p) * 3];
+          const double *gq = &ao_grads[((size_t)g * n + q) * 3];
 
           double dgx = dens_grad[g * 3 + 0];
           double dgy = dens_grad[g * 3 + 1];

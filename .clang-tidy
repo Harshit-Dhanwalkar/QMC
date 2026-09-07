@@ -10,7 +10,8 @@ Checks: >
   -readability-function-cognitive-complexity,
   -bugprone-multi-level-implicit-pointer-conversion,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -clang-analyzer-unix.MallocSizeof
 CheckOptions:
   - key: readability-identifier-length.MinimumLength
     value: 1

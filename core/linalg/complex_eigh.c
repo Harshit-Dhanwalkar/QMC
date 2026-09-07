@@ -128,7 +128,7 @@ eigen_t *cmatrix_eigh_complex(cmatrix_t *H) {
     return NULL;
   }
 
-  int *order = malloc((size_t)m2 * sizeof(int));
+  int *order = calloc((size_t)m2, sizeof(int));
 
   if (!order) {
     cmatrix_free(result->eigenvectors);
