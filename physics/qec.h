@@ -59,4 +59,71 @@ typedef struct {
 qec_result_t qec_run(qec_code_t code, complex_t alpha, complex_t beta,
                      int error_qubit, double u3, double u4);
 
+/*
+ * 9-qubit Shor code: corrects an ARBITRARY single-qubit error (X, Y, or Z on
+ * any one of the 9 physical qubits) by concatenating the bit-flip and
+ * phase-flip codes above - 3 blocks of the 3-qubit bit-flip code, with the  3
+ * block "values" additionally protected by an outer phase-flip structure.
+ *
+ * NOTE: 11-qubit system: qubits 0-8 are the 9 physical data qubits, grouped
+ * into 3 blocks {0,1,2}, {3,4,5}, {6,7,8}; qubits 9,10 are ancillas, reused
+ * across all 4 syndrome extractions (3 bit-flip + 1 phase-flip), matching now a
+ * real device would measure-and-reset ancillas between rounds rather than
+ * dedicating fresh ones to each check.
+ * - Encode: CNOT(0,3), CNOT(0,6) [copy to block leaders], H(0), H(3), H(6)
+ * [rotate leaders to phase-protecting basis], then CNOT(0,1), CNOT(0,2),
+ * CNOT(3,4), CNOT(3,5), CNOT(6,7), CNOT(6,8) [bit-flip-encode each block].
+ * - Bit-flip correction (one call per block, using qec_run's own bit-flip
+ * syndrome table): for block {a,b,c}, CNOT(a,anc1), CNOT(b,anc1), CNOT(b,anc2),
+ * CNOT(c,anc2), measure both ancillas, apply X to the indicated qubit (if any),
+ * then reset both ancillas back to |0> (apply X to any ancilla that measured
+ * 1).
+ * - Phase-flip correction (comparing block PARITIES, not just leaders - needs
+ * stabilizers X0X1X2X3X4X5 and X3X4X5X6X7X8, all 6 qubits of the two blocks
+ * being compared, not just their leaders, since a block's logical value is
+ * carried jointly by all 3 of its qubits once bit-flip-encoded): H on all 9
+ * data qubits, CNOT from block-1's 3 qubits into anc1, CNOT from block-2's 3
+ * qubits into anc1 (X0..X5 parity), CNOT from block-2's 3 qubits into anc2,
+ * CNOT from block-3's 3 qubits into anc2 (X3..X8 parity), H on all 9 data
+ * qubits again, measure both ancillas, apply Z to a representative qubit of the
+ * indicated block (if any).
+ * - Decode: the exact inverse of the encoding circuit (same gates, reverse
+ * order - CNOT and H are self-inverse, so this is well-defined), then read off
+ * qubit 0's amplitudes.
+ *
+ * WARN: Y errors: correcting a Y error necessarily means the bit-flip syndrome
+ * fires (treating it as an X error) AND the phase-flip syndrome fires (treating
+ * it as a Z error) independently, so the applied correction is Z*X, not Y
+ * itself. Since Y = iXZ, this recovers the correct logical state up to an
+ * unavoidable, physically unobservable global phase of i (Z*X*Y = i*Identity) -
+ * this is standard, expected behavior for independent Pauli-frame correction,
+ * not an approximation and recovered_alpha/recovered_beta will reflect that
+ * exact global phase for Y errors specifically (X and Z errors, and no error,
+ * recover the exact original alpha/beta with no phase ambiguity at all).
+ *
+ * error_qubit in [0,8] selects which physical qubit gets the injected error
+ * (error_type selects X, Y, or Z); pass error_qubit=-1 for no error. u[8]
+ * supplies caller randomness for the 8 ancilla measurements (3 bit-flip blocks
+ * x 2 ancillas each, + 1 phase-flip check x 2 ancillas) as with qec_run, every
+ * measurement here is deterministic (probability exactly 0 or 1) given the
+ * injected error, so any u in [0,1) per slot gives the same correct result.
+ */
+typedef enum {
+  QEC_ERROR_X = 0,
+  QEC_ERROR_Y = 1,
+  QEC_ERROR_Z = 2
+} qec_error_type_t;
+
+typedef struct {
+  int block_corrected[3];    // which qubit (if any, else -1) was bit-flip
+                             // corrected in each of the 3 blocks
+  int phase_block_corrected; // which block (0, 1, or 2), if any (-1
+                             // otherwise), was phase-corrected
+  complex_t recovered_alpha;
+  complex_t recovered_beta;
+} qec_shor_result_t;
+
+qec_shor_result_t qec_shor_run(complex_t alpha, complex_t beta, int error_qubit,
+                               qec_error_type_t error_type, const double u[8]);
+
 #endif

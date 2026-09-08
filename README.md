@@ -190,6 +190,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_60_ump2.c</code></li>
   <li><code>eg_61_uhf_geometry_optimization.c</code></li>
   <li><code>eg_62_vqe_pauli_hamiltonian.c</code></li>
+  <li><code>eg_63_shor_code.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
