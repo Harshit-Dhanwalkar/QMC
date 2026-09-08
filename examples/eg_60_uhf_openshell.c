@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 static void run_h_atom(void) {
-  printf(" === Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta) ===\n\n");
+  printf("  === Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta) ===\n\n");
 
   double center[3] = {0.0, 0.0, 0.0};
   basis_function_t *h_orb = molint_basis_sto3g_h(center);

@@ -267,33 +267,34 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_33_lattice \
               $(BUILD_DIR)/eg_34_quantum_info \
               $(BUILD_DIR)/eg_35_qec \
-              $(BUILD_DIR)/eg_36_quantum_algorithms \
-              $(BUILD_DIR)/eg_37_second_quant \
-              $(BUILD_DIR)/eg_38_landau_levels \
-              $(BUILD_DIR)/eg_39_openmp_qmc \
-              $(BUILD_DIR)/eg_40_molecular_integrals \
-              $(BUILD_DIR)/eg_41_dft_atoms \
-              $(BUILD_DIR)/eg_42_h2_vqe \
-              $(BUILD_DIR)/eg_43_h4_vqe \
-              $(BUILD_DIR)/eg_44_lih_vqe \
-              $(BUILD_DIR)/eg_45_noisy_vqe \
-              $(BUILD_DIR)/eg_46_geometry_optimization \
-              $(BUILD_DIR)/eg_47_ccsd \
-              $(BUILD_DIR)/eg_48_ccsd_t \
-              $(BUILD_DIR)/eg_49_general_basis_parser \
-              $(BUILD_DIR)/eg_50_ucc \
-              $(BUILD_DIR)/eg_51_qpe \
-              $(BUILD_DIR)/eg_52_molecular_dft \
-              $(BUILD_DIR)/eg_53_molecular_pbe_dft \
-              $(BUILD_DIR)/eg_54_molecular_mp2 \
-              $(BUILD_DIR)/eg_55_schrodinger_solvers \
-              $(BUILD_DIR)/eg_56_fci \
-              $(BUILD_DIR)/eg_57_spin_chain_dsf \
-              $(BUILD_DIR)/eg_58_ising_chain \
-              $(BUILD_DIR)/eg_59_uhf_openshell \
-              $(BUILD_DIR)/eg_60_uhf_geometry_optimization \
-              $(BUILD_DIR)/eg_61_ump2 \
-              $(BUILD_DIR)/eg_62_vqe_pauli_hamiltonian \
+              $(BUILD_DIR)/eg_36_shor_code \
+              $(BUILD_DIR)/eg_37_quantum_algorithms \
+              $(BUILD_DIR)/eg_38_second_quant \
+              $(BUILD_DIR)/eg_39_landau_levels \
+              $(BUILD_DIR)/eg_40_openmp_qmc \
+              $(BUILD_DIR)/eg_41_molecular_integrals \
+              $(BUILD_DIR)/eg_42_dft_atoms \
+              $(BUILD_DIR)/eg_43_h2_vqe \
+              $(BUILD_DIR)/eg_44_h4_vqe \
+              $(BUILD_DIR)/eg_45_lih_vqe \
+              $(BUILD_DIR)/eg_46_noisy_vqe \
+              $(BUILD_DIR)/eg_47_geometry_optimization \
+              $(BUILD_DIR)/eg_48_ccsd \
+              $(BUILD_DIR)/eg_49_ccsd_t \
+              $(BUILD_DIR)/eg_50_general_basis_parser \
+              $(BUILD_DIR)/eg_51_ucc \
+              $(BUILD_DIR)/eg_52_qpe \
+              $(BUILD_DIR)/eg_53_molecular_dft \
+              $(BUILD_DIR)/eg_54_molecular_pbe_dft \
+              $(BUILD_DIR)/eg_55_molecular_mp2 \
+              $(BUILD_DIR)/eg_56_schrodinger_solvers \
+              $(BUILD_DIR)/eg_57_fci \
+              $(BUILD_DIR)/eg_58_spin_chain_dsf \
+              $(BUILD_DIR)/eg_59_ising_chain \
+              $(BUILD_DIR)/eg_60_uhf_openshell \
+              $(BUILD_DIR)/eg_61_uhf_geometry_optimization \
+              $(BUILD_DIR)/eg_62_ump2 \
+              $(BUILD_DIR)/eg_63_vqe_pauli_hamiltonian \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \

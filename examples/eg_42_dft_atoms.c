@@ -27,7 +27,7 @@ static void run_atom(const char *name, double Z, int n_orbitals,
   double r_min = 1e-4, r_max = 14.0;
   double *r = linspace(r_min, r_max, N);
 
-  printf("=== %s (Z=%.0f, %d orbital%s, %d electrons) ===\n\n", name, Z,
+  printf("  === %s (Z=%.0f, %d orbital%s, %d electrons) ===\n\n", name, Z,
          n_orbitals, n_orbitals > 1 ? "s" : "", 2 * n_orbitals);
 
   hf_result_t *hf =
@@ -64,10 +64,10 @@ int main(void) {
   printf(" > Kohn-Sham LDA DFT for Atoms (Slater exchange + PZ81 "
          "correlation)\n\n");
 
-  run_atom("Helium", 2.0, 1, -2.903724);
-  run_atom("Beryllium", 4.0, 2, -14.667356);
+  run_atom("  Helium", 2.0, 1, -2.903724);
+  run_atom("  Beryllium", 4.0, 2, -14.667356);
 
-  printf("Reference values: exact nonrelativistic (Pekeris/CI-quality) and "
+  printf("  Reference values: exact nonrelativistic (Pekeris/CI-quality) and "
          "RHF-limit numbers from standard references; converged-basis-set LDA "
          "(VWN parametrization) gives He=-2.834836, Be=-14.447209 "
          "(arXiv:2202.00647)\n");

@@ -56,7 +56,7 @@ static const char *STO3G_H_O_TEXT =
 int main(void) {
   printf(" > General Basis-Set-File Parser: Water (H2O), STO-3G\n\n");
 
-  printf("Step 1: parse the STO-3G Gaussian94-format text (H + O)\n\n");
+  printf("  Step 1: parse the STO-3G Gaussian94-format text (H + O)\n\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_H_O_TEXT);
   if (!bs) {
@@ -64,11 +64,11 @@ int main(void) {
     return 1;
   }
 
-  printf("  Parsed %d element(s):\n", bs->n_elements);
+  printf("    Parsed %d element(s):\n", bs->n_elements);
   for (int i = 0; i < bs->n_elements; i++) {
     const basis_element_t *e = &bs->elements[i];
 
-    printf("    %-3s : %d shell(s) [", e->element, e->n_shells);
+    printf("      %-3s : %d shell(s) [", e->element, e->n_shells);
     for (int s = 0; s < e->n_shells; s++) {
       printf("%s%s", e->shells[s].type, s + 1 < e->n_shells ? "," : "");
     }
@@ -80,7 +80,7 @@ int main(void) {
 
   /* Near-experimental water geometry: r(O-H) = 0.9584 Angstrom = 1.8111 bohr,
    * HOH angle = 104.45 degrees, O at the origin with the bisector along -z. */
-  printf("Step 2: build the water molecule (near-experimental geometry: "
+  printf("  Step 2: build the water molecule (near-experimental geometry: "
          "r(O-H)=1.8111 bohr, angle=104.45 deg)\n\n");
 
   double r_oh = 1.8111;
@@ -104,13 +104,13 @@ int main(void) {
     return 1;
   }
 
-  printf("  Total basis functions: %d (O: 1s,2s,2px,2py,2pz = 5, H x2: 1s each "
-         "= 2)\n\n",
+  printf("    Total basis functions: %d (O: 1s,2s,2px,2py,2pz = 5, H x2: 1s "
+         "each = 2)\n\n",
          n_basis);
 
   molecule_t *mol = molecule_alloc(3, charges, centers);
 
-  printf("Step 3: general N-basis RHF (10 valence+core electrons: O has 8, "
+  printf("  Step 3: general N-basis RHF (10 valence+core electrons: O has 8, "
          "each H has 1)\n\n");
 
   molecular_hf_result_t *scf =
@@ -118,16 +118,16 @@ int main(void) {
   if (!scf) {
     fprintf(stderr, "RHF failed to allocate.\n");
   } else {
-    printf("  Water/STO-3G RHF total energy: %.6f Hartree (converged=%d, %d "
+    printf("    Water/STO-3G RHF total energy: %.6f Hartree (converged=%d, %d "
            "iterations)\n"
-           "  (Reference: STO-3G water near this geometry is documented in "
+           "    (Reference: STO-3G water near this geometry is documented in "
            "theoretically at approximately -74.94 Hartree. The result, exact "
            "digits depend on the precise geometry used)\n\n",
            scf->total_energy, scf->converged, scf->iterations);
 
-    printf("  Occupied orbital energies (Hartree):\n");
+    printf("    Occupied orbital energies (Hartree):\n");
     for (int i = 0; i < 5; i++) {
-      printf("    MO %d: %.6f\n", i, scf->orbital_energies[i]);
+      printf("      MO %d: %.6f\n", i, scf->orbital_energies[i]);
     }
 
     molecular_hf_result_free(scf);

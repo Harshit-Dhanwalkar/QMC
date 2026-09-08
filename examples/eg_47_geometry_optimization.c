@@ -89,15 +89,16 @@ static double optimize_bond_length(double (*force_fn)(double, double *),
                                    double R0, double step, int max_iter,
                                    double tol, const char *name) {
   double R = R0;
-  printf("  Optimizing %s bond length (steepest descent on force):\n", name);
+  printf("    Optimizing %s bond length (steepest descent on force):\n", name);
 
   for (int it = 0; it < max_iter; it++) {
     double E;
     double F = force_fn(R, &E);
 
-    printf("    iter %2d: R=%.6f bohr  E=%.8f Hartree  F=%+.6f\n", it, R, E, F);
+    printf("      iter %2d: R=%.6f bohr  E=%.8f Hartree  F=%+.6f\n", it, R, E,
+           F);
     if (fabs(F) < tol) {
-      printf("    converged (|F| < %.1e)\n", tol);
+      printf("      converged (|F| < %.1e)\n", tol);
 
       break;
     }
@@ -109,7 +110,7 @@ static double optimize_bond_length(double (*force_fn)(double, double *),
 }
 
 int main(void) {
-  printf("=== Analytic RHF Nuclear Gradient : Geometry Optimization ===\n\n");
+  printf(" > Analytic RHF Nuclear Gradient : Geometry Optimizationn\n");
 
   double R_h2 = optimize_bond_length(h2_force, 1.0, 0.5, 30, 1e-6, "H2/STO-3G");
   printf("\n  H2/STO-3G equilibrium bond length: %.4f bohr (%.4f Angstrom)\n",
@@ -121,9 +122,9 @@ int main(void) {
   printf("\n  LiH/STO-3G equilibrium bond length: %.4f bohr (%.4f "
          "Angstrom)\n",
          R_lih, R_lih * 0.529177);
-  printf("  (Experimental LiH equilibrium is R=3.015 bohr / 1.596 "
-         "Angstrom; STO-3G/RHF\n"
-         "   is a small, non-polarized basis so some deviation from "
+  printf("  (Experimental LiH equilibrium is R=3.015 bohr / 1.596  Angstrom; "
+         "STO-3G/RHF\n"
+         "   is a small, non-polarized basis so some deviation from  "
          "experiment is expected)\n");
 
   return 0;

@@ -38,12 +38,12 @@ int main(void) {
   double centers[2][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  printf("Step 1: RHF (6 basis functions, 4 electrons)\n\n");
+  printf("  Step 1: RHF (6 basis functions, 4 electrons)\n\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, 1e-12, 200);
-  printf("  RHF total energy: %.10f Hartree (%d iterations)\n\n",
+  printf("    RHF total energy: %.10f Hartree (%d iterations)\n\n",
          hf->total_energy, hf->iterations);
 
-  printf("Step 2: transform integrals to the MO basis, run MP2\n\n");
+  printf("  Step 2: transform integrals to the MO basis, run MP2\n\n");
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
   double *h_mo = malloc(36 * sizeof(double));
@@ -52,21 +52,21 @@ int main(void) {
 
   molecular_mp2_result_t full =
       molecular_mp2(6, eri_mo, hf->orbital_energies, 4, 0, hf->total_energy);
-  printf("  All-electron MP2:\n");
-  printf("    correlation energy: %.10f Hartree\n", full.e_mp2);
-  printf("    total energy:       %.10f Hartree\n", full.e_total);
-  printf("    (reference: -0.0128683238 Hartree, |diff| = %.2e)\n\n",
+  printf("    All-electron MP2:\n");
+  printf("      correlation energy: %.10f Hartree\n", full.e_mp2);
+  printf("      total energy:       %.10f Hartree\n", full.e_total);
+  printf("      (reference: -0.0128683238 Hartree, |diff| = %.2e)\n\n",
          fabs(full.e_mp2 - (-0.012868323831743156)));
 
   molecular_mp2_result_t frozen =
       molecular_mp2(6, eri_mo, hf->orbital_energies, 4, 1, hf->total_energy);
-  printf("  Frozen-core MP2 (Li 1s excluded):\n");
-  printf("    correlation energy: %.10f Hartree\n", frozen.e_mp2);
-  printf("    total energy:       %.10f Hartree\n", frozen.e_total);
-  printf("    (reference: -0.0126403353 Hartree, |diff| = %.2e)\n\n",
+  printf("    Frozen-core MP2 (Li 1s excluded):\n");
+  printf("      correlation energy: %.10f Hartree\n", frozen.e_mp2);
+  printf("      total energy:       %.10f Hartree\n", frozen.e_total);
+  printf("      (reference: -0.0126403353 Hartree, |diff| = %.2e)\n\n",
          fabs(frozen.e_mp2 - (-0.012640335346251669)));
 
-  printf("  Freezing the Li 1s core changes the correlation energy by only "
+  printf("    Freezing the Li 1s core changes the correlation energy by only "
          "%.2e Hartree (%.2f%%): 1s orbital is too tightly bound and too far "
          "in energy from the virtuals to contribute much beyond-HF "
          "correlation, exactly as chemical intuition expects.\n",

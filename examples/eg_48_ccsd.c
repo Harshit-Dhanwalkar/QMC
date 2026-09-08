@@ -31,12 +31,12 @@ int main(void) {
   double centers[2][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  printf("Step 1: RHF (6 basis functions, 4 electrons)\n\n");
+  printf("  Step 1: RHF (6 basis functions, 4 electrons)\n\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, 1e-12, 200);
-  printf("  RHF total energy: %.10f Hartree (%d iterations)\n\n",
+  printf("    RHF total energy: %.10f Hartree (%d iterations)\n\n",
          hf->total_energy, hf->iterations);
 
-  printf("Step 2: transform integrals to the MO basis, run CCSD\n\n");
+  printf("  Step 2: transform integrals to the MO basis, run CCSD\n\n");
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
   double *h_mo = malloc(36 * sizeof(double));
@@ -49,11 +49,12 @@ int main(void) {
   if (!ccsd || !ccsd->converged) {
     fprintf(stderr, "CCSD failed to converge.\n");
   } else {
-    printf("  CCSD converged in %d iterations\n", ccsd->iterations);
-    printf("  CCSD correlation energy: %.10f Hartree\n",
+    printf("    CCSD converged in %d iterations\n", ccsd->iterations);
+    printf("    CCSD correlation energy: %.10f Hartree\n",
            ccsd->correlation_energy);
-    printf("  CCSD total energy:       %.10f Hartree\n\n", ccsd->total_energy);
-    printf("  Correlation recovers %.4f%% additional binding beyond RHF.\n",
+    printf("    CCSD total energy:       %.10f Hartree\n\n",
+           ccsd->total_energy);
+    printf("    Correlation recovers %.4f%% additional binding beyond RHF.\n",
            100.0 * fabs(ccsd->correlation_energy) / fabs(hf->total_energy));
     free(ccsd);
   }

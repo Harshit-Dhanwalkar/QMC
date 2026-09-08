@@ -65,8 +65,8 @@ static double optimize_bond_length(double (*force_fn)(double, double *),
 }
 
 int main(void) {
-  printf("=== Analytic UHF Nuclear Gradient: Open-Shell Geometry Optimization "
-         "===\n\n");
+  printf(" > Analytic UHF Nuclear Gradient: Open-Shell Geometry Optimization "
+         "\n\n");
 
   double R = optimize_bond_length(lih_cation_force, 2.5, 3.0, 150, 1e-6,
                                   "LiH+/STO-3G (doublet)");
@@ -76,7 +76,7 @@ int main(void) {
       "  Removing an electron from LiH's closed-shell 2-\\sigma bonding "
       "orbital weakens the bond, so LiH+'s equilibrium bond length is expected "
       "to sit longer than LiH's own ~3.0-3.5 bohr STO-3G/RHF equilibrium (see "
-      "eg_46_geometry_optimization.c) - less bonding charge density between "
+      "eg_47_geometry_optimization.c) - less bonding charge density between "
       "nuclei means less pull holding them together.\n");
 
   return 0;

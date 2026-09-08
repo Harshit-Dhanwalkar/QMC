@@ -107,10 +107,10 @@ int main(void) {
     molecule_free(mol);
   }
 
-  printf("For H2 (a 2-electron system), CCSD is exactly equivalent to FCI "
-         "error vs. FCI above is essentially zero. LiH shows CCSD(T)'s usual "
-         "pattern: recovering vast majority of RHF's missing correlation "
-         "energy that plain CCSD leaves behind.\n");
+  printf(" NOTE: For H2 (a 2-electron system), CCSD is exactly equivalent to "
+         "FCI error vs. FCI above is essentially zero. LiH shows CCSD(T)'s "
+         "usual  pattern: recovering vast majority of RHF's missing "
+         "correlation energy that plain CCSD leaves behind.\n");
 
   return 0;
 }

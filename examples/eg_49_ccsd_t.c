@@ -24,9 +24,9 @@ int main(void) {
 
   molecule_t *mol = molecule_alloc(4, charges, centers);
 
-  printf("Step 1: RHF (4 basis functions, 4 electrons)\n\n");
+  printf("  Step 1: RHF (4 basis functions, 4 electrons)\n\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 4, mol, 4, 1e-12, 200);
-  printf("  RHF total energy:      %.10f Hartree\n\n", hf->total_energy);
+  printf("    RHF total energy:      %.10f Hartree\n\n", hf->total_energy);
 
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 4, mol);
   double *eri_ao = molecular_eri_tensor(basis, 4);
@@ -35,7 +35,7 @@ int main(void) {
 
   molecular_ao_to_mo(h_ao, eri_ao, hf->C, 4, h_mo, eri_mo);
 
-  printf("Step 2: CCSD(T) (CCSD to convergence, then the perturbative "
+  printf("  Step 2: CCSD(T) (CCSD to convergence, then the perturbative "
          "triples correction)\n\n");
   ccsdt_result_t *res = ccsdt_run(4, h_mo, eri_mo, hf->orbital_energies, 4, 0,
                                   hf->total_energy, 1e-10, 100);
@@ -43,14 +43,14 @@ int main(void) {
   if (!res) {
     fprintf(stderr, "CCSD(T) failed to converge.\n");
   } else {
-    printf("  CCSD correlation energy:      %.10f Hartree (%d iterations)\n",
+    printf("    CCSD correlation energy:      %.10f Hartree (%d iterations)\n",
            res->ccsd_correlation_energy, res->ccsd_iterations);
-    printf("  (T) perturbative correction:  %.10f Hartree\n",
+    printf("    (T) perturbative correction:  %.10f Hartree\n",
            res->perturbative_correction);
-    printf("  CCSD(T) total energy:         %.10f Hartree\n\n",
+    printf("    CCSD(T) total energy:         %.10f Hartree\n\n",
            res->total_energy);
-    printf("  (T) correction is %.3f%% of the CCSD correlation energy on this "
-           "non-symmetric cluster : small but nonzero, as expected for a "
+    printf("    (T) correction is %.3f%% of the CCSD correlation energy on "
+           "this non-symmetric cluster : small but nonzero, as expected for a "
            "perturbative refinement.\n",
            100.0 * res->perturbative_correction / res->ccsd_correlation_energy);
     free(res);

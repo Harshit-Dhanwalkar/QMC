@@ -197,29 +197,29 @@ int main(void) {
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 
-  printf("Step 1: STO-3G AO integrals for H2 at R=%.2f bohr\n\n", R_bond);
+  printf("  Step 1: STO-3G AO integrals for H2 at R=%.2f bohr\n\n", R_bond);
   cmatrix_t *S = molecular_overlap_matrix(funcs, 2);
   cmatrix_t *Hcore = molecular_core_hamiltonian(funcs, 2, mol);
   double *eri_ao = molecular_eri_tensor(funcs, 2);
   double nuclear_repulsion = molecule_nuclear_repulsion(mol);
 
-  printf("Step 2: Restricted Hartree-Fock\n\n");
+  printf("  Step 2: Restricted Hartree-Fock\n\n");
   double C[2][2];
   double E_elec_rhf = rhf(Hcore, eri_ao, C, S);
   double E_rhf = E_elec_rhf + nuclear_repulsion;
   printf("  RHF total energy: %.6f Hartree\n\n", E_rhf);
 
-  printf("Step 3: AO -> MO integral transform\n\n");
+  printf("  Step 3: AO -> MO integral transform\n\n");
   double h_mo[4];
   double *eri_mo = malloc(16 * sizeof(double));
   ao_to_mo(Hcore, eri_ao, C, h_mo, eri_mo);
 
-  printf("Step 4: Jordan-Wigner molecular Hamiltonian "
-         "(2 spatial orbitals -> 4 spin-orbitals -> 4 qubits, 16x16)\n\n");
+  printf("  Step 4: Jordan-Wigner molecular Hamiltonian (2 spatial orbitals -> "
+         "4 spin-orbitals -> 4 qubits, 16x16)\n\n");
   cmatrix_t *H = second_quant_build_molecular_hamiltonian(2, h_mo, eri_mo,
                                                           nuclear_repulsion);
 
-  printf("Step 5: Exact diagonalization (FCI within this basis)\n\n");
+  printf("  Step 5: Exact diagonalization (FCI within this basis)\n\n");
   cmatrix_t *H_copy = cmatrix_alloc(16, 16);
   for (int i = 0; i < 16 * 16; i++) {
     H_copy->data[i] = H->data[i];
@@ -234,20 +234,21 @@ int main(void) {
 
     N_expect += p * __builtin_popcount((unsigned)state);
   }
-  printf("  FCI ground state: %.6f Hartree  (<N electrons> = %.4f)\n\n", E_fci,
+  printf(" FCI ground state: %.6f Hartree  (<N electrons> = %.4f)\n\n", E_fci,
          N_expect);
 
-  printf("Step 6: VQE (4 qubits, hardware-efficient ansatz, coordinate-descent "
-         "optimizer)\n\n");
+  printf(
+      "  Step 6: VQE (4 qubits, hardware-efficient ansatz, coordinate-descent "
+      "optimizer)\n\n");
   vqe_result_t vqe_res = vqe_run(4, 3, H, 8, 0.6, 20260810ULL);
   printf("  VQE converged energy: %.6f Hartree\n", vqe_res.energy);
   printf("  Error vs. exact FCI : %.6f Hartree (%.4f mHartree)\n\n",
          vqe_res.energy - E_fci, 1000.0 * (vqe_res.energy - E_fci));
 
-  printf("=== Summary ===\n\n");
-  printf("  %-25s %-14.6f\n", "RHF (mean-field)", E_rhf);
-  printf("  %-25s %-14.6f\n", "FCI (exact, this basis)", E_fci);
-  printf("  %-25s %-14.6f\n", "VQE (variational)", vqe_res.energy);
+  printf("  === Summary ===\n\n");
+  printf("    %-25s %-14.6f\n", "RHF (mean-field)", E_rhf);
+  printf("    %-25s %-14.6f\n", "FCI (exact, this basis)", E_fci);
+  printf("    %-25s %-14.6f\n", "VQE (variational)", vqe_res.energy);
   printf("\n  Correlation energy captured by FCI/VQE vs RHF: %.6f Hartree\n",
          E_rhf - E_fci);
   printf("  \"Chemical accuracy\" threshold is usually quoted as 1.6 mHartree; "

@@ -69,7 +69,7 @@ int main(void) {
   double omega = 1.0, mass = 1.0, hbar = 1.0;
 
   // 1. solve_tise_shoot: bound-state energies via Numerov shooting
-  printf("Step 1: solve_tise_shoot - Numerov shooting for bound states\n\n");
+  printf("  Step 1: solve_tise_shoot - Numerov shooting for bound states\n\n");
 
   int n_shoot = 800;
   double L_shoot = 20.0;
@@ -103,7 +103,7 @@ int main(void) {
   free(V_shoot);
 
   // 1.5. solve_tise_shoot_matching: log-derivative-matching shooting
-  printf("\nStep 1.5: solve_tise_shoot_matching - log-derivative-matching "
+  printf("\n  Step 1.5: solve_tise_shoot_matching - log-derivative-matching "
          "shooting (distinct from solve_tise_shoot's diagonalization-based "
          "numerov_shoot)\n\n");
 
@@ -132,8 +132,9 @@ int main(void) {
         solve_tise_shoot_matching(&match_params, E_min, E_max, 200, 1e-8);
 
     if (sol) {
-      printf("  n=%d: E_matching = %.6f  (exact = %.6f, diff = %.2e)\n", level,
-             sol->energy, levels[level], fabs(sol->energy - levels[level]));
+      printf("    n=%d: E_matching = %.6f  (exact = %.6f, diff = %.2e)\n",
+             level, sol->energy, levels[level],
+             fabs(sol->energy - levels[level]));
 
       numerov_solution_free(sol);
     }
@@ -143,7 +144,7 @@ int main(void) {
   free(V_match);
 
   // 2 & 3. Time evolution of a coherent-state wavepacket
-  printf("\nStep 2: evolve_tdse_crank and evolve_tdse_split_step - "
+  printf("\n  Step 2: evolve_tdse_crank and evolve_tdse_split_step - "
          "coherent-state wavepacket dynamics\n\n");
 
   int n = 1024;
@@ -177,11 +178,11 @@ int main(void) {
   double x_crank = compute_x_mean(psi_crank, x, n);
   double x_split = compute_x_mean(psi_split, x, n);
 
-  printf("  After t=%.2f (period=%.2f):\n", t_total, 2.0 * M_PI / omega);
-  printf("  <x>(t) exact classical:       %.6f\n", x_expected);
-  printf("  <x>(t) Crank-Nicolson:        %.6f  (diff %.2e)\n", x_crank,
+  printf("    After t=%.2f (period=%.2f):\n", t_total, 2.0 * M_PI / omega);
+  printf("    <x>(t) exact classical:       %.6f\n", x_expected);
+  printf("    <x>(t) Crank-Nicolson:        %.6f  (diff %.2e)\n", x_crank,
          fabs(x_crank - x_expected));
-  printf("  <x>(t) split-step (FFT):      %.6f  (diff %.2e)\n\n", x_split,
+  printf("    <x>(t) split-step (FFT):      %.6f  (diff %.2e)\n\n", x_split,
          fabs(x_split - x_expected));
 
   cvector_free(psi_crank);

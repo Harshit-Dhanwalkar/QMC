@@ -40,7 +40,7 @@ int main(void) {
   double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  printf("Step 1: RHF + MO integrals + CCSD (for amplitudes)\n\n");
+  printf("  Step 1: RHF + MO integrals + CCSD (for amplitudes)\n\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 2, mol, 2, 1e-12, 200);
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 2, mol);
   double *eri_ao = molecular_eri_tensor(basis, 2);
@@ -51,9 +51,9 @@ int main(void) {
   ccsd_amplitudes_t *amp = NULL;
   ccsd_result_t *ccsd = ccsd_run_ex(2, h_mo, eri_mo, hf->orbital_energies, 2, 0,
                                     hf->total_energy, 1e-12, 100, &amp);
-  printf("  CCSD total energy: %.10f Hartree\n\n", ccsd->total_energy);
+  printf("    CCSD total energy: %.10f Hartree\n\n", ccsd->total_energy);
 
-  printf("Step 2: build the UCC generator from CCSD's converged T1/T2 "
+  printf("  Step 2: build the UCC generator from CCSD's converged T1/T2 "
          "amplitudes\n\n");
   ucc_single_t *singles = NULL;
   double *theta_s = NULL;
@@ -63,7 +63,7 @@ int main(void) {
   int n_doubles = 0;
   ucc_excitations_from_ccsd_amplitudes(amp, &singles, &theta_s, &n_singles,
                                        &doubles, &theta_d, &n_doubles);
-  printf("  %d singles, %d doubles excitation(s) extracted from CCSD "
+  printf("    %d singles, %d doubles excitation(s) extracted from CCSD "
          "amplitudes\n",
          n_singles, n_doubles);
 
@@ -82,7 +82,7 @@ int main(void) {
 
   cvector_t *psi = ucc_prepare_state(generator, hf_ref);
 
-  printf("\nStep 3: energy expectation "
+  printf("\n  Step 3: energy expectation "
          "<\\psi(\\theta_{CCSD})|H|\\psi(\\theta_{CCSD})> vs. exact FCI\n\n");
   cmatrix_t *H = second_quant_build_molecular_hamiltonian(
       2, h_mo, eri_mo, molecule_nuclear_repulsion(mol));
@@ -108,13 +108,14 @@ int main(void) {
     }
   }
 
-  printf("  UCC (CCSD-seeded) energy: %.10f Hartree\n", e_ucc);
-  printf("  Exact FCI ground energy:  %.10f Hartree\n", e_fci);
-  printf("  Difference:                %.2e Hartree\n\n", fabs(e_ucc - e_fci));
-  printf("  UCC is variational (energy >= FCI always); CCSD-seeded parameters "
-         "already essentially saturate that bound for this 2-electron system, "
-         "justification for using CCSD amplitudes as a VQE UCCSD "
-         "initialization.\n");
+  printf("    UCC (CCSD-seeded) energy: %.10f Hartree\n", e_ucc);
+  printf("    Exact FCI ground energy:  %.10f Hartree\n", e_fci);
+  printf("    Difference:                %.2e Hartree\n\n",
+         fabs(e_ucc - e_fci));
+  printf("    UCC is variational (energy >= FCI always); CCSD-seeded "
+         "parameters already essentially saturate that bound for this "
+         "2-electron system, justification for using CCSD amplitudes as a VQE "
+         "UCCSD initialization.\n");
 
   cvector_free(psi);
   cvector_free(hf_ref);

@@ -47,7 +47,7 @@ int main(void) {
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 
-  printf("Step 1: STO-3G H2 RHF, AO -> MO transform, Jordan-Wigner "
+  printf("  Step 1: STO-3G H2 RHF, AO -> MO transform, Jordan-Wigner "
          "Hamiltonian (4 qubits, 16x16) -- same pipeline as eg_42\n\n");
   molecular_hf_result_t *hf = molecular_rhf(funcs, 2, mol, 2, 1e-10, 200);
   cmatrix_t *Hcore = molecular_core_hamiltonian(funcs, 2, mol);
@@ -66,54 +66,53 @@ int main(void) {
 
   eigen_t *eig = cmatrix_eigh_complex(H_copy);
   double E_fci = eig->eigenvalues[0];
-  printf("  RHF: %.6f Hartree   FCI (exact): %.6f Hartree\n\n",
+  printf("    RHF: %.6f Hartree   FCI (exact): %.6f Hartree\n\n",
          hf->total_energy, E_fci);
 
-  printf("Step 2: Noiseless VQE (4 qubits, hardware-efficient ansatz) -- "
-         "same as eg_42\n\n");
+  printf("  Step 2: Noiseless VQE (4 qubits, hardware-efficient ansatz)\n\n");
   vqe_result_t vqe_res = vqe_run(4, 3, H, 8, 0.6, 20260810ULL);
   printf("  Noiseless VQE: %.6f Hartree  (error vs FCI: %.4f mHartree)\n\n",
          vqe_res.energy, 1000.0 * fabs(vqe_res.energy - E_fci));
 
-  printf("Step 3: Evaluate the SAME ansatz parameters under increasing T1/T2 "
+  printf("  Step 3: Evaluate the SAME ansatz parameters under increasing T1/T2 "
          "noise (density-matrix simulation, physics/vqe_noisy.c)\n\n");
   double gate_time = 0.05; // natural units; a nominal per-gate duration
   const double noise_levels[4] = {0.0, 0.002, 0.005,
                                   0.008}; // \gamma1 (T1 rate)
-  printf("  %-12s %-16s %-16s\n", "gamma1", "noisy energy",
+  printf("    %-12s %-16s %-16s\n", "gamma1", "noisy energy",
          "error vs FCI (mH)");
   for (int i = 0; i < 4; i++) {
     double gamma1 = noise_levels[i];
     double gamma2 = gamma1 * 0.6; // T2 typically faster than T1 in practice
     double e_noisy =
         vqe_noisy_energy(4, 3, vqe_res.theta_opt, H, gamma1, gamma2, gate_time);
-    printf("  %-12.3f %-16.6f %-16.4f\n", gamma1, e_noisy,
+    printf("    %-12.3f %-16.6f %-16.4f\n", gamma1, e_noisy,
            1000.0 * fabs(e_noisy - E_fci));
   }
   printf("\n  Energy error grows with noise strength, even though the circuit "
          "parameters never changed.\n\n");
 
-  printf("Step 4: Zero-noise extrapolation at a representative noise level "
+  printf("  Step 4: Zero-noise extrapolation at a representative noise level "
          "(\\gamma1=0.005, \\gamma2=0.003)\n\n");
   double gamma1 = 0.005, gamma2 = 0.003;
   double raw_c1 = 0.0;
   double e_zne = vqe_noisy_zne_energy(4, 3, vqe_res.theta_opt, H, gamma1,
                                       gamma2, gate_time, 3, &raw_c1);
-  printf("  Raw noisy energy (c=1):         %.6f Hartree  (error: %.4f "
+  printf("    Raw noisy energy (c=1):         %.6f Hartree  (error: %.4f "
          "mHartree)\n",
          raw_c1, 1000.0 * fabs(raw_c1 - E_fci));
-  printf("  ZNE-extrapolated energy (c->0): %.6f Hartree  (error: %.4f "
+  printf("    ZNE-extrapolated energy (c->0): %.6f Hartree  (error: %.4f "
          "mHartree)\n\n",
          e_zne, 1000.0 * fabs(e_zne - E_fci));
 
-  printf("=== Summary ===\n\n");
-  printf("  %-30s %-14.6f\n", "RHF (mean-field)", hf->total_energy);
-  printf("  %-30s %-14.6f\n", "FCI (exact)", E_fci);
-  printf("  %-30s %-14.6f\n", "VQE, noiseless", vqe_res.energy);
-  printf("  %-30s %-14.6f\n", "VQE, noisy (raw, c=1)", raw_c1);
-  printf("  %-30s %-14.6f\n", "VQE, noisy + ZNE", e_zne);
-  printf("\n  ZNE recovered %.4f mHartree of the %.4f mHartree that noise cost "
-         "the raw readout at this noise level, using only a polynomial "
+  printf("  === Summary ===\n\n");
+  printf("    %-30s %-14.6f\n", "RHF (mean-field)", hf->total_energy);
+  printf("    %-30s %-14.6f\n", "FCI (exact)", E_fci);
+  printf("    %-30s %-14.6f\n", "VQE, noiseless", vqe_res.energy);
+  printf("    %-30s %-14.6f\n", "VQE, noisy (raw, c=1)", raw_c1);
+  printf("    %-30s %-14.6f\n", "VQE, noisy + ZNE", e_zne);
+  printf("\n   ZNE recovered %.4f mHartree of the %.4f mHartree that noise "
+         "cost the raw readout at this noise level, using only a polynomial "
          "extrapolation across 3 amplified noise scales.\n",
          1000.0 * (fabs(raw_c1 - E_fci) - fabs(e_zne - E_fci)),
          1000.0 * fabs(raw_c1 - E_fci));

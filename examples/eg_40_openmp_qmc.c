@@ -43,10 +43,10 @@ int main(void) {
   printf(" > OpenMP-Parallel Quantum Monte Carlo\n\n");
 
 #ifdef _OPENMP
-  printf("Built with OpenMP. Max threads available: %d\n",
+  printf("  Built with OpenMP. Max threads available: %d\n",
          omp_get_max_threads());
-  printf("(Set OMP_NUM_THREADS to control this, e.g. "
-         "OMP_NUM_THREADS=4 ./build/eg_39_openmp_qmc)\n\n");
+  printf("  (Set OMP_NUM_THREADS to control this, e.g. OMP_NUM_THREADS=4 "
+         "./build/eg_40_openmp_qmc)\n\n");
 #else
   printf("Built WITHOUT OpenMP (all _parallel functions still run "
          "correctly, just serially).\n\n");
@@ -58,8 +58,8 @@ int main(void) {
   double step1 = 0.9, step2 = 0.9;
   int n_replicas = 8;
 
-  printf("=== VMC: %d replicas, %d samples each (%d total) ===\n\n", n_replicas,
-         n_samples, n_replicas * n_samples);
+  printf("  === VMC: %d replicas, %d samples each (%d total) ===\n\n",
+         n_replicas, n_samples, n_replicas * n_samples);
 
   double t0 = wall_seconds();
   double serial_sum_mean = 0.0;
@@ -79,17 +79,17 @@ int main(void) {
                        block_size, step1, step2, 1000ULL);
   double t2 = wall_seconds();
 
-  printf("Sequential loop of %d single-replica calls: %.3f s "
-         "(mean of means = %.6f)\n",
+  printf("  Sequential loop of %d single-replica calls: %.3f s (mean of means "
+         "= %.6f)\n",
          n_replicas, t1 - t0, serial_sum_mean / n_replicas);
-  printf("One vmc_run_parallel(%d, ...) call:          %.3f s "
-         "(E = %.6f +- %.6f Hartree)\n",
+  printf("  One vmc_run_parallel(%d, ...) call:          %.3f s (E = %.6f +- "
+         "%.6f Hartree)\n",
          n_replicas, t2 - t1, r_parallel.mean, r_parallel.error);
   if (t2 - t1 > 1e-9) {
-    printf("Speedup: %.2fx\n\n", (t1 - t0) / (t2 - t1));
+    printf("  Speedup: %.2fx\n\n", (t1 - t0) / (t2 - t1));
   }
 
-  printf("=== DMC: 4 replicas, helium ===\n\n");
+  printf("  === DMC: 4 replicas, helium ===\n\n");
   double t3 = wall_seconds();
   dmc_result_t dr = dmc_run_parallel(4, Z, Zeff, 0.15,
                                      /*target_population=*/200,
@@ -100,10 +100,10 @@ int main(void) {
                                      /*block_size=*/200,
                                      /*master_seed=*/2026ULL);
   double t4 = wall_seconds();
-  printf("dmc_run_parallel(4, ...): %.3f s, mixed = %.6f +- %.6f Hartree\n\n",
+  printf("  dmc_run_parallel(4, ...): %.3f s, mixed = %.6f +- %.6f Hartree\n\n",
          t4 - t3, dr.energy_mixed, dr.error_mixed);
 
-  printf("=== PIMC: 4 replicas, helium ===\n\n");
+  printf("  === PIMC: 4 replicas, helium ===\n\n");
   double t5 = wall_seconds();
   int P = 256;
   double tau = 8.0 / P;
@@ -112,10 +112,10 @@ int main(void) {
                         /*n_blocks=*/20, /*block_size=*/200,
                         /*master_seed=*/24601ULL);
   double t6 = wall_seconds();
-  printf("pimc_run_parallel(4, ...): %.3f s, E = %.6f +- %.6f Hartree\n\n",
+  printf("  pimc_run_parallel(4, ...): %.3f s, E = %.6f +- %.6f Hartree\n\n",
          t6 - t5, pr.energy, pr.error);
 
-  printf("Exact helium ground state: -2.9037 Hartree (all three methods "
+  printf("  Exact helium ground state: -2.9037 Hartree (all three methods "
          "above should bracket or land close to this).\n");
 
   return 0;

@@ -64,10 +64,10 @@ int main(void) {
   /* \phi = 3/8 is exactly representable with 3 counting qubits (QPE should be
    * exact, zero spread). \phi = 0.3 is not exactly representable at any finite
    * n_count, so QPE's estimate only converges as n_count grows. */
-  printf("Case 1: \\phi = 3/8 = 0.375, exactly representable at n_count=3\n");
+  printf("  Case 1: \\phi = 3/8 = 0.375, exactly representable at n_count=3\n");
   run_estimate(3.0 / 8.0, 3);
 
-  printf("\nCase 2: \\phi = 0.3, not exactly representable, estimate improves "
+  printf("\n  Case 2: \\phi = 0.3, not exactly representable, estimate improves "
          "with more counting qubits\n");
   run_estimate(0.3, 3);
   run_estimate(0.3, 6);
