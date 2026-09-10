@@ -219,7 +219,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/molecular_dft.c \
                $(PHYSICS_DIR)/fci.c \
                $(PHYSICS_DIR)/spin_chain.c \
-               $(PHYSICS_DIR)/ising_chain.c
+               $(PHYSICS_DIR)/ising_chain.c \
+               $(PHYSICS_DIR)/vibrational.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
