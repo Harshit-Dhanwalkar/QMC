@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
 static int failures = 0;
 
 static void check(int cond, const char *msg) {
@@ -50,7 +54,8 @@ static void test_grid_reproduces_overlap_matrix(void) {
          "overlap matrix (H2/STO-3G)\n");
 
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
@@ -59,7 +64,11 @@ static void test_grid_reproduces_overlap_matrix(void) {
   molecule_t *mol = molecule_alloc(2, charges, centers);
   cmatrix_t *S_exact = molecular_overlap_matrix(basis, 2);
 
-  molecular_grid_t *grid = molecular_grid_build(mol, 60, 20, 30, 1.0);
+  int n_radial = RUNNING_ON_VALGRIND ? 20 : 60;
+  int n_polar = RUNNING_ON_VALGRIND ? 10 : 20;
+  int n_azim = RUNNING_ON_VALGRIND ? 15 : 30;
+  molecular_grid_t *grid =
+      molecular_grid_build(mol, n_radial, n_polar, n_azim, 1.0);
   check(grid != NULL, "grid should build successfully");
 
   if (grid) {
@@ -108,11 +117,17 @@ static void test_grid_integrates_electron_count(void) {
   double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, 1e-10, 200);
+  int max_iter = RUNNING_ON_VALGRIND ? 30 : 200;
+  double tol = RUNNING_ON_VALGRIND ? 1e-5 : 1e-10;
+  molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, tol, max_iter);
   check(hf != NULL && hf->converged,
         "RHF should converge for the density matrix construction");
 
-  molecular_grid_t *grid = molecular_grid_build(mol, 60, 20, 30, 1.0);
+  int n_radial = RUNNING_ON_VALGRIND ? 20 : 60;
+  int n_polar = RUNNING_ON_VALGRIND ? 10 : 20;
+  int n_azim = RUNNING_ON_VALGRIND ? 15 : 30;
+  molecular_grid_t *grid =
+      molecular_grid_build(mol, n_radial, n_polar, n_azim, 1.0);
   check(grid != NULL, "grid should build successfully");
 
   if (hf && grid) {
@@ -171,7 +186,8 @@ static void test_h2_ks_lda_matches_pyscf(void) {
          "reference (-1.12132825509958 Hartree)\n");
 
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
@@ -255,7 +271,8 @@ static void test_h2_ks_pbe_matches_pyscf(void) {
          "reference (-1.1520643731282254 Hartree)\n");
 
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
@@ -348,9 +365,11 @@ static void test_pbe_invalid_inputs_rejected(void) {
 
   molecular_grid_t *grid = molecular_grid_build_default(mol);
 
-  check(molecular_ks_pbe(basis, 1, mol, 1, grid, 0.3, 1e-9, 100) == NULL,
+  double tol = RUNNING_ON_VALGRIND ? 1e-6 : 1e-9;
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 100;
+  check(molecular_ks_pbe(basis, 1, mol, 1, grid, 0.3, tol, max_iter) == NULL,
         "odd electron count should be rejected (restricted closed-shell only)");
-  check(molecular_ks_pbe(NULL, 1, mol, 2, grid, 0.3, 1e-9, 100) == NULL,
+  check(molecular_ks_pbe(NULL, 1, mol, 2, grid, 0.3, tol, max_iter) == NULL,
         "NULL basis should be rejected");
 
   molecular_grid_free(grid);
@@ -378,9 +397,11 @@ static void test_invalid_inputs_rejected(void) {
   basis_function_t *basis[1] = {h0};
   molecular_grid_t *grid = molecular_grid_build_default(mol);
 
-  check(molecular_ks_lda(basis, 1, mol, 1, grid, 0.3, 1e-9, 100) == NULL,
+  double tol = RUNNING_ON_VALGRIND ? 1e-6 : 1e-9;
+  int max_iter = RUNNING_ON_VALGRIND ? 50 : 100;
+  check(molecular_ks_lda(basis, 1, mol, 1, grid, 0.3, tol, max_iter) == NULL,
         "odd electron count should be rejected (restricted closed-shell only)");
-  check(molecular_ks_lda(NULL, 1, mol, 2, grid, 0.3, 1e-9, 100) == NULL,
+  check(molecular_ks_lda(NULL, 1, mol, 2, grid, 0.3, tol, max_iter) == NULL,
         "NULL basis should be rejected");
 
   molecular_grid_free(grid);
@@ -389,7 +410,7 @@ static void test_invalid_inputs_rejected(void) {
 }
 
 int main(void) {
-  printf("=== Molecular Kohn-Sham LDA DFT (Becke grid) tests ===\n\n");
+  printf(" > Molecular Kohn-Sham LDA DFT (Becke grid) tests\n");
 
   test_grid_reproduces_overlap_matrix();
   test_grid_integrates_electron_count();

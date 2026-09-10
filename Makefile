@@ -296,6 +296,7 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_61_uhf_geometry_optimization \
               $(BUILD_DIR)/eg_62_ump2 \
               $(BUILD_DIR)/eg_63_vqe_pauli_hamiltonian \
+              $(BUILD_DIR)/eg_64_vibrational_analysis \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -353,6 +354,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lih \
               $(BUILD_DIR)/test_uhf \
               $(BUILD_DIR)/test_hf_gradient \
+              $(BUILD_DIR)/test_vibrational \
               $(BUILD_DIR)/test_ccsd \
               $(BUILD_DIR)/test_ccsd_t \
               $(BUILD_DIR)/test_ucc \

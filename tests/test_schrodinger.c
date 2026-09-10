@@ -24,6 +24,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
+
+#ifdef VALGRIND
+#define TEST_N_SMALL 200
+#define TEST_N_MEDIUM 256
+#define TEST_N_LARGE 500
+#define TEST_STEPS 200
+#define TEST_LENGTH 10.0
+#else
+#define TEST_N_SMALL 800
+#define TEST_N_MEDIUM 1024
+#define TEST_N_LARGE 2000
+#define TEST_STEPS 1000
+#define TEST_LENGTH 20.0
+#endif
+
 static int failures = 0;
 
 static void check(int cond, const char *msg) {
@@ -51,8 +69,8 @@ static void test_solve_tise_shoot_harmonic_oscillator(void) {
          "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
          "solve_tise_matrix\n");
 
-  int n = 800;
-  double L = 20.0;
+  int n = TEST_N_SMALL;
+  double L = TEST_LENGTH;
   double dx = L / n;
   double omega = 1.0;
   double hbar_sq_2m = 0.5; // \hbar = m = 1 natural units: \hbar^2/(2m) = 0.5
@@ -196,12 +214,12 @@ static void test_split_step_coherent_state_hbar_independence(void) {
   printf("Test: evolve_tdse_split_step reproduces the exact coherent-state "
          "trajectory x(t)=x0*cos(omega*t) at multiple hbar values\n");
 
-  int n = 1024;
+  int n = TEST_N_MEDIUM;
   double L = 40.0;
   double dx = L / n;
   double mass = 1.0, omega = 1.0, x0 = 3.0;
   double dt = 0.001;
-  int steps = 2000;
+  int steps = TEST_N_LARGE;
   double t_total = dt * steps;
   double x_expected = x0 * cos(omega * t_total);
 
@@ -285,13 +303,13 @@ static void test_crank_matches_split_step(void) {
          "(finite-difference+Crank-Nicolson vs. FFT-based split-step) agree on "
          "the same coherent-state trajectory\n");
 
-  int n = 1024;
+  int n = TEST_N_MEDIUM;
   double L = 40.0;
   double dx = L / n;
   double hbar_sq_2m = 0.5; // \hbar=m=1
   double hbar = 1.0, mass = 1.0, omega = 1.0, x0 = 3.0;
   double dt = 0.001;
-  int steps = 1000;
+  int steps = TEST_STEPS;
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
@@ -340,8 +358,8 @@ static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
          "the exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, "
          "with node counts and parity\n");
 
-  int n = 2000;
-  double L = 20.0;
+  int n = TEST_N_LARGE;
+  double L = TEST_LENGTH;
   double dx = L / (n - 1);
   double hbar_sq_2m = 0.5; // \hbar = m = \omega = 1 natural units
 
@@ -411,8 +429,8 @@ static void test_solve_tise_shoot_matching_matches_shoot(void) {
   printf("Test: solve_tise_shoot_matching's ground-state energy matches "
          "solve_tise_shoot's independent diagonalization-based method");
 
-  int n = 2000;
-  double L = 20.0;
+  int n = TEST_N_LARGE;
+  double L = TEST_LENGTH;
   double dx = L / (n - 1);
   double hbar_sq_2m = 0.5;
 
@@ -452,8 +470,8 @@ static void test_solve_tise_shoot_matching_no_root_returns_null(void) {
   printf("Test: solve_tise_shoot_matching returns NULL when bracket contains "
          "no eigenvalue\n");
 
-  int n = 2000;
-  double L = 20.0;
+  int n = TEST_N_LARGE;
+  double L = TEST_LENGTH;
   double dx = L / (n - 1);
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
@@ -479,6 +497,8 @@ static void test_solve_tise_shoot_matching_no_root_returns_null(void) {
 }
 
 int main(void) {
+  printf(" > Schrodinger TISE-shooting and TDSE-evolution functions tests\n");
+
   test_solve_tise_shoot_harmonic_oscillator();
   test_solve_tise_shoot_matching_harmonic_oscillator();
   test_solve_tise_shoot_matching_matches_shoot();

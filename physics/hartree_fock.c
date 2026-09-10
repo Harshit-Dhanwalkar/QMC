@@ -330,8 +330,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
   int n_virtual = N - n_orbitals;
   double *virtual_energies =
       malloc((size_t)n_virtual * sizeof *virtual_energies);
-  cvector_t **virtual_orbitals =
-      malloc((size_t)n_virtual * sizeof *virtual_orbitals);
+  cvector_t **virtual_orbitals = malloc((size_t)n_virtual * sizeof(double *));
 
   if (!virtual_energies || !virtual_orbitals) {
     free(virtual_energies);

@@ -8,6 +8,7 @@
 #include "angular.h"
 #include "qubits.h"
 #include <math.h>
+#include <stddef.h>
 
 qec_result_t qec_run(qec_code_t code, complex_t alpha, complex_t beta,
                      int error_qubit, double u3, double u4) {
@@ -193,8 +194,9 @@ qec_shor_result_t qec_shor_run(complex_t alpha, complex_t beta, int error_qubit,
 
   // Bit-flip correction, one block at a time, reusing ancillas 9,10
   for (int b = 0; b < 3; b++) {
-    result.block_corrected[b] = shor_bitflip_correct_block(
-        psi, n, blocks[b][0], blocks[b][1], blocks[b][2], 9, 10, &u[2 * b]);
+    result.block_corrected[b] =
+        shor_bitflip_correct_block(psi, n, blocks[b][0], blocks[b][1],
+                                   blocks[b][2], 9, 10, &u[(size_t)2 * b]);
   }
 
   // Phase-flip correction across blocks: stabilizers X0..X5, X3..X8 (all 6

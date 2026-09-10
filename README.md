@@ -191,6 +191,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_61_uhf_geometry_optimization.c</code></li>
   <li><code>eg_62_vqe_pauli_hamiltonian.c</code></li>
   <li><code>eg_63_shor_code.c</code></li>
+  <li><code>eg_64_vibrational_analysis.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -223,6 +224,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_hartree_fock.c</code></li>
   <li><code>test_helium.c</code></li>
   <li><code>test_hf_gradient.c</code></li>
+  <li><code>test_vibrational.c</code></li>
   <li><code>test_hydrogen.c</code></li>
   <li><code>test_identical.c</code></li>
   <li><code>test_ising_chain.c</code></li>

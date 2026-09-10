@@ -237,5 +237,6 @@ int main(void) {
     return 1;
   }
   printf("\nAll test_ccsd checks passed.\n");
+
   return 0;
 }

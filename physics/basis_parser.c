@@ -32,7 +32,7 @@ static double parse_double_token(const char *tok) {
   for (i = 0; i < sizeof(buf) - 1 && tok[i] != '\0'; i++) {
     char c = tok[i];
 
-    buf[i] = (char)(c == 'D' || c == 'd') ? 'e' : c;
+    buf[i] = (char)((c == 'D' || c == 'd') ? 'e' : c);
   }
 
   buf[i] = '\0';

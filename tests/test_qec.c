@@ -75,10 +75,8 @@ static void run_code_all_errors(qec_code_t code, const char *name) {
   }
 }
 
-// 9-qubit Shor code: corrects an ARBITRARY single-qubit error (X, Y, or Z
-// on any of the 9 physical qubits, plus the no-error case), independently
-// validated in Python (numpy state-vector simulation, same qubit-ordering
-// convention) before writing any of this C.
+// 9-qubit Shor code: corrects an arbitrary single-qubit error (X, Y, or Z on
+// any of the 9 physical qubits, plus the no-error case)
 //
 // WARN: Y errors: correcting a Y error means the bit-flip syndrome fires (as if
 // X) AND the phase-flip syndrome fires (as if Z) independently, so the applied
@@ -107,9 +105,9 @@ static void check_state_exact(complex_t got_a, complex_t got_b, complex_t exp_a,
 static void check_state_up_to_phase(complex_t got_a, complex_t got_b,
                                     complex_t exp_a, complex_t exp_b,
                                     const char *label) {
-  // Divide out whichever expected component has larger magnitude to find
-  // global phase, then check both components against that phase times the
-  // expected amplitudes
+  // Divide out whichever expected component has larger magnitude to find global
+  // phase, then check both components against that phase times the expected
+  // amplitudes
   int use_a = c_abs2(exp_a) >= c_abs2(exp_b);
   complex_t got_ref = use_a ? got_a : got_b;
   complex_t exp_ref = use_a ? exp_a : exp_b;

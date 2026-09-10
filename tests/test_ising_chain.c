@@ -1,5 +1,6 @@
 /*
- * Test: exact diagonalization of the transverse-field Ising model (TFIM) on a
+ * Test: transverse-field and longitudinal-field 1D Ising model tests.
+ * Exact diagonalization of the transverse-field Ising model (TFIM) on a
  * periodic ring, cross-checked against its exact Jordan-Wigner + Bogoliubov
  * ground-state energy.
  *
@@ -29,6 +30,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
 
 static int failures = 0;
 
@@ -106,7 +111,8 @@ static void test_hermiticity(void) {
   printf("\n-- Hermiticity of full and Z2-reduced Hamiltonians --\n");
 
   int N = 6;
-  double J = 1.0, h = 1.1;
+  double J = 1.0;
+  double h = 1.1;
 
   sparse_matrix_t *H = ising_hamiltonian(N, J, h, 1);
   int dim = 1 << N;
@@ -178,7 +184,8 @@ static void test_z2_parity_reduction(void) {
   printf("\n-- Z2 parity reduction matches full ED and the exact formula --\n");
 
   for (int N = 4; N <= 9; N++) {
-    double J = 1.0, h = 1.2;
+    double J = 1.0;
+    double h = 1.2;
 
     sparse_matrix_t *Hp = ising_z2_hamiltonian(N, J, h, 1, +1);
     sparse_matrix_t *Hm = ising_z2_hamiltonian(N, J, h, 1, -1);
@@ -264,6 +271,7 @@ static void test_entanglement_entropy(void) {
 
       continue;
     }
+
     const cmatrix_t *psi = res->vectors;
 
     for (int L_A = 0; L_A <= N; L_A++) {
@@ -290,6 +298,7 @@ static void test_entanglement_entropy(void) {
               "h=%.1f: mid-chain entanglement entropy (%.6f) decreased from "
               "previous h (%.6f), moving deeper into the paramagnetic phase",
               h, S, prev_mid);
+
           check(S < prev_mid, label2);
         }
 
@@ -373,6 +382,7 @@ static void test_quench_dynamics(void) {
                "t=%.0e: L(t) matches short-time Taylor expansion [1 - t^2 * "
                "Var(H_f)]",
                t);
+
       check_close(L_t, L_taylor, 1e-8, label);
     }
 
@@ -406,7 +416,7 @@ static void test_quench_dynamics(void) {
 }
 
 int main(void) {
-  printf("=== Transverse-Field Ising Model: ED + exact solution tests ===\n");
+  printf(" > Transverse-Field Ising Model: ED + exact solution tests\n");
 
   test_exact_vs_full_ed();
   test_hermiticity();

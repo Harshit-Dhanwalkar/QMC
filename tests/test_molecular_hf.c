@@ -218,6 +218,8 @@ static void test_h4_chain_fci_and_vqe(void) {
 }
 
 int main(void) {
+  printf(" > Molecular HF general N-basis-function tests\n");
+
   test_molecular_rhf_h2_regression();
   test_h4_chain_fci_and_vqe();
 

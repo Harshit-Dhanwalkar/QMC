@@ -1,6 +1,6 @@
 /*
- * Test: translation-symmetry-adapted exact diagonalization of the spin-1/2
- * XXZ ring, and the Lanczos continued-fraction dynamical structure factor.
+ * Test: translation-symmetry-adapted exact diagonalization of the spin-1/2 XXZ
+ * ring, and the Lanczos continued-fraction dynamical structure factor.
  *
  * Reference values were generated independently with a full-Hilbert-space (no
  * symmetry) numpy exact-diagonalization script for the isotropic Heisenberg
@@ -35,6 +35,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef RUNNING_ON_VALGRIND
+#define RUNNING_ON_VALGRIND 0
+#endif
 
 static int failures = 0;
 
@@ -94,11 +98,15 @@ static double ring_ground_energy(int N) {
 }
 
 static void test_ground_energies(void) {
+#if RUNNING_ON_VALGRIND
+  printf("\n-- Ground-state energies (Valgrind: only N=4) --\n");
+  check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
+#else
   printf("\n-- Ground-state energies vs exact-diagonalization reference --\n");
-
   check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
   check_close(ring_ground_energy(6), -2.802776, 1e-5, "N=6 E0");
   check_close(ring_ground_energy(8), -3.651093, 1e-5, "N=8 E0");
+#endif
 }
 
 static void test_hamiltonian_hermitian_and_sector_sizes(void) {
@@ -124,8 +132,11 @@ static void test_hamiltonian_hermitian_and_sector_sizes(void) {
 static void test_szq_sum_rule(void) {
   printf("\n-- S^z_q excitation: sum-rule cross-check (N=6, q index 1) --\n");
   /* Ground-state momentum for N=6 is k=pi (index 3), not k=0
-   * (Marshall's sign rule / Lieb-Schultz-Mattis: N/2=3 is odd). */
-  int N = 6, nup = N / 2, q_index = 1, k_gs = 3;
+   * (NOTE: Marshall's sign rule / Lieb-Schultz-Mattis: N/2=3 is odd) */
+  int N = 6;
+  int nup = N / 2;
+  int q_index = 1;
+  int k_gs = 3;
 
   spin_sector_t *sec0 = spin_sector_build(N, nup, k_gs);
   check(sec0 != NULL, "k=pi, Sz=0 sector built");
@@ -178,7 +189,10 @@ static void test_szq_sum_rule(void) {
 static void test_continued_fraction_integrates_to_I0(void) {
   printf("\n-- Continued-fraction spectral weight vs I0 (N=6, q index 1) --\n");
   // Same k=\pi ground sector as test_szq_\sum_rule
-  int N = 6, nup = N / 2, q_index = 1, k_gs = 3;
+  int N = 6;
+  int nup = N / 2;
+  int q_index = 1;
+  int k_gs = 3;
 
   spin_sector_t *sec0 = spin_sector_build(N, nup, k_gs);
   sparse_matrix_t *H0 = spin_sector_hamiltonian(sec0, 1.0, 1.0, 1);
@@ -259,8 +273,13 @@ static void test_reflection_parity(void) {
   };
   const int has_ref[4] = {0, 1, 1, 0};
 
-  for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
-    int N = cases[c].N, nup = cases[c].nup, k = cases[c].k;
+  int start_idx = RUNNING_ON_VALGRIND ? 1 : 0;
+  int end_idx = RUNNING_ON_VALGRIND ? 2 : 4;
+  for (int c = start_idx; c < end_idx; c++) {
+    // for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+    int N = cases[c].N;
+    int nup = cases[c].nup;
+    int k = cases[c].k;
     spin_sector_t *sec = spin_sector_build(N, nup, k);
 
     check(sec != NULL, "sector built");
