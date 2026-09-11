@@ -298,6 +298,7 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_62_ump2 \
               $(BUILD_DIR)/eg_63_vqe_pauli_hamiltonian \
               $(BUILD_DIR)/eg_64_vibrational_analysis \
+              $(BUILD_DIR)/eg_65_dmrg \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -366,6 +367,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_spin_chain \
               $(BUILD_DIR)/test_ising_chain \
+              $(BUILD_DIR)/test_dmrg \
               $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)

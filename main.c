@@ -78,6 +78,7 @@ static const demo_entry_t demos[] = {
     {"build/eg_62_ump2", "UMP2: post-HF correlation energy for open-shell radicals (Li doublet)"},
     {"build/eg_63_vqe_pauli_hamiltonian", "VQE with a general Pauli-string Hamiltonian: the XXZ chain"},
     {"build/eg_64_vibrational_analysis", "Harmonic vibrational frequency analysis via numerical Hessian (H2)"},
+    {"build/eg_65_dmrg", "Infinite-system DMRG: Heisenberg antiferromagnetic chain convergence"},
     {"build/eg_latex_gen", "Automated LaTeX matrix and equation code generator"},
 
 };

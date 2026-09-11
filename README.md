@@ -192,6 +192,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_62_vqe_pauli_hamiltonian.c</code></li>
   <li><code>eg_63_shor_code.c</code></li>
   <li><code>eg_64_vibrational_analysis.c</code></li>
+  <li><code>eg_65_dmrg.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -212,6 +213,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_dft.c</code></li>
   <li><code>test_dirac.c</code></li>
   <li><code>test_dmc.c</code></li>
+  <li><code>test_dmrg.c</code></li>
   <li><code>test_driven.c</code></li>
   <li><code>test_fci.c</code></li>
   <li><code>test_fermi_golden_rule.c</code></li>
