@@ -11,10 +11,10 @@
  *
  * All energies in Hartree atomic units
  *
- * Parallelism: two independent OpenMP layers. dmc_run_parallel parallelizes
- * across n_replicas fully independent DMC runs (embarrassingly parallel, each
- * replica its own rng_jump-derived stream). Additionally, within a single run,
- * dmc_run/dmc_run_with_rng's walker population loop is itself
+ * NOTE: Parallelism: two independent OpenMP layers. dmc_run_parallel
+ * parallelizes across n_replicas fully independent DMC runs (embarrassingly
+ * parallel, each replica its own rng_jump-derived stream). Additionally, within
+ * a single run, dmc_run/dmc_run_with_rng's walker population loop is itself
  * OpenMP-parallelized across walkers each generation. Unlike VMC/PIMC, which
  * are each a single correlated Markov chain (every step depends on the previous
  * one, so there is no legitimate within-chain parallelism opportunity beyond
@@ -125,6 +125,19 @@ dmc_result_t dmc_run(double Z_charge, double Zeff, double param_b,
                      uint64_t seed);
 
 /*
+ * Same as dmc_run, with the E_T feedback gain \kappa (Reference: Umrigar,
+ * Nightingale & Runge 1993; theoretically ~0.1-1) exposed as an explicit
+ * parameter instead of fixed internal default dmc_run uses. Must be > 0.
+ * Useful when a (\tau, target_population) regime far from the well-tested
+ * default needs a different feedback gain to keep the E_T growth-estimator
+ * feedback loop stable.
+ */
+dmc_result_t dmc_run_ex(double Z_charge, double Zeff, double param_b,
+                        int target_population, int max_population, double tau,
+                        double kappa, int n_equilibration, int n_blocks,
+                        int block_size, uint64_t seed);
+
+/*
  * Same physics as dmc_run, but runs n_replicas fully independent DMC
  * populations (each with its own walker population, own equilibration, own
  * branching/E_T feedback) and combines them, parallelized over OpenMP threads
@@ -146,5 +159,15 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
                               int max_population, double tau,
                               int n_equilibration, int n_blocks, int block_size,
                               uint64_t master_seed);
+
+/*
+ * Same as dmc_run_parallel, with the E_T feedback gain \kappa exposed as an
+ * explicit parameter. Every replica uses the same \kappa.
+ */
+dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
+                                 double param_b, int target_population,
+                                 int max_population, double tau, double kappa,
+                                 int n_equilibration, int n_blocks,
+                                 int block_size, uint64_t master_seed);
 
 #endif

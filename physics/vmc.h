@@ -39,20 +39,32 @@ typedef struct {
 /* Unnormalized trial wavefunction value at walker configuration. */
 double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b);
 
-/* Local energy E_L = (H \Psi_T) / \Psi_T at walker configuration, for
- * two-electron atom/ion of nuclear charge Z with trial orbital exponent Zeff.
+/*
+ * ln(\Psi_T) = -Zeff * (r1 + r2) + r12 / (2 * (1 + b * r12)), at walker
+ * configuration `w`. Exposed so DMC's importance-sampled drift-diffusion moves
+ * (physics/dmc.c) can share this exact expression instead of maintaining a
+ * second, independently-drifting copy of the trial wavefunction's log.
+ */
+double vmc_ln_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b);
+
+/*
+ *Local energy E_L = (H \Psi_T) / \Psi_T at walker configuration, for
+ * two-electron atom/ion of nuclear charge Z with trial orbital exponent
+ * Zeff.
  *
  * Returns 0.0 if r1, r2, or r12 is degenerate (<1e-12), which is
  * probability-zero event during normal sampling
  */
 double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff, double b);
 
-/* Initialize walker positions: each Cartesian component of r1 and r2 drawn from
+/*
+ * Initialize walker positions: each Cartesian component of r1 and r2 drawn from
  * N(0, 1 / Zeff^2).
  */
 void vmc_walker_init(vmc_walker_t *w, rng_state_t *rng, double Zeff);
 
-/* Attempt a single-electron Metropolis move (which = 0 for electron 1, which =
+/*
+ * Attempt a single-electron Metropolis move (which = 0 for electron 1, which =
  * 1 for electron 2). Proposes uniform displacement in [-step_size, step_size]^3
  * added to that electron's current position, accepts with probability min(1,
  * |\Psi_T(new)|^2 / |\Psi_T(old)|^2). Mutates *w on acceptance.
@@ -62,7 +74,8 @@ void vmc_walker_init(vmc_walker_t *w, rng_state_t *rng, double Zeff);
 int vmc_metropolis_move_electron(vmc_walker_t *w, int which, double Zeff,
                                  double b, double step_size, rng_state_t *rng);
 
-/* One full sweep = one move attempt per electron (electron 1 then electron 2).
+/*
+ * One full sweep = one move attempt per electron (electron 1 then electron 2).
  * *accepted1-by-*accepted2 set to 1/0 for this sweep. */
 void vmc_metropolis_sweep(vmc_walker_t *w, double Zeff, double b,
                           double step_size1, double step_size2,

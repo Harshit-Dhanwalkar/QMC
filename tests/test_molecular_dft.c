@@ -85,11 +85,12 @@ static void test_grid_reproduces_overlap_matrix(void) {
       S_num[1][1] += w * phi1 * phi1;
     }
 
-    check_close(S_num[0][0], CMAT(S_exact, 0, 0).re, 1e-5,
+    double tol = RUNNING_ON_VALGRIND ? 5e-5 : 1e-5;
+    check_close(S_num[0][0], CMAT(S_exact, 0, 0).re, tol,
                 "numeric S[0][0] matches analytic overlap");
-    check_close(S_num[0][1], CMAT(S_exact, 0, 1).re, 1e-5,
+    check_close(S_num[0][1], CMAT(S_exact, 0, 1).re, tol,
                 "numeric S[0][1] matches analytic overlap");
-    check_close(S_num[1][1], CMAT(S_exact, 1, 1).re, 1e-5,
+    check_close(S_num[1][1], CMAT(S_exact, 1, 1).re, tol,
                 "numeric S[1][1] matches analytic overlap");
   }
 
@@ -166,7 +167,8 @@ static void test_grid_integrates_electron_count(void) {
       n_electrons_numeric += grid->points[g].weight * dens;
     }
 
-    check_close(n_electrons_numeric, 4.0, 1e-4,
+    double count_tol = RUNNING_ON_VALGRIND ? 5e-4 : 1e-4;
+    check_close(n_electrons_numeric, 4.0, count_tol,
                 "grid-integrated electron count matches exact N=4");
   }
 

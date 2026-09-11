@@ -11,6 +11,12 @@ Diffusion Monte Carlo for two-electron atoms/ions (He, H-, Li+, Be2+, ...).
 
 static const double CONST_TWO = 2.0;
 
+// Ceiling on a single walker's branching multiplicity per generation
+#define DMC_MAX_BRANCH_MULTIPLICITY 8
+
+// Default E_T feedback gain (used by dmc_run/dmc_run_parallel)
+#define DMC_DEFAULT_KAPPA 0.1
+
 static double norm3(const double vec[3]) {
   return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 }
@@ -23,21 +29,6 @@ static void sub3(const double vec_a[3], const double vec_b[3], double out[3]) {
 
 static double dot3(const double vec_a[3], const double vec_b[3]) {
   return vec_a[0] * vec_b[0] + vec_a[1] * vec_b[1] + vec_a[2] * vec_b[2];
-}
-
-/* \ln(\Psi_T)
- * TODO: expose ln_trial_wavefunction from vmc.c/.h instead of duplicating
- * it here, once 2nd consumer (this file) makes duplication */
-static double ln_trial_wavefunction(const vmc_walker_t *walker, double Zeff,
-                                    double param_b) {
-  double radius1 = norm3(walker->r1);
-  double radius2 = norm3(walker->r2);
-  double r12v[3];
-  sub3(walker->r1, walker->r2, r12v);
-  double r12 = norm3(r12v);
-
-  return -Zeff * (radius1 + radius2) +
-         r12 / (CONST_TWO * (1.0 + param_b * r12));
 }
 
 void dmc_drift_velocity(const dmc_drift_params_t *params, double drift_out[3]) {
@@ -86,7 +77,7 @@ int dmc_move_electron(vmc_walker_t *walker, int which, double Zeff,
   dmc_drift_params_t drift_p_old = {walker, which, Zeff, param_b};
   double drift_old[3];
   dmc_drift_velocity(&drift_p_old, drift_old);
-  double ln_psi_old = ln_trial_wavefunction(walker, Zeff, param_b);
+  double ln_psi_old = vmc_ln_trial_wavefunction(walker, Zeff, param_b);
 
   double sigma = sqrt(tau);
   double proposed[3];
@@ -95,7 +86,7 @@ int dmc_move_electron(vmc_walker_t *walker, int which, double Zeff,
     moving[k] = proposed[k];
   }
 
-  double ln_psi_new = ln_trial_wavefunction(walker, Zeff, param_b);
+  double ln_psi_new = vmc_ln_trial_wavefunction(walker, Zeff, param_b);
   dmc_drift_params_t drift_p_new = {walker, which, Zeff, param_b};
   double drift_new[3];
   dmc_drift_velocity(&drift_p_new, drift_new);
@@ -149,17 +140,33 @@ int dmc_branch_walker(vmc_walker_t *walker, double Z_charge, double Zeff,
 
   double E_L_new = vmc_local_energy(walker, Z_charge, Zeff, param_b);
 
-  // Trapezoidal average of pre/post-move local energy in branching * weight
-  double weight = exp(-tau * (0.5 * (E_L_old + E_L_new) - E_T));
-
-  /* HACK: hard multiplicity cap at 3, following common practical DMC
-   * implementations (e.g. Ceperley/Foulkes-style codes).
-   * TODO: This is a coarse safeguard, implement smooth energy cutoff (e.g.
-   * Umrigar-Nightingale-Runge's velocity/energy cutoff scheme) near
-   * singularities instead of flat post-hoc multiplicity clamp. */
+  /*
+   * Trapezoidal average of pre/post-move local energy, then a smooth
+   * (Reference: Umrigar-Nightingale-Runge 1993 -style) energy cutoff before it
+   * enters branching weight
+   *
+   * E_L can spike arbitrarily near a trial-wavefunction node (Psi_T -> 0) or an
+   * electron-nucleus/electron-electron coalescence handled imperfectly by
+   * finite Jastrow/orbital form; an un-mitigated spike makes \exp(-\tau * dE)
+   * enormous or vanishing for one walker, which is "population explosion /
+   * walker starves" failure mode DMC branching is prone to. UNR's prescription
+   * is to cut off dE itself (not just the resulting weight) via a bounded, odd,
+   * smooth function of dE that:
+   *   - reduces to the identity (dE_eff -> dE) when |dE*tau| << 1, so normal
+   *     small fluctuations are completely unaffected (no bias introduced in
+   *     well-behaved regime that dominates a correctly-tuned run), and
+   *   - saturates to +-1/tau as dE -> +-infinity, so tau*dE_eff is bounded in
+   *     magnitude by 1 regardless of how large the raw spike is.
+   *
+   * dE_eff = dE / \sqrt(1 + (dE * \tau)^2)
+   */
+  double dE = 0.5 * (E_L_old + E_L_new) - E_T;
+  double dE_eff = dE / sqrt(1.0 + (dE * tau) * (dE * tau));
+  double weight = exp(-tau * dE_eff);
   int m = (int)(weight + rng_uniform(rng));
-  if (m > 3) {
-    m = 3;
+
+  if (m > DMC_MAX_BRANCH_MULTIPLICITY) {
+    m = DMC_MAX_BRANCH_MULTIPLICITY;
   }
   if (m < 0) {
     m = 0;
@@ -342,12 +349,14 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
 static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
                                      double Zeff, double param_b,
                                      int target_population, int max_population,
-                                     double tau, int n_equilibration,
+                                     double tau, double kappa,
+                                     int n_equilibration,
                                      const dmc_block_config_t *blk_cfg) {
   dmc_result_t result = {0};
 
   if (!blk_cfg || target_population < 1 || max_population < target_population ||
-      tau <= 0.0 || blk_cfg->n_blocks < 1 || blk_cfg->block_size < 1) {
+      tau <= 0.0 || kappa <= 0.0 || blk_cfg->n_blocks < 1 ||
+      blk_cfg->block_size < 1) {
     return result;
   }
 
@@ -390,13 +399,12 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
   }
 
   /*
-   * NOTE: E_T feedback gain. \kappa~0.1-1 is a thereotical value (Reference:
-   * Umrigar, Nightingale & Runge 1993); 0.1 is chosen here.
-   * TODO: expose \kappa as a dmc_run parameter if different (\tau,
-   * target_population) regime ever needs different feedback gain to stay stable
-   * which is kept internal for now to avoid over-parameterizing single
-   * well-tested default. */
-  const double kappa = 0.1;
+   * NOTE: E_T feedback gain. \kappa~0.1-1 is a theoretical value (Reference:
+   * Umrigar, Nightingale & Runge 1993); now caller-supplied (see
+   * DMC_DEFAULT_KAPPA / dmc_run_ex / dmc_run_parallel_ex), since different
+   * (\tau, target_population) regimes can need a different feedback gain to
+   * stay stable.
+   */
   double E_T = 0.0;
   for (int i = 0; i < pop_a->count; i++) {
     E_T += vmc_local_energy(&pop_a->data[i], Z_charge, Zeff, param_b);
@@ -520,13 +528,23 @@ dmc_result_t dmc_run(double Z_charge, double Zeff, double param_b,
                      int target_population, int max_population, double tau,
                      int n_equilibration, int n_blocks, int block_size,
                      uint64_t seed) {
+  return dmc_run_ex(Z_charge, Zeff, param_b, target_population, max_population,
+                    tau, DMC_DEFAULT_KAPPA, n_equilibration, n_blocks,
+                    block_size, seed);
+}
+
+dmc_result_t dmc_run_ex(double Z_charge, double Zeff, double param_b,
+                        int target_population, int max_population, double tau,
+                        double kappa, int n_equilibration, int n_blocks,
+                        int block_size, uint64_t seed) {
   rng_state_t rng;
   rng_seed(&rng, seed);
 
   dmc_block_config_t blk_cfg = {n_blocks, block_size};
 
   return dmc_run_with_rng(&rng, Z_charge, Zeff, param_b, target_population,
-                          max_population, tau, n_equilibration, &blk_cfg);
+                          max_population, tau, kappa, n_equilibration,
+                          &blk_cfg);
 }
 
 dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
@@ -534,11 +552,23 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
                               int max_population, double tau,
                               int n_equilibration, int n_blocks, int block_size,
                               uint64_t master_seed) {
+  return dmc_run_parallel_ex(n_replicas, Z_charge, Zeff, param_b,
+                             target_population, max_population, tau,
+                             DMC_DEFAULT_KAPPA, n_equilibration, n_blocks,
+                             block_size, master_seed);
+}
+
+dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
+                                 double param_b, int target_population,
+                                 int max_population, double tau, double kappa,
+                                 int n_equilibration, int n_blocks,
+                                 int block_size, uint64_t master_seed) {
+
   dmc_result_t result = {0};
 
   if (n_replicas < 1 || target_population < 1 ||
-      max_population < target_population || tau <= 0.0 || n_blocks < 1 ||
-      block_size < 1) {
+      max_population < target_population || tau <= 0.0 || kappa <= 0.0 ||
+      n_blocks < 1 || block_size < 1) {
     return result;
   }
 
@@ -565,9 +595,9 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_replicas; i++) {
-    replica_results[i] = dmc_run_with_rng(&streams[i], Z_charge, Zeff, param_b,
-                                          target_population, max_population,
-                                          tau, n_equilibration, &blk_cfg);
+    replica_results[i] = dmc_run_with_rng(
+        &streams[i], Z_charge, Zeff, param_b, target_population, max_population,
+        tau, kappa, n_equilibration, &blk_cfg);
   }
 
   double sum_mixed = 0.0;

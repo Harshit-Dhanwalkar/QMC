@@ -24,8 +24,7 @@ static double dot3(const double a[3], const double b[3]) {
 }
 
 // ln(\Psi_T) = -Zeff * (r1 + r2) + r12 / (2 * (1 + b * r12))
-static double ln_trial_wavefunction(const vmc_walker_t *w, double Zeff,
-                                    double b) {
+double vmc_ln_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b) {
   double r1 = norm3(w->r1);
   double r2 = norm3(w->r2);
   double r12v[3];
@@ -41,7 +40,7 @@ double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b) {
     return 0.0;
   }
 
-  return exp(ln_trial_wavefunction(w, Zeff, b));
+  return exp(vmc_ln_trial_wavefunction(w, Zeff, b));
 }
 
 /*
@@ -121,13 +120,13 @@ int vmc_metropolis_move_electron(vmc_walker_t *w, int which, double Zeff,
 
   double *moving = (which == 0) ? w->r1 : w->r2;
   const double old_pos[3] = {moving[0], moving[1], moving[2]};
-  double old_ln = ln_trial_wavefunction(w, Zeff, b);
+  double old_ln = vmc_ln_trial_wavefunction(w, Zeff, b);
 
   for (int k = 0; k < 3; k++) {
     moving[k] += rng_uniform_range(rng, -step_size, step_size);
   }
 
-  double new_ln = ln_trial_wavefunction(w, Zeff, b);
+  double new_ln = vmc_ln_trial_wavefunction(w, Zeff, b);
   double log_ratio = 2.0 * (new_ln - old_ln); // |\Psi_new / \Psi_old|^2
 
   int accept;

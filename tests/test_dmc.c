@@ -50,7 +50,8 @@ static void test_drift_velocity_fixtures(void) {
   {
     vmc_walker_t w = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
     double b = 0.2;
-    double d0[3], d1[3];
+    double d0[3];
+    double d1[3];
 
     dmc_drift_params_t p0 = {&w, 0, 2.0, b};
     dmc_drift_params_t p1 = {&w, 1, 2.0, b};
@@ -97,14 +98,15 @@ static void test_degenerate_guard(void) {
 static void test_dmc_run_accuracy(void) {
   printf("test_dmc_run_accuracy:\n");
 
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0;
+  double Zeff = 2.0;
   double b = 0.15;
-  double tau = 0.01;
+  double tau = 0.0025;
   int target_population = RUNNING_ON_VALGRIND ? 20 : 200;
   int max_population = RUNNING_ON_VALGRIND ? 60 : 600;
-  int n_equilibration = RUNNING_ON_VALGRIND ? 100 : 500;
+  int n_equilibration = RUNNING_ON_VALGRIND ? 400 : 2000;
   int n_blocks = RUNNING_ON_VALGRIND ? 2 : 20;
-  int block_size = RUNNING_ON_VALGRIND ? 20 : 200;
+  int block_size = RUNNING_ON_VALGRIND ? 80 : 800;
 
   dmc_result_t r = dmc_run(Z, Zeff, b, target_population, max_population, tau,
                            n_equilibration, n_blocks, block_size,
@@ -158,7 +160,8 @@ static void test_dmc_run_accuracy(void) {
 static void test_dmc_run_different_ion(void) {
   printf("test_dmc_run_different_ion:\n");
 
-  double Z = 3.0, Zeff = 2.6; // Li+
+  double Z = 3.0; // Li+
+  double Zeff = 2.6;
   double b = 0.12;
   double tau = 0.01;
   int target_population = RUNNING_ON_VALGRIND ? 100 : 1000;
@@ -204,7 +207,8 @@ static void test_dmc_run_different_ion(void) {
 static void test_dmc_frequent_resampling(void) {
   printf("test_dmc_frequent_resampling:\n");
 
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0; // He+
+  double Zeff = 2.0;
   double b = 0.15;
   double tau = 0.01;
   int target_population = RUNNING_ON_VALGRIND ? 20 : 200;
@@ -241,17 +245,15 @@ static void test_dmc_frequent_resampling(void) {
 static void test_dmc_resampling_engages_under_tight_margin(void) {
   printf("test_dmc_resampling_engages_under_tight_margin:\n");
 
-  double Z = 2.0, Zeff = 1.6875;
+  double Z = 2.0; // He+
+  double Zeff = 1.6875;
   double b = 0.35;
   double tau = 0.1; /* deliberately large: amplifies branching-weight
                      * variance and weakens the kappa/tau feedback gain, so
                      * population pressure against the cap is easy to
                      * reproduce deterministically for a fixed seed */
   int target_population = RUNNING_ON_VALGRIND ? 30 : 150;
-  int max_population =
-      RUNNING_ON_VALGRIND
-          ? 33
-          : 165; /* only 1.1x target, far below documented-safe ~3x */
+  int max_population = RUNNING_ON_VALGRIND ? 33 : 165;
   int n_equilibration = RUNNING_ON_VALGRIND ? 20 : 100;
   int n_blocks = RUNNING_ON_VALGRIND ? 3 : 10;
   int block_size = RUNNING_ON_VALGRIND ? 20 : 100;
@@ -283,7 +285,8 @@ static void test_dmc_resampling_engages_under_tight_margin(void) {
 static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
   printf("test_dmc_run_parallel_matches_serial_at_one_replica:\n");
 
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0;
+  double Zeff = 2.0;
   double b = 0.15;
   double tau = 0.01;
   int target_population = RUNNING_ON_VALGRIND ? 20 : 200;
@@ -312,13 +315,14 @@ static void test_dmc_run_parallel_matches_serial_at_one_replica(void) {
  * own fixed walker_streams[i] (derived once via rng_jump chaining before
  * parallel region opens, independent of which thread ends up processing that
  * lot in any given generation), so results should be 'bit-identical' regardless
- * of how many threads OpenMP actually uses : a correctness property for
- * thread-safety of this refactor (not just "close within statistical noise").
+ * of how many threads OpenMP actually uses: a correctness property for
+ * thread-safety of this refactor (not just "close within statistical noise")
  */
 static void test_dmc_run_deterministic_across_thread_counts(void) {
   printf("test_dmc_run_deterministic_across_thread_counts:\n");
 
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0;
+  double Zeff = 2.0;
   double b = 0.15;
   double tau = 0.01;
   int target_population = RUNNING_ON_VALGRIND ? 20 : 150;
@@ -359,7 +363,8 @@ static void test_dmc_run_parallel_helium(void) {
   printf("test_dmc_run_parallel_helium:\n");
 
   int n_replicas = RUNNING_ON_VALGRIND ? 2 : 6;
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0;
+  double Zeff = 2.0;
   double b = 0.15;
   double tau = 0.01;
   int target_population = RUNNING_ON_VALGRIND ? 20 : 200;
