@@ -26,6 +26,8 @@ cvector_t *cmatrix_mv(const cmatrix_t *mat,
                       const cvector_t *vec); /* y = A * x */
 cmatrix_t *cmatrix_add(const cmatrix_t *mat_a,
                        const cmatrix_t *mat_b); /* c = a + b */
+cmatrix_t *cmatrix_kron(const cmatrix_t *mat_a,
+                        const cmatrix_t *mat_b); /* Kronecker product */
 
 /* Linear algebra */
 void cmatrix_lu_decomp(cmatrix_t *mat, int *pivot);

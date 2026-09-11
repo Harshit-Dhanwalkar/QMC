@@ -220,6 +220,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/fci.c \
                $(PHYSICS_DIR)/spin_chain.c \
                $(PHYSICS_DIR)/ising_chain.c \
+               $(PHYSICS_DIR)/dmrg.c \
                $(PHYSICS_DIR)/vibrational.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
@@ -364,7 +365,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_special \
               $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_spin_chain \
-               $(BUILD_DIR)/test_ising_chain \
+              $(BUILD_DIR)/test_ising_chain \
               $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)

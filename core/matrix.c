@@ -179,6 +179,36 @@ cmatrix_t *cmatrix_add(const cmatrix_t *mat_a, const cmatrix_t *mat_b) {
   return copy;
 }
 
+// Kronecker (tensor) product: (A \otimes B)[i*rb+k][j*cb+l] = A[i][j]*B[k][l]
+// Returns NULL on NULL input or allocation failure
+cmatrix_t *cmatrix_kron(const cmatrix_t *mat_a, const cmatrix_t *mat_b) {
+  if (!mat_a || !mat_b) {
+    return NULL;
+  }
+
+  int ra = mat_a->nrows, ca = mat_a->ncols;
+  int rb = mat_b->nrows, cb = mat_b->ncols;
+
+  cmatrix_t *out = cmatrix_alloc(ra * rb, ca * cb);
+  if (!out) {
+    return NULL;
+  }
+
+  for (int i = 0; i < ra; i++) {
+    for (int j = 0; j < ca; j++) {
+      complex_t aij = CMAT(mat_a, i, j);
+
+      for (int k = 0; k < rb; k++) {
+        for (int l = 0; l < cb; l++) {
+          CMAT(out, i * rb + k, j * cb + l) = c_mul(aij, CMAT(mat_b, k, l));
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
 // LU decomposition (wrapper)
 void cmatrix_lu_decomp(cmatrix_t *mat, int *pivot) {
   if (!mat || !pivot) {
