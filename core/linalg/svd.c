@@ -118,9 +118,11 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
     S->data[i].re = sqrt(eig->eigenvalues[j]);
     S->data[i].im = 0.0;
 
-    // V column i = eigenvector j
+    // V column i = eigenvector j. eig->eigenvectors is a single n x n cmatrix_t
+    // with eigenvectors stored as columns (not an array of per-eigenvector
+    // structs)
     for (int r = 0; r < n; r++) {
-      CMAT(V, r, i) = eig->eigenvectors[j].data[r];
+      CMAT(V, r, i) = CMAT(eig->eigenvectors, r, j);
     }
   }
 

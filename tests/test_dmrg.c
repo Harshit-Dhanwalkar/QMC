@@ -190,7 +190,7 @@ static void test_vs_brute_force_ed(void) {
  * conditions.
  */
 static void test_reference_values(void) {
-  printf(" === DMRG vs Python-validated reference energies (N=10,12) ===\n");
+  printf(" === DMRG vs validated reference energies (N=10,12) ===\n");
   double Jz = 1.0;
   double Jxy = 1.0;
 
