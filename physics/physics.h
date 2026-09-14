@@ -51,6 +51,7 @@
 #include "pimc.h"
 #include "potentials.h"
 #include "qec.h"
+#include "qec5.h"
 #include "qpe.h"
 #include "quantum_algorithms.h"
 #include "quantum_info.h"
