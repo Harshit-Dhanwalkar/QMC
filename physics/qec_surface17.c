@@ -1,13 +1,13 @@
 /*
-Distance-3 rotated surface code ([[9,1,3]]): the standard smallest instance
-of the topological surface code family. See qec_surface17.h for the full
-derivation, lattice layout, and design notes.
+Distance-3 rotated surface code ([[9,1,3]]): smallest instance the topological
+surface code family.
 */
 
 #include "qec_surface17.h"
 #include "../core/complex.h"
 #include "../core/vector.h"
 #include "angular.h"
+#include "physics/qec.h"
 #include "qubits.h"
 #include <math.h>
 #include <stddef.h>
@@ -40,16 +40,12 @@ static const int qec_surface17_codeword[16] = {
 
 #define QEC_SURFACE17_XL_MASK 0x1C0 // bits for data qubits 0,1,2 (MSB-first)
 
-// Syndrome -> canonical (qubit, Pauli type) decode table, indexed by
-// s = sum_k(syndrome[k] << (7-k)). Derived by simulating the exact ancilla
+// Syndrome -> canonical (qubit, Pauli type) decode table, indexed by s =
+// \sum_k(syndrome[k] << (7-k)). Derived by simulating the exact ancilla
 // syndrome-extraction circuit for every one of the 28 possible "no error or
-// single-qubit error" cases; some pairs of distinct single-qubit errors
-// alias to the same syndrome (expected for a distance-3, non-"perfect"
-// code -- they differ by a weight-2 stabilizer element), in which case the
-// FIRST-found representative is used here. Python/numpy end-to-end
-// verified: applying this table's correction restores the exact original
-// logical amplitudes for all 28 cases, across multiple random logical
-// states -- no phase ambiguity, even for the aliased pairs.
+// single-qubit error" cases; some pairs of distinct single-qubit errors alias
+// to the same syndrome (expected for a distance-3, non-"perfect" code - they
+// differ by a weight-2 stabilizer element), in which case the
 static const struct {
   int syndrome;
   int qubit;
@@ -93,18 +89,20 @@ static const complex_t *pauli_gate(qec_error_type_t type) {
   }
 }
 
-// Linear search over the 24-entry decode table; a syndrome outside this set
-// cannot arise from a weight<=1 error (the only kind this function ever
-// injects), so this always finds a match in normal use. Falls back to "no
-// correction" defensively if it somehow doesn't.
+// Linear search over 24-entry decode table; a syndrome outside this set cannot
+// arise from a weight<=1 error (only kind this function ever injects), so this
+// always finds a match in normal use. Falls back to "no correction" defensively
+// if it somehow doesn't
 static void decode_syndrome(int s, int *qubit, qec_error_type_t *type) {
   for (int i = 0; i < 24; i++) {
     if (qec_surface17_decode_table[i].syndrome == s) {
       *qubit = qec_surface17_decode_table[i].qubit;
       *type = qec_surface17_decode_table[i].type;
+
       return;
     }
   }
+
   *qubit = -1;
   *type = QEC_ERROR_X;
 }
@@ -131,9 +129,9 @@ qec_surface17_result_t qec_surface17_run(complex_t alpha, complex_t beta,
     psi->data[i] = c_zero();
   }
 
-  // Encode: direct amplitude assignment (see qec_surface17.h). Ancillas
-  // start at |00000000>, so every populated basis state has its low 8 bits
-  // (ancilla qubits 9..16) equal to 0, i.e. full index = data_index << 8.
+  // Encode: direct amplitude assignment. Ancillas start at |00000000>, so every
+  // populated basis state has its low 8 bits (ancilla qubits 9..16) equal to 0,
+  // i.e. full index = data_index << 8
   for (int k = 0; k < 16; k++) {
     int idx0 = qec_surface17_codeword[k];
     int idx1 = idx0 ^ QEC_SURFACE17_XL_MASK;
@@ -157,6 +155,7 @@ qec_surface17_result_t qec_surface17_run(complex_t alpha, complex_t beta,
     for (int i = 0; i < stab->n_support; i++) {
       qstate_apply_controlled_u(psi, n, anc, stab->support[i], gate);
     }
+
     qstate_apply_gate1(psi, n, anc, hadamard_gate);
 
     result.syndrome[k] = qstate_measure_qubit(psi, n, anc, u[k]);
@@ -174,9 +173,9 @@ qec_surface17_result_t qec_surface17_run(complex_t alpha, complex_t beta,
                        pauli_gate(result.corrected_type));
   }
 
-  // Decode: ancillas now hold the fixed measured syndrome bits (low 8 bits
-  // of every surviving basis-state index); project the data-qubit subspace
-  // at that fixed ancilla pattern onto the |0_L>/|1_L> codewords directly.
+  // Decode: ancillas now hold fixed measured syndrome bits (low 8 bits of every
+  // surviving basis-state index); project data-qubit subspace at that fixed
+  // ancilla pattern onto the |0_L>/|1_L> codewords directly
   int anc_val = s;
   complex_t rec_alpha = c_zero();
   complex_t rec_beta = c_zero();

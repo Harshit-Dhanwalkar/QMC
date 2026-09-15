@@ -30,6 +30,7 @@
 #include "ccsd.h"
 #include "ccsd_t.h"
 #include "central_potential.h"
+#include "cisd.h"
 #include "dft.h"
 #include "dmc.h"
 #include "dmrg.h"
