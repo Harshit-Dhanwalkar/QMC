@@ -207,6 +207,8 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/lattice.c \
                $(PHYSICS_DIR)/quantum_info.c \
                $(PHYSICS_DIR)/qec.c \
+               $(PHYSICS_DIR)/qec5.c \
+               $(PHYSICS_DIR)/qec_surface17.c \
                $(PHYSICS_DIR)/quantum_algorithms.c \
                $(PHYSICS_DIR)/second_quant.c \
                $(PHYSICS_DIR)/molecular_integrals.c \
@@ -221,8 +223,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/spin_chain.c \
                $(PHYSICS_DIR)/ising_chain.c \
                $(PHYSICS_DIR)/dmrg.c \
-               $(PHYSICS_DIR)/vibrational.c \
-               $(PHYSICS_DIR)/qec5.c
+               $(PHYSICS_DIR)/vibrational.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
@@ -272,35 +273,36 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_35_qec \
               $(BUILD_DIR)/eg_36_shor_code \
               $(BUILD_DIR)/eg_37_qec5 \
-              $(BUILD_DIR)/eg_38_quantum_algorithms \
-              $(BUILD_DIR)/eg_39_second_quant \
-              $(BUILD_DIR)/eg_40_landau_levels \
-              $(BUILD_DIR)/eg_41_openmp_qmc \
-              $(BUILD_DIR)/eg_42_molecular_integrals \
-              $(BUILD_DIR)/eg_43_dft_atoms \
-              $(BUILD_DIR)/eg_44_h2_vqe \
-              $(BUILD_DIR)/eg_45_h4_vqe \
-              $(BUILD_DIR)/eg_46_lih_vqe \
-              $(BUILD_DIR)/eg_47_noisy_vqe \
-              $(BUILD_DIR)/eg_48_geometry_optimization \
-              $(BUILD_DIR)/eg_49_ccsd \
-              $(BUILD_DIR)/eg_50_ccsd_t \
-              $(BUILD_DIR)/eg_51_general_basis_parser \
-              $(BUILD_DIR)/eg_52_ucc \
-              $(BUILD_DIR)/eg_53_qpe \
-              $(BUILD_DIR)/eg_54_molecular_dft \
-              $(BUILD_DIR)/eg_55_molecular_pbe_dft \
-              $(BUILD_DIR)/eg_56_molecular_mp2 \
-              $(BUILD_DIR)/eg_57_schrodinger_solvers \
-              $(BUILD_DIR)/eg_58_fci \
-              $(BUILD_DIR)/eg_59_spin_chain_dsf \
-              $(BUILD_DIR)/eg_60_ising_chain \
-              $(BUILD_DIR)/eg_61_uhf_openshell \
-              $(BUILD_DIR)/eg_62_uhf_geometry_optimization \
-              $(BUILD_DIR)/eg_63_ump2 \
-              $(BUILD_DIR)/eg_64_vqe_pauli_hamiltonian \
-              $(BUILD_DIR)/eg_65_vibrational_analysis \
-              $(BUILD_DIR)/eg_66_dmrg \
+              $(BUILD_DIR)/eg_38_qec_surface17 \
+              $(BUILD_DIR)/eg_39_quantum_algorithms \
+              $(BUILD_DIR)/eg_40_second_quant \
+              $(BUILD_DIR)/eg_41_landau_levels \
+              $(BUILD_DIR)/eg_42_openmp_qmc \
+              $(BUILD_DIR)/eg_43_molecular_integrals \
+              $(BUILD_DIR)/eg_44_dft_atoms \
+              $(BUILD_DIR)/eg_45_h2_vqe \
+              $(BUILD_DIR)/eg_46_h4_vqe \
+              $(BUILD_DIR)/eg_47_lih_vqe \
+              $(BUILD_DIR)/eg_48_noisy_vqe \
+              $(BUILD_DIR)/eg_49_geometry_optimization \
+              $(BUILD_DIR)/eg_50_ccsd \
+              $(BUILD_DIR)/eg_51_ccsd_t \
+              $(BUILD_DIR)/eg_52_general_basis_parser \
+              $(BUILD_DIR)/eg_53_ucc \
+              $(BUILD_DIR)/eg_54_qpe \
+              $(BUILD_DIR)/eg_55_molecular_dft \
+              $(BUILD_DIR)/eg_56_molecular_pbe_dft \
+              $(BUILD_DIR)/eg_57_molecular_mp2 \
+              $(BUILD_DIR)/eg_58_schrodinger_solvers \
+              $(BUILD_DIR)/eg_59_fci \
+              $(BUILD_DIR)/eg_60_spin_chain_dsf \
+              $(BUILD_DIR)/eg_61_ising_chain \
+              $(BUILD_DIR)/eg_62_uhf_openshell \
+              $(BUILD_DIR)/eg_63_uhf_geometry_optimization \
+              $(BUILD_DIR)/eg_64_ump2 \
+              $(BUILD_DIR)/eg_65_vqe_pauli_hamiltonian \
+              $(BUILD_DIR)/eg_66_vibrational_analysis \
+              $(BUILD_DIR)/eg_67_dmrg \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -350,6 +352,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_quantum_info \
               $(BUILD_DIR)/test_qec \
               $(BUILD_DIR)/test_qec5 \
+              $(BUILD_DIR)/test_qec_surface17 \
               $(BUILD_DIR)/test_quantum_algorithms \
               $(BUILD_DIR)/test_second_quant \
               $(BUILD_DIR)/test_molecular_integrals \

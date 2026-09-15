@@ -1,5 +1,5 @@
 /*
- * Test: 5-qubit "perfect" quantum error correction code.
+ * Test: 5-qubit "perfect" quantum error correction code
  *
  * The code must correctly diagnose (via syndrome lookup, matching the known
  * syndrome table) and exactly correct every possible single-qubit error: no
@@ -10,8 +10,8 @@
  */
 
 #include "../core/complex.h"
-#include "../physics/qec5.h"
 #include "../physics/qec.h"
+#include "../physics/qec5.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -40,11 +40,10 @@ static void check_state_exact(complex_t got_a, complex_t got_b, complex_t exp_a,
   }
 }
 
-// Independently-derived syndrome table (qubit, Pauli type) for every one of
-// the 15 single-qubit errors, indexed [qubit][type] with type 0=X,1=Y,2=Z;
-// {s1,s2,s3,s4} is the expected 4-bit syndrome. Cross-checked against
-// physics/qec5.c's qec5_syndrome_table (both derived independently from the
-// same Python/numpy stabilizer-commutation computation).
+// Independently-derived syndrome table (qubit, Pauli type) for every one of 15
+// single-qubit errors, indexed [qubit][type] with type 0=X,1=Y,2=Z;
+// {s1,s2,s3,s4} is expected 4-bit syndrome
+// NOTE: Cross-checked against physics/qec5.c's qec5_syndrome_table
 static const int expected_syndrome[5][3][4] = {
     /* q0 */ {{0, 0, 0, 1}, {1, 0, 1, 1}, {1, 0, 1, 0}},
     /* q1 */ {{1, 0, 0, 0}, {1, 1, 0, 1}, {0, 1, 0, 1}},
