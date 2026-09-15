@@ -65,6 +65,7 @@
 #include "second_quant.h"
 #include "soft.h"
 #include "spin_chain.h"
+#include "tddft.h"
 #include "ucc.h"
 #include "uncertainty.h"
 #include "variational.h"

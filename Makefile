@@ -219,6 +219,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/dft.c \
                $(PHYSICS_DIR)/basis_parser.c \
                $(PHYSICS_DIR)/molecular_dft.c \
+               $(PHYSICS_DIR)/tddft.c \
                $(PHYSICS_DIR)/fci.c \
                $(PHYSICS_DIR)/cisd.c \
                $(PHYSICS_DIR)/spin_chain.c \
@@ -294,17 +295,18 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_55_molecular_dft \
               $(BUILD_DIR)/eg_56_molecular_pbe_dft \
               $(BUILD_DIR)/eg_57_molecular_mp2 \
-              $(BUILD_DIR)/eg_58_schrodinger_solvers \
-              $(BUILD_DIR)/eg_59_fci \
-              $(BUILD_DIR)/eg_60_cisd.c \
-              $(BUILD_DIR)/eg_61_spin_chain_dsf \
-              $(BUILD_DIR)/eg_62_ising_chain \
-              $(BUILD_DIR)/eg_63_uhf_openshell \
-              $(BUILD_DIR)/eg_64_uhf_geometry_optimization \
-              $(BUILD_DIR)/eg_65_ump2 \
-              $(BUILD_DIR)/eg_66_vqe_pauli_hamiltonian \
-              $(BUILD_DIR)/eg_67_vibrational_analysis \
-              $(BUILD_DIR)/eg_68_dmrg \
+              $(BUILD_DIR)/eg_58_tddft \
+              $(BUILD_DIR)/eg_59_schrodinger_solvers \
+              $(BUILD_DIR)/eg_60_fci \
+              $(BUILD_DIR)/eg_61_cisd \
+              $(BUILD_DIR)/eg_62_spin_chain_dsf \
+              $(BUILD_DIR)/eg_63_ising_chain \
+              $(BUILD_DIR)/eg_64_uhf_openshell \
+              $(BUILD_DIR)/eg_65_uhf_geometry_optimization \
+              $(BUILD_DIR)/eg_66_ump2 \
+              $(BUILD_DIR)/eg_67_vqe_pauli_hamiltonian \
+              $(BUILD_DIR)/eg_68_vibrational_analysis \
+              $(BUILD_DIR)/eg_69_dmrg \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -372,6 +374,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_qpe \
               $(BUILD_DIR)/test_basis_parser \
               $(BUILD_DIR)/test_molecular_dft \
+              $(BUILD_DIR)/test_tddft \
               $(BUILD_DIR)/test_special \
               $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_cisd \
