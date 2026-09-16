@@ -27,6 +27,7 @@
 #include "angular.h"
 #include "basis_parser.h"
 #include "boson_sampling.h"
+#include "casscf.h"
 #include "ccsd.h"
 #include "ccsd_t.h"
 #include "central_potential.h"

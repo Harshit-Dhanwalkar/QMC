@@ -173,7 +173,8 @@ CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/special/polynomials.c \
                $(CORE_DIR)/special/spherical_harmonics.c
 
-PHYSICS_SRCS = $(PHYSICS_DIR)/potentials.c \
+PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
+               $(PHYSICS_DIR)/potentials.c \
                $(PHYSICS_DIR)/wavefn.c \
                $(PHYSICS_DIR)/schrodinger.c \
                $(PHYSICS_DIR)/uncertainty.c \
