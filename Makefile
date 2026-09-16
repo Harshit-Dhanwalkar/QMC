@@ -303,11 +303,12 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_62_spin_chain_dsf \
               $(BUILD_DIR)/eg_63_ising_chain \
               $(BUILD_DIR)/eg_64_uhf_openshell \
-              $(BUILD_DIR)/eg_65_uhf_geometry_optimization \
-              $(BUILD_DIR)/eg_66_ump2 \
+              $(BUILD_DIR)/eg_65_ump2 \
+              $(BUILD_DIR)/eg_66_uhf_geometry_optimization \
               $(BUILD_DIR)/eg_67_vqe_pauli_hamiltonian \
               $(BUILD_DIR)/eg_68_vibrational_analysis \
               $(BUILD_DIR)/eg_69_dmrg \
+              $(BUILD_DIR)/eg_70_casscf \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -382,6 +383,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_spin_chain \
               $(BUILD_DIR)/test_ising_chain \
               $(BUILD_DIR)/test_dmrg \
+              $(BUILD_DIR)/test_casscf \
               $(BUILD_DIR)/test_latex_gen
 
 ifeq ($(PLOT_BACKEND),GR)
