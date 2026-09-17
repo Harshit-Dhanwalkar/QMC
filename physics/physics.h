@@ -35,6 +35,7 @@
 #include "dft.h"
 #include "dmc.h"
 #include "dmrg.h"
+#include "finite_dmrg.h"
 #include "driven.h"
 #include "fci.h"
 #include "fine_structure.h"

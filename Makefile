@@ -226,6 +226,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/spin_chain.c \
                $(PHYSICS_DIR)/ising_chain.c \
                $(PHYSICS_DIR)/dmrg.c \
+               $(PHYSICS_DIR)/finite_dmrg.c \
                $(PHYSICS_DIR)/vibrational.c
 
 LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
