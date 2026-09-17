@@ -309,7 +309,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_67_vqe_pauli_hamiltonian \
               $(BUILD_DIR)/eg_68_vibrational_analysis \
               $(BUILD_DIR)/eg_69_dmrg \
-              $(BUILD_DIR)/eg_70_casscf \
+              $(BUILD_DIR)/eg_70_finite_dmrg \
+              $(BUILD_DIR)/eg_71_casscf \
               $(BUILD_DIR)/eg_latex_gen
 
 TESTS       = $(BUILD_DIR)/test_complex \
@@ -384,6 +385,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_spin_chain \
               $(BUILD_DIR)/test_ising_chain \
               $(BUILD_DIR)/test_dmrg \
+              $(BUILD_DIR)/test_finite_dmrg \
               $(BUILD_DIR)/test_casscf \
               $(BUILD_DIR)/test_latex_gen
 
