@@ -45,9 +45,11 @@ cmatrix_t *lattice_build_1d_chain(int n_sites, double epsilon0, double t,
   return H;
 }
 
-/* \cos(angle_n) for n-th mode of an n_sites-site chain with boundary condition
+/*
+ * \cos(angle_n) for n-th mode of an n_sites-site chain with boundary condition
  * bc; shared per-direction piece of both 1D and 2D analytic dispersions. Writes
- * n_sites values into cos_out. */
+ * n_sites values into cos_out
+ */
 static void chain_cos_angles(int n_sites, lattice_bc_t bc, double *cos_out) {
   if (bc == LATTICE_PERIODIC) {
     for (int n = 0; n < n_sites; n++) {
@@ -60,6 +62,7 @@ static void chain_cos_angles(int n_sites, lattice_bc_t bc, double *cos_out) {
   }
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int cmp_double(const void *a, const void *b) {
   double da = *(const double *)a, db = *(const double *)b;
 
@@ -103,24 +106,29 @@ cmatrix_t *lattice_build_2d_square(int nx, int ny, double epsilon0, double t,
   for (int ix = 0; ix < nx; ix++) {
     for (int iy = 0; iy < ny; iy++) {
       int i = IDX(ix, iy);
+
       CMAT(H, i, i) = c_real(epsilon0);
 
       if (ix + 1 < nx) {
         int j = IDX(ix + 1, iy);
+
         CMAT(H, i, j) = c_real(-t);
         CMAT(H, j, i) = c_real(-t);
       } else if (bc == LATTICE_PERIODIC && nx > 1) {
         int j = IDX(0, iy);
+
         CMAT(H, i, j) = c_add(CMAT(H, i, j), c_real(-t));
         CMAT(H, j, i) = c_add(CMAT(H, j, i), c_real(-t));
       }
 
       if (iy + 1 < ny) {
         int j = IDX(ix, iy + 1);
+
         CMAT(H, i, j) = c_real(-t);
         CMAT(H, j, i) = c_real(-t);
       } else if (bc == LATTICE_PERIODIC && ny > 1) {
         int j = IDX(ix, 0);
+
         CMAT(H, i, j) = c_add(CMAT(H, i, j), c_real(-t));
         CMAT(H, j, i) = c_add(CMAT(H, j, i), c_real(-t));
       }
@@ -202,6 +210,7 @@ double lattice_ipr(const cvector_t *psi) {
   for (int i = 0; i < psi->n; i++) {
     norm_sq += c_abs2(psi->data[i]);
   }
+
   if (norm_sq < 1e-300) {
     return 0.0;
   }
@@ -209,6 +218,7 @@ double lattice_ipr(const cvector_t *psi) {
   double sum4 = 0.0;
   for (int i = 0; i < psi->n; i++) {
     double p = c_abs2(psi->data[i]) / norm_sq;
+
     sum4 += p * p;
   }
 
@@ -234,12 +244,15 @@ cmatrix_t *lattice_build_ssh(int n_cells, double t1, double t2,
   }
 
   for (int c = 0; c < n_cells; c++) {
-    int a = 2 * c, b = 2 * c + 1;
+    int a = 2 * c;
+    int b = 2 * c + 1;
+
     CMAT(H, a, b) = c_real(-t1);
     CMAT(H, b, a) = c_real(-t1);
 
     if (c + 1 < n_cells) {
       int b_next = 2 * (c + 1);
+
       CMAT(H, b, b_next) = c_real(-t2);
       CMAT(H, b_next, b) = c_real(-t2);
     }
@@ -341,23 +354,25 @@ cmatrix_t *lattice_hofstadter_bloch(double kx, double ky, int p, int q,
   double alpha = (double)p / (double)q;
 
   /* NOTE: Landau-gauge magnetic unit cell: q sites stacked along y (index m =
-   * 0..q-1). Diagonal on-site energy carries the "in-cell" y-dispersion with a
+   * 0..q-1). Diagonal on-site energy carries "in-cell" y-dispersion with a
    * site-dependent Peierls phase 2*pi*alpha*m (Harper equation form);
    * off-diagonal (m, m+1) hopping is uniform bond amplitude -t, real for every
    * bond except the one that wraps magnetic unit cell back on itself (m=q-1 to
    * m=0), which alone carries Bloch phase \exp^{-i * kx} that stitches unit
-   * cells together. */
+   * cells together */
   for (int m = 0; m < q; m++) {
     CMAT(H, m, m) = c_real(2.0 * t * cos(ky + 2.0 * M_PI * alpha * (double)m));
   }
 
   for (int m = 0; m < q - 1; m++) {
     complex_t hop = c_real(-t);
+
     CMAT(H, m, m + 1) = c_add(CMAT(H, m, m + 1), hop);
     CMAT(H, m + 1, m) = c_add(CMAT(H, m + 1, m), c_conj(hop));
   }
 
   complex_t wrap = c_scale(c_new(cos(kx), -sin(kx)), -t);
+
   CMAT(H, q - 1, 0) = c_add(CMAT(H, q - 1, 0), wrap);
   CMAT(H, 0, q - 1) = c_add(CMAT(H, 0, q - 1), c_conj(wrap));
 
@@ -399,8 +414,10 @@ int lattice_hofstadter_chern_numbers(int p, int q, double t, int n_k,
       eigen_t *eig = cmatrix_eigh_complex(H);
 
       cmatrix_free(H);
-      U[i][j] = cmatrix_copy(
-          eig->eigenvectors); // columns = eigenvectors, already ascending order
+
+      // columns = eigenvectors, already ascending order
+      U[i][j] = cmatrix_copy(eig->eigenvectors);
+
       eigen_free(eig);
     }
   }
@@ -444,8 +461,9 @@ int lattice_hofstadter_chern_numbers(int p, int q, double t, int n_k,
         prod = c_mul(prod, c_scale(U3, 1.0 / n3));
         prod = c_mul(prod, c_scale(U4, 1.0 / n4));
 
-        double curvature =
-            atan2(prod.im, prod.re); // principal branch, (-\pi, \pi]
+        // principal branch, (-\pi, \pi]
+        double curvature = atan2(prod.im, prod.re);
+
         chern_out[n] += curvature;
       }
     }

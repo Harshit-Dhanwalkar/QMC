@@ -100,7 +100,7 @@ static double tau_full(const double *t1_amp, const double *t2_amp, int nso,
          IDX2(t1_amp, nso, occ_i, virt_b) * IDX2(t1_amp, nso, occ_j, virt_a);
 }
 
-// \tau-\tilde_ij^ab = t2_ijab + 0.5*(t1_ia*t1_jb - t1_ib*t1_ja)
+// \tau-\tilde_ij^ab = t2_ijab + 0.5 * (t1_ia * t1_jb - t1_ib * t1_ja)
 static double tau_tilde(const double *t1_amp, const double *t2_amp, int nso,
                         int occ_i, int occ_j, int virt_a, int virt_b) {
   return IDX4(t2_amp, nso, occ_i, occ_j, virt_a, virt_b) +
@@ -120,7 +120,7 @@ typedef struct {
   const double *eri_mo; /* for v_elem(): caller-owned, not freed here */
 } ccsd_ctx_t;
 
-// d_ijab(i,j,a,b) = Fso[i]+Fso[j]-Fso[a]-Fso[b]
+// d_ijab(i,j,a,b) = Fso[i] + Fso[j] - Fso[a] - Fso[b]
 // all diagonal, canonical orbitals - computed on demand rather than cached in
 // an nso^4 array
 static inline double d_ijab(const ccsd_ctx_t *ctx, int i, int j, int a, int b) {
@@ -260,47 +260,6 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
       }
     }
   }
-
-  // for (int ai = 0; ai < nv; ai++) {
-  //   int a = virt[ai];
-  //
-  //   for (int bi = 0; bi < nv; bi++) {
-  //     int b = virt[bi];
-  //
-  //     for (int ei = 0; ei < nv; ei++) {
-  //       int e = virt[ei];
-  //
-  //       for (int fi = 0; fi < nv; fi++) {
-  //         int f = virt[fi];
-  //         double s = IDX4(V, nso, a, b, e, f);
-  //
-  //         for (int mi = 0; mi < no; mi++) {
-  //           int m = occ[mi];
-  //           s -= IDX2(t1, nso, m, b) * IDX4(V, nso, a, m, e, f) -
-  //                IDX2(t1, nso, m, a) * IDX4(V, nso, b, m, e, f);
-  //         }
-  //
-  //         for (int mi = 0; mi < no; mi++) {
-  //           int m = occ[mi];
-  //
-  //           for (int ni = 0; ni < no; ni++) {
-  //             int n = occ[ni];
-  //             s += 0.25 * tau_full(t1, t2, nso, m, n, a, b) *
-  //                  IDX4(V, nso, m, n, e, f);
-  //           }
-  //         }
-  //
-  //         IDX4(Wabef, nso, a, b, e, f) = s;
-  //       }
-  //     }
-  //   }
-  // }
-
-  /* WARN: Wabef is not built here: it is single largest intermediate (nv^4, and
-   * nv > no for essentially every real system), so rather than materialize a
-   * persistent nv^4 array every iteration, its one downstream use
-   * (doubles-amplitude \tau * Wabef contraction in update_amplitudes) computes
-   * each element on fly via wabef_elem() at point of use */
 
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {

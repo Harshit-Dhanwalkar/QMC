@@ -7,13 +7,21 @@ Pyhton Matplotlib subprocess pipe
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef _WIN32
+// MSVC/MinGW spell the POSIX popen/pclose pair with a leading underscore;
+// same semantics (spawn a child process, pipe to its stdin), just a
+// different libc entry point name.
+#define popen _popen
+#define pclose _pclose
+#endif
+
 matplotlib_t *matplotlib_open(void) {
   matplotlib_t *mp = malloc(sizeof *mp);
   if (!mp) {
     return NULL;
   }
 
-  // -u : unbuffered stdout/stderr from child.
+  // -u : unbuffered stdout/stderr from child
   // -  : read script from stdin
   mp->pipe = popen("python3 -u -", "w");
   if (!mp->pipe) {

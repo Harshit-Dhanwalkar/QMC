@@ -8,6 +8,7 @@
 
 - [Building from Source](setup/building.md)
 - [Dependencies](setup/dependencies.md)
+- [Platform Support](setup/portability.md)
 
 ---
 
@@ -43,6 +44,9 @@
 - [Lindblad Master Equation](physics/lindblad.md)
 - [TISE/TDSE Convenience Layer](physics/schrodinger.md)
 - [SOFT (2D/3D Split-Operator)](physics/soft.md)
+- [Density Matrix Renormalization Group](physics/dmrg.md)
+- [Coupled Cluster Singles and Doubles](physics/ccsd.md)
+- [Complete Active Space SCF (CASSCF)](physics/casscf.md)
 
 ---
 

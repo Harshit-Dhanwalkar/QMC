@@ -2,8 +2,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
+
+#ifdef _WIN32
+#include <process.h> // _getpid()
+#define getpid _getpid
+#define QMC_PATH_SEP "\\"
+#define QMC_DEVNULL_REDIRECT "> NUL 2>&1"
+#define QMC_CD_CMD "cd /d" // /d also switches drive letter
+#define QMC_CHECK_TOOL_FMT "where %s >NUL 2>&1"
+#else
+#include <sys/wait.h> // WIFEXITED/WEXITSTATUS
+#include <unistd.h>   // getpid()
+#define QMC_PATH_SEP "/"
+#define QMC_DEVNULL_REDIRECT "> /dev/null 2>&1"
+#define QMC_CD_CMD "cd"
+#define QMC_CHECK_TOOL_FMT "command -v %s >/dev/null 2>&1"
+#endif
 
 // NOTE: Requires pdflatex (or lualatex) and pdftoppm (poppler-utils)
 //       installed and on PATH.
@@ -19,9 +33,31 @@ static int g_tracked_temp_count = 0;
 
 /* Helpers */
 // Path join
+#ifdef _WIN32
+// Windows has no fixed /tmp; conventional per-user scratch dir is whatever
+// %TEMP% (or %TMP%) points to, falling back to current directory if neither is
+// set (matches getenv's documented NULL-on-unset behavior rather than assuming
+// a var that's guaranteed to exist)
+static const char *tmp_dir_prefix(void) {
+  const char *tmp_dir = getenv("TEMP");
+  if (!tmp_dir) {
+    tmp_dir = getenv("TMP");
+  }
+
+  if (!tmp_dir) {
+    tmp_dir = ".";
+  }
+
+  return tmp_dir;
+}
+#else
+static const char *tmp_dir_prefix(void) { return "/tmp"; }
+#endif
+
 static void make_tmp_path(const char *basename, const char *ext, char *buf,
                           size_t bufsz) {
-  snprintf(buf, bufsz, "/tmp/%s.%s", basename, ext);
+  snprintf(buf, bufsz, "%s" QMC_PATH_SEP "%s.%s", tmp_dir_prefix(), basename,
+           ext);
 }
 
 static void make_unique_basename(char *buf, size_t bufsz) {
@@ -42,11 +78,17 @@ static int run_system(const char *cmd) {
     return -1;
   }
 
+#ifdef _WIN32
+  // cmd.exe's system() return value IS the child's exit code directly - no
+  // POSIX-style wait-status encoding to unpack.
+  return status == 0 ? 0 : -1;
+#else
   if (WIFEXITED(status)) {
     return WEXITSTATUS(status) == 0 ? 0 : -1;
   }
 
   return -1; // terminated by signal, etc.
+#endif
 }
 
 static int has_unsafe_shell_chars(const char *s) {
@@ -59,7 +101,7 @@ static int has_unsafe_shell_chars(const char *s) {
 
 static int check_tool_on_path(const char *tool) {
   char cmd[256];
-  snprintf(cmd, sizeof(cmd), "command -v %s >/dev/null 2>&1", tool);
+  snprintf(cmd, sizeof(cmd), QMC_CHECK_TOOL_FMT, tool);
 
   return run_system(cmd) == 0;
 }
@@ -111,7 +153,8 @@ int latex_render_to_png(const char *expr, const char *outpath) {
   make_tmp_path(basename, "tex", texpath, sizeof(texpath));
   make_tmp_path(basename, "pdf", pdfpath, sizeof(pdfpath));
 
-  snprintf(pngprefix, sizeof(pngprefix), "/tmp/%s_out", basename);
+  snprintf(pngprefix, sizeof(pngprefix), "%s" QMC_PATH_SEP "%s_out",
+           tmp_dir_prefix(), basename);
   snprintf(pngout, sizeof(pngout), "%s-1.png", pngprefix);
 
   if (write_standalone_equation_tex(texpath, expr) != 0) {
@@ -120,8 +163,9 @@ int latex_render_to_png(const char *expr, const char *outpath) {
 
   char cmd[512];
   snprintf(cmd, sizeof(cmd),
-           "cd /tmp && %s -interaction=batchmode %s > /dev/null 2>&1",
-           QMC_LATEX_COMPILER, texpath);
+           QMC_CD_CMD
+           " %s && %s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
+           tmp_dir_prefix(), QMC_LATEX_COMPILER, texpath);
   if (run_system(cmd) != 0) {
     return -2;
   }
@@ -154,7 +198,8 @@ int latex_render_to_pdf(const char *expr, const char *outpath) {
   char basename[64];
   make_unique_basename(basename, sizeof(basename));
 
-  char texpath[128], pdfpath[128];
+  char texpath[128];
+  char pdfpath[128];
   make_tmp_path(basename, "tex", texpath, sizeof(texpath));
   make_tmp_path(basename, "pdf", pdfpath, sizeof(pdfpath));
 
@@ -164,8 +209,9 @@ int latex_render_to_pdf(const char *expr, const char *outpath) {
 
   char cmd[512];
   snprintf(cmd, sizeof(cmd),
-           "cd /tmp && %s -interaction=batchmode %s > /dev/null 2>&1",
-           QMC_LATEX_COMPILER, texpath);
+           QMC_CD_CMD
+           " %s && %s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
+           tmp_dir_prefix(), QMC_LATEX_COMPILER, texpath);
   if (run_system(cmd) != 0) {
     return -2;
   }
@@ -228,14 +274,13 @@ int latex_compile(const char *texfile, const char *compiler,
   char cmd[1024];
   int written;
   if (working_dir && working_dir[0]) {
-    written = snprintf(cmd, sizeof(cmd),
-                       "cd %s && %s -interaction=batchmode %s "
-                       "> /dev/null 2>&1",
-                       working_dir, compiler, texfile);
+    written = snprintf(
+        cmd, sizeof(cmd),
+        QMC_CD_CMD " %s && %s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
+        working_dir, compiler, texfile);
   } else {
     written = snprintf(cmd, sizeof(cmd),
-                       "%s -interaction=batchmode %s "
-                       "> /dev/null 2>&1",
+                       "%s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
                        compiler, texfile);
   }
 
@@ -345,6 +390,7 @@ int latex_generate_table(const char *texpath, const char *const *const *data,
   if (label) {
     ok &= fprintf(f, "\\label{%s}\n", label) >= 0;
   }
+
   ok &= fprintf(f, "\\end{table}\n") >= 0;
 
   int close_rc = fclose(f);
@@ -437,22 +483,32 @@ void latex_clean_temp(void) {
     char path[192];
 
     for (size_t e = 0; e < sizeof(exts) / sizeof(exts[0]); e++) {
-      snprintf(path, sizeof(path), "/tmp/%.63s.%s", g_tracked_temp_basenames[i],
-               exts[e]);
+      snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "%.63s.%s",
+               tmp_dir_prefix(), g_tracked_temp_basenames[i], exts[e]);
+
       remove(path);
     }
 
-    snprintf(path, sizeof(path), "/tmp/%.63s_out-1.png",
-             g_tracked_temp_basenames[i]);
+    snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "%.63s_out-1.png",
+             tmp_dir_prefix(), g_tracked_temp_basenames[i]);
 
     remove(path);
   }
 
   g_tracked_temp_count = 0;
 
-  remove("/tmp/qmc_eq.tex");
-  remove("/tmp/qmc_eq.aux");
-  remove("/tmp/qmc_eq.log");
-  remove("/tmp/qmc_eq.pdf");
-  remove("/tmp/qmc_eq_out-1.png");
+  char path[192];
+  const char *leftover_exts[] = {"tex", "aux", "log", "pdf"};
+  for (size_t e = 0; e < sizeof(leftover_exts) / sizeof(leftover_exts[0]);
+       e++) {
+    snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "qmc_eq.%s",
+             tmp_dir_prefix(), leftover_exts[e]);
+
+    remove(path);
+  }
+
+  snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "qmc_eq_out-1.png",
+           tmp_dir_prefix());
+
+  remove(path);
 }

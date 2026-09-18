@@ -8,6 +8,11 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
+#endif
 #include <string.h>
 
 gnuplot_t *gnuplot_open(void) {
