@@ -187,10 +187,10 @@ static void test_vs_brute_force_ed(void) {
 /*
  * Reference values independently cross-checked: infinite-system DMRG vs
  * brute-force ED, isotropic Heisenberg AFM chain (Jz=Jxy=1), open boundary
- * conditions.
+ * conditions
  */
 static void test_reference_values(void) {
-  printf(" === DMRG vs validated reference energies (N=10,12) ===\n");
+  printf("  === DMRG vs validated reference energies (N=10,12) ===\n");
   double Jz = 1.0;
   double Jxy = 1.0;
 
@@ -230,7 +230,7 @@ static void test_reference_values(void) {
  * before the smallest m values here catch up)
  */
 static void test_truncation_error_monotonic(void) {
-  printf(" === Truncation error shrinks monotonically with m (N=16) ===\n");
+  printf("  === Truncation error shrinks monotonically with m (N=16) ===\n");
   double Jz = 1.0;
   double Jxy = 1.0;
   int N = 16;

@@ -24,10 +24,32 @@
 #define RUNNING_ON_VALGRIND 0
 #endif
 
-static int test_hermiticity_of_construction(void) {
+static int failures = 0;
+
+static void check(int cond, const char *msg) {
+  if (!cond) {
+    printf("  FAIL: %s\n", msg);
+    failures++;
+  }
+}
+
+static void check_close(double got, double expected, double tol,
+                        const char *msg) {
+  if (fabs(got - expected) > tol) {
+    printf("  FAIL: %s (got %.10f, expected %.10f, diff %.2e)\n", msg, got,
+           expected, fabs(got - expected));
+    failures++;
+  }
+}
+
+static void test_hermiticity_of_construction(void) {
+  printf("Test: Dirac matrix Hermiticity\n");
+
   int N = RUNNING_ON_VALGRIND ? 10 : 20;
   double dx = 0.1;
-  double hbar = 1.0, c = 1.0, m = 1.0;
+  double hbar = 1.0;
+  double c = 1.0;
+  double m = 1.0;
   double coeff = hbar * c / (2.0 * dx);
 
   int M = 2 * N;
@@ -41,7 +63,9 @@ static int test_hermiticity_of_construction(void) {
   double *V = calloc(N, sizeof *V); // free particle
 
   for (int i = 0; i < N; i++) {
-    int row1 = i, row2 = i + N;
+    int row1 = i;
+    int row2 = i + N;
+
     CMAT(H, row1, row1) = c_real(V[i] + m * c * c);
     CMAT(H, row2, row2) = c_real(V[i] - m * c * c);
 
@@ -58,37 +82,33 @@ static int test_hermiticity_of_construction(void) {
 
   free(V);
 
-  int fail = 0;
   double tol = 1e-12;
+  double max_err = 0.0;
   for (int a = 0; a < M; a++) {
     for (int b = 0; b < M; b++) {
       complex_t hab = CMAT(H, a, b);
       complex_t hba = CMAT(H, b, a);
 
       double err = sqrt(pow(hab.re - hba.re, 2) + pow(hab.im + hba.im, 2));
-      if (err > tol) {
-        printf(
-            "  FAIL: H[%d][%d]=(%.4f,%.4f) not conj of H[%d][%d]=(%.4f,%.4f)\n",
-            a, b, hab.re, hab.im, b, a, hba.re, hba.im);
-
-        fail = 1;
+      if (err > max_err) {
+        max_err = err;
       }
     }
   }
 
-  if (!fail) {
-    printf("  OK: H[a][b] = conj(H[b][a]) for all %d x %d entries\n", M, M);
-  }
+  check_close(max_err, 0.0, tol, "H[a][b] = conj(H[b][a]) for all entries");
 
   cmatrix_free(H);
-
-  return fail;
 }
 
-static int test_free_particle_branches(void) {
+static void test_free_particle_branches(void) {
+  printf("Test: free particle +-mc^2 branch structure\n");
+
   int N = RUNNING_ON_VALGRIND ? 20 : 40;
   double dx = 0.2;
-  double hbar = 1.0, c = 1.0, m = 1.0;
+  double hbar = 1.0;
+  double c = 1.0;
+  double m = 1.0;
   double *x = malloc(N * sizeof *x);
   double *V = calloc(N, sizeof *V);
   for (int i = 0; i < N; i++) {
@@ -101,44 +121,52 @@ static int test_free_particle_branches(void) {
   free(V);
 
   if (!eig) {
-    printf("  FAIL: dirac_1d returned NULL\n");
-    return 1;
+    check(0, "dirac_1d returned NULL");
+    return;
   }
 
   double mc2 = m * c * c;
-  int n_pos = 0, n_neg = 0, n_gap = 0;
+  int n_pos = 0;
+  int n_neg = 0;
+  int n_gap = 0;
   int n_total = eig->n;
   for (int i = 0; i < n_total; i++) {
     double E = eig->eigenvalues[i];
 
-    if (E >= mc2 - 1e-6)
+    if (E >= mc2 - 1e-6) {
       n_pos++;
-    else if (E <= -mc2 + 1e-6)
+    } else if (E <= -mc2 + 1e-6) {
       n_neg++;
-    else
+    } else {
       n_gap++;
+    }
   }
 
   printf("  mc^2=%.3f: %d states >= +mc^2, %d states <= -mc^2, %d in gap\n",
          mc2, n_pos, n_neg, n_gap);
 
-  eigen_free(eig);
+  check(n_gap <= n_total / 4,
+        "most states fall in two +-mc^2 branches (not in gap)");
 
-  // Loose: most states should fall in two branches, not the gap
-  return (n_gap > n_total / 4) ? 1 : 0;
+  eigen_free(eig);
 }
 
 /*
  * Harmonic V(x) and c taken large (weak-relativistic-coupling limit),
  * Dirac equation's positive-energy branch must reduce exactly to ordinary
  * Schrodinger-equation spectrum shifted by the rest-mass energy,
- * E - m * c^2 -> (n + 1/2) * \hbar * \omega.
+ * E - m * c^2 -> (n + 1/2) * \hbar * \omega
  */
-static int test_nonrelativistic_limit(void) {
+static void test_nonrelativistic_limit(void) {
+  printf("Test: non-relativistic limit vs exact QHO spectrum\n");
+
   int N = RUNNING_ON_VALGRIND ? 60 : 150;
   double L = 20.0;
   double dx = L / (N - 1);
-  double hbar = 1.0, c = 200.0, m = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double c = 200.0;
+  double m = 1.0;
+  double omega = 1.0;
 
   double *x = malloc(N * sizeof *x);
   double *V = malloc(N * sizeof *V);
@@ -152,8 +180,8 @@ static int test_nonrelativistic_limit(void) {
   free(V);
 
   if (!eig) {
-    printf("  FAIL: dirac_1d returned NULL\n");
-    return 1;
+    check(0, "dirac_1d returned NULL");
+    return;
   }
 
   double mc2 = m * c * c;
@@ -166,39 +194,33 @@ static int test_nonrelativistic_limit(void) {
       pos[n_pos++] = eig->eigenvalues[i];
     }
   }
-  /* NOTE: eigenvalues from cmatrix_eigh_complex are ascending, so the smallest
-   * n_pos entries are already the lowest positive-energy states. */
+  /* NOTE: eigenvalues from cmatrix_eigh_complex are ascending, so smallest
+   * n_pos entries are already lowest positive-energy states */
 
   int n_check = RUNNING_ON_VALGRIND ? 1 : 3;
-  int failed = 0;
-  printf("  Non-relativistic limit (c=%.0f, harmonic V, m=omega=hbar=1):\n", c);
+  printf("  Non-relativistic limit (c=%.0f, harmonic V, m=\\omega=\\hbar=1):\n",
+         c);
   for (int n = 0; n < n_check; n++) {
     double exact = (n + 0.5) * hbar * omega;
-    /* each level appears twice (spin/component doubling); check first of the
-     * pair at index 2*n */
+    // each level appears twice (spin/component doubling); check first of  pair
+    // at index 2 * n
     double shifted = pos[2 * n] - mc2;
-    double err = fabs(shifted - exact);
     double tol = 0.02 * (n + 1);
-    printf("    n=%d: E-mc^2=%.6f  exact=(n+1/2)=%.6f  err=%.2e  tol=%.2f\n", n,
-           shifted, exact, err, tol);
-    if (err > tol) {
-      failed = 1;
-    }
+
+    char label[64];
+    snprintf(label, sizeof label,
+             "n=%d: E - mc^2 matches (n + 1/2) * \\hbar * \\omega", n);
+
+    check_close(shifted, exact, tol, label);
   }
 
   free(pos);
   eigen_free(eig);
-
-  if (failed) {
-    printf("  FAIL: non-relativistic limit does not match exact QHO "
-           "spectrum\n");
-  }
-
-  return failed;
 }
 
-static int test_dirac_hydrogen_sommerfeld(void) {
-  int fail = 0;
+static void test_dirac_hydrogen_sommerfeld(void) {
+  printf("Test: Dirac radial solve vs exact Sommerfeld hydrogen spectrum\n");
+
   double tol_rel = RUNNING_ON_VALGRIND ? 2e-5 : 5e-6;
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double a0 = 4.0 * M_PI * EPSILON_0 * HBAR * HBAR /
@@ -236,9 +258,11 @@ static int test_dirac_hydrogen_sommerfeld(void) {
                                       M_ELECTRON, HBAR, C_LIGHT);
 
     if (!eig) {
-      printf("  FAIL: dirac_radial_solve returned NULL for %s\n",
-             states[s].label);
-      fail = 1;
+      char label[64];
+      snprintf(label, sizeof label, "dirac_radial_solve succeeded for %s",
+               states[s].label);
+
+      check(0, label);
 
       continue;
     }
@@ -260,22 +284,25 @@ static int test_dirac_hydrogen_sommerfeld(void) {
     }
 
     double rel_err = (best > 0.0) ? fabs(best - E_exact) / fabs(E_exact) : 1.0;
-    printf("  %s (n=%d, \\kappa=%d): E_num=%.10e J  E_exact=%.10e J "
-           "rel_err=%.2e\n",
-           states[s].label, n, kappa, best, E_exact, rel_err);
-    fail |= (rel_err > tol_rel);
+    printf("  %s (n=%d, \\kappa=%d): rel_err=%.2e\n", states[s].label, n, kappa,
+           rel_err);
+
+    char label[96];
+    snprintf(label, sizeof label, "%s: E matches Sommerfeld formula",
+             states[s].label);
+    check_close(rel_err, 0.0, tol_rel, label);
 
     eigen_free(eig);
   }
 
   free(r);
-
-  return fail;
 }
 
 // 2s_1/2 and 2p_1/2 should be exactly degenerate in point-charge Dirac spectrum
 // (both have n=2, |\kappa|=1)
-static int test_dirac_j_degeneracy(void) {
+static void test_dirac_j_degeneracy(void) {
+  printf("Test: 2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1)\n");
+
   double Z_charge = 1.0; // nuclear charge
   double E_2s = dirac_hydrogen_energy_level(2, -1, Z_charge, HBAR, M_ELECTRON,
                                             E_CHARGE, EPSILON_0, C_LIGHT);
@@ -285,34 +312,22 @@ static int test_dirac_j_degeneracy(void) {
   printf("  E(2s_1/2)=%.12e J  E(2p_1/2)=%.12e J  diff=%.3e\n", E_2s, E_2p,
          fabs(E_2s - E_2p));
 
-  return fabs(E_2s - E_2p) > 1e-30 ? 1 : 0; // should be bit-identical
+  check(fabs(E_2s - E_2p) <= 1e-30,
+        "E(2s_1/2) and E(2p_1/2) are bit-identical");
 }
 
 int main(void) {
-  int failed = 0;
+  test_hermiticity_of_construction();
+  test_free_particle_branches();
+  test_nonrelativistic_limit();
+  test_dirac_hydrogen_sommerfeld();
+  test_dirac_j_degeneracy();
 
-  printf("Dirac matrix Hermiticity");
-  failed += test_hermiticity_of_construction();
-
-  printf("Free particle +-mc^2 branch structure (qualitative):\n");
-  failed += test_free_particle_branches();
-
-  printf("Non-relativistic limit vs. exact harmonic-oscillator spectrum:\n");
-  failed += test_nonrelativistic_limit();
-
-  printf("Dirac radial solve vs. exact Sommerfeld hydrogen spectrum:\n");
-  failed += test_dirac_hydrogen_sommerfeld();
-
-  printf("2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1):\n");
-  failed += test_dirac_j_degeneracy();
-
-  if (failed == 0) {
+  if (failures == 0) {
     printf("\nAll test_dirac checks passed.\n");
     return 0;
   } else {
-    printf("\n%d test_dirac check(s) FAILED.\n", failed);
+    printf("\n%d test_dirac check(s) FAILED.\n", failures);
     return 1;
   }
-
-  return 0;
 }

@@ -9,7 +9,36 @@
   (arr)[(((size_t)(p) * (nso) + (q)) * (nso) + (r)) * (nso) + (s)]
 
 static int spin_of(int orb_idx) { return orb_idx % 2; }
+
 static int spatial_of(int orb_idx) { return orb_idx / 2; }
+
+/*
+ * Single-element on-the-fly version of build_antisymmetrized (below): same
+ * <pq||rs> formula, computed directly from the n_spatial-sized chemist eri_mo
+ * tensor for one (p,q,r,s).
+ *
+ * NOTE: Antisymmetrized integrals never need nso^4 = 16*n_spatial^4 of
+ * persistent storage during the iterative solve - only n_spatial^4 is ever
+ * resident
+ */
+static inline double v_elem(int n_spatial, const double *eri_mo, int p_idx,
+                            int q_idx, int r_idx, int s_idx) {
+  int spin_p = spin_of(p_idx), spatial_p = spatial_of(p_idx);
+  int spin_q = spin_of(q_idx), spatial_q = spatial_of(q_idx);
+  int spin_r = spin_of(r_idx), spatial_r = spatial_of(r_idx);
+  int spin_s = spin_of(s_idx), spatial_s = spatial_of(s_idx);
+
+  double v1_val = (spin_p == spin_r && spin_q == spin_s)
+                      ? MOLINT_ERI(eri_mo, n_spatial, spatial_p, spatial_r,
+                                   spatial_q, spatial_s)
+                      : 0.0;
+  double v2_val = (spin_p == spin_s && spin_q == spin_r)
+                      ? MOLINT_ERI(eri_mo, n_spatial, spatial_p, spatial_s,
+                                   spatial_q, spatial_r)
+                      : 0.0;
+
+  return v1_val - v2_val;
+}
 
 /*
  * Antisymmetrized physicist-notation spin-orbital integrals from the
@@ -17,8 +46,8 @@ static int spatial_of(int orb_idx) { return orb_idx / 2; }
  *   <pq|rs> = (pr|qs)                    [chemist -> physicist]
  *   <pq||rs> = <pq|rs> - <pq|sr>         [antisymmetrize]
  * with spin conservation (pq|rs)'s spin-orbital version is nonzero only when
- * spin_p=spin_r and spin_q=spin_s (for <pq|rs>), or spin_p=spin_s and
- * spin_q=spin_r (for <pq|sr>).
+ * spin_p = spin_r and spin_q = spin_s (for <pq|rs>), or spin_p = spin_s and
+ * spin_q = spin_r (for <pq|sr>)
  */
 static double *build_antisymmetrized(int n_spatial, const double *eri_mo,
                                      int nso) {
@@ -62,8 +91,8 @@ static double *build_antisymmetrized(int n_spatial, const double *eri_mo,
   return v_tensor;
 }
 
-/* \tau_ij^ab = t2_ijab + t1_ia * t1_jb - t1_ib * t1_ja (full antisymmetrized
- * T1xT1 product, used in Wmnij/Wabef/T2-update). */
+// \tau_ij^ab = t2_ijab + t1_ia * t1_jb - t1_ib * t1_ja
+// (full antisymmetrized T1xT1 product, used in Wmnij/Wabef/T2-update)
 static double tau_full(const double *t1_amp, const double *t2_amp, int nso,
                        int occ_i, int occ_j, int virt_a, int virt_b) {
   return IDX4(t2_amp, nso, occ_i, occ_j, virt_a, virt_b) +
@@ -84,23 +113,37 @@ static double tau_tilde(const double *t1_amp, const double *t2_amp, int nso,
 typedef struct {
   int nso;
   int nocc, nvirt;
-  int *occ, *virt; /* nocc / nvirt long, spin-orbital indices */
-  double *Fso;     /* nso x nso, diagonal (canonical orbitals) */
-  double *V;       /* nso^4, antisymmetrized physicist integrals */
-  double *Dia;     /* nso x nso, only occ x virt entries used */
-  double *Dijab;   /* nso^4, only occ x occ x virt x virt entries used */
+  int *occ, *virt;      /* nocc / nvirt long, spin-orbital indices */
+  double *Fso;          /* nso x nso, diagonal (canonical orbitals) */
+  double *Dia;          /* nso x nso, only occ x virt entries used */
+  int n_spatial;        /* for v_elem(): number of spatial MOs */
+  const double *eri_mo; /* for v_elem(): caller-owned, not freed here */
 } ccsd_ctx_t;
+
+// d_ijab(i,j,a,b) = Fso[i]+Fso[j]-Fso[a]-Fso[b]
+// all diagonal, canonical orbitals - computed on demand rather than cached in
+// an nso^4 array
+static inline double d_ijab(const ccsd_ctx_t *ctx, int i, int j, int a, int b) {
+  int nso = ctx->nso;
+  const double *Fso = ctx->Fso;
+
+  return IDX2(Fso, nso, i, i) + IDX2(Fso, nso, j, j) - IDX2(Fso, nso, a, a) -
+         IDX2(Fso, nso, b, b);
+}
 
 static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
                                 const double *t2, double *Fae, double *Fmi,
-                                double *Fme, double *Wmnij, double *Wabef,
-                                double *Wmbej) {
+                                double *Fme, double *Wmnij, double *Wmbej) {
   int nso = ctx->nso;
   const int *occ = ctx->occ, *virt = ctx->virt;
   int no = ctx->nocc, nv = ctx->nvirt;
   const double *Fso = ctx->Fso;
-  const double *V = ctx->V;
+  int n_spatial = ctx->n_spatial;
+  const double *eri_mo = ctx->eri_mo;
 
+#define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
+
+#pragma omp parallel for schedule(dynamic)
   for (int ai = 0; ai < nv; ai++) {
     int a = virt[ai];
 
@@ -114,7 +157,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
-          s += IDX2(t1, nso, m, f) * IDX4(V, nso, m, a, f, e);
+          s += IDX2(t1, nso, m, f) * V(m, a, f, e);
         }
 
         for (int ni = 0; ni < no; ni++) {
@@ -122,8 +165,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
-            s -= 0.5 * tau_tilde(t1, t2, nso, m, n, a, f) *
-                 IDX4(V, nso, m, n, e, f);
+            s -= 0.5 * tau_tilde(t1, t2, nso, m, n, a, f) * V(m, n, e, f);
           }
         }
       }
@@ -132,6 +174,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+#pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
@@ -145,7 +188,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ni = 0; ni < no; ni++) {
           int n = occ[ni];
-          s += IDX2(t1, nso, n, e) * IDX4(V, nso, m, n, i, e);
+          s += IDX2(t1, nso, n, e) * V(m, n, i, e);
         }
 
         for (int ni = 0; ni < no; ni++) {
@@ -153,8 +196,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
-            s += 0.5 * tau_tilde(t1, t2, nso, i, n, e, f) *
-                 IDX4(V, nso, m, n, e, f);
+            s += 0.5 * tau_tilde(t1, t2, nso, i, n, e, f) * V(m, n, e, f);
           }
         }
       }
@@ -163,6 +205,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+#pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
@@ -175,7 +218,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
-          s += IDX2(t1, nso, n, f) * IDX4(V, nso, m, n, e, f);
+          s += IDX2(t1, nso, n, f) * V(m, n, e, f);
         }
       }
 
@@ -183,6 +226,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+#pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
@@ -194,12 +238,12 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ji = 0; ji < no; ji++) {
           int j = occ[ji];
-          double s = IDX4(V, nso, m, n, i, j);
+          double s = V(m, n, i, j);
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
-            s += IDX2(t1, nso, j, e) * IDX4(V, nso, m, n, i, e) -
-                 IDX2(t1, nso, i, e) * IDX4(V, nso, m, n, j, e);
+            s += IDX2(t1, nso, j, e) * V(m, n, i, e) -
+                 IDX2(t1, nso, i, e) * V(m, n, j, e);
           }
 
           for (int ei = 0; ei < nv; ei++) {
@@ -207,8 +251,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
-              s += 0.25 * tau_full(t1, t2, nso, i, j, e, f) *
-                   IDX4(V, nso, m, n, e, f);
+              s += 0.25 * tau_full(t1, t2, nso, i, j, e, f) * V(m, n, e, f);
             }
           }
 
@@ -218,41 +261,48 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
-  for (int ai = 0; ai < nv; ai++) {
-    int a = virt[ai];
+  // for (int ai = 0; ai < nv; ai++) {
+  //   int a = virt[ai];
+  //
+  //   for (int bi = 0; bi < nv; bi++) {
+  //     int b = virt[bi];
+  //
+  //     for (int ei = 0; ei < nv; ei++) {
+  //       int e = virt[ei];
+  //
+  //       for (int fi = 0; fi < nv; fi++) {
+  //         int f = virt[fi];
+  //         double s = IDX4(V, nso, a, b, e, f);
+  //
+  //         for (int mi = 0; mi < no; mi++) {
+  //           int m = occ[mi];
+  //           s -= IDX2(t1, nso, m, b) * IDX4(V, nso, a, m, e, f) -
+  //                IDX2(t1, nso, m, a) * IDX4(V, nso, b, m, e, f);
+  //         }
+  //
+  //         for (int mi = 0; mi < no; mi++) {
+  //           int m = occ[mi];
+  //
+  //           for (int ni = 0; ni < no; ni++) {
+  //             int n = occ[ni];
+  //             s += 0.25 * tau_full(t1, t2, nso, m, n, a, b) *
+  //                  IDX4(V, nso, m, n, e, f);
+  //           }
+  //         }
+  //
+  //         IDX4(Wabef, nso, a, b, e, f) = s;
+  //       }
+  //     }
+  //   }
+  // }
 
-    for (int bi = 0; bi < nv; bi++) {
-      int b = virt[bi];
+  /* WARN: Wabef is not built here: it is single largest intermediate (nv^4, and
+   * nv > no for essentially every real system), so rather than materialize a
+   * persistent nv^4 array every iteration, its one downstream use
+   * (doubles-amplitude \tau * Wabef contraction in update_amplitudes) computes
+   * each element on fly via wabef_elem() at point of use */
 
-      for (int ei = 0; ei < nv; ei++) {
-        int e = virt[ei];
-
-        for (int fi = 0; fi < nv; fi++) {
-          int f = virt[fi];
-          double s = IDX4(V, nso, a, b, e, f);
-
-          for (int mi = 0; mi < no; mi++) {
-            int m = occ[mi];
-            s -= IDX2(t1, nso, m, b) * IDX4(V, nso, a, m, e, f) -
-                 IDX2(t1, nso, m, a) * IDX4(V, nso, b, m, e, f);
-          }
-
-          for (int mi = 0; mi < no; mi++) {
-            int m = occ[mi];
-
-            for (int ni = 0; ni < no; ni++) {
-              int n = occ[ni];
-              s += 0.25 * tau_full(t1, t2, nso, m, n, a, b) *
-                   IDX4(V, nso, m, n, e, f);
-            }
-          }
-
-          IDX4(Wabef, nso, a, b, e, f) = s;
-        }
-      }
-    }
-  }
-
+#pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
@@ -264,16 +314,17 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ji = 0; ji < no; ji++) {
           int j = occ[ji];
-          double s = IDX4(V, nso, m, b, e, j);
+          double s = V(m, b, e, j);
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
-            s += IDX2(t1, nso, j, f) * IDX4(V, nso, m, b, e, f);
+            s += IDX2(t1, nso, j, f) * V(m, b, e, f);
           }
 
           for (int ni = 0; ni < no; ni++) {
             int n = occ[ni];
-            s -= IDX2(t1, nso, n, b) * IDX4(V, nso, m, n, e, j);
+
+            s -= IDX2(t1, nso, n, b) * V(m, n, e, j);
           }
 
           for (int ni = 0; ni < no; ni++) {
@@ -281,9 +332,10 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
+
               s -= (0.5 * IDX4(t2, nso, j, n, f, b) +
                     IDX2(t1, nso, j, f) * IDX2(t1, nso, n, b)) *
-                   IDX4(V, nso, m, n, e, f);
+                   V(m, n, e, f);
             }
           }
 
@@ -292,20 +344,65 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
       }
     }
   }
+
+#undef V
+}
+
+/*
+ * Single element of Wabef, computed on demand rather than cached in a
+ * persistent nv^4 array. Wabef-building loop body, evaluated for one (a,b,e,f)
+ * at point of use
+ */
+static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
+                         const double *t2, int a, int b, int e, int f) {
+  int nso = ctx->nso;
+  const int *occ = ctx->occ;
+  int no = ctx->nocc;
+  int n_spatial = ctx->n_spatial;
+  const double *eri_mo = ctx->eri_mo;
+
+#define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
+
+  double s = V(a, b, e, f);
+
+  for (int mi = 0; mi < no; mi++) {
+    int m = occ[mi];
+
+    s -= IDX2(t1, nso, m, b) * V(a, m, e, f) -
+         IDX2(t1, nso, m, a) * V(b, m, e, f);
+  }
+
+  for (int mi = 0; mi < no; mi++) {
+    int m = occ[mi];
+
+    for (int ni = 0; ni < no; ni++) {
+      int n = occ[ni];
+
+      s += 0.25 * tau_full(t1, t2, nso, m, n, a, b) * V(m, n, e, f);
+    }
+  }
+
+#undef V
+
+  return s;
 }
 
 static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
                               const double *t2, double *new_t1, double *new_t2,
                               double *Fae, double *Fmi, double *Fme,
-                              double *Wmnij, double *Wabef, double *Wmbej) {
+                              double *Wmnij, double *Wmbej) {
   int nso = ctx->nso;
   const int *occ = ctx->occ, *virt = ctx->virt;
   int no = ctx->nocc, nv = ctx->nvirt;
   const double *Fso = ctx->Fso;
-  const double *V = ctx->V;
+  int n_spatial = ctx->n_spatial;
+  const double *eri_mo = ctx->eri_mo;
 
-  build_intermediates(ctx, t1, t2, Fae, Fmi, Fme, Wmnij, Wabef, Wmbej);
+#define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
+  build_intermediates(ctx, t1, t2, Fae, Fmi, Fme, Wmnij, Wmbej);
+
+#pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
 
@@ -337,7 +434,8 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
-          s -= IDX2(t1, nso, n, f) * IDX4(V, nso, n, a, i, f);
+
+          s -= IDX2(t1, nso, n, f) * V(n, a, i, f);
         }
       }
 
@@ -349,7 +447,8 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
-            s -= 0.5 * IDX4(t2, nso, i, m, e, f) * IDX4(V, nso, m, a, e, f);
+
+            s -= 0.5 * IDX4(t2, nso, i, m, e, f) * V(m, a, e, f);
           }
         }
       }
@@ -362,7 +461,8 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int ni = 0; ni < no; ni++) {
             int n = occ[ni];
-            s -= 0.5 * IDX4(t2, nso, m, n, a, e) * IDX4(V, nso, n, m, e, i);
+
+            s -= 0.5 * IDX4(t2, nso, m, n, a, e) * V(n, m, e, i);
           }
         }
       }
@@ -371,6 +471,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+#pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
 
@@ -382,7 +483,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int bi = 0; bi < nv; bi++) {
           int b = virt[bi];
-          double s = IDX4(V, nso, i, j, a, b);
+          double s = V(i, j, a, b);
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
@@ -434,7 +535,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
               s += 0.5 * tau_full(t1, t2, nso, i, j, e, f) *
-                   IDX4(Wabef, nso, a, b, e, f);
+                   wabef_elem(ctx, t1, t2, a, b, e, f);
             }
           }
 
@@ -444,37 +545,35 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
             for (int ei = 0; ei < nv; ei++) {
               int e = virt[ei];
               s += IDX4(t2, nso, i, m, a, e) * IDX4(Wmbej, nso, m, b, e, j) -
-                   IDX2(t1, nso, i, e) * IDX2(t1, nso, m, a) *
-                       IDX4(V, nso, m, b, e, j);
+                   IDX2(t1, nso, i, e) * IDX2(t1, nso, m, a) * V(m, b, e, j);
               s -= IDX4(t2, nso, i, m, b, e) * IDX4(Wmbej, nso, m, a, e, j) -
-                   IDX2(t1, nso, i, e) * IDX2(t1, nso, m, b) *
-                       IDX4(V, nso, m, a, e, j);
+                   IDX2(t1, nso, i, e) * IDX2(t1, nso, m, b) * V(m, a, e, j);
               s -= IDX4(t2, nso, j, m, a, e) * IDX4(Wmbej, nso, m, b, e, i) -
-                   IDX2(t1, nso, j, e) * IDX2(t1, nso, m, a) *
-                       IDX4(V, nso, m, b, e, i);
+                   IDX2(t1, nso, j, e) * IDX2(t1, nso, m, a) * V(m, b, e, i);
               s += IDX4(t2, nso, j, m, b, e) * IDX4(Wmbej, nso, m, a, e, i) -
-                   IDX2(t1, nso, j, e) * IDX2(t1, nso, m, b) *
-                       IDX4(V, nso, m, a, e, i);
+                   IDX2(t1, nso, j, e) * IDX2(t1, nso, m, b) * V(m, a, e, i);
             }
           }
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
-            s += IDX2(t1, nso, i, e) * IDX4(V, nso, a, b, e, j) -
-                 IDX2(t1, nso, j, e) * IDX4(V, nso, a, b, e, i);
+            s += IDX2(t1, nso, i, e) * V(a, b, e, j) -
+                 IDX2(t1, nso, j, e) * V(a, b, e, i);
           }
 
           for (int mi = 0; mi < no; mi++) {
             int m = occ[mi];
-            s -= IDX2(t1, nso, m, a) * IDX4(V, nso, m, b, i, j) -
-                 IDX2(t1, nso, m, b) * IDX4(V, nso, m, a, i, j);
+            s -= IDX2(t1, nso, m, a) * V(m, b, i, j) -
+                 IDX2(t1, nso, m, b) * V(m, a, i, j);
           }
 
-          IDX4(new_t2, nso, i, j, a, b) = s / IDX4(ctx->Dijab, nso, i, j, a, b);
+          IDX4(new_t2, nso, i, j, a, b) = s / d_ijab(ctx, i, j, a, b);
         }
       }
     }
   }
+
+#undef V
 }
 
 static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
@@ -483,7 +582,10 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
   const int *occ = ctx->occ, *virt = ctx->virt;
   int no = ctx->nocc, nv = ctx->nvirt;
   const double *Fso = ctx->Fso;
-  const double *V = ctx->V;
+  int n_spatial = ctx->n_spatial;
+  const double *eri_mo = ctx->eri_mo;
+
+#define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
   double E = 0.0;
   for (int ii = 0; ii < no; ii++) {
@@ -507,7 +609,7 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int bi = 0; bi < nv; bi++) {
           int b = virt[bi];
-          double v = IDX4(V, nso, i, j, a, b);
+          double v = V(i, j, a, b);
 
           E += 0.25 * v * IDX4(t2, nso, i, j, a, b);
           E += 0.5 * v * IDX2(t1, nso, i, a) * IDX2(t1, nso, j, b);
@@ -515,6 +617,8 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
       }
     }
   }
+
+#undef V
 
   return E;
 }
@@ -569,17 +673,15 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   ctx.occ = malloc((size_t)ctx.nocc * sizeof(int));
   ctx.virt = malloc((size_t)ctx.nvirt * sizeof(int));
   ctx.Fso = calloc((size_t)nso * nso, sizeof(double));
-  ctx.V = build_antisymmetrized(n_spatial, eri_mo, nso);
   ctx.Dia = calloc((size_t)nso * nso, sizeof(double));
-  ctx.Dijab = calloc((size_t)nso * nso * nso * nso, sizeof(double));
+  ctx.n_spatial = n_spatial;
+  ctx.eri_mo = eri_mo; // caller-owned; ctx never frees this
 
-  if (!ctx.occ || !ctx.virt || !ctx.Fso || !ctx.V || !ctx.Dia || !ctx.Dijab) {
+  if (!ctx.occ || !ctx.virt || !ctx.Fso || !ctx.Dia) {
     free(ctx.occ);
     free(ctx.virt);
     free(ctx.Fso);
-    free(ctx.V);
     free(ctx.Dia);
-    free(ctx.Dijab);
 
     return NULL;
   }
@@ -613,26 +715,6 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
     }
   }
 
-  for (int ii = 0; ii < no; ii++) {
-    int i = ctx.occ[ii];
-
-    for (int ji = 0; ji < no; ji++) {
-      int j = ctx.occ[ji];
-
-      for (int ai = 0; ai < nv; ai++) {
-        int a = ctx.virt[ai];
-
-        for (int bi = 0; bi < nv; bi++) {
-          int b = ctx.virt[bi];
-
-          IDX4(ctx.Dijab, nso, i, j, a, b) =
-              IDX2(ctx.Fso, nso, i, i) + IDX2(ctx.Fso, nso, j, j) -
-              IDX2(ctx.Fso, nso, a, a) - IDX2(ctx.Fso, nso, b, b);
-        }
-      }
-    }
-  }
-
   double *t1 = calloc((size_t)nso * nso, sizeof(double));
   double *t2 = calloc((size_t)nso * nso * nso * nso, sizeof(double));
   double *new_t1 = calloc((size_t)nso * nso, sizeof(double));
@@ -641,13 +723,12 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   double *Fmi = calloc((size_t)nso * nso, sizeof(double));
   double *Fme = calloc((size_t)nso * nso, sizeof(double));
   double *Wmnij = calloc((size_t)nso * nso * nso * nso, sizeof(double));
-  double *Wabef = calloc((size_t)nso * nso * nso * nso, sizeof(double));
   double *Wmbej = calloc((size_t)nso * nso * nso * nso, sizeof(double));
 
   ccsd_result_t *result = malloc(sizeof(ccsd_result_t));
 
   if (!t1 || !t2 || !new_t1 || !new_t2 || !Fae || !Fmi || !Fme || !Wmnij ||
-      !Wabef || !Wmbej || !result) {
+      !Wmbej || !result) {
     free(t1);
     free(t2);
     free(new_t1);
@@ -656,15 +737,12 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
     free(Fmi);
     free(Fme);
     free(Wmnij);
-    free(Wabef);
     free(Wmbej);
     free(result);
     free(ctx.occ);
     free(ctx.virt);
     free(ctx.Fso);
-    free(ctx.V);
     free(ctx.Dia);
-    free(ctx.Dijab);
 
     return NULL;
   }
@@ -683,7 +761,7 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
           int b = ctx.virt[bi];
 
           IDX4(t2, nso, i, j, a, b) =
-              IDX4(ctx.V, nso, i, j, a, b) / IDX4(ctx.Dijab, nso, i, j, a, b);
+              v_elem(n_spatial, eri_mo, i, j, a, b) / d_ijab(&ctx, i, j, a, b);
         }
       }
     }
@@ -693,8 +771,9 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   int converged = 0, it;
 
   for (it = 0; it < max_iter; it++) {
-    update_amplitudes(&ctx, t1, t2, new_t1, new_t2, Fae, Fmi, Fme, Wmnij, Wabef,
+    update_amplitudes(&ctx, t1, t2, new_t1, new_t2, Fae, Fmi, Fme, Wmnij,
                       Wmbej);
+
     double *tmp;
 
     tmp = t1;
@@ -723,23 +802,26 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
 
   if (amplitudes_out) {
     ccsd_amplitudes_t *amp = malloc(sizeof(ccsd_amplitudes_t));
-    if (amp) {
+    double *v_materialized =
+        amp ? build_antisymmetrized(n_spatial, eri_mo, nso) : NULL;
+    if (amp && v_materialized) {
       amp->nso = nso;
       amp->nocc = no;
       amp->nvirt = nv;
       amp->occ = ctx.occ;
       amp->virt = ctx.virt;
       amp->Fso = ctx.Fso;
-      amp->V = ctx.V;
+      amp->V = v_materialized;
       amp->t1 = t1;
       amp->t2 = t2;
       *amplitudes_out = amp;
     } else {
       // allocation failure: fall back to freeing everything below
+      free(amp);
+      free(v_materialized);
       free(ctx.occ);
       free(ctx.virt);
       free(ctx.Fso);
-      free(ctx.V);
       free(t1);
       free(t2);
     }
@@ -747,7 +829,6 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
     free(ctx.occ);
     free(ctx.virt);
     free(ctx.Fso);
-    free(ctx.V);
     free(t1);
     free(t2);
   }
@@ -758,10 +839,8 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   free(Fmi);
   free(Fme);
   free(Wmnij);
-  free(Wabef);
   free(Wmbej);
   free(ctx.Dia);
-  free(ctx.Dijab);
 
   return result;
 }

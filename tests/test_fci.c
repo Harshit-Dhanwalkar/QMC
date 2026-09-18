@@ -5,7 +5,7 @@
  * files: build full Fock-space molecular Hamiltonian and diagonalize it, but
  * properly restricted to a fixed electron-number sector rather than
  * diagonalizing whole Fock space and trusting true ground state happens to also
- * be global minimum across every particle-number sector.
+ * be global minimum across every particle-number sector
  *
  * Validation:
  *   1. H2/STO-3G and LiH/STO-3G FCI ground energies against
@@ -14,11 +14,11 @@
  *      LiH/STO-3G @ R=3.015 bohr: -7.8823949575 Hartree
  *   2. Cross-validated against unrestricted Fock-space diagonalization approach
  *   3. Ground-state electron-number expectation value equals exactly requested
- *      n_electrons (sanity check that the sector restriction didn't
- *      accidentally include/exclude the wrong basis states).
+ *      n_electrons (sanity check that sector restriction didn't accidentally
+ *      include/exclude wrong basis states)
  *   4. Frozen-core FCI on LiH matches an independent frozen-core FCI
- *      calculation.
- *   5. Invalid-input handling.
+ *      calculation
+ *   5. Invalid-input handling
  */
 
 #include "../core/complex.h"
@@ -51,8 +51,8 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_h2_fci_matches_pyscf(void) {
-  printf("Test: H2/STO-3G FCI ground energy matches fci.FCI "
-         "reference (-1.1372759436 Hartree)\n");
+  printf(" === Test: H2/STO-3G FCI ground energy matches fci.FCI reference "
+         "(-1.1372759436 Hartree) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
@@ -90,11 +90,11 @@ static void test_h2_fci_matches_pyscf(void) {
     check_close(N_expect, 2.0, 1e-9,
                 "ground state electron-number expectation = 2 exactly");
 
-    /* Full-Fock-space cross-check: cheap here (16-dimensional), unlike the
+    /* NOTE: Full-Fock-space cross-check: cheap here (16-dimensional), unlike
      * LiH case below (4096-dimensional, too slow to fully diagonaliz ewith
-     * default hand-rolled dense complex eigensolver).
+     * default hand-rolled dense complex eigensolver)
      * Confirms sector-restricted result matches unrestricted approach the
-     * previously-duplicated test code used. */
+     * previously-duplicated test code used */
     cmatrix_t *H_full =
         second_quant_build_molecular_hamiltonian(2, h_mo, eri_mo, Enuc);
     eigen_t *eig_full = cmatrix_eigh_complex(H_full);
@@ -118,9 +118,9 @@ static void test_h2_fci_matches_pyscf(void) {
 }
 
 static void test_lih_fci_matches_pyscf_and_full_fock_space(void) {
-  printf("Test: LiH/STO-3G FCI matches reference -7.8823949575 Hartree and "
-         "unrestricted full-Fock-space diagonalization approach duplicated "
-         "test code used\n");
+  printf(" === Test: LiH/STO-3G FCI matches reference -7.8823949575 Hartree "
+         "and unrestricted full-Fock-space diagonalization approach duplicated "
+         "test code used ===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -172,8 +172,8 @@ static void test_lih_fci_matches_pyscf_and_full_fock_space(void) {
 }
 
 static void test_lih_frozen_core_fci(void) {
-  printf("Test: LiH/STO-3G frozen-core FCI (freeze Li 1s) matches an "
-         "independent frozen-core FCI calculation\n");
+  printf("  ===Test: LiH/STO-3G frozen-core FCI (freeze Li 1s) matches an "
+         "independent frozen-core FCI calculation ===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -227,7 +227,7 @@ static void test_lih_frozen_core_fci(void) {
 }
 
 static void test_invalid_inputs_rejected(void) {
-  printf("Test: invalid inputs are rejected cleanly\n");
+  printf(" === Test: invalid inputs are rejected cleanly ===\n");
 
   const double h_mo[4] = {0};
   const double eri_mo[16] = {0};
