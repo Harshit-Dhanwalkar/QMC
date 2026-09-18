@@ -19,6 +19,28 @@ make all
 - `make run-examples`: Executes all examples in sequence.
 - `make clean`: Cleans the `build/` and `output/` directories.
 
+---
+
+## Building and Installing as a Library
+
+QMC can also be built as a static library and installed system-wide (or to
+any prefix) for use from other projects, discoverable via `pkg-config`:
+
+```bash
+make lib                          # build/libqmc.a
+make install PREFIX=/usr/local    # lib + headers under include/qmc/ + qmc.pc
+make uninstall PREFIX=/usr/local  # removes build
+```
+
+`PREFIX` defaults to `/usr/local`. The generated `qmc.pc` records whatever
+`USE_LAPACK`/`PLOT_BACKEND` the install build was actually made with, so a
+downstream project's own build gets the right link flags automatically:
+
+```bash
+pkg-config --cflags --libs qmc
+gcc myprogram.c $(pkg-config --cflags --libs qmc) -fopenmp -o myprogram
+```
+
 ## Makefile Build Flags
 
 Pass configuration parameters directly to `make`

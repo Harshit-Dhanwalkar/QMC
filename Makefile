@@ -457,6 +457,60 @@ BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
               $(BUILD_DIR)/bench_eigensolver \
               $(BUILD_DIR)/bench_vmc_convergence
 
+## Library / install targets
+## Usage: make lib                          - build build/libqmc.a
+##        make install PREFIX=/usr/local    - install lib, headers, qmc.pc
+##        make uninstall PREFIX=/usr/local  - remove/uninstall lib
+## NOTE: PREFIX defaults to /usr/local. The generated qmc.pc's Libs: line records
+## whatever USE_LAPACK/PLOT_BACKEND this build was made with, so a downstream 
+## `pkg-config --libs qmc` gets the right flags (including -llapacke -lblas -llapack
+## when applicable) without the caller needing to know internal optional-dependency
+## choices
+PREFIX      ?= /usr/local
+LIBDIR      := $(PREFIX)/lib
+INCDIR      := $(PREFIX)/include/qmc
+PKGCONFDIR  := $(LIBDIR)/pkgconfig
+LIB_NAME    := libqmc.a
+LIB_PATH    := $(BUILD_DIR)/$(LIB_NAME)
+PC_PATH     := $(BUILD_DIR)/qmc.pc
+
+$(LIB_PATH): directories $(ALL_OBJS)
+	ar rcs $@ $(ALL_OBJS)
+
+lib: $(LIB_PATH)
+
+$(PC_PATH): directories
+	@printf '%s\n' \
+	  'prefix=$(PREFIX)' \
+	  'exec_prefix=$${prefix}' \
+	  'libdir=$${exec_prefix}/lib' \
+	  'includedir=$${prefix}/include/qmc' \
+	  '' \
+	  'Name: QMC' \
+	  'Description: Pure-C quantum mechanics and quantum chemistry library' \
+	  'Version: 0.1.0' \
+	  'Libs: -L$${libdir} -lqmc $(LDFLAGS)' \
+	  'Cflags: -I$${includedir}' \
+	  > $@
+
+pkgconfig: $(PC_PATH)
+
+install: lib pkgconfig
+	install -d $(LIBDIR) $(INCDIR) $(PKGCONFDIR)
+	install -m644 $(LIB_PATH) $(LIBDIR)/$(LIB_NAME)
+	install -m644 $(PC_PATH) $(PKGCONFDIR)/qmc.pc
+	cd $(CORE_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/core/{}' \;
+	cd $(PHYSICS_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/physics/{}' \;
+	cd $(EXPORT_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/export/{}' \;
+	cd $(LATEX_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/latex/{}' \;
+	@echo "Installed $(LIB_NAME), headers under $(INCDIR), and qmc.pc to $(PKGCONFDIR)"
+	@echo "Downstream projects: pkg-config --cflags --libs qmc"
+
+uninstall:
+	rm -f $(LIBDIR)/$(LIB_NAME) $(PKGCONFDIR)/qmc.pc
+	rm -rf $(INCDIR)
+
+
 ## Run targets
 examples:   directories $(OUTPUT_DIR) $(EXAMPLES)
 tests:      directories $(TESTS)
@@ -575,7 +629,7 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-%
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib pkgconfig install uninstall
 
 # Info target: print external dependency
 info:
