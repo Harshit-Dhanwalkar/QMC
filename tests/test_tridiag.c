@@ -1,6 +1,6 @@
 /*
  * Test: tridiagonal-solver optimizations in solve_tise_matrix (schrodinger.c)
- * and klein_gordon_1d (relativistic.c).
+ * and klein_gordon_1d (relativistic.c)
  *
  * Test proves that by building dense tridiagonal matrix functions
  */
@@ -27,7 +27,8 @@ static int check_close(double got, double expected, double tol,
 
 static int test_solve_tise_matrix_vs_dense(void) {
   int n = 60; // small enough for dense Jacobi to be fast
-  double x_min = -5.0, x_max = 5.0;
+  double x_min = -5.0;
+  double x_max = 5.0;
   double dx = (x_max - x_min) / (n - 1);
   double hbar_sq_2m = 0.5;
   double omega = 1.0;
@@ -68,6 +69,7 @@ static int test_solve_tise_matrix_vs_dense(void) {
   for (int k = 0; k < 5; k++) {
     char label[32];
     snprintf(label, sizeof label, "eigenvalue[%d]", k);
+
     fail |= check_close(eig_new->eigenvalues[k], eig_old->eigenvalues[k], 1e-8,
                         label);
   }
@@ -80,7 +82,8 @@ static int test_solve_tise_matrix_vs_dense(void) {
 
 static int test_solve_tise_matrix_eigenvectors_and_performance(void) {
   int n = 300;
-  double x_min = -10.0, x_max = 10.0;
+  double x_min = -10.0;
+  double x_max = 10.0;
   double dx = (x_max - x_min) / (n - 1);
   double hbar_sq_2m = 0.5;
   double omega = 1.0;
@@ -103,8 +106,9 @@ static int test_solve_tise_matrix_eigenvectors_and_performance(void) {
     printf("  FAIL: solve_tise_matrix returned NULL\n");
     return 1;
   }
+
   if (elapsed > 3.5) {
-    printf("  FAIL: took %.4fs, expected well under 2s -- looks like a "
+    printf("  FAIL: took %.4fs, expected well under 2s - looks like a "
            "regression back to a dense solver\n",
            elapsed);
     fail = 1;
@@ -169,9 +173,12 @@ static int test_solve_tise_matrix_eigenvectors_and_performance(void) {
 
 static int test_klein_gordon_vs_dense(void) {
   int N = 60;
-  double x_min = -5.0, x_max = 5.0;
+  double x_min = -5.0;
+  double x_max = 5.0;
   double dx = (x_max - x_min) / (N - 1);
-  double m = 1.0, hbar = 1.0, c = 1.0;
+  double m = 1.0;
+  double hbar = 1.0;
+  double c = 1.0;
 
   double *x = malloc(N * sizeof *x);
   double *V = calloc(N, sizeof *V); // free particle
@@ -220,6 +227,7 @@ static int test_klein_gordon_vs_dense(void) {
   for (int k = 0; k < 5; k++) {
     char label[32];
     snprintf(label, sizeof label, "eigenvalue[%d]", k);
+
     fail |= check_close(eig_new->eigenvalues[k], eig_old->eigenvalues[k], 1e-6,
                         label);
   }
@@ -231,6 +239,8 @@ static int test_klein_gordon_vs_dense(void) {
 }
 
 int main(void) {
+  printf(" > Tridiagonalisation tests\n");
+
   int failed = 0;
 
   printf("solve_tise_matrix: optimized vs. dense-Jacobi reference:\n");

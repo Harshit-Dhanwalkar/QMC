@@ -17,8 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// static int check_close(double got, double expected, double tol,
-//                        const char *label) {
 static int check_close(const char *label, double got, double expected,
                        double tol) {
   double err = fabs(got - expected);

@@ -5,9 +5,9 @@
  * H2/STO-3G at R=1.4 bohr (close to its equilibrium bond length), checked
  * against an independent reference computed RHF Hessian and
  * hessian.thermo.harmonic_analysis:
- *  RHF energy        :  -1.116714325062551 Hartree
- *  harmonic frequency:  5027.0165517 cm^-1 (single vibrational mode, 5
- *                       trans/rot modes at 0)
+ *  RHF energy        : -1.116714325062551 Hartree
+ *  harmonic frequency: 5027.0165517 cm^-1 (single vibrational mode, 5
+ *                      trans/rot modes at 0)
  */
 
 #include "../physics/molecular_hf.h"
@@ -37,8 +37,8 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-// H2 geometry-builder callback: rebuilds the 2-basis-function H2/STO-3G
-// system at whatever geometry the Hessian driver requests.
+// H2 geometry-builder callback: rebuilds the 2-basis-function H2/STO-3G system
+// at whatever geometry the Hessian driver requests
 static molecular_system_t *build_h2(const double geom[][3], int n_atoms,
                                     void *userdata) {
   (void)userdata;
@@ -96,8 +96,7 @@ static void test_h2_hessian_and_frequency(void) {
     return;
   }
 
-  // Symmetry sanity check: the Hessian must be symmetric (already enforced
-  // by construction, but confirm it wasn't accidentally broken).
+  // Symmetry sanity check: Hessian must be symmetric
   int dim = 6;
   double max_asym = 0.0;
   for (int i = 0; i < dim; i++) {
@@ -111,8 +110,8 @@ static void test_h2_hessian_and_frequency(void) {
   }
   check_close("Hessian is symmetric", max_asym, 0.0, 1e-12);
 
-  // Precise H-1 atomic mass (NOT the rounded integer - matters at the
-  // ~0.5% level for such a light atom).
+  // Precise H-1 atomic mass (Not rounded integer - matters at ~0.5% level for
+  // such a light atom)
   double masses[2] = {1.00782503207, 1.00782503207};
 
   molecular_vib_result_t *vib =

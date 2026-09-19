@@ -9,17 +9,17 @@
  *      Var(x)(t) = \sigma_0^2 * (1 + (\hbar * t / (2 * m * \sigma_0^2))^2)
  *    independently in every Cartesian direction. This isolates and validates
  *    momentum-space kinetic propagator (fft2d/ fft3d + phase factors) with
- *    potential term switched off entirely.
+ *    potential term switched off entirely
  * 2. 2D harmonic-oscillator coherent state: a Gaussian of width \sigma_0 =
  *    \sqrt(\hbar / (m * \omega)), displaced from origin, is an exact coherent
- *    state of the HO. It does NOT spread, and its centroid follows the
- *    trajectory exactly (Ehrenfest's theorem is exact for a harmonic
- *    potential):
+ *    state of the HO. It does Not spread, and its centroid follows trajectory
+ *    exactly (Ehrenfest's theorem is exact for a harmonic potential):
+ *
  *      <x>(t) = x_0 * \cos(\omega * t)
  *      <y>(t) = y_0 * \cos(\omega * t)
  *    The potential-operator half-steps together with kinetic propagator in same
- *    run.
- * 3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run.
+ *    run
+ * 3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run
  */
 
 #include "../core/complex.h"
@@ -83,7 +83,8 @@ static int test_free_particle_2d(void) {
   int fail = soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar,
                             mass) != 0;
 
-  double mean_x = 0.0, mean_y = 0.0;
+  double mean_x = 0.0;
+  double mean_y = 0.0;
   for (int ix = 0; ix < Nx; ix++)
     for (int iy = 0; iy < Ny; iy++) {
       double p = c_abs2(psi->data[ix * Ny + iy]) * dx * dy;
@@ -92,7 +93,8 @@ static int test_free_particle_2d(void) {
       mean_y += y[iy] * p;
     }
 
-  double var_x = 0.0, var_y = 0.0;
+  double var_x = 0.0;
+  double var_y = 0.0;
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       double p = c_abs2(psi->data[ix * Ny + iy]) * dx * dy;
@@ -130,10 +132,18 @@ static int test_free_particle_3d(void) {
   double Lx = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
   double Ly = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
   double Lz = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
-  double dx = Lx / Nx, dy = Ly / Ny, dz = Lz / Nz;
-  double hbar = 1.0, mass = 1.0;
-  double sigma0 = 1.3, x0 = -1.5, y0 = 0.5, z0 = 1.0;
-  double kx0 = 0.5, ky0 = -0.4, kz0 = 0.3;
+  double dx = Lx / Nx;
+  double dy = Ly / Ny;
+  double dz = Lz / Nz;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double sigma0 = 1.3;
+  double x0 = -1.5;
+  double y0 = 0.5;
+  double z0 = 1.0;
+  double kx0 = 0.5;
+  double ky0 = -0.4;
+  double kz0 = 0.3;
 
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
@@ -210,9 +220,12 @@ static int test_ho_coherent_state_2d(void) {
   double Lx = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
   double Ly = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
   double dx = Lx / Nx, dy = Ly / Ny;
-  double hbar = 1.0, mass = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double omega = 1.0;
   double sigma0 = sqrt(hbar / (mass * omega));
-  double x0 = 2.0, y0 = -1.5;
+  double x0 = 2.0;
+  double y0 = -1.5;
 
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
@@ -251,7 +264,8 @@ static int test_ho_coherent_state_2d(void) {
   int fail = soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar,
                             mass) != 0;
 
-  double mean_x = 0.0, mean_y = 0.0;
+  double mean_x = 0.0;
+  double mean_y = 0.0;
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       double p = c_abs2(psi->data[ix * Ny + iy]) * dx * dy;

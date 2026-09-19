@@ -7,9 +7,9 @@
  * structs
  *
  * Checks (against 4x3 real matrix with singular values):
- *  1. Singular values match the numpy reference.
+ *  1. Singular values match the numpy reference
  *  2. A = U * diag(S) * V^T reconstructs original matrix
- *  3. U and V both have orthonormal columns.
+ *  3. U and V both have orthonormal columns
  */
 
 #include "../core/complex.h"

@@ -1,5 +1,5 @@
 /*
- * Test: UCC ansatz (physics/ucc.c), wired to CCSD amplitudes.
+ * Test: UCC ansatz (physics/ucc.c), wired to CCSD amplitudes
  *
  * NOTE: H2/STO-3G's occ={0,1}/virt={2,3} (only 2 occupied, 2 virtual spin
  * orbitals) means general ucc_excitations_from_ccsd_amplitudes enumeration
@@ -12,13 +12,14 @@
  * ucc_prepare_state -> energy expectation against the JW Hamiltonian.
  *
  * 1. Core-math test: ucc_build_generator + ucc_prepare_state directly (no CCSD
- *    involved), \theta scanned by hand, minimum checked against exact FCI.
+ *    involved), \theta scanned by hand, minimum checked against exact FCI
  * 2. Wiring test: same, but with \theta values taken directly from converged
- *    CCSD run via ucc_excitations_from_ccsd_amplitudes, checking (a)
- *    CCSD-seeded UCC energy is already a legitimate variational upper bound on
- *    FCI, and (b) a local scan around that CCSD-seeded \theta cannot find any
- *    point with materially lower energy, i.e., CCSD amplitude for H2 already
- *    sits essentially at the exact UCC optimum.
+ *    CCSD run via ucc_excitations_from_ccsd_amplitudes, checking:
+ *    (a) CCSD-seeded UCC energy is already a legitimate variational upper bound
+ *        on FCI
+ *    (b) a local scan around that CCSD-seeded \theta cannot find any point with
+ *        materially lower energy, i.e., CCSD amplitude for H2 already sits
+ *        essentially at the exact UCC optimum
  */
 
 #include "../core/complex.h"
@@ -86,7 +87,8 @@ static void build_h2_setup(molecule_t **mol_out, basis_function_t **h0_out,
                            molecular_hf_result_t **hf_out, cmatrix_t **H_out,
                            double **h_mo_out, double **eri_mo_out) {
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
   *h0_out = molint_basis_sto3g_h(c0);
   *h1_out = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {*h0_out, *h1_out};
@@ -133,7 +135,8 @@ static void test_core_math_exact_h2(void) {
    * (-0.11295559...) to bracket minimum without needing a general optimizer in
    * this test
    */
-  double best_e = 1e9, best_theta = 0.0;
+  double best_e = 1e9;
+  double best_theta = 0.0;
   for (int s = -200; s <= 200; s++) {
     double theta = -0.2 + 0.4 * (s + 200) / 400.0;
     double e = ucc_energy_single_double(n_modes, hf_ref, H, 0, 1, 2, 3, theta);
@@ -226,10 +229,11 @@ static void test_ccsd_to_ucc_wiring(void) {
 
   /*
    * NOTE: now scan around the CCSD-seeded theta to confirm no nearby point has
-   * materially lower energy : i.e. CCSD amplitude is already essentially at UCC
+   * materially lower energy: i.e. CCSD amplitude is already essentially at UCC
    * optimum
    */
-  double best_e = 1e9, best_theta = theta_d[0];
+  double best_e = 1e9;
+  double best_theta = theta_d[0];
   for (int s = -200; s <= 200; s++) {
     double theta = theta_d[0] + 0.2 * s / 200.0;
     ucc_double_t d0 = doubles[0];
@@ -272,7 +276,7 @@ static void test_ccsd_to_ucc_wiring(void) {
 }
 
 static void test_invalid_input_rejected(void) {
-  printf("test_ucc_invalid_input:\n");
+  printf("  === Test ucc_invalid_input ===\n");
   check_true(ucc_build_generator(0, NULL, NULL, 0, NULL, NULL, 0) == NULL,
              "n_modes<1 rejected");
 
@@ -291,6 +295,8 @@ static void test_invalid_input_rejected(void) {
 }
 
 int main(void) {
+  printf(" > UCC tests\n");
+
   test_core_math_exact_h2();
   test_ccsd_to_ucc_wiring();
   test_invalid_input_rejected();

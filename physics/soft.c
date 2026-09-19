@@ -32,11 +32,13 @@ int soft_evolve_2d(cvector_t *psi, const double *V, int Nx, int Ny, double dx,
 
   for (int ix = 0; ix < Nx; ix++) {
     double kx = (ix < Nx / 2) ? ix * dkx : (ix - Nx) * dkx;
+
     kx2[ix] = kx * kx;
   }
 
   for (int iy = 0; iy < Ny; iy++) {
     double ky = (iy < Ny / 2) ? iy * dky : (iy - Ny) * dky;
+
     ky2[iy] = ky * ky;
   }
 
@@ -44,6 +46,7 @@ int soft_evolve_2d(cvector_t *psi, const double *V, int Nx, int Ny, double dx,
   for (int s = 0; s < steps; s++) {
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
+
       psi->data[i] = c_mul(psi->data[i], c_exp(c_imag(phase)));
     }
 
@@ -52,13 +55,16 @@ int soft_evolve_2d(cvector_t *psi, const double *V, int Nx, int Ny, double dx,
       for (int iy = 0; iy < Ny; iy++) {
         int idx = ix * Ny + iy;
         double phase = -hbar_over_2m * (kx2[ix] + ky2[iy]) * dt;
+
         psi->data[idx] = c_mul(psi->data[idx], c_exp(c_imag(phase)));
       }
     }
+
     ifft2d(psi, Nx, Ny);
 
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
+
       psi->data[i] = c_mul(psi->data[i], c_exp(c_imag(phase)));
     }
   }
@@ -95,16 +101,19 @@ int soft_evolve_3d(cvector_t *psi, const double *V, int Nx, int Ny, int Nz,
 
   for (int ix = 0; ix < Nx; ix++) {
     double kx = (ix < Nx / 2) ? ix * dkx : (ix - Nx) * dkx;
+
     kx2[ix] = kx * kx;
   }
 
   for (int iy = 0; iy < Ny; iy++) {
     double ky = (iy < Ny / 2) ? iy * dky : (iy - Ny) * dky;
+
     ky2[iy] = ky * ky;
   }
 
   for (int iz = 0; iz < Nz; iz++) {
     double kz = (iz < Nz / 2) ? iz * dkz : (iz - Nz) * dkz;
+
     kz2[iz] = kz * kz;
   }
 
@@ -112,6 +121,7 @@ int soft_evolve_3d(cvector_t *psi, const double *V, int Nx, int Ny, int Nz,
   for (int s = 0; s < steps; s++) {
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
+
       psi->data[i] = c_mul(psi->data[i], c_exp(c_imag(phase)));
     }
 
@@ -121,14 +131,17 @@ int soft_evolve_3d(cvector_t *psi, const double *V, int Nx, int Ny, int Nz,
         for (int iz = 0; iz < Nz; iz++) {
           int idx = (ix * Ny + iy) * Nz + iz;
           double phase = -hbar_over_2m * (kx2[ix] + ky2[iy] + kz2[iz]) * dt;
+
           psi->data[idx] = c_mul(psi->data[idx], c_exp(c_imag(phase)));
         }
       }
     }
+
     ifft3d(psi, Nx, Ny, Nz);
 
     for (int i = 0; i < n; i++) {
       double phase = -V[i] * dt / 2.0;
+
       psi->data[i] = c_mul(psi->data[i], c_exp(c_imag(phase)));
     }
   }

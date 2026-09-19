@@ -26,9 +26,10 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-/* Exact Hermite roots (physicists' convention H_n)
+/*
+ * Exact Hermite roots (physicists' convention H_n)
  *
- * Returns descending (index 0 = largest), so these are compared reversed.
+ * Returns descending (index 0 = largest), so these are compared reversed
  */
 static const double exact_roots_n5[5] = {-2.02018287045609, -0.958572464613819,
                                          0.0, 0.958572464613819,
@@ -39,7 +40,7 @@ static const double exact_roots_n10[10] = {
     2.53273167423279,   3.43615911883774};
 
 static void test_hermite_basic(void) {
-  printf("Test: hermite() basic values and recurrence consistency\n");
+  printf("  === Test: hermite() basic values and recurrence consistency ===\n");
 
   check_close(hermite(0, 1.234), 1.0, 1e-12, "H_0(x)=1 for any x");
   check_close(hermite(1, 2.0), 4.0, 1e-12, "H_1(x)=2x");
@@ -57,7 +58,7 @@ static void test_hermite_basic(void) {
 }
 
 static void test_hermite_zeros_matches_exact_roots(void) {
-  printf("Test: hermite_zeros (Golub-Welsch) matches exact roots for n=5,10");
+  printf("  === Test: hermite_zeros (Golub-Welsch) matches exact roots for n=5,10 ===\n");
 
   for (int k = 0; k < 5; k++) {
     double got = hermite_zeros(5, k);
@@ -75,8 +76,7 @@ static void test_hermite_zeros_matches_exact_roots(void) {
 }
 
 static void test_hermite_zeros_are_actually_roots(void) {
-  printf(
-      "Test: every returned zero genuinely satisfies H_n(x)=0, for n up to 30");
+  printf("  === Test: every returned zero genuinely satisfies H_n(x)=0, for n up to 30 ===\n");
 
   for (int n = 2; n <= 30; n += 4) {
     double *zeros = malloc((size_t)n * sizeof(double));
@@ -107,7 +107,7 @@ static void test_hermite_zeros_are_actually_roots(void) {
 }
 
 static void test_hermite_zeros_all_matches_per_index(void) {
-  printf("Test: hermite_zeros_all's bulk result");
+  printf("  === Test: hermite_zeros_all's bulk result ===\n");
 
   int n = 12;
   double *bulk = malloc((size_t)n * sizeof(double));
@@ -126,8 +126,8 @@ static void test_hermite_zeros_all_matches_per_index(void) {
 }
 
 static void test_legendre_array_basic(void) {
-  printf(" > Test: legendre_array evaluates the plain (m=0) Legendre polynomial "
-         "at each point");
+  printf("  === Test: legendre_array evaluates the plain (m=0) Legendre "
+         "polynomial at each point ===\n");
 
   const double x[4] = {-1.0, -0.5, 0.0, 1.0};
   double P[4];
@@ -150,7 +150,7 @@ static void test_legendre_array_basic(void) {
 }
 
 int main(void) {
-  printf("Tests (hermite.c, legendre.c)\n");
+  printf(" > Tests hermite, legendre polynomials\n");
 
   test_hermite_basic();
   test_hermite_zeros_matches_exact_roots();

@@ -1,17 +1,19 @@
 /*
  * Test + demonstration: central_potential_radial_solve() validated directly
- * against two closed-form/independently-computed 3D quantum systems.
+ * against two closed-form/independently-computed 3D quantum systems
  *
  * 1. 3D isotropic harmonic oscillator: exact energies
- *     E_(n,l) = \hbar * \omega*(2n + l + 3/2), n=0,1,2,..., l=0,1,2,... - about
- *   as clean closed form as exists for a 3D central potential, and exercises
- *   solver at several l simultaneously (different centrifugal barriers).
+ *     E_(n,l) = \hbar * \omega * (2n + l + 3/2), n=0,1,2,..., l=0,1,2,... -
+ *    about as clean closed form as exists for a 3D central potential, and
+ *    exercises solver at several l simultaneously (different centrifugal
+ *    barriers)
  * 2. 3D finite spherical well (l=0): bound-state energies satisfy
  *   transcendental condition
- *    k * \cot(k * a) = -\kappa (k=\sqrt(2m * (E+V0))/\hbar
- *    \kappa = \sqrt(-2m * E) / \hbar, E<0), found here via independent
- *   bisection root-finding (NOT using central_potential_radial_solve itself)
- *   before comparing to the solver's output.
+ *    k * \cot(k * a) = -\kappa (k = \sqrt(2m * (E + V0))/\hbar \kappa =
+ *    \sqrt(-2m * E) / \hbar, E<0)
+ *   found here via independent bisection root-finding (Not using
+ *   central_potential_radial_solve itself) before comparing to the solver's
+ *   output
  */
 
 #include "../core/matrix.h"
@@ -30,12 +32,15 @@ static int check_close(double got, double expected, double tol,
   return err > tol;
 }
 
-// Test 1: 3D isotropic harmonic oscillator, l=0,1,2, lowest 3 states each.
+// Test 1: 3D isotropic harmonic oscillator, l=0,1,2, lowest 3 states each
 static int test_3d_harmonic_oscillator(void) {
   int N = 200;
-  double r_min = 0.01, r_max = 8.0;
+  double r_min = 0.01;
+  double r_max = 8.0;
   double *r = linspace(r_min, r_max, N);
-  double hbar = 1.0, mass = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double omega = 1.0;
 
   int fail = 0;
   for (int l = 0; l <= 2; l++) {
@@ -107,16 +112,20 @@ static int find_well_bound_states(double V0, double a, double m, double hbar,
   return found;
 }
 
-// Test 2: 3D finite spherical well, l=0 bound states.
+// Test 2: 3D finite spherical well, l=0 bound states
 static int test_finite_spherical_well(void) {
-  double a = 3.0, V0 = 5.0, mass = 1.0, hbar = 1.0;
+  double a = 3.0;
+  double V0 = 5.0;
+  double mass = 1.0;
+  double hbar = 1.0;
 
   double exact[8];
   int n_exact = find_well_bound_states(V0, a, mass, hbar, exact, 8);
   printf("  found %d bound states via independent root-finding\n", n_exact);
 
   int N = 220;
-  double r_min = 0.01, r_max = 18.0;
+  double r_min = 0.01;
+  double r_max = 18.0;
   double *r = linspace(r_min, r_max, N);
   double params[2] = {a, V0};
   eigen_t *eig = central_potential_radial_solve(r, N, 0, hbar, mass,
@@ -133,6 +142,7 @@ static int test_finite_spherical_well(void) {
   for (int i = 0; i < n_exact; i++) {
     char label[32];
     snprintf(label, sizeof label, "bound state %d", i);
+
     fail |= check_close(eig->eigenvalues[i], exact[i], 0.05, label);
   }
 

@@ -1,10 +1,10 @@
 /*
- * Test: general central-potential radial solver.
+ * Test: general central-potential radial solver
  *
  * 1. 3D isotropic harmonic oscillator, l=0, checked against exact spectrum :
- *    E_{n_r,l} = \hbar * \omega * (2 * n_r + l + 3/2).
+ *    E_{n_r,l} = \hbar * \omega * (2 * n_r + l + 3/2)
  * 2. Hydrogen regression: hydrogen_radial_solve must reproduce
- *   hydrogen_energy_level(1) to same accuracy as before the refactor.
+ *    hydrogen_energy_level(1) to same accuracy as before the refactor
  */
 
 #include "../core/constants.h"
@@ -23,8 +23,7 @@
 
 static int test_harmonic_3d(void) {
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
-  double r_max =
-      RUNNING_ON_VALGRIND ? 8.0 : 15.0; // in units where \hbar = m = \omega = 1
+  double r_max = RUNNING_ON_VALGRIND ? 8.0 : 15.0;
   double r_min = 1e-3;
   double *r = malloc(N * sizeof *r);
   double dr = (r_max - r_min) / (N - 1);
@@ -33,7 +32,9 @@ static int test_harmonic_3d(void) {
     r[i] = r_min + i * dr;
   }
 
-  double hbar = 1.0, mass = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double omega = 1.0;
   int l = 0;
   eigen_t *eig =
       central_potential_radial_solve(r, N, l, hbar, mass, V_harmonic, &omega);

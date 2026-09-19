@@ -1,6 +1,6 @@
 /*
  * Test: Linear-response TDDFT, Tamm-Dancoff Approximation (TDA), for
- * closed-shell Kohn-Sham LDA (Slater exchange + PZ81 correlation).
+ * closed-shell Kohn-Sham LDA (Slater exchange + PZ81 correlation)
  *
  * Reference values from tdscf.TDA(mf) with xc='LDA,PZ' (exactly this library's
  * LDA functional):
@@ -37,7 +37,7 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_h2(void) {
-  printf("Test: H2/STO-3G TDA-LDA (1 excitation)\n");
+  printf("  === Test: H2/STO-3G TDA-LDA (1 excitation) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
@@ -72,8 +72,8 @@ static void test_h2(void) {
 }
 
 static void test_lih(void) {
-  printf("Test: LiH/STO-3G TDA-LDA (5 excitations, incl. a degenerate "
-         "pair)\n");
+  printf("  === Test: LiH/STO-3G TDA-LDA (5 excitations, incl. a degenerate "
+         "pair) ===\n");
 
   double R = 3.015;
   double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
@@ -123,13 +123,15 @@ static void test_lih(void) {
 }
 
 static void test_invalid_inputs(void) {
-  printf("Test: invalid inputs are rejected cleanly\n");
+  printf("  === Test: invalid inputs are rejected cleanly ===\n");
 
   check(tddft_tda_lda(NULL, 2, NULL, NULL, NULL) == NULL,
         "all-NULL input should be rejected");
 }
 
 int main(void) {
+  printf(" > TDDFT for H2 and LiH tests\n");
+
   test_h2();
   test_lih();
   test_invalid_inputs();

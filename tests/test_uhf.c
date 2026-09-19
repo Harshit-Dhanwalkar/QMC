@@ -102,6 +102,8 @@ static void test_li_atom_uhf(void) {
 }
 
 int main(void) {
+  printf(" > UHF tests\n");
+
   test_li_atom_uhf();
 
   if (failures == 0) {

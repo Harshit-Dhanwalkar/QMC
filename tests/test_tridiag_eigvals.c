@@ -1,13 +1,13 @@
 /*
  * Test: tridiag_eigvals (core/linalg/tridiag_eigh.c) - eigenvalues-only
- * fast path.
+ * fast path
  *
  * 1. Discrete Laplacian (diag=2, offdiag=-1): tridiag_eigvals must match known
- *    closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1)).
+ *    closed-form eigenvalues \lambda_k = 2 - 2 * \cos(k * \pi / (n+1))
  * 2. tridiag_eigvals must agree exactly (same shared core, skipping eigenvector
  *    bookkeeping) with tridiag_eigh's eigenvalues, across several random
- *    tridiagonal matrices.
- * 3. tridiag_eigvals's eigenvectors field must be NULL.
+ *    tridiagonal matrices
+ * 3. tridiag_eigvals's eigenvectors field must be NULL
  */
 
 #include "../core/linalg/tridiag_eigh.h"
@@ -108,6 +108,7 @@ static int test_matches_tridiag_eigh(unsigned int seed, int N) {
     char label[64];
     snprintf(label, sizeof label, "N=%d max|tridiag_eigh - tridiag_eigvals|",
              N);
+
     fail |= check_close(max_diff, 0.0, 1e-10, label);
   }
 
@@ -126,6 +127,8 @@ static int test_matches_tridiag_eigh(unsigned int seed, int N) {
 }
 
 int main(void) {
+  printf(" > Tridiagonalisation eigen values tests\n");
+
   int failed = 0;
 
   printf("Discrete Laplacian vs analytic closed form:\n");

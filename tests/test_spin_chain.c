@@ -20,7 +20,7 @@
  * since S^z_q preserves S^z and only moves spectral weight into a single
  * (S^z=0, k=q) sector).
  *
- * NOTE:: for N=6 the ground state sits at momentum k=3 (i.e. k=\pi), NOT k=0.
+ * NOTE:: for N=6 the ground state sits at momentum k=3 (i.e. k=\pi), Not k=0
  * This is a real, well-known feature of the finite-size Heisenberg
  * antiferromagnet, not an implementation detail: for even N ground-state
  * momentum is 0 when N/2 is even and \pi when N/2 is odd (Marshall's sign rule
@@ -99,10 +99,11 @@ static double ring_ground_energy(int N) {
 
 static void test_ground_energies(void) {
 #if RUNNING_ON_VALGRIND
-  printf("\n-- Ground-state energies (Valgrind: only N=4) --\n");
+  printf("  === Ground-state energies (Valgrind: only N=4) ===\n");
   check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
 #else
-  printf("\n-- Ground-state energies vs exact-diagonalization reference --\n");
+  printf(
+      "  === Ground-state energies vs exact-diagonalization reference ===\n");
   check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
   check_close(ring_ground_energy(6), -2.802776, 1e-5, "N=6 E0");
   check_close(ring_ground_energy(8), -3.651093, 1e-5, "N=8 E0");
@@ -110,7 +111,7 @@ static void test_ground_energies(void) {
 }
 
 static void test_hamiltonian_hermitian_and_sector_sizes(void) {
-  printf("\n-- Sector bookkeeping sanity checks --\n");
+  printf("  === Sector bookkeeping sanity checks ===\n");
   int N = 8;
   long total = 0;
 
@@ -128,9 +129,9 @@ static void test_hamiltonian_hermitian_and_sector_sizes(void) {
   check(total == (1L << N), "sum of all sector dims equals 2^N (8 sites)");
 }
 
-/* Cross-check S^z_q construction against exact sum rule I0 */
+// Cross-check S^z_q construction against exact sum rule I0
 static void test_szq_sum_rule(void) {
-  printf("\n-- S^z_q excitation: sum-rule cross-check (N=6, q index 1) --\n");
+  printf("  === S^z_q excitation: sum-rule cross-check (N=6, q index 1) ===\n");
   /* Ground-state momentum for N=6 is k=pi (index 3), not k=0
    * (NOTE: Marshall's sign rule / Lieb-Schultz-Mattis: N/2=3 is odd) */
   int N = 6;
@@ -182,13 +183,16 @@ static void test_szq_sum_rule(void) {
   spin_sector_free(sec0);
 }
 
-/* End-to-end: continued-fraction S(q,omega) should integrate (over \omega)
+/*
+ * End-to-end: continued-fraction S(q,omega) should integrate (over \omega)
  * to I0, since \sum_n |<n|f0>|^2 = ||f0||^2 = 1 for normalized start vector,
- * and S includes I0 prefactor so \int S(q,w) d\omega over all \omega equals I0.
+ * and S includes I0 prefactor so \int S(q,w) d\omega over all \omega equals I0
  */
 static void test_continued_fraction_integrates_to_I0(void) {
-  printf("\n-- Continued-fraction spectral weight vs I0 (N=6, q index 1) --\n");
-  // Same k=\pi ground sector as test_szq_\sum_rule
+  printf(
+      "  === Continued-fraction spectral weight vs I0 (N=6, q index 1) ===\n");
+  // Same k = \pi ground sector as test_szq_\sum_rule
+
   int N = 6;
   int nup = N / 2;
   int q_index = 1;
@@ -250,7 +254,7 @@ static void test_continued_fraction_integrates_to_I0(void) {
 /* Reflection (spatial parity) symmetry: R^2=I, Hermiticity, [H,R]=0, and lower
  * of the two parity blocks' ground energies must equal the sector's own
  * (unsplit) ground energy. For both N=6 and N=8, at both momenta that support a
- * reflection quantum number (k=0 and k=N/2).
+ * reflection quantum number (k=0 and k=N/2)
  *
  * NOTE: This checks ground energies rather than the full spectrum: requesting
  * every eigenvalue via lanczos_eigs(H, dim, dim, tol) can hit early Lanczos
@@ -259,8 +263,8 @@ static void test_continued_fraction_integrates_to_I0(void) {
  * and return NULL well short of a full spectrum
  */
 static void test_reflection_parity(void) {
-  printf("\n-- Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
-         "under parity splitting --\n");
+  printf("  === Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
+         "under parity splitting ===\n");
 
   struct {
     int N, nup, k;
@@ -406,15 +410,16 @@ static void test_reflection_parity(void) {
   spin_sector_free(bad);
 }
 
-/* Spin-inversion (global spin-flip) symmetry: I^2=I, Hermiticity, [H,I]=0, and
+/*
+ * Spin-inversion (global spin-flip) symmetry: I^2=I, Hermiticity, [H,I]=0, and
  * lower of two parity blocks' ground energies must equal sector's own (unsplit)
  * ground energy. Checked at half filling (required for I to be a symmetry of a
  * fixed sector) across every momentum k, since, unlike reflection R, I isn't
  * restricted to k=0/N/2
  */
 static void test_spin_inversion(void) {
-  printf("\n-- Spin inversion: I^2=I, [H,I]=0, ground energy preserved under "
-         "parity splitting, at every k (half filling) --\n");
+  printf("  === Spin inversion: I^2=I, [H,I]=0, ground energy preserved under "
+         "parity splitting, at every k (half filling) ===\n");
 
   struct {
     int N, nup;

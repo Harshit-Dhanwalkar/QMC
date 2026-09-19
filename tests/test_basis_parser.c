@@ -8,13 +8,13 @@
  *      as hardcoded builders, Szabo & Ostlund Table 3.7 / EMSL Basis Set
  *      Exchange) and diff every exponent/coefficient against hardcoded arrays
  *      exactly (they are literature numbers, so this must match to full double
- *      precision).
+ *      precision)
  *   2. Run the parser's output through the exact downstream pipeline
  *      (molecular_rhf) used by test_molecular_hf.c / test_lih.c and confirm SCF
  *      energies match those tests' already-validated reference values (H2
  *      -1.116714 Hartree at R=1.4 bohr; LiH's RHF energy), which only happens
- *       if every primitive, contraction coefficient, and Cartesian-component
- *       expansion (including the SP-shell split) is correct end to end.
+ *      if every primitive, contraction coefficient, and Cartesian-component
+ *      expansion (including the SP-shell split) is correct end to end
  *
  * Covers: malformed input rejection, D-exponent Fortran notation, comment
  * lines, element lookup, and general (non-minimal) multi-shell-type parsing via
