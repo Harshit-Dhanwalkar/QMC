@@ -463,21 +463,28 @@ BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
 ##        make uninstall PREFIX=/usr/local  - remove/uninstall lib
 ## NOTE: PREFIX defaults to /usr/local. The generated qmc.pc's Libs: line records
 ## whatever USE_LAPACK/PLOT_BACKEND this build was made with, so a downstream 
-## `pkg-config --libs qmc` gets the right flags (including -llapacke -lblas -llapack
-## when applicable) without the caller needing to know internal optional-dependency
-## choices
+## `pkg-config --libs qmc` gets right flags (including -llapacke -lblas -llapack
+## when applicable) without caller needing to know internal optional-dependency choices
 PREFIX      ?= /usr/local
 LIBDIR      := $(PREFIX)/lib
 INCDIR      := $(PREFIX)/include/qmc
 PKGCONFDIR  := $(LIBDIR)/pkgconfig
 LIB_NAME    := libqmc.a
 LIB_PATH    := $(BUILD_DIR)/$(LIB_NAME)
+SHLIB_NAME  := libqmc.so
+SHLIB_PATH  := $(BUILD_DIR)/$(SHLIB_NAME)
 PC_PATH     := $(BUILD_DIR)/qmc.pc
 
 $(LIB_PATH): directories $(ALL_OBJS)
 	ar rcs $@ $(ALL_OBJS)
 
 lib: $(LIB_PATH)
+
+# All objects are built with -fPIC, so same object set links into a shared object
+$(SHLIB_PATH): directories $(ALL_OBJS)
+	$(CC) -shared -o $@ $(ALL_OBJS) $(CFLAGS) $(LDFLAGS)
+
+shared: $(SHLIB_PATH)
 
 $(PC_PATH): directories
 	@printf '%s\n' \
@@ -495,19 +502,20 @@ $(PC_PATH): directories
 
 pkgconfig: $(PC_PATH)
 
-install: lib pkgconfig
+install: lib shared pkgconfig
 	install -d $(LIBDIR) $(INCDIR) $(PKGCONFDIR)
 	install -m644 $(LIB_PATH) $(LIBDIR)/$(LIB_NAME)
+	install -m644 $(SHLIB_PATH) $(LIBDIR)/$(SHLIB_NAME)
 	install -m644 $(PC_PATH) $(PKGCONFDIR)/qmc.pc
 	cd $(CORE_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/core/{}' \;
 	cd $(PHYSICS_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/physics/{}' \;
 	cd $(EXPORT_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/export/{}' \;
 	cd $(LATEX_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/latex/{}' \;
-	@echo "Installed $(LIB_NAME), headers under $(INCDIR), and qmc.pc to $(PKGCONFDIR)"
+	@echo "Installed $(LIB_NAME), $(SHLIB_NAME), headers under $(INCDIR), and qmc.pc to $(PKGCONFDIR)"
 	@echo "Downstream projects: pkg-config --cflags --libs qmc"
 
 uninstall:
-	rm -f $(LIBDIR)/$(LIB_NAME) $(PKGCONFDIR)/qmc.pc
+	rm -f $(LIBDIR)/$(LIB_NAME) $(LIBDIR)/$(SHLIB_NAME) $(PKGCONFDIR)/qmc.pc
 	rm -rf $(INCDIR)
 
 
@@ -629,7 +637,7 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib pkgconfig install uninstall
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall
 
 # Info target: print external dependency
 info:
