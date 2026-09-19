@@ -214,6 +214,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/second_quant.c \
                $(PHYSICS_DIR)/molecular_integrals.c \
                $(PHYSICS_DIR)/molecular_hf.c \
+               $(PHYSICS_DIR)/geometry_optimization.c \
                $(PHYSICS_DIR)/ccsd.c \
                $(PHYSICS_DIR)/ccsd_t.c \
                $(PHYSICS_DIR)/ucc.c \
