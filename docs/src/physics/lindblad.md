@@ -1,9 +1,10 @@
 # Lindblad Master Equation (Open Quantum Systems)
 
-The Lindblad (GKSL) equation describes the evolution of an open quantum system's density matrix under both unitary (Hamiltonian) dynamics and dissipative coupling to an environment. Natural units ($\hbar=m=1$). Implemented in `physics/lindblad.h`.
+The Lindblad (GKSL) equation describes the evolution of an open quantum system's density matrix under both unitary (Hamiltonian) dynamics and dissipative coupling to an environment.
+Natural units ($\hbar=m=1$). Implemented in `physics/lindblad.h`.
 
 $$
-$$\frac{d\rho}{dt} = -\frac{i}{\hbar} [H, \rho] + \sum_k \gamma_k \left( L_k \rho L_k^\dagger - \frac{1}{2} \{ L_k^\dagger L_k, \rho \} \right)$$
+\frac{d\rho}{dt} = -\frac{i}{\hbar} [H, \rho] + \sum_k \gamma_k \left( L_k \rho L_k^\dagger - \frac{1}{2} \{ L_k^\dagger L_k, \rho \} \right)
 $$
 
 <!-- $$ -->

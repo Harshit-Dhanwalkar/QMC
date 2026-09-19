@@ -1,6 +1,8 @@
 # Boson Sampling
 
-Transition amplitudes/probabilities for $N$ indistinguishable photons passing through an $M\times M$ linear-optical network described by a unitary $U$, from an input Fock configuration to an output Fock configuration. Builds directly on the bosonic permanent from [Identical Particles](identical_particles.md). Implemented in `physics/boson_sampling.h`.
+Transition amplitudes/probabilities for $N$ indistinguishable photons passing through an $M\times M$ linear-optical network described by a unitary $U$, from an input Fock configuration to an output Fock configuration.
+Builds directly on the bosonic permanent from [Identical Particles](identical.md).
+Implemented in `physics/boson_sampling.h`.
 
 ## From permanent to transition amplitude
 

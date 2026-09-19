@@ -19,7 +19,7 @@ edit-url-template = "https://github.com/Harshit-Dhanwalkar/QMC/edit/main/docs/sr
 # default-theme = "navy"
 # preferred-dark-theme = "navy"
 
-[output.linkcheck]
+[output.linkcheck2]
 follow-web-links = false
 
 [output.html.search]

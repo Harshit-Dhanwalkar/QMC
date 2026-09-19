@@ -22,7 +22,7 @@ jobs:
     env:
       MDBOOK_VERSION: "0.5.4"
       MDBOOK_KATEX_VERSION: "0.10.0"
-      MDBOOK_LINKCHECK_VERSION: "0.7.7"
+      MDBOOK_LINKCHECK2_VERSION: "0.12.2"
 
     steps:
       - name: Checkout Repository
@@ -59,23 +59,23 @@ jobs:
           mkdir -p bin
           cargo install mdbook-katex --version "${MDBOOK_KATEX_VERSION}" --root .
 
-      # Cache mdbook-linkcheck
-      - name: Cache mdbook-linkcheck
-        id: cache-linkcheck
+      # Cache mdbook-linkcheck2
+      - name: Cache mdbook-linkcheck2
+        id: cache-linkcheck2
         uses: actions/cache@v5
         with:
-          path: bin/mdbook-linkcheck
-          key: mdbook-linkcheck-v${{ env.MDBOOK_LINKCHECK_VERSION }}-${{ runner.os }}
+          path: bin/mdbook-linkcheck2
+          key: mdbook-linkcheck2-v${{ env.MDBOOK_LINKCHECK2_VERSION }}-${{ runner.os }}
 
-      - name: Install mdbook-linkcheck
-        if: steps.cache-linkcheck.outputs.cache-hit != 'true'
+      - name: Install mdbook-linkcheck2
+        if: steps.cache-linkcheck2.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
-          curl -sSL -o bin/mdbook-linkcheck.zip \
-            "https://github.com/Michael-F-Bryan/mdbook-linkcheck/releases/download/v${MDBOOK_LINKCHECK_VERSION}/mdbook-linkcheck.x86_64-unknown-linux-gnu.zip"
-          unzip -o bin/mdbook-linkcheck.zip -d bin
-          chmod +x bin/mdbook-linkcheck
-          rm bin/mdbook-linkcheck.zip
+          curl -sSL -o bin/mdbook-linkcheck2.tar.gz \
+            "https://github.com/marxin/mdbook-linkcheck2/releases/download/v${MDBOOK_LINKCHECK2_VERSION}/mdbook-linkcheck2-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf bin/mdbook-linkcheck2.tar.gz -C bin
+          chmod +x bin/mdbook-linkcheck2
+          rm bin/mdbook-linkcheck2.tar.gz
 
       # Build, Validate links and Deploy Docs
       - name: Build Documentation

@@ -54,6 +54,7 @@
 
 - [Numerov Integrator](internals/numerov.md)
 - [Linear Algebra Core](internals/linalg.md)
+- [Special Functions](internals/special.md)
 - [Crank-Nicolson Solver](internals/crank_nicolson.md)
 - [Plotting and Data Export](internals/plotting.md)
 

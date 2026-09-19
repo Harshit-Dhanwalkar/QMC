@@ -95,4 +95,4 @@ The numerical solver is cross‑checked against the analytic energies and wavefu
 
 - [Central Potentials](central_potential.md) - the generic radial solver used underneath.
 - [Special Functions](../internals/special.md) - Laguerre polynomials used for analytic wavefunctions.
-- [Fine Structure](fine_structure.md/) - adds relativistic corrections to the hydrogen spectrum.
+- [Fine Structure](fine_structure.md) - adds relativistic corrections to the hydrogen spectrum.
