@@ -3,19 +3,20 @@
 
 /*
  * Generic Cartesian geometry optimizer, driven by an energy+analytic-gradient
- * callback so it isn't tied to RHF/UHF or to any one molecule's basis-set
- * construction. eg_49_geometry_optimization.c and
- * NOTE: eg_66_uhf_geometry_optimization.c each hand-roll a scalar
- * (bond-length-only) steepest-descent loop that rebuilds the whole
- * basis/molecule per force evaluation; this generalizes that idea to a full
- * n_atoms*3 Cartesian coordinate vector so it also covers non-collinear (bent,
- * polyatomic) geometries, while keeping the same "rebuild from these
- * coordinates and hand back energy+gradient" shape those examples already use.
+ * callback (Not tied to RHF/UHF or to any one molecule's basis-set
+ * construction)
+ * NOTE: eg_49_geometry_optimization.c and eg_66_uhf_geometry_optimization.c
+ * each hand-roll a scalar (bond-length-only) steepest-descent loop that
+ * rebuilds the whole basis/molecule per force evaluation; this generalizes that
+ * idea to a full n_atoms*3 Cartesian coordinate vector so it also covers
+ * non-collinear (bent, polyatomic) geometries, while keeping the same "rebuild
+ * from these coordinates and hand back energy+gradient" shape those examples
+ * already use
  */
 
 /*
  * Evaluate energy and its Cartesian gradient at a given geometry.
- *  coords    : input, length n_atoms*3 (coords[3*A+d], d=0,1,2 for x,y,z)
+ *  coords    : input, length n_atoms*3 (coords[3 * A + d], d=0,1,2 for x,y,z)
  *  n_atoms   : number of atoms (fixed for the lifetime of the optimization)
  *  user_data : opaque pointer forwarded from the optimizer call, typically
  *              holding the basis-set kind, charges, electron count, and any SCF
@@ -44,9 +45,8 @@ typedef struct {
 /*
  * Steepest descent on the analytic gradient, with simple backtracking (halving
  * the step) whenever a step would raise the energy - the same "move downhill
- * along the force" idea eg_49/eg_66 use, made robust to a poorly-scaled initial
- * step and generalized to n_atoms*3 coordinates instead of one scalar bond
- * length.
+ * along the force", made robust to a poorly-scaled initial step and generalized
+ * to n_atoms*3 coordinates instead of one scalar bond length
  *
  * func/user_data: see geom_energy_grad_fn above
  * coords0       : starting geometry, length n_atoms*3 (not modified)
@@ -56,9 +56,9 @@ typedef struct {
  * max_iter      : outer iteration cap (each outer iteration may backtrack the
  *                 step internally without consuming an outer iteration)
  *
- * Returns NULL on invalid input (n_atoms<=0, step0<=0, grad_tol<=0,
- * max_iter<=0) or allocation failure. Otherwise always returns a result (check
- * ->converged); free with geometry_optimization_result_free
+ * Returns NULL on invalid input (n_atoms <= 0, step0 <= 0, grad_tol <= 0,
+ * max_iter <= 0) or allocation failure. Otherwise always returns a result
+ * (check -> converged)
  */
 geometry_optimization_result_t *
 optimize_geometry_steepest_descent(geom_energy_grad_fn func, void *user_data,

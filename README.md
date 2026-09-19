@@ -228,6 +228,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_fermi_golden_rule.c</code></li>
   <li><code>test_fft.c</code></li>
   <li><code>test_fine_structure.c</code></li>
+  <li><code>test_geometry_optimization.c</code></li>
   <li><code>test_grplot.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
   <li><code>test_hartree_fock.c</code></li>

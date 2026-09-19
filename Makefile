@@ -372,6 +372,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lih \
               $(BUILD_DIR)/test_uhf \
               $(BUILD_DIR)/test_hf_gradient \
+              $(BUILD_DIR)/test_geometry_optimization \
               $(BUILD_DIR)/test_vibrational \
               $(BUILD_DIR)/test_ccsd \
               $(BUILD_DIR)/test_ccsd_t \

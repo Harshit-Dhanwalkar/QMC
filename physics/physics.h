@@ -39,6 +39,7 @@
 #include "driven.h"
 #include "fci.h"
 #include "fine_structure.h"
+#include "geometry_optimization.h"
 #include "hartree_fock.h"
 #include "helium.h"
 #include "hydrogen.h"
