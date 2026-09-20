@@ -56,17 +56,30 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
   memcpy(coords, coords0, sizeof(double) * ndim);
 
   double energy;
+  double grad_norm = 0.0;
   int converged = 0;
   int iter = 0;
-  double step = step0;
 
   int rc = func(coords, n_atoms, user_data, &energy, grad);
-  double grad_norm = max_abs_component(grad, ndim);
+  if (rc != 0) {
+    free(coords);
+    free(grad);
+    free(trial_coords);
+    free(trial_grad);
+    free(res);
+
+    return NULL;
+  }
+
+  grad_norm = max_abs_component(grad, ndim);
 
   if (rc == 0) {
+    double step = step0;
+
     for (iter = 0; iter < max_iter; iter++) {
       if (grad_norm < grad_tol) {
         converged = 1;
+
         break;
       }
 
@@ -75,7 +88,7 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
 
       for (int bt = 0; bt < GEOM_OPT_MAX_BACKTRACK; bt++) {
         for (int i = 0; i < ndim; i++) {
-          /* move downhill along force = -gradient */
+          // move downhill along force = -gradient
           trial_coords[i] = coords[i] - step * grad[i];
         }
 
@@ -84,6 +97,7 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
 
         if (rc2 == 0 && trial_energy < energy) {
           accepted = 1;
+
           break;
         }
 

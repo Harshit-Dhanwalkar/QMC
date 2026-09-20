@@ -1,10 +1,10 @@
 /*
- * Test: translation-symmetry-adapted exact diagonalization of the spin-1/2 XXZ
- * ring, and the Lanczos continued-fraction dynamical structure factor.
+ * Test: translation-symmetry-adapted exact diagonalization of spin-1/2 XXZ
+ * ring, and Lanczos continued-fraction dynamical structure factor.
  *
  * Reference values were generated independently with a full-Hilbert-space (no
- * symmetry) numpy exact-diagonalization script for the isotropic Heisenberg
- * chain (Jxy = Jz = 1), periodic boundary conditions:
+ * symmetry) numpy exact-diagonalization script for isotropic Heisenberg chain
+ * (Jxy = Jz = 1), periodic boundary conditions:
  *
  *   N=4: E0 = -2.000000       (exact, well-known small-ring benchmark)
  *   N=6: E0 = -2.802776
@@ -16,15 +16,15 @@
  * Where
  *   \phi0 = S^z_q |\psi_0>, computed via full diagonalization + exact Lehmann
  * sum (sum of |<n|S^z_q|0>|^2 over ALL eigenstates equals I0 by completeness;
- * this is sum rule the symmetry-sector construction must reproduce exactly,
+ * this is sum rule symmetry-sector construction must reproduce exactly,
  * since S^z_q preserves S^z and only moves spectral weight into a single
  * (S^z=0, k=q) sector).
  *
- * NOTE:: for N=6 the ground state sits at momentum k=3 (i.e. k=\pi), Not k=0
- * This is a real, well-known feature of the finite-size Heisenberg
+ * NOTE:: for N=6 ground state sits at momentum k=3 (i.e. k=\pi), Not k=0
+ * This is a real, well-known feature of finite-size Heisenberg
  * antiferromagnet, not an implementation detail: for even N ground-state
  * momentum is 0 when N/2 is even and \pi when N/2 is odd (Marshall's sign rule
- * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so the ground state is at k=\pi.
+ * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so ground state is at k=\pi.
  */
 
 #include "../core/complex.h"
@@ -63,9 +63,9 @@ static void check(int cond, const char *msg) {
 }
 
 /*
- * Ground-state energy of the full Heisenberg ring = min over all k sectors of
+ * Ground-state energy of full Heisenberg ring = min over all k sectors of
  * lowest eigenvalue of that sector's Hamiltonian. Sz=0 (or nearest integer
- * sector for odd N) always contains the true ground state for antiferromagnetic
+ * sector for odd N) always contains true ground state for antiferromagnetic
  * chain, scan every (nup, k) sector
  */
 static double ring_ground_energy(int N) {
@@ -252,15 +252,15 @@ static void test_continued_fraction_integrates_to_I0(void) {
 }
 
 /* Reflection (spatial parity) symmetry: R^2=I, Hermiticity, [H,R]=0, and lower
- * of the two parity blocks' ground energies must equal the sector's own
- * (unsplit) ground energy. For both N=6 and N=8, at both momenta that support a
- * reflection quantum number (k=0 and k=N/2)
+ * of two parity blocks' ground energies must equal sector's (unsplit) ground
+ * energy. For both N=6 and N=8, at both momenta that support a reflection
+ * quantum number (k=0 and k=N/2)
  *
- * NOTE: This checks ground energies rather than the full spectrum: requesting
- * every eigenvalue via lanczos_eigs(H, dim, dim, tol) can hit early Lanczos
- * breakdown (the Krylov sequence's residual falls below tol before reaching
- * m_eff = dim, particularly for real, highly-symmetric Hamiltonians like these)
- * and return NULL well short of a full spectrum
+ * NOTE: This checks ground energies rather than full spectrum: requesting every
+ * eigenvalue via lanczos_eigs(H, dim, dim, tol) can hit early Lanczos breakdown
+ * (Krylov sequence's residual falls below tol before reaching m_eff = dim,
+ * particularly for real, highly-symmetric Hamiltonians like these) and return
+ * NULL well short of a full spectrum
  */
 static void test_reflection_parity(void) {
   printf("  === Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
@@ -270,7 +270,7 @@ static void test_reflection_parity(void) {
     int N, nup, k;
     double E0_ref; /* independently known ground energy */
   } cases[] = {
-      {6, 3, 0, -1.5},      /* k=0 is NOT the N=6 ground sector */
+      {6, 3, 0, -1.5},      /* k=0 is Not N=6 ground sector */
       {6, 3, 3, -2.802776}, /* N=6 true ground state: k=pi */
       {8, 4, 0, -3.651093}, /* N=8 true ground state: k=0 */
       {8, 4, 4, -3.128419}, /* N=8, k=pi (excited relative to k=0) */
@@ -280,7 +280,6 @@ static void test_reflection_parity(void) {
   int start_idx = RUNNING_ON_VALGRIND ? 1 : 0;
   int end_idx = RUNNING_ON_VALGRIND ? 2 : 4;
   for (int c = start_idx; c < end_idx; c++) {
-    // for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
     int N = cases[c].N;
     int nup = cases[c].nup;
     int k = cases[c].k;
@@ -307,7 +306,8 @@ static void test_reflection_parity(void) {
     }
 
     int dim = sec->dim;
-    double max_r2_err = 0.0, max_herm_err = 0.0;
+    double max_r2_err = 0.0;
+    double max_herm_err = 0.0;
     for (int i = 0; i < dim; i++) {
       for (int j = 0; j < dim; j++) {
         complex_t rr = c_zero();
@@ -457,7 +457,8 @@ static void test_spin_inversion(void) {
       }
 
       int dim = sec->dim;
-      double max_i2_err = 0.0, max_herm_err = 0.0;
+      double max_i2_err = 0.0;
+      double max_herm_err = 0.0;
       for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
           complex_t ii = c_zero();

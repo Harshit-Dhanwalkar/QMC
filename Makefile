@@ -386,6 +386,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_fci \
               $(BUILD_DIR)/test_cisd \
               $(BUILD_DIR)/test_spin_chain \
+              $(BUILD_DIR)/test_spin_chain_dsf \
               $(BUILD_DIR)/test_ising_chain \
               $(BUILD_DIR)/test_dmrg \
               $(BUILD_DIR)/test_finite_dmrg \

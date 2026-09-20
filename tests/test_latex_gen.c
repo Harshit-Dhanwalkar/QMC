@@ -85,7 +85,7 @@ static void test_matrix_generation(void) {
   char *lm = latex_matrix("bmatrix", ldata, 1, 1);
   check(lm != NULL, "latex_matrix with a long cell allocates a result");
   check(lm && strstr(lm, long_cell) != NULL,
-        "long cell content is NOT truncated");
+        "long cell content is not truncated");
 
   free(lm);
 

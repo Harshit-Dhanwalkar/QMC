@@ -100,8 +100,8 @@ static double bond_length(const double *coords) {
 }
 
 static void test_null_and_invalid_input(void) {
-  printf("test_null_and_invalid_input:\n");
-  double coords0[6] = {0, 0, 0, 0, 0, 1.0};
+  printf("  === Test Null and invalid input ===\n");
+  double const coords0[6] = {0, 0, 0, 0, 0, 1.0};
 
   check_true(optimize_geometry_steepest_descent(NULL, NULL, coords0, 2, 0.5,
                                                 1e-5, 200) == NULL,
@@ -121,9 +121,9 @@ static void test_null_and_invalid_input(void) {
 }
 
 static void test_h2_optimization_from_collinear_guess(void) {
-  printf("test_h2_optimization_from_collinear_guess:\n");
+  printf("  === Test H2 optimization from collinear guess ===");
 
-  double coords0[6] = {0, 0, 0, 0, 0, 1.0};
+  double const coords0[6] = {0, 0, 0, 0, 0, 1.0};
   double e0;
   double g0[6];
   int rc0 = h2_energy_grad(coords0, 2, NULL, &e0, g0);
@@ -154,13 +154,13 @@ static void test_h2_optimization_from_collinear_guess(void) {
 }
 
 static void test_h2_optimization_independent_of_atom_split(void) {
-  printf("test_h2_optimization_independent_of_atom_split:\n");
+  printf("  === Test H2 optimization independent of atom split ===\n");
 
   // NOTE: Same initial bond length (1.0 bohr) as the collinear-guess test
   // above, but split asymmetrically and off-axis between the two atoms' own
   // coordinates, and with whole pair translated away from the origin - a
   // multi-coordinate starting point
-  double coords0[6] = {0.3, -0.2, 0.5, 0.3, -0.2, 1.5};
+  double const coords0[6] = {0.3, -0.2, 0.5, 0.3, -0.2, 1.5};
   check_true(fabs(bond_length(coords0) - 1.0) < 1e-9,
              "test setup: starting bond length is 1.0 bohr");
 
@@ -193,7 +193,7 @@ int main(void) {
     printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-
   printf("\nAll checks passed\n");
+
   return 0;
 }

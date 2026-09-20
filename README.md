@@ -248,6 +248,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_molecular_dft.c</code></li>
   <li><code>test_molecular_hf.c</code></li>
   <li><code>test_molecular_integrals.c</code></li>
+  <li><code>test_molecular_integrals_fuzz.c</code></li>
   <li><code>test_mp2.c</code></li>
   <li><code>test_numerov.c</code></li>
   <li><code>test_openmp_qmc.c</code></li>
@@ -270,12 +271,14 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_soft.c</code></li>
   <li><code>test_special.c</code></li>
   <li><code>test_spin_chain.c</code></li>
+  <li><code>test_spin_chain_dsf.c</code></li>
   <li><code>test_svd.c</code></li>
   <li><code>test_tddft.c</code></li>
   <li><code>test_tridiag.c</code></li>
   <li><code>test_tridiag_eigvals.c</code></li>
   <li><code>test_ucc.c</code></li>
   <li><code>test_uhf.c</code></li>
+  <li><code>test_uncertainty.c</code></li>
   <li><code>test_variational.c</code></li>
   <li><code>test_vmc.c</code></li>
   <li><code>test_vqe.c</code></li>
