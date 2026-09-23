@@ -43,17 +43,25 @@ mp2_result_t mp2_correlation_energy(const hf_result_t *hf, const double *r,
   // Extract raw double arrays once
   double **occ = malloc((size_t)n_occ * sizeof *occ);
   double **virt = malloc((size_t)n_virtual * sizeof *virt);
-  double *Y0_buf = malloc((size_t)N * sizeof *Y0_buf);
-  if (!occ || !virt || !Y0_buf) {
+  if (!occ || !virt) {
     free(occ);
     free(virt);
-    free(Y0_buf);
 
     return result;
   }
 
   for (int i = 0; i < n_occ; i++) {
     occ[i] = malloc((size_t)N * sizeof *occ[i]);
+    if (!occ[i]) {
+      for (int k = 0; k < i; k++) {
+        free(occ[k]);
+      }
+      free(occ);
+      free(virt);
+
+      return result;
+    }
+
     for (int k = 0; k < N; k++) {
       occ[i][k] = hf->orbitals[i]->data[k].re;
     }
@@ -61,46 +69,81 @@ mp2_result_t mp2_correlation_energy(const hf_result_t *hf, const double *r,
 
   for (int a = 0; a < n_virtual; a++) {
     virt[a] = malloc((size_t)N * sizeof *virt[a]);
+    if (!virt[a]) {
+      for (int k = 0; k < a; k++) {
+        free(virt[k]);
+      }
+      for (int k = 0; k < n_occ; k++) {
+        free(occ[k]);
+      }
+      free(occ);
+      free(virt);
+
+      return result;
+    }
+
     for (int k = 0; k < N; k++) {
       virt[a][k] = hf->virtual_orbitals[a]->data[k].re;
     }
   }
 
-  // Recompute all (ia|jb)-relevant Y0 kernels (j,b) pair inside loop
   double e_mp2 = 0.0;
+  int alloc_failed = 0;
 
-  for (int i = 0; i < n_occ; i++) {
-    for (int j = 0; j < n_occ; j++) {
-      for (int a = 0; a < n_virtual; a++) {
-        for (int b = 0; b < n_virtual; b++) {
-          double iajb = two_electron_integral(r, N, dr, occ[i], virt[a], occ[j],
-                                              virt[b], Y0_buf);
-          double ibja = two_electron_integral(r, N, dr, occ[i], virt[b], occ[j],
-                                              virt[a], Y0_buf);
+#pragma omp parallel reduction(+ : e_mp2)
+  {
+    double *Y0_buf_local = malloc((size_t)N * sizeof *Y0_buf_local);
+    if (!Y0_buf_local) {
+#pragma omp atomic write
+      alloc_failed = 1;
+    }
 
-          double denom = hf->orbital_energies[i] + hf->orbital_energies[j] -
-                         hf->virtual_energies[a] - hf->virtual_energies[b];
+#pragma omp barrier
 
-          if (fabs(denom) < 1e-12) {
-            continue;
+    if (!alloc_failed) {
+#pragma omp for collapse(2) schedule(dynamic)
+      for (int i = 0; i < n_occ; i++) {
+        for (int j = 0; j < n_occ; j++) {
+          for (int a = 0; a < n_virtual; a++) {
+            for (int b = 0; b < n_virtual; b++) {
+              double iajb = two_electron_integral(
+                  r, N, dr, occ[i], virt[a], occ[j], virt[b], Y0_buf_local);
+              double ibja = two_electron_integral(
+                  r, N, dr, occ[i], virt[b], occ[j], virt[a], Y0_buf_local);
+
+              double denom = hf->orbital_energies[i] + hf->orbital_energies[j] -
+                             hf->virtual_energies[a] - hf->virtual_energies[b];
+
+              if (fabs(denom) < 1e-12) {
+                continue;
+              }
+
+              e_mp2 += iajb * (2.0 * iajb - ibja) / denom;
+            }
           }
-
-          e_mp2 += iajb * (2.0 * iajb - ibja) / denom;
         }
       }
     }
-  }
 
+    free(Y0_buf_local);
+  } // end parallel region
+
+  // Cleanup of shared arrays
   for (int i = 0; i < n_occ; i++) {
     free(occ[i]);
   }
   for (int a = 0; a < n_virtual; a++) {
     free(virt[a]);
   }
-
   free(occ);
   free(virt);
-  free(Y0_buf);
+
+  if (alloc_failed) {
+    /* NOTE: Per-thread scratch buffer allocation failed: e_mp2 as accumulated
+     * so far is partial and meaningless, so report failure rather than
+     * returning a plausible-looking but wrong energy */
+    return result;
+  }
 
   result.e_hf = hf->total_energy;
   result.e_mp2 = e_mp2;
@@ -230,10 +273,8 @@ molecular_ump2(int n_basis, const double *eri_aaaa, const double *eri_bbbb,
       for (int a = n_alpha; a < n_basis; a++) {
         for (int b = n_beta; b < n_basis; b++) {
           double iajb = MOLINT_ERI(eri_aabb, n_basis, i, a, j, b);
-
           double denom = mo_energy_alpha[i] + mo_energy_beta[j] -
                          mo_energy_alpha[a] - mo_energy_beta[b];
-
           if (fabs(denom) < 1e-12) {
             continue;
           }
