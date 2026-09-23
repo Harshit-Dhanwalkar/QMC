@@ -1,6 +1,6 @@
 /*
  * Test: physics/spin_chain.c's spin_dsf_continued_fraction (Lanczos
- * continued-fraction evaluation of dynamical structure factor 
+ * continued-fraction evaluation of dynamical structure factor
  * S^{zz}(q, \omega))
  *
  * test_spin_chain.c already has one DSF check (N=6, momentum-transfer index
@@ -211,12 +211,10 @@ static void test_dsf_is_nonnegative(void) {
 
     printf("  min S(q, \\omega) over [%.1f, %.1f]: %.3e\n", omega_min,
            omega_max, min_S);
-    // Small negative tolerance for floating-point noise only.
+    // Small negative tolerance for floating-point noise only
     check(min_S > -1e-9, "S(q, \\omega) is non-negative across the sampled "
                          "frequency range");
-  }
 
-  if (tri) {
     lanczos_tridiag_free(tri);
   }
 }
@@ -233,8 +231,8 @@ static void test_n4_sum_rule_cross_check(void) {
   int rc = build_dsf_pipeline(N, q_index, &E0, &I0, &tri);
 
   check(rc == 0, "pipeline runs without error");
-  check(I0 > 0.0, "I0 is strictly positive for q_index=1 (nontrivial "
-                  "spectral weight)");
+  check(I0 > 0.0,
+        "I0 is strictly positive for q_index=1 (nontrivial spectral weight)");
   check(tri != NULL, "Lanczos tridiagonalization succeeded");
 
   if (tri) {
@@ -255,9 +253,7 @@ static void test_n4_sum_rule_cross_check(void) {
     check_close(
         integral, I0, 5e-3,
         "numerical integral of S(q,omega) over \\omega matches I0  (N=4)");
-  }
 
-  if (tri) {
     lanczos_tridiag_free(tri);
   }
 }

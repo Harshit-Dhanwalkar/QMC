@@ -122,7 +122,7 @@ CFLAGS  += $(EXTRA_CFLAGS)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
 # Optional: LAPACK/BLAS acceleration for dense Hermitian eigensolvers
-## Usage : make USE_LAPACK=1
+## Usage  : make USE_LAPACK=1
 LAPACK_AVAIL := $(shell tmpf=$$(mktemp) && \
     printf '#include <lapacke.h>\nint main(void){return 0;}\n' | \
     $(CC) $(CFLAGS) -x c - -o $$tmpf $(LDFLAGS) >/dev/null 2>&1 && \
@@ -137,8 +137,8 @@ ifeq ($(USE_LAPACK),1)
    LDFLAGS += -llapacke -lblas -llapack # -ltmglib -lopenblas
 endif
 
-# Optional: real HDF5 export (export/hdf5_writer.c).
-## Usage : make USE_HDF5=1
+# Optional: HDF5 export (export/hdf5_writer.c)
+## Usage  : make USE_HDF5=1
 HDF5_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs hdf5 2>/dev/null)
 ifneq ($(HDF5_PKGCONFIG_FLAGS),)
     HDF5_CFLAGS  := $(filter -I%,$(HDF5_PKGCONFIG_FLAGS))
@@ -161,6 +161,32 @@ ifeq ($(USE_HDF5),1)
    CFLAGS  += -DUSE_HDF5 $(HDF5_CFLAGS)
    LDFLAGS += $(HDF5_LDFLAGS)
 endif
+
+# Optional: NetCDF export (export/netcdf_writer.c)
+## Usage  : make USE_NETCDF=1
+NETCDF_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs netcdf 2>/dev/null)
+ifneq ($(NETCDF_PKGCONFIG_FLAGS),)
+    NETCDF_CFLAGS  := $(filter -I%,$(NETCDF_PKGCONFIG_FLAGS))
+    NETCDF_LDFLAGS := $(filter-out -I%,$(NETCDF_PKGCONFIG_FLAGS))
+else
+    NETCDF_CFLAGS  :=
+    NETCDF_LDFLAGS := -lnetcdf
+endif
+
+NETCDF_AVAIL := $(shell tmpf=$$(mktemp) && \
+    printf '#include <netcdf.h>\nint main(void){int id; return nc_create("x",NC_CLOBBER,&id);}\n' | \
+    $(CC) $(CFLAGS) $(NETCDF_CFLAGS) -x c - -o $$tmpf $(LDFLAGS) $(NETCDF_LDFLAGS) >/dev/null 2>&1 && \
+    rm -f $$tmpf && echo yes || echo no)
+
+USE_NETCDF ?= 0
+ifeq ($(USE_NETCDF),1)
+   ifeq ($(NETCDF_AVAIL),no)
+        $(warning USE_NETCDF=1 requested but NetCDF could not be compiled/linked (missing libnetcdf-dev or equivalent) - the build will likely fail linking export/netcdf_writer.c. Install e.g. 'sudo apt install libnetcdf-dev' and re-run.)
+   endif
+   CFLAGS  += -DUSE_NETCDF $(NETCDF_CFLAGS)
+   LDFLAGS += $(NETCDF_LDFLAGS)
+endif
+
 
 # Directories
 CORE_DIR     = core
@@ -262,14 +288,11 @@ PLOT_SRCS    = $(PLOT_SRC)
 # Data export: CSV and JSON metadata are always built
 EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
                    $(EXPORT_DIR)/json_writer.c \
-                   $(EXPORT_DIR)/hdf5_writer.c
-
- # Object files
-ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC) $(EXPORT_DATA_SRCS)
-ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
+                   $(EXPORT_DIR)/hdf5_writer.c \
+                   $(EXPORT_DIR)/netcdf_writer.c
 
 # Object files
-ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC)
+ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC) $(EXPORT_DATA_SRCS)
 ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
 
 -include $(ALL_OBJS:.o=.d)
@@ -346,9 +369,6 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_69_dmrg \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
-              $(BUILD_DIR)/test_latex_gen \
-              $(BUILD_DIR)/test_json_writer \
-              $(BUILD_DIR)/test_hdf5_writer
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -427,7 +447,10 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_dmrg \
               $(BUILD_DIR)/test_finite_dmrg \
               $(BUILD_DIR)/test_casscf \
-              $(BUILD_DIR)/test_latex_gen
+              $(BUILD_DIR)/test_latex_gen \
+              $(BUILD_DIR)/test_json_writer \
+              $(BUILD_DIR)/test_hdf5_writer \
+              $(BUILD_DIR)/test_netcdf_writer
 
 ifeq ($(PLOT_BACKEND),GR)
     TESTS += $(BUILD_DIR)/test_grplot
