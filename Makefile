@@ -137,6 +137,31 @@ ifeq ($(USE_LAPACK),1)
    LDFLAGS += -llapacke -lblas -llapack # -ltmglib -lopenblas
 endif
 
+# Optional: real HDF5 export (export/hdf5_writer.c).
+## Usage : make USE_HDF5=1
+HDF5_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs hdf5 2>/dev/null)
+ifneq ($(HDF5_PKGCONFIG_FLAGS),)
+    HDF5_CFLAGS  := $(filter -I%,$(HDF5_PKGCONFIG_FLAGS))
+    HDF5_LDFLAGS := $(filter-out -I%,$(HDF5_PKGCONFIG_FLAGS))
+else
+    HDF5_CFLAGS  :=
+    HDF5_LDFLAGS := -lhdf5
+endif
+
+HDF5_AVAIL := $(shell tmpf=$$(mktemp) && \
+    printf '#include <hdf5.h>\nint main(void){H5Fcreate("x",H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT);return 0;}\n' | \
+    $(CC) $(CFLAGS) $(HDF5_CFLAGS) -x c - -o $$tmpf $(LDFLAGS) $(HDF5_LDFLAGS) >/dev/null 2>&1 && \
+    rm -f $$tmpf && echo yes || echo no)
+
+USE_HDF5 ?= 0
+ifeq ($(USE_HDF5),1)
+   ifeq ($(HDF5_AVAIL),no)
+        $(warning USE_HDF5=1 requested but HDF5 could not be compiled/linked (missing libhdf5-dev or equivalent) - the build will likely fail linking export/hdf5_writer.c. Install e.g. 'sudo apt install libhdf5-dev' and re-run.)
+   endif
+   CFLAGS  += -DUSE_HDF5 $(HDF5_CFLAGS)
+   LDFLAGS += $(HDF5_LDFLAGS)
+endif
+
 # Directories
 CORE_DIR     = core
 PHYSICS_DIR  = physics
@@ -234,6 +259,15 @@ LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
 PLOT_SRCS    = $(PLOT_SRC)
 
+# Data export (independent of the plotting backend above): CSV metadata are always built
+# TODO: Add JSON writer
+EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
+                   $(EXPORT_DIR)/hdf5_writer.c
+
+ # Object files
+ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC) $(EXPORT_DATA_SRCS)
+ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
+
 # Object files
 ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC)
 ALL_OBJS    = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ALL_SRCS))
@@ -312,7 +346,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_69_dmrg \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
-              $(BUILD_DIR)/eg_latex_gen
+              $(BUILD_DIR)/test_latex_gen \
+              $(BUILD_DIR)/test_hdf5_writer
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
