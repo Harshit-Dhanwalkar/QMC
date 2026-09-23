@@ -259,9 +259,9 @@ LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 
 PLOT_SRCS    = $(PLOT_SRC)
 
-# Data export (independent of the plotting backend above): CSV metadata are always built
-# TODO: Add JSON writer
+# Data export: CSV and JSON metadata are always built
 EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
+                   $(EXPORT_DIR)/json_writer.c \
                    $(EXPORT_DIR)/hdf5_writer.c
 
  # Object files
@@ -347,6 +347,7 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
               $(BUILD_DIR)/test_latex_gen \
+              $(BUILD_DIR)/test_json_writer \
               $(BUILD_DIR)/test_hdf5_writer
 
 TESTS       = $(BUILD_DIR)/test_complex \
