@@ -49,7 +49,7 @@ static void run_case(basis_function_t **basis, int n_basis,
                      const molecule_t *mol, int n_electrons,
                      double expected_rhf, double expected_ccsd_corr,
                      double expected_pert_t, double tol, const char *label) {
-  printf("test_ccsd_t_%s:\n", label);
+  printf("  === Test CCSD_T_%s ===\n", label);
 
   molecular_hf_result_t *hf =
       molecular_rhf(basis, n_basis, mol, n_electrons, 1e-12, 300);
@@ -98,6 +98,8 @@ static void run_case(basis_function_t **basis, int n_basis,
 }
 
 static void test_h2_pert_t_exactly_zero(void) {
+  printf("  === Test H2 perturbative exactly 0 ===\n");
+
   double R = 1.4;
   double c0[3] = {0, 0, 0};
   double c1[3] = {0, 0, R};
@@ -152,6 +154,8 @@ static void test_asymmetric_h4(void) {
 }
 
 static void test_lih(void) {
+  printf("  === Test LiH ===\n");
+
   double R = 3.015;
   double li_center[3] = {0, 0, 0};
   basis_function_t *li[5];

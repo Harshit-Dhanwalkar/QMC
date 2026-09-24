@@ -183,7 +183,7 @@ static void test_grid_integrates_electron_count(void) {
   molecule_free(mol);
 }
 
-static void test_h2_ks_lda_matches_pyscf(void) {
+static void test_h2_ks_lda_matches_reference(void) {
   printf("Test: H2/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
          "reference (-1.12132825509958 Hartree)\n");
 
@@ -220,7 +220,7 @@ static void test_h2_ks_lda_matches_pyscf(void) {
   molecule_free(mol);
 }
 
-static void test_lih_ks_lda_matches_pyscf(void) {
+static void test_lih_ks_lda_matches_reference(void) {
   printf("Test: LiH/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
          "reference (-7.79120636378942 Hartree), "
          "requires density-mixing convergence\n");
@@ -268,7 +268,7 @@ static void test_lih_ks_lda_matches_pyscf(void) {
   molecule_free(mol);
 }
 
-static void test_h2_ks_pbe_matches_pyscf(void) {
+static void test_h2_ks_pbe_matches_reference(void) {
   printf("Test: H2/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
          "reference (-1.1520643731282254 Hartree)\n");
 
@@ -305,7 +305,7 @@ static void test_h2_ks_pbe_matches_pyscf(void) {
   molecule_free(mol);
 }
 
-static void test_lih_ks_pbe_matches_pyscf(void) {
+static void test_lih_ks_pbe_matches_reference(void) {
   printf("Test: LiH/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
          "reference (-7.9206827623358045 Hartree), requires density-mixing "
          "convergence\n");
@@ -416,11 +416,11 @@ int main(void) {
 
   test_grid_reproduces_overlap_matrix();
   test_grid_integrates_electron_count();
-  test_h2_ks_lda_matches_pyscf();
-  test_lih_ks_lda_matches_pyscf();
+  test_h2_ks_lda_matches_reference();
+  test_lih_ks_lda_matches_reference();
   test_invalid_inputs_rejected();
-  test_h2_ks_pbe_matches_pyscf();
-  test_lih_ks_pbe_matches_pyscf();
+  test_h2_ks_pbe_matches_reference();
+  test_lih_ks_pbe_matches_reference();
   test_pbe_invalid_inputs_rejected();
 
   if (failures == 0) {

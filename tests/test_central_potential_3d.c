@@ -24,6 +24,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TODO:
+// static int failures = 0;
+//
+// static void check(int cond, const char *msg) {
+//   if (!cond) {
+//     printf("  FAIL: %s\n", msg);
+//     failures++;
+//   }
+// }
+//
+// static void check_close(double got, double expected, double tol,
+//                         const char *msg) {
+//   if (fabs(got - expected) > tol) {
+//     printf("  FAIL: %s (got %.10f, expected %.10f, diff %.2e)\n", msg, got,
+//            expected, fabs(got - expected));
+//     failures++;
+//   }
+// }
+
 static int check_close(double got, double expected, double tol,
                        const char *label) {
   double err = fabs(got - expected);
@@ -34,6 +53,9 @@ static int check_close(double got, double expected, double tol,
 
 // Test 1: 3D isotropic harmonic oscillator, l=0,1,2, lowest 3 states each
 static int test_3d_harmonic_oscillator(void) {
+  printf("  === 3D isotropic harmonic oscillator, E(n,l)=2n+l+3/2 "
+         "(\\hbar=m=\\omega=1) ===\n");
+
   int N = 200;
   double r_min = 0.01;
   double r_max = 8.0;
@@ -114,6 +136,9 @@ static int find_well_bound_states(double V0, double a, double m, double hbar,
 
 // Test 2: 3D finite spherical well, l=0 bound states
 static int test_finite_spherical_well(void) {
+  printf("  === 3D finite spherical well (l=0), vs independent transcendental "
+         "root-find ===\n");
+
   double a = 3.0;
   double V0 = 5.0;
   double mass = 1.0;
@@ -153,14 +178,10 @@ static int test_finite_spherical_well(void) {
 }
 
 int main(void) {
+  printf(" > Central Potential 3D tests\n");
+
   int failed = 0;
-
-  printf("3D isotropic harmonic oscillator, E(n,l)=2n+l+3/2 "
-         "(\\hbar=m=\\omega=1):\n");
   failed += test_3d_harmonic_oscillator();
-
-  printf("3D finite spherical well (l=0), vs independent transcendental "
-         "root-find:\n");
   failed += test_finite_spherical_well();
 
   if (failed) {

@@ -1,6 +1,6 @@
 /*
- * Generic Cartesian geometry optimizer (see geometry_optimization.h).
- */
+Generic Cartesian geometry optimizer
+*/
 
 #include "geometry_optimization.h"
 #include <math.h>
@@ -73,55 +73,53 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
 
   grad_norm = max_abs_component(grad, ndim);
 
-  if (rc == 0) {
-    double step = step0;
+  double step = step0;
 
-    for (iter = 0; iter < max_iter; iter++) {
-      if (grad_norm < grad_tol) {
-        converged = 1;
+  for (iter = 0; iter < max_iter; iter++) {
+    if (grad_norm < grad_tol) {
+      converged = 1;
 
-        break;
-      }
-
-      int accepted = 0;
-      double trial_energy = 0.0;
-
-      for (int bt = 0; bt < GEOM_OPT_MAX_BACKTRACK; bt++) {
-        for (int i = 0; i < ndim; i++) {
-          // move downhill along force = -gradient
-          trial_coords[i] = coords[i] - step * grad[i];
-        }
-
-        int rc2 =
-            func(trial_coords, n_atoms, user_data, &trial_energy, trial_grad);
-
-        if (rc2 == 0 && trial_energy < energy) {
-          accepted = 1;
-
-          break;
-        }
-
-        step *= 0.5;
-        if (step < GEOM_OPT_MIN_STEP) {
-          break;
-        }
-      }
-
-      if (!accepted) {
-        // NOTE: Can't find a downhill step even after backtracking - stuck
-        break;
-      }
-
-      memcpy(coords, trial_coords, sizeof(double) * ndim);
-      memcpy(grad, trial_grad, sizeof(double) * ndim);
-      energy = trial_energy;
-      grad_norm = max_abs_component(grad, ndim);
-
-      /* NOTE: Grow step back a little after a successful move, so a step shrunk
-       * by backtracking earlier doesn't stay pessimistically small for rest of
-       * the optimization */
-      step *= 1.2;
+      break;
     }
+
+    int accepted = 0;
+    double trial_energy = 0.0;
+
+    for (int bt = 0; bt < GEOM_OPT_MAX_BACKTRACK; bt++) {
+      for (int i = 0; i < ndim; i++) {
+        // move downhill along force = -gradient
+        trial_coords[i] = coords[i] - step * grad[i];
+      }
+
+      int rc2 =
+          func(trial_coords, n_atoms, user_data, &trial_energy, trial_grad);
+
+      if (rc2 == 0 && trial_energy < energy) {
+        accepted = 1;
+
+        break;
+      }
+
+      step *= 0.5;
+      if (step < GEOM_OPT_MIN_STEP) {
+        break;
+      }
+    }
+
+    if (!accepted) {
+      // NOTE: Can't find a downhill step even after backtracking - stuck
+      break;
+    }
+
+    memcpy(coords, trial_coords, sizeof(double) * ndim);
+    memcpy(grad, trial_grad, sizeof(double) * ndim);
+    energy = trial_energy;
+    grad_norm = max_abs_component(grad, ndim);
+
+    /* NOTE: Grow step back a little after a successful move, so a step shrunk
+     * by backtracking earlier doesn't stay pessimistically small for rest of
+     * the optimization */
+    step *= 1.2;
   }
 
   res->coords = coords;

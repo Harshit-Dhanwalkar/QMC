@@ -1,24 +1,22 @@
 /*
  * OpenMP-Parallel Quantum Monte Carlo (VMC / DMC / PIMC)
  *
- * vmc_run_parallel / dmc_run_parallel / pimc_run_parallel each run
- * n_replicas fully independent chains -- own walker(s), own equilibration,
- * own statistics -- and combine them. Independence between replicas is
- * exact (not merely statistical): replica i's RNG stream is the master
- * seed's rng_jump()'d i times, a proven non-overlapping 2^128-step advance
- * of the underlying xoshiro256** generator (see core/random.h). The
- * combined error reported is the inter-replica standard error, which does
- * not depend on block_size safely exceeding an unmeasured autocorrelation
- * time the way single-chain block-averaging does.
+ * vmc_run_parallel / dmc_run_parallel / pimc_run_parallel each run n_replicas
+ * fully independent chains - own walker(s), own equilibration, own statistics
+ * -- and combine them. Independence between replicas is exact (not merely
+ * statistical): replica i's RNG stream is master seed's rng_jump()'d i times, a
+ * proven non-overlapping 2^128-step advance of underlying xoshiro256**
+ * generator (core/random.h). Combined error reported is inter-replica
+ * standard error, which does not depend on block_size safely exceeding an
+ * unmeasured autocorrelation time way single-chain block-averaging does
  *
- * This example runs the same total amount of VMC sampling work serially
- * (n_replicas=1, called n_replicas times in a loop) and in parallel
- * (n_replicas at once via OpenMP) and reports wall-clock time for both, to
- * make the speedup concrete. Build with PLOT_BACKEND=NONE (or any backend)
- * and run with e.g. OMP_NUM_THREADS=4 ./build/eg_39_openmp_qmc to see the
- * effect of thread count -- on a single-core machine (or OMP_NUM_THREADS=1)
- * the two times will be nearly identical, since there is then no actual
- * parallel work being scheduled.
+ * This example runs same total amount of VMC sampling work serially
+ * (n_replicas=1, called n_replicas times in a loop) and in parallel (n_replicas
+ * at once via OpenMP) and reports wall-clock time for both, to make speedup
+ * concrete. Build with PLOT_BACKEND=NONE (or any backend) and run with e.g.
+ * OMP_NUM_THREADS=4 ./build/eg_39_openmp_qmc to see effect of thread count - on
+ * a single-core machine (or OMP_NUM_THREADS=1) two times will be nearly
+ * identical, since there is then no actual parallel work being scheduled
  */
 
 #include "../physics/dmc.h"
@@ -65,8 +63,8 @@ int main(void) {
   double serial_sum_mean = 0.0;
   for (int i = 0; i < n_replicas; i++) {
     /* Each iteration is its own independent single-chain run (n_replicas=1
-     * called n_replicas times), same total sampling work as the parallel
-     * call below, but executed one chain at a time. */
+     * called n_replicas times), same total sampling work as parallel call
+     * below, but executed one chain at a time */
     vmc_result_t r =
         vmc_run_parallel(1, Z, Zeff, b, n_equilibration, n_samples, block_size,
                          step1, step2, 1000ULL + (uint64_t)i);

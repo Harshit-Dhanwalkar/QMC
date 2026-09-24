@@ -1,7 +1,8 @@
 /*
 Variational Quantum Eigensolver: hardware-efficient ansatz (qubits.c) +
-coordinate-descent optimizer (reusing variational.c's golden_section_minimize).
-See vqe.h for the full algorithm description and known limitations.
+coordinate-descent optimizer (reusing variational.c's golden_section_minimize)
+
+// WARN:See vqe.h for full algorithm description and known limitations
 */
 
 #include "vqe.h"

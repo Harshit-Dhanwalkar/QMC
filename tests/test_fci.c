@@ -50,8 +50,8 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-static void test_h2_fci_matches_pyscf(void) {
-  printf(" === Test: H2/STO-3G FCI ground energy matches fci.FCI reference "
+static void test_h2_fci_matches_reference(void) {
+  printf("  === Test: H2/STO-3G FCI ground energy matches fci.FCI reference "
          "(-1.1372759436 Hartree) ===\n");
 
   double R = 1.4;
@@ -117,10 +117,9 @@ static void test_h2_fci_matches_pyscf(void) {
   molecule_free(mol);
 }
 
-static void test_lih_fci_matches_pyscf_and_full_fock_space(void) {
-  printf(" === Test: LiH/STO-3G FCI matches reference -7.8823949575 Hartree "
-         "and unrestricted full-Fock-space diagonalization approach duplicated "
-         "test code used ===\n");
+static void test_lih_fci_matches_reference_and_full_fock_space(void) {
+  printf("  === Test: LiH/STO-3G FCI matches reference -7.8823949575 Hartree "
+         "===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -227,7 +226,7 @@ static void test_lih_frozen_core_fci(void) {
 }
 
 static void test_invalid_inputs_rejected(void) {
-  printf(" === Test: invalid inputs are rejected cleanly ===\n");
+  printf("  === Test: invalid inputs are rejected cleanly ===\n");
 
   const double h_mo[4] = {0};
   const double eri_mo[16] = {0};
@@ -250,8 +249,8 @@ static void test_invalid_inputs_rejected(void) {
 }
 
 int main(void) {
-  test_h2_fci_matches_pyscf();
-  test_lih_fci_matches_pyscf_and_full_fock_space();
+  test_h2_fci_matches_reference();
+  test_lih_fci_matches_reference_and_full_fock_space();
   test_lih_frozen_core_fci();
   test_invalid_inputs_rejected();
 

@@ -44,7 +44,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_h2_ccsd_matches_fci(void) {
-  printf("test_h2_ccsd_matches_fci:\n");
+  printf("  === Test H2 CCSD matches FCI ===\n");
 
   double c0[3] = {0, 0, 0};
   double c1[3] = {0, 0, 1.4};
@@ -104,8 +104,8 @@ static void test_h2_ccsd_matches_fci(void) {
   basis_function_free(h1);
 }
 
-static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
-  printf("test_h4_asymmetric_ccsd_vs_pyscf:\n");
+static void test_h4_asymmetric_ccsd_vs_reference(void) {
+  printf("  === Test H4 asymmetric CCSD vs refrence ===\n");
 
   // Arbitrary non-collinear, no-symmetry geometry
   double c0[3] = {0, 0, 0};
@@ -165,8 +165,8 @@ static void test_h4_asymmetric_ccsd_vs_pyscf(void) {
   basis_function_free(h3);
 }
 
-static void test_lih_ccsd_vs_pyscf(void) {
-  printf("test_lih_ccsd_vs_pyscf:\n");
+static void test_lih_ccsd_vs_reference(void) {
+  printf("  === Test LiH CCSD vs reference ===\n");
 
   /* LiH/STO-3G, R=3.015 bohr: a real degenerate-orbital system (2px/2py exactly
    * degenerate by symmetry) */
@@ -229,8 +229,8 @@ static void test_lih_ccsd_vs_pyscf(void) {
 
 int main(void) {
   test_h2_ccsd_matches_fci();
-  test_h4_asymmetric_ccsd_vs_pyscf();
-  test_lih_ccsd_vs_pyscf();
+  test_h4_asymmetric_ccsd_vs_reference();
+  test_lih_ccsd_vs_reference();
 
   if (failures > 0) {
     printf("\n%d test_ccsd check(s) FAILED.\n", failures);

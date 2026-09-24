@@ -53,10 +53,6 @@ int main(void) {
   printf("    Correlation recovered vs RHF: %.6f Hartree\n\n",
          hf->total_energy - r2->total_energy);
 
-  printf("  NOTE: both agree with PySCF's mcscf.CASSCF() to ~1e-8 Hartree "
-         "(cross-validated independently in Python/numpy before this C "
-         "implementation was written).\n");
-
   casscf_result_free(r1);
   casscf_result_free(r2);
   molecular_hf_result_free(hf);

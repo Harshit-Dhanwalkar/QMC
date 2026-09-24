@@ -1,7 +1,7 @@
 /*
 5-qubit "perfect" quantum error-correcting code: corrects an arbitrary
 single-qubit error (X, Y, or Z on any one of 5 physical qubits) using 4
-stabilizer ancillas. See qec5.h for the full derivation and design notes.
+stabilizer ancillas
 */
 
 #include "qec5.h"
@@ -14,16 +14,15 @@ stabilizer ancillas. See qec5.h for the full derivation and design notes.
 #include <stddef.h>
 
 // Stabilizer generators S1..S4: cyclic shifts of X Z Z X I over data qubits
-// 0..4 (Python/numpy cross-checked: commute pairwise, both stabilize the
-// codewords below, and the resulting 16 syndromes are all distinct).
+// 0..4
 static const char *const qec5_stabilizers[4] = {"XZZXI", "IXZZX", "XIXZZ",
                                                 "ZXIXZ"};
 
 // |0_L> nonzero amplitudes: 16 of the 32 five-qubit basis states, each with
 // magnitude 1/4 and the sign given here (index = 5-bit pattern q0q1q2q3q4,
-// MSB-first, matching qstate_* convention). |1_L> = X_L|0_L> has identical
-// signs at the bitwise 5-bit complement (31-index) of each entry (Python
-// cross-checked directly from the stabilizer projector construction).
+// MSB-first)
+// |1_L> = X_L|0_L> has identical signs at the bitwise 5-bit complement
+// (31-index) of each entry
 static const struct {
   int index;
   int sign;

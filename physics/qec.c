@@ -1,5 +1,5 @@
 /*
-3-qubit bit-flip and phase-flip QEC codes, ancilla-based syndrome extraction.
+3-qubit bit-flip and phase-flip QEC codes, ancilla-based syndrome extraction
 */
 
 #include "qec.h"

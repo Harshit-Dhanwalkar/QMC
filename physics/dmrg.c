@@ -1,5 +1,5 @@
 /*
- * Infinite-system DMRG for the open-boundary spin-1/2 XXZ chain
+Infinite-system DMRG for the open-boundary spin-1/2 XXZ chain
  */
 
 #include "dmrg.h"
@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 /* Bare 2x2 site operators basis order [up, down], S^z_up=+1/2, S^z_down=-1/2,
- * S^+ raises down->up. */
+ * S^+ raises down->up */
 static cmatrix_t *site_sz(void) {
   cmatrix_t *m = cmatrix_alloc(2, 2);
   if (!m) {
@@ -91,7 +91,7 @@ void dmrg_block_free(dmrg_block_t *b) {
 /*
  * out = a + scal e *b (element-wise), in a freshly allocated matrix
  *
- * Returns NULL on allocation failure.
+ * Returns NULL on allocation failure
  */
 static cmatrix_t *add_scaled(const cmatrix_t *a, const cmatrix_t *b,
                              double scale) {
@@ -144,6 +144,7 @@ static dmrg_block_t *enlarge_block(const dmrg_block_t *b, double Jz, double Jxy,
     cmatrix_free(term2);
     cmatrix_free(term3);
     cmatrix_free(term4);
+
     goto fail;
   }
 
@@ -156,6 +157,7 @@ static dmrg_block_t *enlarge_block(const dmrg_block_t *b, double Jz, double Jxy,
   if (!h1 || !h2) {
     cmatrix_free(h1);
     cmatrix_free(h2);
+
     goto fail;
   }
 
@@ -196,8 +198,8 @@ fail:
  * Using the identity (A(x)B) applied to V (reshaped as a matrix) equals A @ V @
  * B^T, and that H_eb, Sz_eb are real-symmetric (B^T=B) while Sm_eb = Sp_eb^T
  * (so both cross terms reduce to Sp_eb@V@Sp_eb and Sm_eb@V@Sm_eb):
- *   H_super(V) = H_eb@V + V@H_eb + Jz*(Sz_eb@V@Sz_eb)
- *                       + (Jxy / 2)*(Sp_eb@V@Sp_eb + Sm_eb@V@Sm_eb)
+ *   H_super(V) = H_eb@V + V@H_eb + Jz * (Sz_eb@V@Sz_eb)
+ *                       + (Jxy / 2) * (Sp_eb@V@Sp_eb + Sm_eb@V@Sm_eb)
  *
  * Returns NULL on allocation failure
  */
@@ -266,7 +268,7 @@ static double frob_norm(const cmatrix_t *a) {
   return sqrt(frob_dot_real(a, a));
 }
 
-/* y += \alpha * x, element-wise (\alpha real)*/
+// y += \alpha * x, element-wise (\alpha real)
 static void axpy_inplace(cmatrix_t *y, double alpha, const cmatrix_t *x) {
   int n = y->nrows * y->ncols;
 
@@ -319,7 +321,7 @@ static cmatrix_t *lanczos_ground_state(const dmrg_block_t *eb, double Jz,
 
   basis[0] = v0;
 
-  int M = 0; // number of basis vectors / alpha coefficients generated
+  int M = 0; // number of basis vectors / \alpha coefficients generated
   for (int j = 0; j < max_iter; j++) {
     cmatrix_t *w = apply_superblock(eb, Jz, Jxy, basis[j]);
     if (!w) {
@@ -475,7 +477,7 @@ dmrg_result_t *dmrg_run(int N_target, double Jz, double Jxy, int m_max) {
 
     /* Reduced density matrix of the system (enlarged block) side:
      * Psi[a][e] (a=system index, e=mirrored-environment index) is ground state
-     * reshaped as a D x D matrix; \rho = \Psi * \Psi^\dagger. */
+     * reshaped as a D x D matrix; \rho = \Psi * \Psi^\dagger */
     cmatrix_t *Psi_dag = cmatrix_adjoint(Psi);
     cmatrix_t *rho = Psi_dag ? cmatrix_multiply(Psi, Psi_dag) : NULL;
 

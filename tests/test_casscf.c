@@ -78,11 +78,11 @@ static void test_cas22_frozen_core(void) {
   if (r) {
     check(r->converged, "CASSCF(2,2) converges within 60 iterations");
     check_close(r->total_energy, -7.881111895037824, 1e-5,
-                "CASSCF(2,2) energy matches PySCF mcscf.CASSCF()");
+                "CASSCF(2,2) energy matches mcscf.CASSCF() reference");
     check(r->total_energy < hf->total_energy + 1e-6,
           "CASSCF energy is variationally at or below RHF");
-    check(r->grad_norm < 1e-6, "final gradient norm below convergence "
-                               "threshold");
+    check(r->grad_norm < 1e-6,
+          "final gradient norm below convergence threshold");
 
     casscf_result_free(r);
   }
@@ -105,7 +105,7 @@ static void test_cas43_no_frozen_core(void) {
   if (r) {
     check(r->converged, "CASSCF(4,3) converges within 60 iterations");
     check_close(r->total_energy, -7.881130996863274, 1e-5,
-                "CASSCF(4,3) energy matches PySCF mcscf.CASSCF()");
+                "CASSCF(4,3) energy matches mcscf.CASSCF() reference");
 
     casscf_result_free(r);
   }

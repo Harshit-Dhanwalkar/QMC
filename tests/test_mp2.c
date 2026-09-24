@@ -216,7 +216,7 @@ static void test_invalid_input(void) {
 
 // General (non s-only) closed-shell MP2, checked against an independent
 // reference on LiH/STO-3G at R=3.015 bohr (mol = gto.M(atom='Li 0 0 0; H 0
-// 0 3.015', basis='sto-3g', unit='bohr'); pyscf.mp.MP2(scf.RHF(mol))):
+// 0 3.015', basis='sto-3g', unit='bohr'); mp.MP2(scf.RHF(mol))):
 //   RHF total energy:      -7.862009272120222
 //   MP2 corr (no frozen):  -0.012868323831743156
 //   MP2 corr (frozen=1):   -0.012640335346251669

@@ -6,14 +6,16 @@ CASSCF (Complete Active Space SCF)
 #include "../core/linalg/complex_eigh.h"
 #include "../core/matrix.h"
 #include "complex.h"
+#include "physics/molecular_hf.h"
+#include "physics/molecular_integrals.h"
 #include "second_quant.h"
 #include <math.h>
 #include <stdlib.h>
 
 /* Direct (bit-manipulation) fermionic operators: To build RDMs directly from a
- * CI vector without constructing full operator matrices. MSB-first bit
- * convention: mode 0 is the leftmost/most significant bit of an n_modes-bit
- * Fock-space index
+ * CI vector without constructing full operator matrices
+ * MSB-first bit convention: mode 0 is leftmost/most significant bit of an
+ * n_modes-bit Fock-space index
  */
 static int casscf_count_bits_before(int state, int mode, int n_modes) {
   int count = 0;
@@ -93,8 +95,8 @@ static double casscf_matrix_max_abs(const cmatrix_t *A) {
 
 /* \exp(K) for a small real matrix K, via scaling-and-squaring:
  *    \exp(K) = (\exp(K / 2^s)^(2^s)
- * with the inner exponential evaluated by a truncated Taylor series once
- * ||K/2^s|| is small enough for the series to converge rapidly. andard
+ * with inner exponential evaluated by a truncated Taylor series once ||K/2^s||
+ * is small enough for series to converge rapidly. andard
  */
 static cmatrix_t *casscf_matrix_exp(const cmatrix_t *K) {
   int n = K->nrows;
@@ -151,7 +153,7 @@ typedef struct {
                   * E = \sum h_eff * D1 + 1/2 sum eri * D2 */
 } casscf_active_ci_t;
 
-// Slice out the top-left n_sub x n_sub / n_sub^4 block of an n_basis-sized MO
+// Slice out top-left n_sub x n_sub / n_sub^4 block of an n_basis-sized MO
 // integral array (canonical ordering: core+active orbitals first, virtuals
 // last, exactly as CISD/FCI's frozen-core mode already assumes)
 static void casscf_slice_integrals(int n_basis, int n_sub, const double *h_mo,
@@ -182,11 +184,11 @@ static void casscf_slice_integrals(int n_basis, int n_sub, const double *h_mo,
 #undef EMO_FULL
 }
 
-// Builds the active-space Hamiltonian (frozen core folded into an
-// effective one-electron operator), diagonalizes it in n_electrons_active
-// sector, and constructs the 1-/2-RDM from resulting ground-state CI vector via
-// direct fermionic operators. Cross-checked: reconstructing energy as \sum
-// h_eff*D1 + 1/2 \sum eri_active*D2 (plus frozen-core/nuclear constant) exactly
+// Builds active-space Hamiltonian (frozen core folded into an effective
+// one-electron operator), diagonalizes it in n_electrons_active sector, and
+// constructs 1-/2-RDM from resulting ground-state CI vector via direct
+// fermionic operators. Cross-checked: reconstructing energy as:
+//  \sum h_eff*D1 + 1/2 \sum eri_active * D2 (+ frozen-core/nuclear constant)
 // reproduces same ground energy to machine precision
 static int casscf_active_space_ci(int n_basis, int n_frozen, int n_active,
                                   int n_electrons_active, const double *h_mo,
@@ -628,7 +630,7 @@ casscf_result_t *casscf_run(basis_function_t **basis, int n_basis,
     casscf_free_active_ci(&ci);
 
     // Orbital gradient + diagonal Hessian via central finite difference,
-    // holding D_full/d_full fixed (see casscf.h).
+    // holding D_full/d_full fixed
     for (size_t i = 0; i < n2; i++) {
       grad[i] = 0.0;
       hess_diag[i] = 0.0;

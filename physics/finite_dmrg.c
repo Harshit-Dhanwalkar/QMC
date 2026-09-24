@@ -1,10 +1,10 @@
 /*
- * Finite-system DMRG sweeps for the open-boundary spin-1/2 XXZ chain.
+ * Finite-system DMRG sweeps for the open-boundary spin-1/2 XXZ chain
  *
  * This file is deliberately self-contained (it does not reach into dmrg.c's
- * static helpers) so the validated infinite-system algorithm in dmrg.c is
- * untouched. The only things shared with dmrg.h are the dmrg_block_t layout
- * and dmrg_block_init()/dmrg_block_free().
+ * static helpers) so validated infinite-system algorithm in dmrg.c is
+ * untouched. The only things shared with dmrg.h are dmrg_block_t layout and
+ * dmrg_block_init()/dmrg_block_free()
  */
 
 #include "finite_dmrg.h"
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 /* Bare 2x2 site operators, basis order [up, down], S^z_up=+1/2,
- * S^z_down=-1/2, S^+ raises down->up. */
+ * S^z_down=-1/2, S^+ raises down->up */
 static cmatrix_t *site_sz(void) {
   cmatrix_t *m = cmatrix_alloc(2, 2);
   if (!m) {
@@ -387,7 +387,7 @@ lanczos_fail:
  * Truncate D x D `raw` block (just-enlarged system side) down to at most m_max
  * states, using the reduced density matrix of ground state \Psi (D x D2, D2 =
  * environment dim) on raw/system (row) side:
- * \rho = \Psi @ \Psi^\dagger
+ *   \rho = \Psi @ \Psi^\dagger
  *
  * Returns a freshly allocated truncated dmrg_block_t and sets *trunc_err_out,
  * or NULL on allocation failure
