@@ -30,7 +30,7 @@ static void check_true(int cond, const char *label) {
 #include <netcdf.h>
 
 static void test_1d_round_trip(void) {
-  printf("  === Test 1d_round_trip (USE_NETCDF=1) ===\n");
+  printf("  === Test 1D round trip (USE_NETCDF=1) ===\n");
 
   const double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
   int rc = netcdf_write_1d("test_netcdf_1d.nc", "values", data, 5);
@@ -63,7 +63,7 @@ static void test_1d_round_trip(void) {
 }
 
 static void test_matrix_round_trip(void) {
-  printf("  === Test matrix_round_trip (USE_NETCDF=1) ===\n");
+  printf("  === Test matrix round trip (USE_NETCDF=1) ===\n");
 
   // 2x3 row-major matrix
   const double data[6] = {1, 2, 3, 4, 5, 6};
@@ -103,7 +103,7 @@ static void test_matrix_round_trip(void) {
 #else // !USE_NETCDF
 
 static void test_stub_returns_failure_without_crashing(void) {
-  printf("  === Test_stub_returns_failure_without_crashing (default build, no "
+  printf("  === Test stub returns failure without crashing (default build, no "
          "USE_NETCDF) ===\n");
 
   const double data[3] = {1.0, 2.0, 3.0};

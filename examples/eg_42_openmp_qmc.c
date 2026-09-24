@@ -6,7 +6,7 @@
  * -- and combine them. Independence between replicas is exact (not merely
  * statistical): replica i's RNG stream is master seed's rng_jump()'d i times, a
  * proven non-overlapping 2^128-step advance of underlying xoshiro256**
- * generator (core/random.h). Combined error reported is inter-replica
+ * generator (see core/random.h). Combined error reported is inter-replica
  * standard error, which does not depend on block_size safely exceeding an
  * unmeasured autocorrelation time way single-chain block-averaging does
  *
