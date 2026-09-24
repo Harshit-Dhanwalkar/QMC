@@ -1,21 +1,21 @@
 /*
  * Test: Tight-binding lattice models (1D/2D chains, Anderson localization, SSH
- * topological edge states).
+ * topological edge states)
  *
  * 1. 1D chain (open + periodic): numerical diagonalization must match exact
  *    analytic dispersion (Bloch's theorem / standing-wave quantization) to near
- *    machine precision.
+ *    machine precision
  * 2. 2D square lattice (open + periodic): using exact separability of 2D
  *    problem into independent x/y 1D dispersions.
  * 3. lattice_ipr: deterministic checks on a delta-function state (IPR=1,
  *    maximally localized) and a uniform superposition (IPR=1/n, maximally
- *    delocalized).
+ *    delocalized)
  * 4. Anderson localization: disorder_W=0 must reproduce clean chain exactly
  *    (regression against lattice_1d_chain_analytic); average IPR over several
  *    disorder realizations must be noticeably larger at strong disorder than at
- *    weak disorder (qualitative Anderson-localization signature).
+ *    weak disorder (qualitative Anderson-localization signature)
  * 5. SSH model: topological phase (t2>t1, open) must show near-zero-energy
- *    states with large edge weight/IPR; trivial phase (t1>t2) must not.
+ *    states with large edge weight/IPR; trivial phase (t1>t2) must not
  */
 
 #include "../core/complex.h"
@@ -66,7 +66,7 @@ static double *diagonalize_sorted(const cmatrix_t *H, int n) {
 }
 
 static void test_1d_chain_vs_analytic(void) {
-  printf("test_1d_chain_vs_analytic:\n");
+  printf("  == Test 1D chain vs analytic ===\n");
 
   int n_sites = 10;
   double eps0 = 0.5, t = 1.2;
@@ -92,7 +92,7 @@ static void test_1d_chain_vs_analytic(void) {
 }
 
 static void test_2d_square_vs_analytic(void) {
-  printf("test_2d_square_vs_analytic:\n");
+  printf("  === Test 2D square vs analytic ===\n");
 
   int nx = 4, ny = 5;
   double eps0 = 0.3, t = 1.1;
@@ -127,7 +127,7 @@ static void test_2d_square_vs_analytic(void) {
 }
 
 static void test_ipr_deterministic(void) {
-  printf("test_ipr_deterministic:\n");
+  printf("  === Test IPR deterministic ===\n");
 
   int n = 8;
   cvector_t *delta = cvector_alloc(n);
@@ -152,7 +152,7 @@ static void test_ipr_deterministic(void) {
 }
 
 static void test_anderson_clean_limit(void) {
-  printf("test_anderson_clean_limit:\n");
+  printf(" === Test anderson clean limit ===\n");
 
   int n_sites = 12;
   double t = 1.0;
@@ -181,7 +181,7 @@ static void test_anderson_clean_limit(void) {
 }
 
 static void test_anderson_localization_trend(void) {
-  printf("test_anderson_localization_trend:\n");
+  printf("  === Test_anderson_localization_trend ===\n");
 
   int n_sites = 60;
   double t = 1.0;
@@ -227,7 +227,7 @@ static void test_anderson_localization_trend(void) {
 }
 
 static void test_ssh_topological_edge_states(void) {
-  printf("test_ssh_topological_edge_states:\n");
+  printf("  === Test SSH topological edge states ===\n");
 
   int n_cells = 15; // 30 sites
   int N = 2 * n_cells;
@@ -298,10 +298,13 @@ static void test_ssh_topological_edge_states(void) {
 }
 
 static void test_landau_zero_field_matches_plain_square(void) {
-  printf("test_landau_zero_field_matches_plain_square:\n");
+  printf("  === Test Landau zero field matches plain square ===\n");
 
-  int nx = 6, ny = 6, N = nx * ny;
-  double eps0 = 0.3, t = 1.1;
+  int nx = 6;
+  int ny = 6;
+  int N = nx * ny;
+  double eps0 = 0.3;
+  double t = 1.1;
 
   // NOTE: \alpha=0 must reduce lattice_build_2d_square_magnetic exactly to
   // lattice_build_2d_square (all Peierls phases = \exp(0) = 1). Using
@@ -351,7 +354,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
 }
 
 static void test_landau_hermiticity(void) {
-  printf("test_landau_hermiticity:\n");
+  printf("  === Test landau hermiticity ===\n");
 
   int nx = 10, ny = 10, N = nx * ny;
   cmatrix_t *H = lattice_build_2d_square_magnetic(nx, ny, 0.0, 1.0, 0.037,
@@ -374,7 +377,7 @@ static void test_landau_hermiticity(void) {
 }
 
 static void test_landau_continuum_limit(void) {
-  printf("test_landau_continuum_limit:\n");
+  printf("  === Test Landau continuum limit ===\n");
 
   // NOTE: Weak-field limit: ground Landau level should sit close to
   // continuum-limit prediction on a lattice much larger than magnetic length ~

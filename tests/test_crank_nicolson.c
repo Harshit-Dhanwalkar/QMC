@@ -49,6 +49,7 @@ static double norm_sq(const cvector_t *psi, double dx) {
   for (int i = 0; i < psi->n; i++) {
     s += c_abs2(psi->data[i]);
   }
+
   return s * dx;
 }
 
@@ -80,7 +81,7 @@ static void make_gaussian(cvector_t *psi, const double *x, int N, double x0,
 }
 
 static void test_time_independent_limit(void) {
-  printf("Test: time-independent limit matches static path\n");
+  printf("  === Test: time-independent limit matches static path ===\n");
 
   int N = 400;
   double x_min = -10.0;
@@ -141,7 +142,7 @@ static void test_time_independent_limit(void) {
 }
 
 static void test_norm_conserved_no_cap(void) {
-  printf("Test: norm conservation (no CAP)\n");
+  printf("  === Test Norm conservation (no CAP) ===\n");
 
   int N = 300;
   double x_min = -15.0;
@@ -177,7 +178,7 @@ static void test_norm_conserved_no_cap(void) {
 
 // Group velocity v = \hbar* k0 / m = 3.0 (natural units)
 static void test_cap_absorbs(void) {
-  printf("Test: CAP absorbs outgoing wavepacket\n");
+  printf("  === Test CAP absorbs outgoing wavepacket ===\n");
 
   int N = 400;
   double x_min = -20.0;
@@ -238,7 +239,7 @@ static void test_cap_absorbs(void) {
 }
 
 static void test_stationary_state_probability_invariant(void) {
-  printf("Test: |\\phi(t)|^2 invariant for energy eigenstate\n");
+  printf("  === Test |\\phi(t)|^2 invariant for energy eigenstate ===\n");
 
   int N = 201;
   double xmin = -5.0;
@@ -343,7 +344,7 @@ static void test_stationary_state_probability_invariant(void) {
 }
 
 int main(void) {
-  printf(" > Testing Crank-Nicolson time evolution...\n\n");
+  printf(" > Testing Crank-Nicolson time evolution\n");
 
   test_time_independent_limit();
   test_norm_conserved_no_cap();

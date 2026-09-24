@@ -153,7 +153,7 @@ static void test_2d_round_trip(void) {
   printf("  === Test 2D round trip ===\n");
 
   // 3x2 grid (nx=3, ny=2), nz=1
-  double data[6] = {1.0, 2.0, 3.0, 4.0, 5.0, -6.5};
+  const double data[6] = {1.0, 2.0, 3.0, 4.0, 5.0, -6.5};
   int rc = vtk_write_structured_points("test_vtk_2d.vtk", "psi", data, 3, 2, 1,
                                        0.1, 0.2, 1.0, -1.0, -2.0, 0.0);
   check_true(rc == 0, "vtk_write_structured_points returns 0 on success");
@@ -202,7 +202,7 @@ static void test_3d_field(void) {
   printf("  === Test 3D field ===\n");
 
   // 2x2x2 grid
-  double data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  const double data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
   int rc = vtk_write_structured_points("test_vtk_3d.vtk", "density", data, 2, 2,
                                        2, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0);
   check_true(rc == 0, "3D write returns 0 on success");
@@ -228,7 +228,7 @@ static void test_3d_field(void) {
 static void test_invalid_input(void) {
   printf("  === Test invalid input ===\n");
 
-  double data[1] = {1.0};
+  const double data[1] = {1.0};
   int rc = vtk_write_structured_points("x.vtk", "v", data, 0, 1, 1, 1, 1, 1, 0,
                                        0, 0);
   check_true(rc == -1, "zero grid dimension is rejected, not silently "

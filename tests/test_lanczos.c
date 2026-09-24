@@ -1,17 +1,17 @@
 /*
- * Test: Lanczos iteration for lowest eigenvalues of a Hermitian sparse matrix.
+ * Test: Lanczos iteration for lowest eigenvalues of a Hermitian sparse matrix
  *
  * 1. Diagonal matrix sanity check: for a diagonal Hermitian matrix, k lowest
  *    eigenvalues are trivially k smallest diagonal entries, and eigenvectors
  *    are corresponding coordinate vectors. Deterministic, exact (to numerical
- *    tolerance).
+ *    tolerance)
  * 2. Cross-check against the project's already-trusted dense Hermitian
  *    eigensolver (cmatrix_eigh): build a random Hermitian sparse matrix, run
  *    both solvers, compare k lowest eigenvalues and verify Ax = \lambda * x for
- *    Lanczos eigenvectors directly.
+ *    Lanczos eigenvectors directly
  * 3. Eigenvector orthonormality: <v_i, v_j> = \delta_ij for returned
- *    eigenvectors.
- * 4. Invalid-input handling.
+ *    eigenvectors
+ * 4. Invalid-input handling
  */
 
 #include "../core/complex.h"
@@ -47,7 +47,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_diagonal_matrix(void) {
-  printf("test_diagonal_matrix:\n");
+  printf("  === Test Diagonal matrix ===\n");
 
   int n = 8;
   const double diag_vals[8] = {5.0, 1.0, 8.0, 0.5, 3.0, 9.0, 2.0, 6.0};
@@ -69,6 +69,8 @@ static void test_diagonal_matrix(void) {
 
   check_true(res != NULL, "lanczos_eigs succeeds on diagonal matrix");
   if (res) {
+    check_true(res->n == k, "res->n equals k, not the matrix dimension");
+
     // sorted smallest diagonal entries: 0.5, 1.0, 2.0
     const double expected[3] = {0.5, 1.0, 2.0};
     for (int i = 0; i < k; i++) {
@@ -106,7 +108,7 @@ static cmatrix_t *random_hermitian(int n, uint64_t seed) {
 }
 
 static void test_random_hermitian_vs_dense(void) {
-  printf("test_random_hermitian_vs_dense:\n");
+  printf("  === Test Random Hermitian vs Dense ===\n");
 
   int n = 12;
   cmatrix_t *dense = random_hermitian(n, 20260802ULL);
@@ -127,6 +129,7 @@ static void test_random_hermitian_vs_dense(void) {
     for (int i = 0; i < k; i++) {
       char label[48];
       snprintf(label, sizeof label, "eigenvalue[%d] vs dense cmatrix_eigh", i);
+
       check_close(res->values[i], dense_eig->eigenvalues[i], 1e-6, label);
     }
 
@@ -137,6 +140,7 @@ static void test_random_hermitian_vs_dense(void) {
       for (int row = 0; row < n; row++) {
         v->data[row] = CMAT(res->vectors, row, i);
       }
+
       sparse_mv(A, v, Av);
 
       double residual = 0.0;
@@ -145,13 +149,16 @@ static void test_random_hermitian_vs_dense(void) {
             c_sub(Av->data[row], c_scale(v->data[row], res->values[i]));
         residual += c_abs2(diff);
       }
+
       residual = sqrt(residual);
 
       char label[48];
       snprintf(label, sizeof label, "||A*v[%d] - lambda[%d]*v[%d]|| ~ 0", i, i,
                i);
+
       check_close(residual, 0.0, 1e-6, label);
     }
+
     cvector_free(v);
     cvector_free(Av);
 
@@ -166,12 +173,15 @@ static void test_random_hermitian_vs_dense(void) {
         }
 
         const double expected_re = (i == j) ? 1.0 : 0.0;
+
         char label[48];
         snprintf(label, sizeof label, "<v[%d],v[%d]>.re", i, j);
+
         check_close(dot.re, expected_re, 1e-6, label);
 
         char label2[48];
         snprintf(label2, sizeof label2, "<v[%d],v[%d]>.im", i, j);
+
         check_close(dot.im, 0.0, 1e-6, label2);
       }
     }
@@ -188,7 +198,7 @@ static void test_random_hermitian_vs_dense(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test Invalid input ===\n");
 
   cmatrix_t *dense = cmatrix_alloc(3, 3);
   for (int i = 0; i < 3; i++) {
@@ -214,6 +224,8 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Testing Lanczos iteration:\n");
+
   test_diagonal_matrix();
   test_random_hermitian_vs_dense();
   test_invalid_input();

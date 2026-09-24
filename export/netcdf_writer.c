@@ -342,6 +342,7 @@ int netcdf_write_matrix(const char *filename, const char *varname,
 #else /* !USE_NETCDF */
 
 struct netcdf_writer {
+  // cppcheck-suppress unusedStructMember
   int unused;
 };
 

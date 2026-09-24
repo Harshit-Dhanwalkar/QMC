@@ -55,7 +55,7 @@ static char *slurp(const char *path) {
 static void test_field_types_and_escaping(void) {
   printf("  === Test field_types_and_escaping ===\n");
 
-  double energies[3] = {-2.9037, 0.0, 1.5};
+  const double energies[3] = {-2.9037, 0.0, 1.5};
 
   json_field_t fields[6] = {
       json_field_string("method", "DMC"),
@@ -93,7 +93,7 @@ static void test_field_types_and_escaping(void) {
   check_true(strstr(content, "\"bad_value\": null") != NULL,
              "NaN is written as JSON null, not a fabricated number");
 
-  // Braces present and the object is exactly one level deep 
+  // Braces present and the object is exactly one level deep
   check_true(content[0] == '{', "output starts with an opening brace");
   check_true(strchr(content, '}') != NULL, "output has a closing brace");
   check_true(strchr(content, '{') == content,

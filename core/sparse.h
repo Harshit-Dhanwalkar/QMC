@@ -1,6 +1,7 @@
 #ifndef QMC_SPARSE_H
 #define QMC_SPARSE_H
 
+#include "complex.h"
 #include "matrix.h"
 #include "vector.h"
 
@@ -33,7 +34,8 @@ static inline void sparse_mv_hermitian(const sparse_matrix_t *sp_mat,
 
 /* Lanczos for lowest eigenvalues */
 typedef struct {
-  int n;
+  int n; /* number of eigenpairs actually returned (== k passed to lanczos_eigs)
+          */
   double *values;
   cmatrix_t *vectors;
 } lanczos_result_t;
@@ -41,29 +43,28 @@ typedef struct {
 /*
  * Lanczos iteration for k algebraically lowest eigenvalues/vectors of Hermitian
  * sparse matrix `sp_mat`, via a real tridiagonal Krylov projection with full
- * reorthogonalization.
+ * reorthogonalization
  *
  * k       : number of lowest eigenvalues wanted.(1 <= k <= sp_mat->nrows)
- * max_iter: Lanczos steps to run (>= k); internally capped at sp_mat->nrows, since
- *           the Krylov subspace can't exceed problem dimension.
+ * max_iter: Lanczos steps to run (>= k); internally capped at sp_mat->nrows,
+ *           since Krylov subspace can't exceed problem dimension
  * tol     : breakdown threshold for residual norm \beta_j; if \beta_j falls
- *           below this, invariant subspace found so far is used as-is.
+ *           below this, invariant subspace found so far is used as-is
  *
  * Returns NULL on invalid input, allocation failure, or if Krylov subspace
- * collapses (invariant subspace found) before k directions have been generated.
+ * collapses (invariant subspace found) before k directions have been generated
  * Otherwise returns a lanczos_result_t with k lowest eigenvalues (ascending)
- * and their eigenvectors as columns of an n x k cmatrix_t. Free with
- * lanczos_free.
+ * and their eigenvectors as columns of an n x k cmatrix_t
  */
 lanczos_result_t *lanczos_eigs(const sparse_matrix_t *sp_mat, int k,
                                int max_iter, double tol);
 void lanczos_free(lanczos_result_t *res);
 
-/* Lanczos tridiagonalization from a caller-supplied starting vector.
+/* Lanczos tridiagonalization from a caller-supplied starting vector
  *
  * Runs same three-term recurrence with full reorthogonalization starting from
  * v0, and returns raw tridiagonal coefficients (\alpha, \beta) (instead of
- * eigenpairs).
+ * eigenpairs)
  *
  * NOTE: v0 must already be normalized (||v0|| = 1); this is caller's
  * responsibility since normalization constant I0 = <v0|v0> (before normalizing)
@@ -72,8 +73,7 @@ void lanczos_free(lanczos_result_t *res);
  *
  * Returns NULL on invalid input or allocation failure. Otherwise returns a
  * lanczos_tridiag_t with m \alpha coefficients and m-1 \beta coefficients (m <=
- * max_iter, fewer if the Krylov subspace collapses early). Free with
- * lanczos_tridiag_free.
+ * max_iter, fewer if Krylov subspace collapses early)
  */
 typedef struct {
   int m;

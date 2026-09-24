@@ -245,7 +245,8 @@ lanczos_result_t *lanczos_eigs(const sparse_matrix_t *sp_mat, int k,
     if (T_eig) {
       res = malloc(sizeof *res);
       if (res) {
-        res->n = rows;
+        // res->n = rows;
+        res->n = k; // eignepairs
         res->values = malloc((size_t)k * sizeof *res->values);
         res->vectors = cmatrix_alloc(rows, k);
 

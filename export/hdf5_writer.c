@@ -188,6 +188,7 @@ int hdf5_write_matrix(const char *filename, const char *dataset,
 #else /* !USE_HDF5 */
 
 struct hdf5_writer {
+  // cppcheck-suppress unusedStructMember
   int unused;
 };
 

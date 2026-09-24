@@ -44,7 +44,7 @@ static long file_size(const char *path) {
 }
 
 static void test_inline_display_math(void) {
-  printf("Test: latex_inline_math / latex_display_math\n");
+  printf("   === Test latex_inline_math / latex_display_math ===\n");
 
   char *inline_res = latex_inline_math("x^2+1");
   check(inline_res != NULL, "latex_inline_math allocates a result");
@@ -65,8 +65,8 @@ static void test_inline_display_math(void) {
 }
 
 static void test_matrix_generation(void) {
-  printf("Test: latex_matrix, including a cell longer than the old "
-         "implementation's rough 10-char/cell size estimate");
+  printf("  === Test: latex_matrix, including a cell longer than rough "
+         "10-char/cell size estimate ===\n");
 
   const char *row0[2] = {"1", "0"};
   const char *row1[2] = {"0", "1"};
@@ -102,7 +102,8 @@ static void test_matrix_generation(void) {
 }
 
 static void test_generate_table(void) {
-  printf("Test: latex_generate_table writes a well-formed .tex file\n");
+  printf(
+      "  === Test: latex_generate_table writes a well-formed .tex file ===\n");
 
   const char *row0[2] = {"a", "b"};
   const char *row1[2] = {"c", NULL}; // NULL cell -> empty
@@ -139,7 +140,8 @@ static void test_generate_table(void) {
 }
 
 static void test_generate_article(void) {
-  printf("Test: latex_generate_article writes a well-formed .tex file\n");
+  printf(
+      "  === Test latex_generate_article writes a well-formed .tex file ===\n");
 
   const char *sections[] = {"\\section{Intro}\nHello.", NULL};
   const char *path = "/tmp/qmc_test_article.tex";
@@ -165,8 +167,8 @@ static void test_generate_article(void) {
 }
 
 static void test_write_figure(void) {
-  printf("Test: latex_write_figure writes a well-formed .tex file, even "
-         "with NULL optional fields\n");
+  printf("  === Test Function latex_write_figure writes a well-formed .tex "
+         "file, even with NULL optional fields\n");
 
   const char *path = "/tmp/qmc_test_figure.tex";
   int rc = latex_write_figure(path, "plot.pdf", "A caption", "E = mc^2");
@@ -188,7 +190,8 @@ static void test_write_figure(void) {
 }
 
 static void test_unsafe_paths_rejected(void) {
-  printf("Test: shell-metacharacter-containing arguments are rejected");
+  printf(
+      "  === Test Shell-metacharacter-containing arguments are rejected ===\n");
 
   if (!latex_tools_available()) {
     printf("  (skipped: pdflatex/pdftoppm not available in this environment");
@@ -231,9 +234,8 @@ static void test_actual_rendering(void) {
 
   remove(png_out);
 
-  /* Two renders in the same process must not clobber each other's
-   * intermediate files (regression test for the old hardcoded
-   * "/tmp/qmc_eq.*" basename collision). */
+  /* Two renders in same process must not clobber each other's intermediate
+   * files */
   const char *pdf_out2 = "/tmp/qmc_test_render2.pdf";
   int rc1 = latex_render_to_pdf("\\alpha+\\beta", pdf_out);
   int rc2 = latex_render_to_pdf("\\gamma+\\delta", pdf_out2);
@@ -249,6 +251,8 @@ static void test_actual_rendering(void) {
 }
 
 int main(void) {
+  printf(" > Testing LaTeX Generation:\n");
+
   test_inline_display_math();
   test_matrix_generation();
   test_generate_table();
