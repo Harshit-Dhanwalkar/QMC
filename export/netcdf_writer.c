@@ -50,6 +50,82 @@ struct netcdf_writer {
   int ncid;
 };
 
+// HACK: "replace a variable with a new shape, delete old dims" was intention of
+// mine to implement but due to underlying NetCDF C API only grew tool for it
+// (nc_del_var, nc_del_dim) in version 4.9.0. So version of my intent cannot
+// link on the CI runner either
+// /*
+//  * Define (or redefine) a variable and write its data
+//  *
+//  * Each variable owns a private set of dimensions named "<varname>_dim0",
+//  * "<varname>_dim1", ... so that two variables with same shape do not collide
+//  * on dimension names, and so that replacing a variable is a well-defined
+//  * delete-then-redefine operation
+//  *
+//  * Caller must not have the file in define mode on entry
+//  */
+// static netcdf_status_t define_and_write_variable(netcdf_writer_t *w,
+//                                                  const char *varname,
+//                                                  const double *data, int
+//                                                  ndims, const size_t *shape)
+//                                                  {
+//   int rc = nc_redef(w->ncid);
+//   if (rc != NC_NOERR && rc != NC_EINDEFINE) {
+//     return NETCDF_ERR_CREATE_VARIABLE;
+//   }
+//
+//   /* If a variable of this name already exists, remove it
+//    * Delete variable first (that drops its reference to the dimensions), then
+//    * try to remove the dimensions we previously defined for it. */
+//   int old_varid;
+//   if (nc_inq_varid(w->ncid, varname, &old_varid) == NC_NOERR) {
+//     if (nc_del_var(w->ncid, old_varid) != NC_NOERR) {
+//       nc_enddef(w->ncid);
+//
+//       return NETCDF_ERR_CREATE_VARIABLE;
+//     }
+//
+//     char dimname[NETCDF_DIM_NAME_MAX];
+//     for (int i = 0; i < ndims; i++) {
+//       snprintf(dimname, sizeof dimname, "%s_dim%d", varname, i);
+//       int dimid;
+//       if (nc_inq_dimid(w->ncid, dimname, &dimid) == NC_NOERR) {
+//         // best-effort; will fail if some other variable references it
+//         (void)nc_del_dim(w->ncid, dimid);
+//       }
+//     }
+//   }
+//
+//   int dimids[2];
+//   char dimname[NETCDF_DIM_NAME_MAX];
+//   for (int i = 0; i < ndims; i++) {
+//     snprintf(dimname, sizeof dimname, "%s_dim%d", varname, i);
+//     if (nc_def_dim(w->ncid, dimname, shape[i], &dimids[i]) != NC_NOERR) {
+//       nc_enddef(w->ncid);
+//
+//       return NETCDF_ERR_CREATE_VARIABLE;
+//     }
+//   }
+//
+//   int varid;
+//   if (nc_def_var(w->ncid, varname, NC_DOUBLE, ndims, dimids, &varid) !=
+//       NC_NOERR) {
+//     nc_enddef(w->ncid);
+//
+//     return NETCDF_ERR_CREATE_VARIABLE;
+//   }
+//
+//   if (nc_enddef(w->ncid) != NC_NOERR) {
+//     return NETCDF_ERR_CREATE_VARIABLE;
+//   }
+//
+//   if (nc_put_var_double(w->ncid, varid, data) != NC_NOERR) {
+//     return NETCDF_ERR_WRITE;
+//   }
+//
+//   return NETCDF_OK;
+// }
+
 /*
  * Define (or redefine) a variable and write its data
  *
@@ -58,38 +134,68 @@ struct netcdf_writer {
  * dimension names, and so that replacing a variable is a well-defined
  * delete-then-redefine operation
  *
- * Caller must not have the file in define mode on entry
+ * Caller must not have file in define mode on entry
+ */
+/*
+ * Define (or update) a variable and write its data
+ *
+ * Each variable owns a private set of dimensions named "<varname>_dim0",
+ * "<varname>_dim1", ... so two variables with same shape do not
+ * collide on dimension names
+ *
+ * NOTE:: Strategy (works on all NetCDF 4.x; nc_del_var/nc_del_dim pair is
+ * only available from NetCDF 4.9.0 onward, so it cannot be used here):
+ *   - Variable does not exist yet:
+ *       define it (dimensions + variable), enddef, write
+ *   - Variable exists, shape matches what caller requested:
+ *       write into it in place. No redefinition needed
+ *   - Variable exists, shape differs:
+ *       return NETCDF_ERR_CREATE_VARIABLE. Changing a variable's shape
+ *       would require deleting and recreating it, which pre-4.9 NetCDF
+ *       does not support
+ *
+ * Caller must not have file in define mode on entry
  */
 static netcdf_status_t define_and_write_variable(netcdf_writer_t *w,
                                                  const char *varname,
                                                  const double *data, int ndims,
                                                  const size_t *shape) {
-  // Enter define mode. NC_EINDEFINE is fine -- we're already there
-  int rc = nc_redef(w->ncid);
-  if (rc != NC_NOERR && rc != NC_EINDEFINE) {
-    return NETCDF_ERR_CREATE_VARIABLE;
-  }
+  int varid;
 
-  /* If a variable of this name already exists, remove it
-   * Delete variable first (that drops its reference to the dimensions), then
-   * try to remove the dimensions we previously defined for it. */
-  int old_varid;
-  if (nc_inq_varid(w->ncid, varname, &old_varid) == NC_NOERR) {
-    if (nc_del_var(w->ncid, old_varid) != NC_NOERR) {
-      nc_enddef(w->ncid);
-
+  // Case 1: variable already exists
+  if (nc_inq_varid(w->ncid, varname, &varid) == NC_NOERR) {
+    /* Shape must match to allow in-place overwrite. */
+    int vndims = 0;
+    if (nc_inq_varndims(w->ncid, varid, &vndims) != NC_NOERR ||
+        vndims != ndims) {
       return NETCDF_ERR_CREATE_VARIABLE;
     }
 
-    char dimname[NETCDF_DIM_NAME_MAX];
+    int dimids[2];
+    if (nc_inq_vardimid(w->ncid, varid, dimids) != NC_NOERR) {
+      return NETCDF_ERR_CREATE_VARIABLE;
+    }
+
     for (int i = 0; i < ndims; i++) {
-      snprintf(dimname, sizeof dimname, "%s_dim%d", varname, i);
-      int dimid;
-      if (nc_inq_dimid(w->ncid, dimname, &dimid) == NC_NOERR) {
-        // best-effort; will fail if some other variable references it
-        (void)nc_del_dim(w->ncid, dimid);
+      size_t len = 0;
+      if (nc_inq_dimlen(w->ncid, dimids[i], &len) != NC_NOERR ||
+          len != shape[i]) {
+        return NETCDF_ERR_CREATE_VARIABLE;
       }
     }
+
+    // Shape matches: overwrite data in place
+    if (nc_put_var_double(w->ncid, varid, data) != NC_NOERR) {
+      return NETCDF_ERR_WRITE;
+    }
+
+    return NETCDF_OK;
+  }
+
+  // Case 2: variable does not exist yet: define it
+  int rc = nc_redef(w->ncid);
+  if (rc != NC_NOERR && rc != NC_EINDEFINE) {
+    return NETCDF_ERR_CREATE_VARIABLE;
   }
 
   int dimids[2];
@@ -103,7 +209,6 @@ static netcdf_status_t define_and_write_variable(netcdf_writer_t *w,
     }
   }
 
-  int varid;
   if (nc_def_var(w->ncid, varname, NC_DOUBLE, ndims, dimids, &varid) !=
       NC_NOERR) {
     nc_enddef(w->ncid);

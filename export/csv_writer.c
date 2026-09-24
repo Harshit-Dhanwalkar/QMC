@@ -17,7 +17,6 @@
 struct csv_writer {
   FILE *file;
   csv_options_t opts;
-  int cols_written_this_row;
   int wrote_anything_this_row;
   csv_status_t last_error;
 };
@@ -125,8 +124,8 @@ static csv_status_t csv_write_escaped(csv_writer_t *writer, const char *s) {
     }
   }
 
-  int rc;
   if (needs_quotes) {
+    int rc;
     rc = fputc('"', writer->file);
     if (rc == EOF) {
       writer->last_error = CSV_ERR_IO;
