@@ -22,7 +22,7 @@ ifeq ($(shell command -v brew >/dev/null 2>&1 && echo yes),yes)
     endif
 endif
 
-# AddressSanitizer is on by default.
+# AddressSanitizer is on by default
 SANITIZE ?= 1
 ifeq ($(SANITIZE),1)
     CFLAGS  += -fsanitize=address -g -DSANITIZE_ENABLED=1
@@ -131,8 +131,13 @@ LAPACK_AVAIL := $(shell tmpf=$$(mktemp) && \
 USE_LAPACK ?= 0
 ifeq ($(USE_LAPACK),1)
    ifeq ($(LAPACK_AVAIL),no)
-        $(warning USE_LAPACK=1 requested but LAPACK/BLAS could not be compiled/linked (missing liblapacke-dev/liblapack-dev/libblas-dev, or an OpenBLAS equivalent) - the build will likely fail deep in core/linalg. Install e.g. 'sudo apt install liblapacke-dev liblapack-dev libblas-dev' (or libopenblas-dev) and re-run.)
+        $(warning USE_LAPACK=1 requested but LAPACK/BLAS could not be compiled/linked - \
+                  falling back to hand-rolled eigensolvers. \
+                  Install liblapacke-dev liblapack-dev libblas-dev and re-run.)
+        override USE_LAPACK := 0
    endif
+endif
+ifeq ($(USE_LAPACK),1)
    CFLAGS  += -DUSE_LAPACK
    LDFLAGS += -llapacke -lblas -llapack # -ltmglib -lopenblas
 endif
@@ -154,10 +159,15 @@ HDF5_AVAIL := $(shell tmpf=$$(mktemp) && \
     rm -f $$tmpf && echo yes || echo no)
 
 USE_HDF5 ?= 0
+USE_HDF5 ?= 0
 ifeq ($(USE_HDF5),1)
    ifeq ($(HDF5_AVAIL),no)
-        $(warning USE_HDF5=1 requested but HDF5 could not be compiled/linked (missing libhdf5-dev or equivalent) - the build will likely fail linking export/hdf5_writer.c. Install e.g. 'sudo apt install libhdf5-dev' and re-run.)
+        $(warning USE_HDF5=1 requested but HDF5 could not be compiled/linked - \
+                  falling back to stub build. Install libhdf5-dev and re-run.)
+        override USE_HDF5 := 0
    endif
+endif
+ifeq ($(USE_HDF5),1)
    CFLAGS  += -DUSE_HDF5 $(HDF5_CFLAGS)
    LDFLAGS += $(HDF5_LDFLAGS)
 endif
@@ -181,8 +191,12 @@ NETCDF_AVAIL := $(shell tmpf=$$(mktemp) && \
 USE_NETCDF ?= 0
 ifeq ($(USE_NETCDF),1)
    ifeq ($(NETCDF_AVAIL),no)
-        $(warning USE_NETCDF=1 requested but NetCDF could not be compiled/linked (missing libnetcdf-dev or equivalent) - the build will likely fail linking export/netcdf_writer.c. Install e.g. 'sudo apt install libnetcdf-dev' and re-run.)
+        $(warning USE_NETCDF=1 requested but NetCDF could not be compiled/linked - \
+                  falling back to stub build. Install libnetcdf-dev and re-run.)
+        override USE_NETCDF := 0
    endif
+endif
+ifeq ($(USE_NETCDF),1)
    CFLAGS  += -DUSE_NETCDF $(NETCDF_CFLAGS)
    LDFLAGS += $(NETCDF_LDFLAGS)
 endif
@@ -289,7 +303,8 @@ PLOT_SRCS    = $(PLOT_SRC)
 EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
                    $(EXPORT_DIR)/json_writer.c \
                    $(EXPORT_DIR)/hdf5_writer.c \
-                   $(EXPORT_DIR)/netcdf_writer.c
+                   $(EXPORT_DIR)/netcdf_writer.c \
+                   $(EXPORT_DIR)/plot_common.c
 
 # Object files
 ALL_SRCS    = $(CORE_SRCS) $(PHYSICS_SRCS) $(LATEX_SRCS) $(PLOT_SRC) $(EXPORT_DATA_SRCS)
@@ -502,9 +517,6 @@ $(BUILD_DIR)/%.o: %.c
 $(OUTPUT_DIR):
 	@mkdir -p $(OUTPUT_DIR)
 
-$(BUILD_DIR)/%.o: %.c
-	$(CC) $(CFLAGS) -Icore -Iexport -I. -c $< -o $@
-
 ## Examples
 $(BUILD_DIR)/eg_%: $(EXAMPLES_DIR)/eg_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
 	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
@@ -646,7 +658,7 @@ $(BUILD_DIR)/bench_%: $(BENCH_DIR)/bench_%.c $(ALL_OBJS) | $(OUTPUT_DIR)
 # (bench_openmp_parallel: hybrid MPI+OpenMP benchmark)
 MPICC ?= mpicc
 # MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && echo yes || echo no)
- MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && tmpf=$$(mktemp) && echo 'int main(void){return 0;}' | $(MPICC) -x c - -o $$tmpf >/dev/null 2>&1 && rm -f $$tmpf && echo yes || echo no)
+MPI_AVAIL := $(shell command -v $(MPICC) >/dev/null 2>&1 && tmpf=$$(mktemp) && echo 'int main(void){return 0;}' | $(MPICC) -x c - -o $$tmpf >/dev/null 2>&1 && rm -f $$tmpf && echo yes || echo no)
 
 $(BUILD_DIR)/bench_openmp_parallel: $(BENCH_DIR)/bench_openmp_parallel.c $(ALL_OBJS) | $(OUTPUT_DIR)
 ifeq ($(MPI_AVAIL),yes)

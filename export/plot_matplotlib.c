@@ -1,17 +1,18 @@
 /*
- * Matplotlib (Python subprocess pipe) backend for PLOT_BACKEND=MATPLOTLIB.
+ * Matplotlib (Python subprocess pipe) backend
+ * Compiled with PLOT_BACKEND=MATPLOTLIB flag
  *
  * TODO: Implement PLOT_FORMAT_WINDOW for matplotlib's interactive
  * plt.show() GUI backend (TkAgg/Qt5Agg)
- *
  * Returns -1 for WINDOW mode
  */
 
 #include "matplotlib/matplotlib_pipe.h"
 #include "plot.h"
+#include "plot_internal.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 static int python3_available(void) {
   return system("command -v python3 > /dev/null 2>&1") == 0;
@@ -21,22 +22,24 @@ static int matplotlib_module_available(void) {
   return system("python3 -c 'import matplotlib' > /dev/null 2>&1") == 0;
 }
 
-static const char *mpl_ext(plot_format_t fmt) {
-  switch (fmt) {
-  case PLOT_FORMAT_PNG:
-    return "png";
-  case PLOT_FORMAT_PDF:
-    return "pdf";
-  case PLOT_FORMAT_SVG:
-    return "svg";
-  case PLOT_FORMAT_EPS:
-    return "eps";
-  case PLOT_FORMAT_JPEG:
-    return "jpg";
-  default:
-    return "png";
-  }
-}
+const char *plot_backend_name(void) { return "matplotlib"; }
+
+// static const char *mpl_ext(plot_format_t fmt) {
+//   switch (fmt) {
+//   case PLOT_FORMAT_PNG:
+//     return "png";
+//   case PLOT_FORMAT_PDF:
+//     return "pdf";
+//   case PLOT_FORMAT_SVG:
+//     return "svg";
+//   case PLOT_FORMAT_EPS:
+//     return "eps";
+//   case PLOT_FORMAT_JPEG:
+//     return "jpg";
+//   default:
+//     return "png";
+//   }
+// }
 
 // Builds Python single-quoted string literal
 static void py_repr(char *out, size_t out_size, const char *s) {
@@ -93,39 +96,71 @@ static void apply_axis_limits(matplotlib_t *mp, const plot_opts_t *opts) {
   if (opts && (opts->xmin != 0.0 || opts->xmax != 0.0)) {
     matplotlib_cmd(mp, "plt.xlim(%.10e, %.10e)", opts->xmin, opts->xmax);
   }
+
   if (opts && (opts->ymin != 0.0 || opts->ymax != 0.0)) {
     matplotlib_cmd(mp, "plt.ylim(%.10e, %.10e)", opts->ymin, opts->ymax);
   }
 }
 
-int plot_line(const char *filename, plot_format_t format, const double *x,
-              const double *y, int n, const plot_opts_t *opts) {
-  if (format == PLOT_FORMAT_WINDOW) {
-    // TODO: Implement GUI backend
-    fprintf(stderr,
-            "plot: matplotlib backend does not implement PLOT_FORMAT_WINDOW\n");
-
-    return -1;
-  }
-
+static int backend_ready(const char *filename) {
   if (!python3_available()) {
-    fprintf(stderr, "plot: python3 not found - skipping '%s'\n", filename);
+    fprintf(stderr, "plot(matplotlib): python3 not found - skipping '%s'\n",
+            filename);
 
-    return -1;
+    return 0;
   }
 
   if (!matplotlib_module_available()) {
     fprintf(stderr,
-            "plot: matplotlib module not importable - skipping '%s'\n"
+            "plot(matplotlib): matplotlib not importable - skipping '%s'\n"
             "      Install: pip install matplotlib\n",
             filename);
 
-    return -1;
+    return 0;
+  }
+
+  return 1;
+}
+
+int plot_line(const char *filename, plot_format_t format, const double *x,
+              const double *y, int n, const plot_opts_t *opts) {
+  // TODO: Implement GUI backend
+  if (!filename || (n > 0 && (!x || !y))) {
+    return PLOT_ERR_INVALID_ARGUMENT;
+  }
+
+  if (format == PLOT_FORMAT_TEXT) {
+    char path[1024];
+    plot_status_t st =
+        plot_output_path(filename, format, opts, path, sizeof path);
+    if (st != PLOT_OK) {
+      return st;
+    }
+
+    return (int)plot_write_text_1d(path, x, y, n, opts);
+  }
+
+  if (format == PLOT_FORMAT_WINDOW) {
+    fprintf(stderr, "plot(matplotlib): PLOT_FORMAT_WINDOW not implemented; "
+                    "use GR or gnuplot for interactive display\n");
+
+    return PLOT_ERR_NOT_IMPLEMENTED;
+  }
+
+  char path[1024];
+  plot_status_t st =
+      plot_output_path(filename, format, opts, path, sizeof path);
+  if (st != PLOT_OK) {
+    return st;
+  }
+
+  if (!backend_ready(filename)) {
+    return PLOT_ERR_BACKEND_UNAVAILABLE;
   }
 
   matplotlib_t *mp = matplotlib_open();
   if (!mp) {
-    return -1;
+    return PLOT_ERR_BACKEND_UNAVAILABLE;
   }
 
   apply_common_opts(mp, opts);
@@ -148,9 +183,7 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
 
   apply_axis_limits(mp, opts);
 
-  char path[512], pbuf[600];
-  snprintf(path, sizeof path, "%s/%s.%s", QMC_OUTPUT_DIR, filename,
-           mpl_ext(format));
+  char pbuf[1100];
   py_repr(pbuf, sizeof pbuf, path);
 
   matplotlib_cmd(mp, "plt.savefig(%s, dpi=100)", pbuf);
@@ -158,28 +191,49 @@ int plot_line(const char *filename, plot_format_t format, const double *x,
 
   matplotlib_close(mp);
 
-  return 0;
+  return PLOT_OK;
 }
 
 int plot_lines(const char *filename, plot_format_t format, const double *x,
                const double **ys, int n_series, int n_pts, const char **labels,
                const plot_opts_t *opts) {
-  if (format == PLOT_FORMAT_WINDOW) {
-    // TODO: Implement GUI backend
-    fprintf(stderr,
-            "plot: matplotlib backend does not implement PLOT_FORMAT_WINDOW\n");
-    return -1;
+  // TODO: Implement GUI backend
+  if (!filename || n_series <= 0 || n_pts < 0 || (n_pts > 0 && !ys)) {
+    return PLOT_ERR_INVALID_ARGUMENT;
   }
 
-  if (!python3_available() || !matplotlib_module_available()) {
-    fprintf(stderr, "plot: python3/matplotlib not available - skipping '%s'\n",
-            filename);
-    return -1;
+  if (format == PLOT_FORMAT_TEXT) {
+    char path[1024];
+    plot_status_t st =
+        plot_output_path(filename, format, opts, path, sizeof path);
+    if (st != PLOT_OK) {
+      return st;
+    }
+
+    return (int)plot_write_text_nd(path, x, ys, n_series, n_pts, labels, opts);
+  }
+
+  if (format == PLOT_FORMAT_WINDOW) {
+    fprintf(stderr,
+            "plot: matplotlib backend does not implement PLOT_FORMAT_WINDOW\n");
+
+    return PLOT_ERR_NOT_IMPLEMENTED;
+  }
+
+  char path[1024];
+  plot_status_t st =
+      plot_output_path(filename, format, opts, path, sizeof path);
+  if (st != PLOT_OK) {
+    return st;
+  }
+
+  if (!backend_ready(filename)) {
+    return PLOT_ERR_BACKEND_UNAVAILABLE;
   }
 
   matplotlib_t *mp = matplotlib_open();
   if (!mp) {
-    return -1;
+    return PLOT_ERR_BACKEND_UNAVAILABLE;
   }
 
   apply_common_opts(mp, opts);
@@ -216,10 +270,7 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
 
   apply_axis_limits(mp, opts);
 
-  char path[512];
-  char pbuf[600];
-  snprintf(path, sizeof path, "%s/%s.%s", QMC_OUTPUT_DIR, filename,
-           mpl_ext(format));
+  char pbuf[1100];
   py_repr(pbuf, sizeof pbuf, path);
 
   matplotlib_cmd(mp, "plt.savefig(%s, dpi=100)", pbuf);

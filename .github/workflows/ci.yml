@@ -4,15 +4,23 @@ on:
   push:
     branches: ["main"]
     paths-ignore:
-      - "docs/**"
-      - "README.md"
-      - "LICENSE"
+      - 'docs/**'
+      - '**.md'
+      - 'LICENCE'
+      - 'LICENSE'
+      - '.gitignore'
   pull_request:
     branches: ["main"]
     paths-ignore:
-      - "docs/**"
-      - "README.md"
-      - "LICENSE"
+      - 'docs/**'
+      - '**.md'
+      - 'LICENCE'
+      - 'LICENSE'
+      - '.gitignore'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -38,7 +46,8 @@ jobs:
             libx11-dev libxt-dev libxrender-dev libxext-dev \
             libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
             libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
-            liblapacke-dev liblapack-dev libblas-dev liblapack-test
+            liblapacke-dev liblapack-dev libblas-dev liblapack-test \
+            libhdf5-dev libnetcdf-dev
 
       - name: Get GR submodule commit
         id: gr-sha
@@ -85,12 +94,16 @@ jobs:
           done
 
       - name: Build All
-        run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
+        # run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
         # run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_LAPACK=1
+        run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
+        # run: make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 USE_LAPACK=1
 
       - name: Run Test Suite
         run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR
         # run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_LAPACK=1
+        run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
+        # run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 USE_LAPACK=1
 
       # - name: Run Example Binaries
       #   run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR

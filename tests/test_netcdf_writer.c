@@ -30,9 +30,9 @@ static void check_true(int cond, const char *label) {
 #include <netcdf.h>
 
 static void test_1d_round_trip(void) {
-  printf("test_1d_round_trip (USE_NETCDF=1):\n");
+  printf("  === Test 1d_round_trip (USE_NETCDF=1) ===\n");
 
-  double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
+  const double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
   int rc = netcdf_write_1d("test_netcdf_1d.nc", "values", data, 5);
   check_true(rc == 0, "netcdf_write_1d returns 0 on success");
 
@@ -63,10 +63,10 @@ static void test_1d_round_trip(void) {
 }
 
 static void test_matrix_round_trip(void) {
-  printf("test_matrix_round_trip (USE_NETCDF=1):\n");
+  printf("  === Test matrix_round_trip (USE_NETCDF=1) ===\n");
 
   // 2x3 row-major matrix
-  double data[6] = {1, 2, 3, 4, 5, 6};
+  const double data[6] = {1, 2, 3, 4, 5, 6};
   int rc = netcdf_write_matrix("test_netcdf_matrix.nc", "grid", data, 2, 3);
   check_true(rc == 0, "netcdf_write_matrix returns 0 on success");
 
@@ -103,19 +103,22 @@ static void test_matrix_round_trip(void) {
 #else // !USE_NETCDF
 
 static void test_stub_returns_failure_without_crashing(void) {
-  printf("test_stub_returns_failure_without_crashing (default build, no "
-         "USE_NETCDF):\n");
+  printf("  === Test_stub_returns_failure_without_crashing (default build, no "
+         "USE_NETCDF) ===\n");
 
-  double data[3] = {1.0, 2.0, 3.0};
+  const double data[3] = {1.0, 2.0, 3.0};
   int rc = netcdf_write_1d("test_netcdf_stub.nc", "values", data, 3);
-  check_true(rc == -1, "netcdf_write_1d stub returns -1 (not a crash, not a "
-                       "silently-empty file)");
+  check_true(rc == NETCDF_ERR_NOT_SUPPORTED,
+             "netcdf_write_1d stub returns NETCDF_ERR_NOT_SUPPORTED (not a "
+             "crash, not a silently-empty file)");
 
   rc = netcdf_write_matrix("test_netcdf_stub.nc", "grid", data, 1, 3);
-  check_true(rc == -1, "netcdf_write_matrix stub returns -1");
+  check_true(rc == NETCDF_ERR_NOT_SUPPORTED,
+             "netcdf_write_matrix stub returns NETCDF_ERR_NOT_SUPPORTED");
 
   rc = netcdf_write_1d(NULL, NULL, NULL, 0);
-  check_true(rc == -1, "stub handles NULL/zero-length input without crashing");
+  check_true(rc == NETCDF_ERR_NOT_SUPPORTED,
+             "stub handles NULL/zero-length input without crashing");
 }
 
 #endif // USE_NETCDF

@@ -31,9 +31,9 @@ static void check_true(int cond, const char *label) {
 #include <hdf5.h>
 
 static void test_1d_round_trip(void) {
-  printf("test_1d_round_trip (USE_HDF5=1):\n");
+  printf("  === Test 1d_round_trip (USE_HDF5=1) ===\n");
 
-  double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
+  const double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
   int rc = hdf5_write_1d("test_hdf5_1d.h5", "values", data, 5);
   check_true(rc == 0, "hdf5_write_1d returns 0 on success");
 
@@ -67,10 +67,10 @@ static void test_1d_round_trip(void) {
 }
 
 static void test_matrix_round_trip(void) {
-  printf("test_matrix_round_trip (USE_HDF5=1):\n");
+  printf("  === Test matrix_round_trip (USE_HDF5=1) ===\n");
 
   // 2x3 row-major matrix
-  double data[6] = {1, 2, 3, 4, 5, 6};
+  const double data[6] = {1, 2, 3, 4, 5, 6};
   int rc = hdf5_write_matrix("test_hdf5_matrix.h5", "grid", data, 2, 3);
   check_true(rc == 0, "hdf5_write_matrix returns 0 on success");
 
@@ -105,20 +105,23 @@ static void test_matrix_round_trip(void) {
 #else // !USE_HDF5
 
 static void test_stub_returns_failure_without_crashing(void) {
-  printf("test_stub_returns_failure_without_crashing (default build, no "
-         "USE_HDF5):\n");
+  printf("  === Test stub_returns_failure_without_crashing (default build, no "
+         "USE_HDF5) ===\n");
 
-  double data[3] = {1.0, 2.0, 3.0};
+  const double data[3] = {1.0, 2.0, 3.0};
   int rc = hdf5_write_1d("test_hdf5_stub.h5", "values", data, 3);
-  check_true(rc == -1, "hdf5_write_1d stub returns -1 (not a crash, not a "
-                       "silently-empty file)");
+  check_true(rc == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_write_1d stub returns HDF5_ERR_NOT_SUPPORTED (not a "
+             "crash, not a silently-empty file)");
 
   rc = hdf5_write_matrix("test_hdf5_stub.h5", "grid", data, 1, 3);
-  check_true(rc == -1, "hdf5_write_matrix stub returns -1");
+  check_true(rc == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_write_matrix stub returns HDF5_ERR_NOT_SUPPORTED");
 
   // NULL/zero-length inputs must not crash stub either
   rc = hdf5_write_1d(NULL, NULL, NULL, 0);
-  check_true(rc == -1, "stub handles NULL/zero-length input without crashing");
+  check_true(rc == HDF5_ERR_NOT_SUPPORTED,
+             "stub handles NULL/zero-length input without crashing");
 }
 
 #endif // USE_HDF5
