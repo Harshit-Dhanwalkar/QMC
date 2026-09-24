@@ -302,6 +302,7 @@ PLOT_SRCS    = $(PLOT_SRC)
 # Data export: CSV and JSON metadata are always built
 EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
                    $(EXPORT_DIR)/json_writer.c \
+                   $(EXPORT_DIR)/vtk_writer.c \
                    $(EXPORT_DIR)/hdf5_writer.c \
                    $(EXPORT_DIR)/netcdf_writer.c \
                    $(EXPORT_DIR)/plot_common.c
@@ -464,6 +465,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_casscf \
               $(BUILD_DIR)/test_latex_gen \
               $(BUILD_DIR)/test_json_writer \
+              $(BUILD_DIR)/test_vtk_writer \
               $(BUILD_DIR)/test_hdf5_writer \
               $(BUILD_DIR)/test_netcdf_writer
 
