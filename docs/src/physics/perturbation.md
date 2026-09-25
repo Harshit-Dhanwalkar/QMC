@@ -74,3 +74,21 @@ double fermi_golden_rate(const cmatrix_t *V_pert, int i, int f, double rho_E);
 ```
 
 `V_pert` is the perturbation operator in the relevant basis; `rho_E` is the density of final states at $E_f \approx E_i$, computed separately and passed in rather than derived internally.
+
+This uses natural units ($\hbar = 1$), so the formula implemented is $W_{i \rightarrow f} = 2\pi |\langle f|V|i\rangle|^2 \rho(E_f)$ directly - restore $\hbar$ by dividing the result if you need it in other units. `V_pert` is read as `V_pert[f][i]`; a `NULL` matrix or a negative `i`/`f` returns `0.0` rather than crashing, but there's no upper-bound check against the matrix dimensions, so an out-of-range positive index is the caller's responsibility to avoid.
+
+#### Example: Two-Level System
+
+For a perturbation coupling two states with $\langle f|V|i\rangle = 0.3 + 0.4i$ (so $|\langle f|V|i\rangle|^2 = 0.25$) and a final-state density $\rho(E_f) = 2.0$:
+
+```c
+cmatrix_t *V = cmatrix_alloc(2, 2);
+CMAT(V, 0, 1) = c_new(0.3, 0.4); // <f=1|V|i=0>
+CMAT(V, 1, 0) = c_new(0.3, -0.4);
+
+double rho_E = 2.0;
+double rate = fermi_golden_rate(V, /*i=*/0, /*f=*/1, rho_E);
+// rate = 2*\pi * 0.25 * 2.0 ~ 3.1416
+```
+
+The result is a transition rate (probability per unit time) - if this were the only decay channel out of state $i$, the population would decay as $e^{-W t}$, giving a lifetime $\tau = 1/W \approx 0.318$ in the same time units as $V$ and $\rho(E_f)$ are expressed in.

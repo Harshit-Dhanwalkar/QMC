@@ -66,8 +66,6 @@ third_party/gr/install/
 
 # Others
 compile_commands.json
-mdbook
-mdbook-katex
 # mdBook generated output
 docs/book/
 

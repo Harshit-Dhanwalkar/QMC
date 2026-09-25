@@ -53,6 +53,8 @@
 # Internals
 
 - [Numerov Integrator](internals/numerov.md)
+- [FFT Module](internals/fft.md)
+- [Sparse Iterative Solvers](internals/sparse_solvers.md)
 - [Linear Algebra Core](internals/linalg.md)
 - [Special Functions](internals/special.md)
 - [Crank-Nicolson Solver](internals/crank_nicolson.md)
