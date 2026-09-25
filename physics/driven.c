@@ -13,6 +13,8 @@ sweeps, and lab-frame driving beyond the rotating-wave approximation (RWA).
 static const double HALF = 0.5;
 
 double time_fn_constant(double time, void *params) {
+  (void)time;
+
   return params ? *(double *)params : 0.0;
 }
 

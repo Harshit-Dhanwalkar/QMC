@@ -56,6 +56,20 @@
 // static char g_tracked_temp_basenames[QMC_LATEX_MAX_TRACKED_TEMP][64];
 // static int g_tracked_temp_count = 0;
 
+/*
+ * Base path buffers hold "<root>/<name>": root is [512], plus a separator,
+ * plus longest base name ("equation.tex" = 12 chars). 640 is comfortably
+ * above that maximum (512 + 1 + 12 + 1 = 526)
+ */
+#define LATEX_TMP_PATH_MAX 640
+
+/*
+ * Derived path buffers hold "<base><suffix>": png prefix plus a  suffix such as
+ * "-1.png" (6 chars). 32 bytes of slack covers every current  case ("-1.png",
+ * ".aux", ".aux"'s directory-suffixed form, etc)
+ */
+#define LATEX_TMP_DERIVED_MAX (LATEX_TMP_PATH_MAX + 32)
+
 // Error state
 static char g_last_error[2048];
 
@@ -309,10 +323,10 @@ static int run_tool(const char *tool, char *const argv[], const char *cwd,
 // Per-render temporary job directory
 typedef struct {
   char root[512]; /* e.g. /tmp/qmc-latex-XXXXXX */
-  char tex[600];
-  char pdf[600];
-  char log[600];
-  char png_prefix[512];
+  char tex[LATEX_TMP_PATH_MAX];
+  char pdf[LATEX_TMP_PATH_MAX];
+  char log[LATEX_TMP_PATH_MAX];
+  char png_prefix[LATEX_TMP_PATH_MAX];
 } latex_job_t;
 
 static int job_create(latex_job_t *job) {
@@ -343,8 +357,11 @@ static int job_create(latex_job_t *job) {
            QMC_SEP_STR);
   snprintf(job->log, sizeof job->log, "%s%sequation.log", job->root,
            QMC_SEP_STR);
-  snprintf(job->png_prefix, sizeof job->png_prefix, "%s%sequation", job->root,
-           QMC_SEP_STR);
+  int n = snprintf(job->png_prefix, sizeof job->png_prefix, "%s%sequation",
+                   job->root, QMC_SEP_STR);
+  if (n < 0 || (size_t)n >= sizeof job->png_prefix) {
+    return -1; /* job_create failure */
+  }
 
   return 0;
 }
@@ -358,11 +375,11 @@ static void job_destroy(latex_job_t *job) {
   remove(job->pdf);
   remove(job->log);
 
-  char aux[600];
+  char aux[LATEX_TMP_DERIVED_MAX];
   snprintf(aux, sizeof aux, "%s%sequation.aux", job->root, QMC_SEP_STR);
   remove(aux);
 
-  char out1[600];
+  char out1[LATEX_TMP_DERIVED_MAX];
   snprintf(out1, sizeof out1, "%s-1.png", job->png_prefix);
   remove(out1);
 
@@ -407,7 +424,7 @@ static void capture_log(const char *log_path, const char *tag) {
     return;
   }
 
-  char buf[1600];
+  char buf[LATEX_TMP_PATH_MAX];
   size_t n = fread(buf, 1, sizeof buf - 1, f);
   buf[n] = '\0';
 
@@ -508,7 +525,7 @@ int latex_render_to_png(const char *expr, const char *outpath) {
   }
 
   {
-    char produced[600];
+    char produced[LATEX_TMP_DERIVED_MAX];
     snprintf(produced, sizeof produced, "%s-1.png", job.png_prefix);
     if (rename(produced, outpath) != 0) {
       set_last_error("latex_render_to_png: rename failed: %s", strerror(errno));

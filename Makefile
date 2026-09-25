@@ -159,7 +159,6 @@ HDF5_AVAIL := $(shell tmpf=$$(mktemp) && \
     rm -f $$tmpf && echo yes || echo no)
 
 USE_HDF5 ?= 0
-USE_HDF5 ?= 0
 ifeq ($(USE_HDF5),1)
    ifeq ($(HDF5_AVAIL),no)
         $(warning USE_HDF5=1 requested but HDF5 could not be compiled/linked - \
@@ -423,6 +422,8 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_tridiag_eigvals \
               $(BUILD_DIR)/test_random \
               $(BUILD_DIR)/test_lanczos \
+              $(BUILD_DIR)/test_cg_solve \
+              $(BUILD_DIR)/test_shift_invert \
               $(BUILD_DIR)/test_vmc \
               $(BUILD_DIR)/test_dmc \
               $(BUILD_DIR)/test_schrodinger \

@@ -78,8 +78,10 @@ double density_von_neumann_entropy(const cmatrix_t *rho) {
   return entropy;
 }
 
-static void lindblad_ode_rhs(double t, const cvector_t *y, cvector_t *dydt,
+static void lindblad_ode_rhs(double time, const cvector_t *y, cvector_t *dydt,
                              void *params) {
+  (void)time;
+
   lindblad_ctx_t *ctx = (lindblad_ctx_t *)params;
   int n = ctx->dim;
 
