@@ -217,6 +217,7 @@ CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/utils.c \
                $(CORE_DIR)/random.c \
                $(CORE_DIR)/sparse.c \
+               $(CORE_DIR)/shift_invert.c \
                $(CORE_DIR)/fft/fft.c \
                $(CORE_DIR)/fft/fft2d.c \
                $(CORE_DIR)/fft/fft3d.c \

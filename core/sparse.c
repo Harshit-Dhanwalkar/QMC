@@ -84,15 +84,14 @@ sparse_matrix_t *sparse_from_dense(const cmatrix_t *sp_mat, double tol) {
 }
 
 // Matrix-vector multiply
-/* w = sp_mat * x for a general sparse matrix in CSR form.
+/* w = sp_mat * x for a general sparse matrix in CSR form
  *
  * NOTE: OpenMP-parallelized via row-based gather: row i's output y->data[i]
  * depends only on x (read-only here) and sp_mat's own i-th CSR row, so each
  * thread owns a disjoint set of output rows and writes each exactly once. No
  * thread-private accumulation buffers, no atomics, and no reduction step, since
  * there is nothing to reduce (contrast with a scatter-style update, where
- * multiple threads could target the same output index and need
- * synchronization).
+ * multiple threads could target same output index and need synchronization)
  */
 void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
                cvector_t *out_vec) {
@@ -117,9 +116,9 @@ void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
 // Lanczos
 /*
  * Lanczos iteration for k lowest eigenvalues/eigenvectors of Hermitian sparse
- * matrix `sp_mat`.
+ * matrix `sp_mat`
  *
- * Three-term Krylov recurrence, starting from a fixed-seed random vector.
+ * Three-term Krylov recurrence, starting from a fixed-seed random vector
  * NOTE: LANCZOS_SEED below: a random start has high-probability nonzero overlap
  * with every eigenvector
  *
@@ -130,11 +129,11 @@ void sparse_mv(const sparse_matrix_t *sp_mat, const cvector_t *in_vec,
  *   v_{j+1}  = work_j / \beta_j
  *
  * Uses full reorthogonalization (Gram-Schmidt of work_j against every previous
- * v_i each step).
+ * v_i each step)
  *
  * Returns NULL on invalid input (non-square sp_mat, k<1, k>n, max_iter<k,
  * tol<=0), on allocation failure, or if Krylov subspace collapses (invariant
- * subspace found) before k directions have been generated.
+ * subspace found) before k directions have been generated
  */
 #define LANCZOS_SEED 0x1A2C205ULL
 
@@ -220,7 +219,7 @@ lanczos_result_t *lanczos_eigs(const sparse_matrix_t *sp_mat, int k,
 
     if (bj < tol || j == krylov_dim - 1) {
       /* Invariant subspace found (bj ~ 0), or out of allotted steps: stop
-       * without generating vecs[j+1]. */
+       * without generating vecs[j+1] */
       break;
     }
 
@@ -244,6 +243,7 @@ lanczos_result_t *lanczos_eigs(const sparse_matrix_t *sp_mat, int k,
 
     if (T_eig) {
       res = malloc(sizeof *res);
+
       if (res) {
         // res->n = rows;
         res->n = k; // eignepairs
@@ -425,4 +425,82 @@ void lanczos_tridiag_free(lanczos_tridiag_t *tridiag) {
   free(tridiag->alpha);
   free(tridiag->beta);
   free(tridiag);
+}
+
+int cg_solve(const sparse_matrix_t *A, const cvector_t *b, cvector_t *x,
+             int max_iter, double tol) {
+  if (!A || !b || !x || A->nrows != A->ncols || b->n != A->nrows ||
+      x->n != A->nrows || max_iter < 1 || tol <= 0.0) {
+    return -1;
+  }
+
+  int n = A->nrows;
+
+  cvector_t *r = cvector_alloc(n);
+  cvector_t *p = cvector_alloc(n);
+  cvector_t *Ap = cvector_alloc(n);
+  if (!r || !p || !Ap) {
+    cvector_free(r);
+    cvector_free(p);
+    cvector_free(Ap);
+
+    return -1;
+  }
+
+  // r0 = b - A x0; p0 = r0
+  sparse_mv(A, x, Ap);
+  for (int i = 0; i < n; i++) {
+    r->data[i] = c_sub(b->data[i], Ap->data[i]);
+    p->data[i] = r->data[i];
+  }
+
+  double res_norm = cvector_norm(r);
+  double rr_old = res_norm * res_norm;
+
+  int status = -1;
+
+  if (res_norm < tol) {
+    status = 0;
+  } else {
+    for (int it = 0; it < max_iter; it++) {
+      sparse_mv(A, p, Ap);
+
+      /* p^H A p is real and positive for Hermitian positive-definite A
+       * NOTE: .im is dropped rather than checked, since a non-negligible
+       * imaginary part here means A wasn't actually Hermitian */
+      double pAp = cvector_dot(p, Ap).re;
+      if (pAp == 0.0) {
+        break; // A is not positive definite
+      }
+
+      double alpha = rr_old / pAp;
+
+      for (int i = 0; i < n; i++) {
+        x->data[i] = c_add(x->data[i], c_scale(p->data[i], alpha));
+        r->data[i] = c_sub(r->data[i], c_scale(Ap->data[i], alpha));
+      }
+
+      res_norm = cvector_norm(r);
+      double rr_new = res_norm * res_norm;
+
+      if (res_norm < tol) {
+        status = 0;
+
+        break;
+      }
+
+      double beta = rr_new / rr_old;
+      for (int i = 0; i < n; i++) {
+        p->data[i] = c_add(r->data[i], c_scale(p->data[i], beta));
+      }
+
+      rr_old = rr_new;
+    }
+  }
+
+  cvector_free(r);
+  cvector_free(p);
+  cvector_free(Ap);
+
+  return status;
 }

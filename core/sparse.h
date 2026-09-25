@@ -86,4 +86,30 @@ lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
                                           double tol);
 void lanczos_tridiag_free(lanczos_tridiag_t *tridiag);
 
+/*
+ * Conjugate Gradient for Hermitian positive-definite sparse systems: solves
+ * A x = b
+ *
+ * A       : Hermitian positive-definite sparse matrix (not checked - a
+ *           non-Hermitian or indefinite A will not converge, or will
+ *           converge to a spurious solution)
+ * b       : right-hand side (size A->nrows)
+ * x       : in/out. On input, initial guess (zero vector is a fine default);
+ *           on output, solution. Must be preallocated with
+ *           x->n == b->n == A->nrows
+ * max_iter: cap on CG iterations. In exact arithmetic, CG on an n x n  SPD
+ *           system converges in at most n steps, but finite-precision CG can
+ *           still make progress past that bound on ill-conditioned systems
+ *           (loss of A-orthogonality between search directions), so this is not
+ *           internally capped at A->nrows - pass a generous budget (e.g.
+ *           several times n) for anything but a well-conditioned system
+ * tol     : convergence threshold on residual norm  ||b - A x||
+ *
+ * Returns 0 on convergence (residual norm < tol within max_iter iterations),
+ * -1 on invalid input, allocation failure, or a breakdown (p^H A p == 0  before
+ * convergence - can only happen if A is not actually positive definite)
+ */
+int cg_solve(const sparse_matrix_t *A, const cvector_t *b, cvector_t *x,
+             int max_iter, double tol);
+
 #endif
