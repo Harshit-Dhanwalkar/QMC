@@ -16,7 +16,8 @@
 
 /* Write `s` as a JSON string literal (with surrounding quotes), escaping
  * characters per RFC 8259 §7
- * NULL writes as "" */
+ * NULL writes as ""
+ */
 static void write_json_string(FILE *f, const char *s) {
   fputc('"', f);
   if (s) {
@@ -54,16 +55,19 @@ static void write_json_string(FILE *f, const char *s) {
  *
  * Uses shortest decimal precision (1..17 significant digits) whose value reads
  * back bit-for-bit identical via strtod (Reference: Steele & White 1990), so
- * e.g. -2.9037 is written as "-2.9037" rather than "-2.903700..." */
+ * e.g. -2.9037 is written as "-2.9037" rather than "-2.903700..."
+ */
 static void write_json_double(FILE *f, double d) {
   if (isnan(d) || isinf(d)) {
     fputs("null", f);
+
     return;
   }
 
   char buf[64];
   for (int precision = 1; precision <= 17; precision++) {
     snprintf(buf, sizeof buf, "%.*g", precision, d);
+
     if (strtod(buf, NULL) == d) {
       break;
     }
@@ -77,17 +81,21 @@ static void write_json_bool(FILE *f, int value) {
 }
 
 /* Streaming writer */
+typedef enum { JSON_CTX_OBJECT, JSON_CTX_ARRAY } json_ctx_t;
+
 struct json_writer {
   FILE *f;
   json_options_t opts;
   int depth;                      /* 0 = inside top-level object */
   int need_comma[JSON_MAX_DEPTH]; /* per-level: has a value been written? */
+  json_ctx_t ctx[JSON_MAX_DEPTH]; /* per-level: object or array container */
   json_status_t last_error;
   int closed;
 };
 
 json_options_t json_options_default(void) {
-  json_options_t o = {.pretty = 1, .indent = 2};
+  json_options_t o = {
+      .pretty = 1, .indent = 2, .nonfinite = JSON_NONFINITE_NULL};
 
   return o;
 }
@@ -129,6 +137,7 @@ json_writer_t *json_open_with_options(const char *path,
   }
   w->depth = 0;
   w->need_comma[0] = 0;
+  w->ctx[0] = JSON_CTX_OBJECT; // top-level container is always an object
   w->last_error = JSON_OK;
   w->closed = 0;
 
@@ -157,6 +166,10 @@ const char *json_strerror(json_status_t status) {
     return "maximum nesting depth exceeded";
   case JSON_ERR_INVALID_STATE:
     return "invalid writer state (mismatched begin/end?)";
+  case JSON_ERR_NONFINITE:
+    return "NaN/Inf value rejected under JSON_NONFINITE_ERROR policy";
+  case JSON_ERR_MEMORY:
+    return "out of memory";
   default:
     return "unknown error";
   }
@@ -206,8 +219,9 @@ json_status_t json_close(json_writer_t *writer) {
   return rc;
 }
 
-/* Emit a comma if needed at the current depth, then a newline + indent
- * (when pretty). Also flips need_comma bit for this depth */
+/* Emit a comma if needed at current depth, then a newline + indent
+ * (when pretty). Also flips need_comma bit for this depth
+ */
 static json_status_t element_prefix(json_writer_t *w) {
   if (w->need_comma[w->depth]) {
     if (fputc(',', w->f) == EOF) {
@@ -233,7 +247,12 @@ static json_status_t element_prefix(json_writer_t *w) {
 }
 
 static json_status_t write_key(json_writer_t *w, const char *key) {
+  if (!key) {
+    return JSON_OK; // unkeyed array element - nothing to write
+  }
+
   write_json_string(w->f, key);
+
   if (fputs(": ", w->f) == EOF) {
     return set_error(w, JSON_ERR_IO);
   }
@@ -241,8 +260,22 @@ static json_status_t write_key(json_writer_t *w, const char *key) {
   return JSON_OK;
 }
 
+/* Every element-writing function (scalars, begin_object, begin_array) must
+ * agree with enclosing container on whether key is given: object members
+ * require one, array elements must not have one
+ */
+static int key_mismatches_context(json_writer_t *w, const char *key) {
+  int in_array = w->ctx[w->depth] == JSON_CTX_ARRAY;
+
+  return (in_array && key != NULL) || (!in_array && key == NULL);
+}
+
 json_status_t json_begin_object(json_writer_t *writer, const char *key) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || writer->closed) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -266,6 +299,7 @@ json_status_t json_begin_object(json_writer_t *writer, const char *key) {
 
   writer->depth++;
   writer->need_comma[writer->depth] = 0;
+  writer->ctx[writer->depth] = JSON_CTX_OBJECT;
 
   return JSON_OK;
 }
@@ -275,7 +309,7 @@ json_status_t json_end_object(json_writer_t *writer) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
-  if (writer->depth <= 0) {
+  if (writer->depth <= 0 || writer->ctx[writer->depth] != JSON_CTX_OBJECT) {
     return set_error(writer, JSON_ERR_INVALID_STATE);
   }
 
@@ -301,9 +335,74 @@ json_status_t json_end_object(json_writer_t *writer) {
   return JSON_OK;
 }
 
+json_status_t json_begin_array(json_writer_t *writer, const char *key) {
+  if (!writer || writer->closed) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (key_mismatches_context(writer, key)) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (writer->depth + 1 >= JSON_MAX_DEPTH) {
+    return set_error(writer, JSON_ERR_DEPTH);
+  }
+
+  json_status_t rc = element_prefix(writer);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = write_key(writer, key);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  if (fputc('[', writer->f) == EOF) {
+    return set_error(writer, JSON_ERR_IO);
+  }
+
+  writer->depth++;
+  writer->need_comma[writer->depth] = 0;
+  writer->ctx[writer->depth] = JSON_CTX_ARRAY;
+
+  return JSON_OK;
+}
+
+json_status_t json_end_array(json_writer_t *writer) {
+  if (!writer || writer->closed) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (writer->depth <= 0 || writer->ctx[writer->depth] != JSON_CTX_ARRAY) {
+    return set_error(writer, JSON_ERR_INVALID_STATE);
+  }
+
+  if (writer->opts.pretty) {
+    if (fputc('\n', writer->f) == EOF) {
+      return set_error(writer, JSON_ERR_IO);
+    }
+
+    unsigned n = (unsigned)writer->depth * writer->opts.indent;
+    for (unsigned i = 0; i < n; i++) {
+      if (fputc(' ', writer->f) == EOF) {
+        return set_error(writer, JSON_ERR_IO);
+      }
+    }
+  }
+
+  if (fputc(']', writer->f) == EOF) {
+    return set_error(writer, JSON_ERR_IO);
+  }
+
+  writer->depth--;
+
+  return JSON_OK;
+}
+
 json_status_t json_write_string(json_writer_t *writer, const char *key,
                                 const char *value) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -347,8 +446,13 @@ json_status_t json_write_int(json_writer_t *writer, const char *key,
 
 json_status_t json_write_double(json_writer_t *writer, const char *key,
                                 double value) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if ((isnan(value) || isinf(value)) &&
+      writer->opts.nonfinite == JSON_NONFINITE_ERROR) {
+    return set_error(writer, JSON_ERR_NONFINITE);
   }
 
   json_status_t rc = element_prefix(writer);
@@ -368,7 +472,7 @@ json_status_t json_write_double(json_writer_t *writer, const char *key,
 
 json_status_t json_write_bool(json_writer_t *writer, const char *key,
                               int value) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -388,8 +492,17 @@ json_status_t json_write_bool(json_writer_t *writer, const char *key,
 }
 
 json_status_t json_write_null(json_writer_t *writer, const char *key) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || (!data && len > 0) || writer->closed ||
+      key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (writer->opts.nonfinite == JSON_NONFINITE_ERROR) {
+    for (size_t i = 0; i < len; i++) {
+      if (isnan(data[i]) || isinf(data[i])) {
+        return set_error(writer, JSON_ERR_NONFINITE);
+      }
+    }
   }
 
   json_status_t rc = element_prefix(writer);
@@ -411,7 +524,8 @@ json_status_t json_write_null(json_writer_t *writer, const char *key) {
 
 json_status_t json_write_double_array(json_writer_t *writer, const char *key,
                                       const double *data, size_t len) {
-  if (!writer || !key || (!data && len > 0) || writer->closed) {
+  if (!writer || (!data && len > 0) || writer->closed ||
+      key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -446,7 +560,8 @@ json_status_t json_write_double_array(json_writer_t *writer, const char *key,
 
 json_status_t json_write_int_array(json_writer_t *writer, const char *key,
                                    const long *data, size_t len) {
-  if (!writer || !key || (!data && len > 0) || writer->closed) {
+  if (!writer || (!data && len > 0) || writer->closed ||
+      key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -479,6 +594,81 @@ json_status_t json_write_int_array(json_writer_t *writer, const char *key,
   }
 
   return JSON_OK;
+}
+
+json_status_t json_write_string_array(json_writer_t *writer, const char *key,
+                                      const char *const *data, size_t len) {
+  if (!writer || (!data && len > 0) || writer->closed ||
+      key_mismatches_context(writer, key)) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  json_status_t rc = element_prefix(writer);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = write_key(writer, key);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  if (fputc('[', writer->f) == EOF) {
+    return set_error(writer, JSON_ERR_IO);
+  }
+
+  for (size_t i = 0; i < len; i++) {
+    if (i > 0 && fputs(", ", writer->f) == EOF) {
+      return set_error(writer, JSON_ERR_IO);
+    }
+
+    write_json_string(writer->f, data[i]);
+  }
+
+  if (fputc(']', writer->f) == EOF) {
+    return set_error(writer, JSON_ERR_IO);
+  }
+
+  return JSON_OK;
+}
+
+json_status_t json_write_quantity(json_writer_t *writer, const char *key,
+                                  double value, const char *unit,
+                                  const char *description) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if ((isnan(value) || isinf(value)) &&
+      writer->opts.nonfinite == JSON_NONFINITE_ERROR) {
+    return set_error(writer, JSON_ERR_NONFINITE);
+  }
+
+  json_status_t rc = json_begin_object(writer, key);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = json_write_double(writer, "value", value);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  if (unit) {
+    rc = json_write_string(writer, "unit", unit);
+    if (rc != JSON_OK) {
+      return rc;
+    }
+  }
+
+  if (description) {
+    rc = json_write_string(writer, "description", description);
+    if (rc != JSON_OK) {
+      return rc;
+    }
+  }
+
+  return json_end_object(writer);
 }
 
 json_field_t json_field_string(const char *key, const char *value) {
