@@ -331,8 +331,8 @@ static int build_output_path(const char *filename, char *out, size_t out_size) {
   return 0;
 }
 
-int csv_write_1d(const char *filename, const double *x, const double *y, int n,
-                 const char *xlabel, const char *ylabel) {
+int csv_write_1d(const char *filename, const double *x, const double *y,
+                 size_t n, const char *xlabel, const char *ylabel) {
   if (!filename || (n > 0 && (!x || !y))) {
     return CSV_ERR_INVALID_ARGUMENT;
   }
@@ -352,7 +352,7 @@ int csv_write_1d(const char *filename, const double *x, const double *y, int n,
   csv_write_string(w, ylabel ? ylabel : "y");
   csv_end_row(w);
 
-  for (int i = 0; i < n; i++) {
+  for (size_t i = 0; i < n; i++) {
     csv_write_double(w, x[i]);
     csv_write_double(w, y[i]);
     csv_end_row(w);
@@ -361,9 +361,9 @@ int csv_write_1d(const char *filename, const double *x, const double *y, int n,
   return (int)csv_close(w);
 }
 
-int csv_write_matrix(const char *filename, const double *data, int rows,
-                     int cols, const char **col_headers) {
-  if (!filename || rows < 0 || cols < 0 || (rows > 0 && cols > 0 && !data)) {
+int csv_write_matrix(const char *filename, const double *data, size_t rows,
+                     size_t cols, const char **col_headers) {
+  if (!filename || (rows > 0 && cols > 0 && !data)) {
     return CSV_ERR_INVALID_ARGUMENT;
   }
 
@@ -379,21 +379,22 @@ int csv_write_matrix(const char *filename, const double *data, int rows,
   }
 
   if (col_headers) {
-    for (int j = 0; j < cols; j++) {
+    for (size_t j = 0; j < cols; j++) {
       csv_write_string(w, col_headers[j]);
     }
   } else {
-    for (int j = 0; j < cols; j++) {
+    for (size_t j = 0; j < cols; j++) {
       char tmp[32];
-      snprintf(tmp, sizeof tmp, "col%d", j);
+      snprintf(tmp, sizeof tmp, "col%zu", j);
+
       csv_write_string(w, tmp);
     }
   }
 
   csv_end_row(w);
 
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < cols; j++) {
+  for (size_t i = 0; i < rows; i++) {
+    for (size_t j = 0; j < cols; j++) {
       csv_write_double(w, data[i * cols + j]);
     }
 

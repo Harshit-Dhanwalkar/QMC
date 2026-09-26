@@ -45,7 +45,9 @@ csv_writer_t *csv_open(const char *path, const csv_options_t *options);
 csv_writer_t *csv_open_append(const char *path, const csv_options_t *options);
 
 /* Flush, close, free
- * Returns CSV_OK only if flush+close+checks all succeeded */
+ *
+ * Returns CSV_OK only if flush+close+checks all succeeded
+ */
 csv_status_t csv_close(csv_writer_t *writer);
 
 /* Streaming row API */
@@ -57,10 +59,10 @@ csv_status_t csv_end_row(csv_writer_t *writer);
 csv_status_t csv_write_row(csv_writer_t *writer, const double *values,
                            size_t n);
 
-int csv_write_1d(const char *filename, const double *x, const double *y, int n,
-                 const char *xlabel, const char *ylabel);
-int csv_write_matrix(const char *filename, const double *data, int rows,
-                     int cols, const char **col_headers);
+int csv_write_1d(const char *filename, const double *x, const double *y,
+                 size_t n, const char *xlabel, const char *ylabel);
+int csv_write_matrix(const char *filename, const double *data, size_t rows,
+                     size_t cols, const char **col_headers);
 
 const char *csv_strerror(csv_status_t status);
 

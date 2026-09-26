@@ -3,22 +3,26 @@ CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
 
 # Auto-detect Homebrew GCC and LAPACK
-ifeq ($(shell command -v brew >/dev/null 2>&1 && echo yes),yes)
-    BREW_PREFIX := $(shell brew --prefix)
-    # Optionally set CC to Homebrew's GCC if not overridden
-    ifeq ($(origin CC),default)
-        BREW_GCC := $(shell ls $(BREW_PREFIX)/bin/gcc-* 2>/dev/null | head -1)
-        ifneq ($(BREW_GCC),)
-            CC := $(BREW_GCC)
-            $(info Using Homebrew GCC: $(CC))
+ifeq ($(shell uname -s),Darwin)
+    ifeq ($(shell command -v brew >/dev/null 2>&1 && echo yes),yes)
+        BREW_PREFIX := $(shell brew --prefix)
+
+        # Optionally set CC to Homebrew's GCC if not overridden
+        ifeq ($(origin CC),default)
+            BREW_GCC := $(shell ls $(BREW_PREFIX)/bin/gcc-* 2>/dev/null | head -1)
+            ifneq ($(BREW_GCC),)
+                CC := $(BREW_GCC)
+                $(info Using Homebrew GCC: $(CC))
+            endif
         endif
-    endif
-    # Add Homebrew LAPACK paths if installed
-    BREW_LAPACK := $(shell brew --prefix lapack 2>/dev/null)
-    ifneq ($(BREW_LAPACK),)
-        CFLAGS  += -I$(BREW_LAPACK)/include
-        LDFLAGS += -L$(BREW_LAPACK)/lib
-        $(info Using Homebrew LAPACK from $(BREW_LAPACK))
+
+        # Homebrew LAPACK paths if installed
+        BREW_LAPACK := $(shell brew --prefix lapack 2>/dev/null)
+        ifneq ($(BREW_LAPACK),)
+            CFLAGS  += -I$(BREW_LAPACK)/include
+            LDFLAGS += -L$(BREW_LAPACK)/lib
+            $(info Using Homebrew LAPACK from $(BREW_LAPACK))
+        endif
     endif
 endif
 
@@ -144,18 +148,24 @@ endif
 
 # Optional: HDF5 export (export/hdf5_writer.c)
 ## Usage  : make USE_HDF5=1
-HDF5_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs hdf5 2>/dev/null)
+HDF5_PKGCONFIG_NAME := $(shell \
+    pkg-config --exists hdf5        >/dev/null 2>&1 && echo hdf5        || \
+    pkg-config --exists hdf5-serial >/dev/null 2>&1 && echo hdf5-serial || \
+    echo "")
+
 ifneq ($(HDF5_PKGCONFIG_FLAGS),)
-    HDF5_CFLAGS  := $(filter -I%,$(HDF5_PKGCONFIG_FLAGS))
-    HDF5_LDFLAGS := $(filter-out -I%,$(HDF5_PKGCONFIG_FLAGS))
+   HDF5_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs $(HDF5_PKGCONFIG_NAME) 2>/dev/null)
+   HDF5_CFLAGS  := $(filter -I%,$(HDF5_PKGCONFIG_FLAGS))
+   HDF5_LDFLAGS := $(filter-out -I%,$(HDF5_PKGCONFIG_FLAGS)) -lsz -lcurl
 else
     HDF5_CFLAGS  :=
-    HDF5_LDFLAGS := -lhdf5
+    HDF5_LDFLAGS := -lhdf5 -lsz -lcurl
 endif
 
-HDF5_AVAIL := $(shell tmpf=$$(mktemp) && \
+HDF5_AVAIL := $(shell \
+    tmpf=$$(mktemp) && \
     printf '#include <hdf5.h>\nint main(void){H5Fcreate("x",H5F_ACC_TRUNC,H5P_DEFAULT,H5P_DEFAULT);return 0;}\n' | \
-    $(CC) $(CFLAGS) $(HDF5_CFLAGS) -x c - -o $$tmpf $(LDFLAGS) $(HDF5_LDFLAGS) >/dev/null 2>&1 && \
+    $(CC) $(HDF5_CFLAGS) -x c - -o $$tmpf $(HDF5_LDFLAGS) >/dev/null 2>&1 && \
     rm -f $$tmpf && echo yes || echo no)
 
 USE_HDF5 ?= 0
@@ -182,9 +192,10 @@ else
     NETCDF_LDFLAGS := -lnetcdf
 endif
 
-NETCDF_AVAIL := $(shell tmpf=$$(mktemp) && \
+NETCDF_AVAIL := $(shell \
+    tmpf=$$(mktemp) && \
     printf '#include <netcdf.h>\nint main(void){int id; return nc_create("x",NC_CLOBBER,&id);}\n' | \
-    $(CC) $(CFLAGS) $(NETCDF_CFLAGS) -x c - -o $$tmpf $(LDFLAGS) $(NETCDF_LDFLAGS) >/dev/null 2>&1 && \
+    $(CC) $(NETCDF_CFLAGS) -x c - -o $$tmpf $(NETCDF_LDFLAGS) >/dev/null 2>&1 && \
     rm -f $$tmpf && echo yes || echo no)
 
 USE_NETCDF ?= 0
@@ -466,6 +477,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_finite_dmrg \
               $(BUILD_DIR)/test_casscf \
               $(BUILD_DIR)/test_latex_gen \
+              $(BUILD_DIR)/test_csv_writer \
               $(BUILD_DIR)/test_json_writer \
               $(BUILD_DIR)/test_vtk_writer \
               $(BUILD_DIR)/test_hdf5_writer \
