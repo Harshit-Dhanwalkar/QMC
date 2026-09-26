@@ -149,11 +149,11 @@ endif
 # Optional: HDF5 export (export/hdf5_writer.c)
 ## Usage  : make USE_HDF5=1
 HDF5_PKGCONFIG_NAME := $(shell \
-    pkg-config --exists hdf5        >/dev/null 2>&1 && echo hdf5        || \
-    pkg-config --exists hdf5-serial >/dev/null 2>&1 && echo hdf5-serial || \
-    echo "")
+    if pkg-config --exists hdf5 >/dev/null 2>&1; then echo hdf5; \
+    elif pkg-config --exists hdf5-serial >/dev/null 2>&1; then echo hdf5-serial; \
+    else echo ""; fi)
 
-ifneq ($(HDF5_PKGCONFIG_FLAGS),)
+ifneq ($(HDF5_PKGCONFIG_NAME),)
    HDF5_PKGCONFIG_FLAGS := $(shell pkg-config --cflags --libs $(HDF5_PKGCONFIG_NAME) 2>/dev/null)
    HDF5_CFLAGS  := $(filter -I%,$(HDF5_PKGCONFIG_FLAGS))
    HDF5_LDFLAGS := $(filter-out -I%,$(HDF5_PKGCONFIG_FLAGS)) -lsz -lcurl
