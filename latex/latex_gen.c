@@ -1,6 +1,8 @@
 #include "latex_gen.h"
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -150,6 +152,20 @@ static const char *tmp_base(void) {
 //
 // #endif
 // }
+
+static char *dupstr(const char *s) {
+  if (!s) {
+    return NULL;
+  }
+
+  size_t len = strlen(s) + 1;
+  char *copy = malloc(len);
+  if (copy) {
+    memcpy(copy, s, len);
+  }
+
+  return copy;
+}
 
 static int has_unsafe_shell_metachars(const char *s) {
   if (!s) {
@@ -399,20 +415,74 @@ static int write_file(const char *path, const char *content) {
   return (rc >= 0 && close_rc == 0) ? 0 : -1;
 }
 
+latex_render_options_t latex_render_options_default(void) {
+  latex_render_options_t o = {
+      .compiler = NULL,
+      .dpi = 200,
+      .use_amsmath = 1,
+      .use_amssymb = 1,
+      .use_physics = 1,
+      .use_bm = 1,
+      .keep_temp_files = 0,
+  };
+
+  return o;
+}
+
 // Shared .tex-writing logic for latex_render_to_png/pdf
-static int write_standalone_equation_tex(const char *texpath,
-                                         const char *expr) {
-  char buf[8192];
+static int
+write_standalone_equation_tex_ex(const char *texpath, const char *expr,
+                                 const latex_render_options_t *options) {
+  latex_string_t s;
+  latex_string_init(&s);
 
-  snprintf(buf, sizeof buf,
-           "\\documentclass[12pt,preview]{standalone}\n"
-           "\\usepackage{amsmath,amssymb,physics,bm}\n"
-           "\\begin{document}\n"
-           "\\[ %s \\]\n"
-           "\\end{document}\n",
-           expr);
+  int ok = 1;
+  ok &=
+      latex_string_append(
+          &s, "\\documentclass[12pt,preview]{standalone}\n\\usepackage{") == 0;
 
-  return write_file(texpath, buf);
+  const char *pkgs[4];
+  int npkgs = 0;
+  if (options->use_amsmath) {
+    pkgs[npkgs++] = "amsmath";
+  }
+  if (options->use_amssymb) {
+    pkgs[npkgs++] = "amssymb";
+  }
+  if (options->use_physics) {
+    pkgs[npkgs++] = "physics";
+  }
+  if (options->use_bm) {
+    pkgs[npkgs++] = "bm";
+  }
+
+  for (int i = 0; i < npkgs; i++) {
+    if (i > 0) {
+      ok &= latex_string_append_char(&s, ',') == 0;
+    }
+
+    ok &= latex_string_append(&s, pkgs[i]) == 0;
+  }
+
+  ok &= latex_string_append(&s, "}\n\\begin{document}\n\\[ ") == 0;
+  ok &= latex_string_append(&s, expr) == 0;
+  ok &= latex_string_append(&s, " \\]\n\\end{document}\n") == 0;
+
+  if (!ok) {
+    latex_string_free(&s);
+
+    return -1;
+  }
+
+  char *content = latex_string_detach(&s);
+  if (!content) {
+    return -1;
+  }
+
+  int rc = write_file(texpath, content);
+  free(content);
+
+  return rc;
 }
 
 // Diagnostics - slurp a compiler log into g_last_error
@@ -434,7 +504,8 @@ static void capture_log(const char *log_path, const char *tag) {
 }
 
 // Rendering functions (compiler + pdftoppm)
-int latex_render_to_png(const char *expr, const char *outpath) {
+int latex_render_to_png_ex(const char *expr, const char *outpath,
+                           const latex_render_options_t *options) {
   if (!expr || !outpath) {
     set_last_error("latex_render_to_png: NULL argument");
 
@@ -447,8 +518,17 @@ int latex_render_to_png(const char *expr, const char *outpath) {
     return -5;
   }
 
-  if (!latex_compiler_available()) {
-    set_last_error("latex_render_to_png: compiler not available");
+  latex_render_options_t default_opts = latex_render_options_default();
+  if (!options) {
+    options = &default_opts;
+  }
+
+  const char *compiler =
+      options->compiler ? options->compiler : QMC_LATEX_COMPILER;
+  int dpi = (options->dpi > 0) ? options->dpi : 200;
+
+  if (!check_tool_on_path(compiler)) {
+    set_last_error("latex_render_to_png: compiler not available: %s", compiler);
 
     return -4;
   }
@@ -466,59 +546,40 @@ int latex_render_to_png(const char *expr, const char *outpath) {
     return -1;
   }
 
-  // char basename[64];
-  // make_unique_basename(basename, sizeof(basename));
-  //
-  // char texpath[128], pdfpath[128], pngprefix[128], pngout[136];
-  // make_tmp_path(basename, "tex", texpath, sizeof(texpath));
-  // make_tmp_path(basename, "pdf", pdfpath, sizeof(pdfpath));
-  //
-  // snprintf(pngprefix, sizeof(pngprefix), "%s" QMC_PATH_SEP "%s_out",
-  //          tmp_dir_prefix(), basename);
-  // snprintf(pngout, sizeof(pngout), "%s-1.png", pngprefix);
-  //
-  // if (rename(pngout, outpath) != 0) {
-  //   return -3;
-  // }
-
-  if (write_standalone_equation_tex(job.tex, expr) != 0) {
+  if (write_standalone_equation_tex_ex(job.tex, expr, options) != 0) {
     set_last_error("latex_render_to_png: could not write .tex");
-    job_destroy(&job);
+    if (!options->keep_temp_files) {
+      job_destroy(&job);
+    }
 
     return -1;
   }
 
-  // char cmd[512];
-  // snprintf(cmd, sizeof(cmd),
-  //          QMC_CD_CMD
-  //          " %s && %s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
-  //          tmp_dir_prefix(), QMC_LATEX_COMPILER, texpath);
-  // if (run_system(cmd) != 0) {
-  //   return -2;
-  // }
   {
-    char *argv[] = {(char *)QMC_LATEX_COMPILER, "-interaction=batchmode",
+    char *argv[] = {(char *)compiler, "-interaction=batchmode",
                     "-halt-on-error", job.tex, NULL};
-    if (run_tool(QMC_LATEX_COMPILER, argv, job.root, NULL, NULL) != 0) {
+    if (run_tool(compiler, argv, job.root, NULL, NULL) != 0) {
       capture_log(job.log, "latex_render_to_png: compile");
-      job_destroy(&job);
+      if (!options->keep_temp_files) {
+        job_destroy(&job);
+      }
 
       return -2;
     }
   }
 
-  // snprintf(cmd, sizeof(cmd), "pdftoppm -r 200 -png %s %s", pdfpath,
-  // pngprefix); if (run_system(cmd) != 0) {
-  //   return -3;
-  // }
-  //
   {
-    char *argv[] = {(char *)QMC_PDFTOPPM, "-r", "200", "-png", job.pdf,
+    char dpi_str[16];
+    snprintf(dpi_str, sizeof dpi_str, "%d", dpi);
+
+    char *argv[] = {(char *)QMC_PDFTOPPM, "-r", dpi_str, "-png", job.pdf,
                     job.png_prefix,       NULL};
     if (run_tool(QMC_PDFTOPPM, argv, NULL, NULL, NULL) != 0) {
       set_last_error("latex_render_to_png: pdftoppm failed");
 
-      job_destroy(&job);
+      if (!options->keep_temp_files) {
+        job_destroy(&job);
+      }
 
       return -3;
     }
@@ -529,18 +590,30 @@ int latex_render_to_png(const char *expr, const char *outpath) {
     snprintf(produced, sizeof produced, "%s-1.png", job.png_prefix);
     if (rename(produced, outpath) != 0) {
       set_last_error("latex_render_to_png: rename failed: %s", strerror(errno));
-      job_destroy(&job);
+      if (!options->keep_temp_files) {
+        job_destroy(&job);
+      }
 
       return -3;
     }
   }
 
-  job_destroy(&job);
+  if (!options->keep_temp_files) {
+    job_destroy(&job);
+  } else {
+    set_last_error("latex_render_to_png: succeeded; temp dir kept at %s",
+                   job.root);
+  }
 
   return 0;
 }
 
-int latex_render_to_pdf(const char *expr, const char *outpath) {
+int latex_render_to_png(const char *expr, const char *outpath) {
+  return latex_render_to_png_ex(expr, outpath, NULL);
+}
+
+int latex_render_to_pdf_ex(const char *expr, const char *outpath,
+                           const latex_render_options_t *options) {
   if (!expr || !outpath) {
     set_last_error("latex_render_to_pdf: NULL argument");
 
@@ -553,14 +626,20 @@ int latex_render_to_pdf(const char *expr, const char *outpath) {
     return -5;
   }
 
-  if (!latex_compiler_available()) {
-    set_last_error("latex_render_to_pdf: compiler not available");
+  latex_render_options_t default_opts = latex_render_options_default();
+  if (!options) {
+    options = &default_opts;
+  }
+
+  const char *compiler =
+      options->compiler ? options->compiler : QMC_LATEX_COMPILER;
+
+  if (!check_tool_on_path(compiler)) {
+    set_last_error("latex_render_to_pdf: compiler not available: %s", compiler);
 
     return -4;
   }
 
-  // char basename[64];
-  // make_unique_basename(basename, sizeof(basename));
   latex_job_t job;
   if (job_create(&job) != 0) {
     set_last_error("latex_render_to_pdf: temp dir creation failed");
@@ -568,57 +647,52 @@ int latex_render_to_pdf(const char *expr, const char *outpath) {
     return -1;
   }
 
-  // char texpath[128];
-  // char pdfpath[128];
-  // make_tmp_path(basename, "tex", texpath, sizeof(texpath));
-  // make_tmp_path(basename, "pdf", pdfpath, sizeof(pdfpath));
-  //
-  // if (write_standalone_equation_tex(texpath, expr) != 0) {
-  //   return -1;
-  // }
-  //
-  if (write_standalone_equation_tex(job.tex, expr) != 0) {
+  if (write_standalone_equation_tex_ex(job.tex, expr, options) != 0) {
     set_last_error("latex_render_to_pdf: could not write .tex");
 
-    job_destroy(&job);
+    if (!options->keep_temp_files) {
+      job_destroy(&job);
+    }
 
     return -1;
   }
 
-  // char cmd[512];
-  // snprintf(cmd, sizeof(cmd),
-  //          QMC_CD_CMD
-  //          " %s && %s -interaction=batchmode %s " QMC_DEVNULL_REDIRECT,
-  //          tmp_dir_prefix(), QMC_LATEX_COMPILER, texpath);
-  // if (run_system(cmd) != 0) {
-  //   return -2;
-  // }
   {
-    char *argv[] = {(char *)QMC_LATEX_COMPILER, "-interaction=batchmode",
+    char *argv[] = {(char *)compiler, "-interaction=batchmode",
                     "-halt-on-error", job.tex, NULL};
-    if (run_tool(QMC_LATEX_COMPILER, argv, job.root, NULL, NULL) != 0) {
+    if (run_tool(compiler, argv, job.root, NULL, NULL) != 0) {
       capture_log(job.log, "latex_render_to_pdf: compile");
 
-      job_destroy(&job);
+      if (!options->keep_temp_files) {
+        job_destroy(&job);
+      }
 
       return -2;
     }
   }
 
-  // if (rename(pdfpath, outpath) != 0) {
-  //   return -3;
-  // }
   if (rename(job.pdf, outpath) != 0) {
     set_last_error("latex_render_to_pdf: rename failed: %s", strerror(errno));
 
-    job_destroy(&job);
+    if (!options->keep_temp_files) {
+      job_destroy(&job);
+    }
 
     return -3;
   }
 
-  job_destroy(&job);
+  if (!options->keep_temp_files) {
+    job_destroy(&job);
+  } else {
+    set_last_error("latex_render_to_pdf: succeeded; temp dir kept at %s",
+                   job.root);
+  }
 
   return 0;
+}
+
+int latex_render_to_pdf(const char *expr, const char *outpath) {
+  return latex_render_to_pdf_ex(expr, outpath, NULL);
 }
 
 int latex_compile(const char *texfile, const char *compiler,
@@ -785,6 +859,222 @@ int latex_generate_table(const char *texpath, const char *const *const *data,
   return (ok && close_rc == 0) ? 0 : -1;
 }
 
+// Dynamic string builder
+void latex_string_init(latex_string_t *s) {
+  if (!s) {
+    return;
+  }
+
+  s->data = NULL;
+  s->length = 0;
+  s->capacity = 0;
+}
+
+static int latex_string_reserve(latex_string_t *s, size_t extra) {
+  size_t needed = s->length + extra + 1; // +1 for NUL terminator
+  if (needed <= s->capacity) {
+    return 0;
+  }
+
+  size_t new_cap = s->capacity ? s->capacity * 2 : 64;
+  while (new_cap < needed) {
+    new_cap *= 2;
+  }
+
+  char *nd = realloc(s->data, new_cap);
+  if (!nd) {
+    return -1;
+  }
+
+  s->data = nd;
+  s->capacity = new_cap;
+
+  return 0;
+}
+
+int latex_string_append(latex_string_t *s, const char *text) {
+  if (!s || !text) {
+    return -1;
+  }
+
+  size_t tlen = strlen(text);
+  if (latex_string_reserve(s, tlen) != 0) {
+    return -1;
+  }
+
+  memcpy(s->data + s->length, text, tlen);
+  s->length += tlen;
+  s->data[s->length] = '\0';
+
+  return 0;
+}
+
+int latex_string_append_char(latex_string_t *s, char c) {
+  if (!s) {
+    return -1;
+  }
+
+  if (latex_string_reserve(s, 1) != 0) {
+    return -1;
+  }
+
+  s->data[s->length++] = c;
+  s->data[s->length] = '\0';
+
+  return 0;
+}
+
+int latex_string_appendf(latex_string_t *s, const char *fmt, ...) {
+  if (!s || !fmt) {
+    return -1;
+  }
+
+  va_list ap;
+  va_start(ap, fmt);
+  va_list ap2;
+  va_copy(ap2, ap);
+  int needed = vsnprintf(NULL, 0, fmt, ap);
+  va_end(ap);
+
+  if (needed < 0) {
+    va_end(ap2);
+
+    return -1;
+  }
+
+  if (latex_string_reserve(s, (size_t)needed) != 0) {
+    va_end(ap2);
+
+    return -1;
+  }
+
+  vsnprintf(s->data + s->length, (size_t)needed + 1, fmt, ap2);
+  va_end(ap2);
+  s->length += (size_t)needed;
+
+  return 0;
+}
+
+char *latex_string_detach(latex_string_t *s) {
+  if (!s) {
+    return NULL;
+  }
+
+  char *result = s->data;
+  if (!result) {
+    result = malloc(1);
+    if (result) {
+      result[0] = '\0';
+    }
+  }
+
+  s->data = NULL;
+  s->length = 0;
+  s->capacity = 0;
+
+  return result;
+}
+
+void latex_string_free(latex_string_t *s) {
+  if (!s) {
+    return;
+  }
+
+  free(s->data);
+  s->data = NULL;
+  s->length = 0;
+  s->capacity = 0;
+}
+
+// Text escaping
+char *latex_escape_text(const char *text) {
+  if (!text) {
+    return NULL;
+  }
+
+  latex_string_t s;
+  latex_string_init(&s);
+
+  for (const char *p = text; *p; p++) {
+    int rc;
+
+    switch (*p) {
+    case '&':
+      rc = latex_string_append(&s, "\\&");
+      break;
+    case '%':
+      rc = latex_string_append(&s, "\\%");
+      break;
+    case '$':
+      rc = latex_string_append(&s, "\\$");
+      break;
+    case '#':
+      rc = latex_string_append(&s, "\\#");
+      break;
+    case '_':
+      rc = latex_string_append(&s, "\\_");
+      break;
+    case '{':
+      rc = latex_string_append(&s, "\\{");
+      break;
+    case '}':
+      rc = latex_string_append(&s, "\\}");
+      break;
+    case '~':
+      rc = latex_string_append(&s, "\\textasciitilde{}");
+      break;
+    case '^':
+      rc = latex_string_append(&s, "\\textasciicircum{}");
+      break;
+    case '\\':
+      rc = latex_string_append(&s, "\\textbackslash{}");
+      break;
+    default:
+      rc = latex_string_append_char(&s, *p);
+      break;
+    }
+
+    if (rc != 0) {
+      latex_string_free(&s);
+
+      return NULL;
+    }
+  }
+
+  return latex_string_detach(&s);
+}
+
+int latex_write_escaped_text(FILE *f, const char *text) {
+  if (!f || !text) {
+    return -1;
+  }
+
+  char *escaped = latex_escape_text(text);
+  if (!escaped) {
+    return -1;
+  }
+
+  int rc = fputs(escaped, f);
+  free(escaped);
+
+  return (rc >= 0) ? 0 : -1;
+}
+
+int latex_validate_label(const char *label) {
+  if (!label || !label[0]) {
+    return 0;
+  }
+
+  for (const char *p = label; *p; p++) {
+    if (!(isalnum((unsigned char)*p) || *p == ':' || *p == '_' || *p == '-' ||
+          *p == '.')) {
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
 // Math helpers
 char *latex_inline_math(const char *expr) {
   if (!expr) {
@@ -826,6 +1116,10 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
 
   if (!type) {
     type = "bmatrix";
+  } else if (strcmp(type, "bmatrix") != 0 && strcmp(type, "pmatrix") != 0 &&
+             strcmp(type, "Bmatrix") != 0 && strcmp(type, "vmatrix") != 0 &&
+             strcmp(type, "Vmatrix") != 0) {
+    return NULL;
   }
 
   size_t est = 2 * strlen(type) + 20;
@@ -861,6 +1155,728 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
   snprintf(res + pos, est - pos, "\\end{%s}", type);
 
   return res;
+}
+
+// Table builder
+typedef struct {
+  char *text;
+  int escape;
+} latex_table_cell_t;
+
+struct latex_table {
+  size_t rows;
+  size_t cols;
+  latex_table_cell_t *cells; // rows*cols, row-major
+  char **headers;            // cols entries; only rendered if has_header
+  int has_header;
+  char *caption;
+  char *label;
+  char *col_format;
+  char *placement;
+  latex_table_style_t style;
+};
+
+latex_table_t *latex_table_create(size_t rows, size_t cols) {
+  if (rows == 0 || cols == 0 || rows > SIZE_MAX / cols) {
+    return NULL;
+  }
+
+  latex_table_t *t = calloc(1, sizeof *t);
+  if (!t) {
+    return NULL;
+  }
+
+  t->rows = rows;
+  t->cols = cols;
+  t->style = LATEX_TABLE_STYLE_CLASSIC;
+
+  t->cells = calloc(rows * cols, sizeof *t->cells);
+  t->headers = calloc(cols, sizeof *t->headers);
+  if (!t->cells || !t->headers) {
+    latex_table_free(t);
+
+    return NULL;
+  }
+
+  return t;
+}
+
+void latex_table_free(latex_table_t *t) {
+  if (!t) {
+    return;
+  }
+
+  if (t->cells) {
+    for (size_t i = 0; i < t->rows * t->cols; i++) {
+      free(t->cells[i].text);
+    }
+
+    free(t->cells);
+  }
+
+  if (t->headers) {
+    for (size_t c = 0; c < t->cols; c++) {
+      free(t->headers[c]);
+    }
+
+    free(t->headers);
+  }
+
+  free(t->caption);
+  free(t->label);
+  free(t->col_format);
+  free(t->placement);
+  free(t);
+}
+
+int latex_table_set(latex_table_t *t, size_t row, size_t col, const char *value,
+                    int escape) {
+  if (!t || !value || row >= t->rows || col >= t->cols) {
+    return -1;
+  }
+
+  char *copy = dupstr(value);
+  if (!copy) {
+    return -1;
+  }
+
+  latex_table_cell_t *cell = &t->cells[row * t->cols + col];
+  free(cell->text);
+  cell->text = copy;
+  cell->escape = escape;
+
+  return 0;
+}
+
+int latex_table_set_header(latex_table_t *t, size_t col, const char *text) {
+  if (!t || !text || col >= t->cols) {
+    return -1;
+  }
+
+  char *copy = dupstr(text);
+  if (!copy) {
+    return -1;
+  }
+
+  free(t->headers[col]);
+  t->headers[col] = copy;
+  t->has_header = 1;
+
+  return 0;
+}
+
+int latex_table_set_caption(latex_table_t *t, const char *caption) {
+  if (!t) {
+    return -1;
+  }
+
+  char *copy = caption ? dupstr(caption) : NULL;
+  if (caption && !copy) {
+    return -1;
+  }
+
+  free(t->caption);
+
+  t->caption = copy;
+
+  return 0;
+}
+
+int latex_table_set_label(latex_table_t *t, const char *label) {
+  if (!t) {
+    return -1;
+  }
+
+  if (label && !latex_validate_label(label)) {
+    return -1;
+  }
+
+  char *copy = label ? dupstr(label) : NULL;
+  if (label && !copy) {
+    return -1;
+  }
+
+  free(t->label);
+
+  t->label = copy;
+
+  return 0;
+}
+
+int latex_table_set_style(latex_table_t *t, latex_table_style_t style) {
+  if (!t) {
+    return -1;
+  }
+
+  t->style = style;
+
+  return 0;
+}
+
+int latex_table_set_col_format(latex_table_t *t, const char *col_format) {
+  if (!t) {
+    return -1;
+  }
+
+  char *copy = col_format ? dupstr(col_format) : NULL;
+  if (col_format && !copy) {
+    return -1;
+  }
+
+  free(t->col_format);
+
+  t->col_format = copy;
+
+  return 0;
+}
+
+int latex_table_set_placement(latex_table_t *t, const char *placement) {
+  if (!t) {
+    return -1;
+  }
+
+  char *copy = placement ? dupstr(placement) : NULL;
+  if (placement && !copy) {
+    return -1;
+  }
+
+  free(t->placement);
+
+  t->placement = copy;
+
+  return 0;
+}
+
+// NOTE: Shared by latex_table_write() and latex_document_add_table() - appends
+// table's LaTeX to `out` rather than writing a file directly, so a table can be
+// embedded in a document's body
+static int latex_table_render(latex_table_t *t, latex_string_t *out) {
+  if (!t || !out) {
+    return -1;
+  }
+
+  int ok = 1;
+  int booktabs = (t->style == LATEX_TABLE_STYLE_BOOKTABS);
+
+  ok &= latex_string_appendf(out, "\\begin{table}[%s]\n\\centering\n",
+                             t->placement ? t->placement : "h") == 0;
+
+  char generated_format[256];
+  const char *col_format = t->col_format;
+  if (!col_format) {
+    char *p = generated_format;
+    const char *end = generated_format + sizeof generated_format - 2;
+
+    if (!booktabs) {
+      *p++ = '|';
+    }
+
+    for (size_t i = 0; i < t->cols && p < end; i++) {
+      *p++ = 'c';
+      if (!booktabs) {
+        *p++ = '|';
+      }
+    }
+
+    *p = '\0';
+
+    col_format = generated_format;
+  }
+
+  ok &= latex_string_appendf(out, "\\begin{tabular}{%s}\n", col_format) == 0;
+  ok &= latex_string_append(out, booktabs ? "\\toprule\n" : "\\hline\n") == 0;
+
+  if (t->has_header) {
+    for (size_t c = 0; c < t->cols; c++) {
+      if (c > 0) {
+        ok &= latex_string_append(out, " & ") == 0;
+      }
+
+      char *escaped = latex_escape_text(t->headers[c] ? t->headers[c] : "");
+      if (!escaped) {
+        return -1;
+      }
+
+      if (booktabs) {
+        ok &= latex_string_appendf(out, "\\textbf{%s}", escaped) == 0;
+      } else {
+        ok &= latex_string_append(out, escaped) == 0;
+      }
+
+      free(escaped);
+    }
+
+    ok &= latex_string_append(out, " \\\\\n") == 0;
+    ok &= latex_string_append(out, booktabs ? "\\midrule\n" : "\\hline\n") == 0;
+  }
+
+  for (size_t r = 0; r < t->rows; r++) {
+    for (size_t c = 0; c < t->cols; c++) {
+      if (c > 0) {
+        ok &= latex_string_append(out, " & ") == 0;
+      }
+
+      latex_table_cell_t *cell = &t->cells[r * t->cols + c];
+      const char *text = cell->text ? cell->text : "";
+
+      if (cell->escape) {
+        char *escaped = latex_escape_text(text);
+        if (!escaped) {
+          return -1;
+        }
+
+        ok &= latex_string_append(out, escaped) == 0;
+
+        free(escaped);
+      } else {
+        ok &= latex_string_append(out, text) == 0;
+      }
+    }
+
+    ok &= latex_string_append(out, " \\\\\n") == 0;
+    if (!booktabs) {
+      ok &= latex_string_append(out, "\\hline\n") == 0;
+    }
+  }
+
+  if (booktabs) {
+    ok &= latex_string_append(out, "\\bottomrule\n") == 0;
+  }
+
+  ok &= latex_string_append(out, "\\end{tabular}\n") == 0;
+
+  if (t->caption) {
+    char *escaped = latex_escape_text(t->caption);
+    if (!escaped) {
+      return -1;
+    }
+
+    ok &= latex_string_appendf(out, "\\caption{%s}\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  if (t->label) {
+    ok &= latex_string_appendf(out, "\\label{%s}\n", t->label) == 0;
+  }
+
+  ok &= latex_string_append(out, "\\end{table}\n") == 0;
+
+  return ok ? 0 : -1;
+}
+
+int latex_table_write(latex_table_t *t, const char *texpath) {
+  if (!t || !texpath) {
+    return -1;
+  }
+
+  latex_string_t s;
+  latex_string_init(&s);
+
+  if (latex_table_render(t, &s) != 0) {
+    latex_string_free(&s);
+
+    return -1;
+  }
+
+  char *content = latex_string_detach(&s);
+  if (!content) {
+    return -1;
+  }
+
+  int rc = write_file(texpath, content);
+
+  free(content);
+
+  return rc;
+}
+
+// Document builder
+struct latex_document {
+  char *document_class;
+  char *class_options;
+  char *title;
+  char *author;
+  char *date;
+  char *abstract;
+  latex_string_t packages;
+  latex_string_t body;
+};
+
+latex_document_t *latex_document_create(const char *title) {
+  latex_document_t *doc = calloc(1, sizeof *doc);
+  if (!doc) {
+    return NULL;
+  }
+
+  doc->document_class = dupstr("article");
+  if (!doc->document_class) {
+    free(doc);
+
+    return NULL;
+  }
+
+  if (title) {
+    doc->title = dupstr(title);
+    if (!doc->title) {
+      free(doc->document_class);
+      free(doc);
+
+      return NULL;
+    }
+  }
+
+  latex_string_init(&doc->packages);
+  latex_string_init(&doc->body);
+
+  return doc;
+}
+
+void latex_document_free(latex_document_t *doc) {
+  if (!doc) {
+    return;
+  }
+
+  free(doc->document_class);
+  free(doc->class_options);
+  free(doc->title);
+  free(doc->author);
+  free(doc->date);
+  free(doc->abstract);
+  latex_string_free(&doc->packages);
+  latex_string_free(&doc->body);
+  free(doc);
+}
+
+int latex_document_set_author(latex_document_t *doc, const char *author) {
+  if (!doc) {
+    return -1;
+  }
+
+  char *copy = author ? dupstr(author) : NULL;
+  if (author && !copy) {
+    return -1;
+  }
+
+  free(doc->author);
+
+  doc->author = copy;
+
+  return 0;
+}
+
+int latex_document_set_date(latex_document_t *doc, const char *date) {
+  if (!doc) {
+    return -1;
+  }
+
+  char *copy = date ? dupstr(date) : NULL;
+  if (date && !copy) {
+    return -1;
+  }
+
+  free(doc->date);
+
+  doc->date = copy;
+
+  return 0;
+}
+
+int latex_document_set_abstract(latex_document_t *doc, const char *abstract) {
+  if (!doc) {
+    return -1;
+  }
+
+  char *copy = abstract ? dupstr(abstract) : NULL;
+  if (abstract && !copy) {
+    return -1;
+  }
+
+  free(doc->abstract);
+
+  doc->abstract = copy;
+
+  return 0;
+}
+
+int latex_document_set_class(latex_document_t *doc, const char *document_class,
+                             const char *options) {
+  if (!doc || !document_class) {
+    return -1;
+  }
+
+  char *dc = dupstr(document_class);
+  if (!dc) {
+    return -1;
+  }
+
+  char *opts = options ? dupstr(options) : NULL;
+  if (options && !opts) {
+    free(dc);
+
+    return -1;
+  }
+
+  free(doc->document_class);
+  free(doc->class_options);
+
+  doc->document_class = dc;
+  doc->class_options = opts;
+
+  return 0;
+}
+
+int latex_document_add_package(latex_document_t *doc, const char *package,
+                               const char *options) {
+  if (!doc || !package) {
+    return -1;
+  }
+
+  if (options) {
+    return latex_string_appendf(&doc->packages, "\\usepackage[%s]{%s}\n",
+                                options, package);
+  }
+
+  return latex_string_appendf(&doc->packages, "\\usepackage{%s}\n", package);
+}
+
+int latex_document_add_section(latex_document_t *doc, const char *title) {
+  if (!doc || !title) {
+    return -1;
+  }
+
+  char *escaped = latex_escape_text(title);
+  if (!escaped) {
+    return -1;
+  }
+
+  int rc = latex_string_appendf(&doc->body, "\\section{%s}\n", escaped);
+
+  free(escaped);
+
+  return rc;
+}
+
+int latex_document_add_subsection(latex_document_t *doc, const char *title) {
+  if (!doc || !title) {
+    return -1;
+  }
+
+  char *escaped = latex_escape_text(title);
+  if (!escaped) {
+    return -1;
+  }
+
+  int rc = latex_string_appendf(&doc->body, "\\subsection{%s}\n", escaped);
+
+  free(escaped);
+
+  return rc;
+}
+
+int latex_document_add_paragraph(latex_document_t *doc, const char *text) {
+  if (!doc || !text) {
+    return -1;
+  }
+
+  char *escaped = latex_escape_text(text);
+  if (!escaped) {
+    return -1;
+  }
+
+  int rc = latex_string_appendf(&doc->body, "%s\n\n", escaped);
+
+  free(escaped);
+
+  return rc;
+}
+
+int latex_document_add_equation(latex_document_t *doc, const char *equation) {
+  if (!doc || !equation) {
+    return -1;
+  }
+
+  return latex_string_appendf(&doc->body, "\\[ %s \\]\n\n", equation);
+}
+
+int latex_document_add_raw(latex_document_t *doc, const char *latex) {
+  if (!doc || !latex) {
+    return -1;
+  }
+
+  return latex_string_appendf(&doc->body, "%s\n", latex);
+}
+
+int latex_document_add_figure_ex(latex_document_t *doc,
+                                 const latex_figure_t *figure) {
+  if (!doc || !figure || !figure->path) {
+    return -1;
+  }
+
+  if (figure->label && !latex_validate_label(figure->label)) {
+    return -1;
+  }
+
+  double width = (figure->width_fraction > 0) ? figure->width_fraction : 0.8;
+  const char *placement = figure->placement ? figure->placement : "h";
+
+  int ok = 1;
+  ok &= latex_string_appendf(&doc->body,
+                             "\\begin{figure}[%s]\\centering\n"
+                             "  \\includegraphics[width=%.3g\\textwidth]{%s}\n",
+                             placement, width, figure->path) == 0;
+
+  if (figure->caption) {
+    char *escaped = latex_escape_text(figure->caption);
+    if (!escaped) {
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&doc->body, "  \\caption{%s}\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  if (figure->label) {
+    ok &=
+        latex_string_appendf(&doc->body, "  \\label{%s}\n", figure->label) == 0;
+  }
+
+  ok &= latex_string_append(&doc->body, "\\end{figure}\n\n") == 0;
+
+  return ok ? 0 : -1;
+}
+
+int latex_document_add_figure(latex_document_t *doc, const char *path,
+                              const char *caption, const char *label) {
+  latex_figure_t fig = {
+      .path = path,
+      .caption = caption,
+      .label = label,
+      .width_fraction = 0.0,
+      .placement = NULL,
+  };
+
+  return latex_document_add_figure_ex(doc, &fig);
+}
+
+int latex_document_add_table(latex_document_t *doc, latex_table_t *table) {
+  if (!doc || !table) {
+    return -1;
+  }
+
+  int rc = latex_table_render(table, &doc->body);
+  if (rc == 0) {
+    latex_string_append(&doc->body, "\n");
+    latex_table_free(table);
+  }
+
+  return rc;
+}
+
+int latex_document_write(latex_document_t *doc, const char *texpath) {
+  if (!doc || !texpath) {
+    return -1;
+  }
+
+  latex_string_t s;
+  latex_string_init(&s);
+
+  int ok = 1;
+
+  if (doc->class_options) {
+    ok &= latex_string_appendf(&s, "\\documentclass[%s]{%s}\n",
+                               doc->class_options, doc->document_class) == 0;
+  } else {
+    ok &= latex_string_appendf(&s, "\\documentclass{%s}\n",
+                               doc->document_class) == 0;
+  }
+
+  if (doc->packages.length > 0) {
+    ok &= latex_string_append(&s, doc->packages.data) == 0;
+  }
+
+  if (doc->title) {
+    char *escaped = latex_escape_text(doc->title);
+    if (!escaped) {
+      latex_string_free(&s);
+
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&s, "\\title{%s}\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  if (doc->author) {
+    char *escaped = latex_escape_text(doc->author);
+    if (!escaped) {
+      latex_string_free(&s);
+
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&s, "\\author{%s}\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  if (doc->date) {
+    char *escaped = latex_escape_text(doc->date);
+    if (!escaped) {
+      latex_string_free(&s);
+
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&s, "\\date{%s}\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  ok &= latex_string_append(&s, "\\begin{document}\n") == 0;
+
+  if (doc->title || doc->author || doc->date) {
+    ok &= latex_string_append(&s, "\\maketitle\n") == 0;
+  }
+
+  if (doc->abstract) {
+    char *escaped = latex_escape_text(doc->abstract);
+    if (!escaped) {
+      latex_string_free(&s);
+
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&s, "\\begin{abstract}\n%s\n\\end{abstract}\n",
+                               escaped) == 0;
+
+    free(escaped);
+  }
+
+  if (doc->body.length > 0) {
+    ok &= latex_string_append(&s, doc->body.data) == 0;
+  }
+
+  ok &= latex_string_append(&s, "\\end{document}\n") == 0;
+
+  if (!ok) {
+    latex_string_free(&s);
+
+    return -1;
+  }
+
+  char *content = latex_string_detach(&s);
+  if (!content) {
+    return -1;
+  }
+
+  int rc = write_file(texpath, content);
+
+  free(content);
+
+  return rc;
 }
 
 // Cleanup

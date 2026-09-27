@@ -423,7 +423,7 @@ json_status_t json_write_string(json_writer_t *writer, const char *key,
 
 json_status_t json_write_int(json_writer_t *writer, const char *key,
                              long value) {
-  if (!writer || !key || writer->closed) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
   }
 
@@ -492,17 +492,8 @@ json_status_t json_write_bool(json_writer_t *writer, const char *key,
 }
 
 json_status_t json_write_null(json_writer_t *writer, const char *key) {
-  if (!writer || (!data && len > 0) || writer->closed ||
-      key_mismatches_context(writer, key)) {
+  if (!writer || writer->closed || key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
-  }
-
-  if (writer->opts.nonfinite == JSON_NONFINITE_ERROR) {
-    for (size_t i = 0; i < len; i++) {
-      if (isnan(data[i]) || isinf(data[i])) {
-        return set_error(writer, JSON_ERR_NONFINITE);
-      }
-    }
   }
 
   json_status_t rc = element_prefix(writer);
@@ -527,6 +518,14 @@ json_status_t json_write_double_array(json_writer_t *writer, const char *key,
   if (!writer || (!data && len > 0) || writer->closed ||
       key_mismatches_context(writer, key)) {
     return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  if (writer->opts.nonfinite == JSON_NONFINITE_ERROR) {
+    for (size_t i = 0; i < len; i++) {
+      if (isnan(data[i]) || isinf(data[i])) {
+        return set_error(writer, JSON_ERR_NONFINITE);
+      }
+    }
   }
 
   json_status_t rc = element_prefix(writer);
