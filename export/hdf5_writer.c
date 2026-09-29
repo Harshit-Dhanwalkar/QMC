@@ -443,6 +443,279 @@ hdf5_status_t hdf5_write_attribute_double(hdf5_writer_t *writer,
                                      H5T_NATIVE_DOUBLE, &value, sizeof value);
 }
 
+df5_status_t hdf5_write_attribute_int(hdf5_writer_t *writer,
+                                      const char *object_path,
+                                      const char *attr_name, long value) {
+  if (!writer || !object_path || !attr_name) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  return hdf5_write_attribute_common(writer, object_path, attr_name,
+                                     H5T_NATIVE_LONG, &value, sizeof value);
+}
+
+hdf5_status_t hdf5_write_string(hdf5_writer_t *writer, const char *dataset,
+                                const char *value) {
+  if (!writer || !dataset || !value) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  hdf5_status_t grc = ensure_parent_groups(writer->file, dataset);
+  if (grc != HDF5_OK) {
+    return grc;
+  }
+
+  if (H5Lexists(writer->file, dataset, H5P_DEFAULT) > 0 &&
+      H5Ldelete(writer->file, dataset, H5P_DEFAULT) < 0) {
+    return HDF5_ERR_CREATE_DATASET;
+  }
+
+  hid_t type = H5Tcopy(H5T_C_S1);
+  if (type < 0) {
+    return HDF5_ERR_CREATE_DATASET;
+  }
+
+  if (H5Tset_size(type, strlen(value) + 1) < 0) {
+    H5Tclose(type);
+
+    return HDF5_ERR_CREATE_DATASET;
+  }
+
+  hid_t space = H5Screate(H5S_SCALAR);
+  if (space < 0) {
+    H5Tclose(type);
+
+    return HDF5_ERR_CREATE_DATASET;
+  }
+
+  hid_t dset = H5Dcreate2(writer->file, dataset, type, space, H5P_DEFAULT,
+                          H5P_DEFAULT, H5P_DEFAULT);
+  hdf5_status_t rc = HDF5_OK;
+  if (dset < 0) {
+    rc = HDF5_ERR_CREATE_DATASET;
+  } else {
+    if (H5Dwrite(dset, type, H5S_ALL, H5S_ALL, H5P_DEFAULT, value) < 0) {
+      rc = HDF5_ERR_WRITE;
+    }
+
+    H5Dclose(dset);
+  }
+
+  H5Sclose(space);
+  H5Tclose(type);
+
+  return rc;
+}
+
+hdf5_status_t hdf5_write_schema_header(hdf5_writer_t *writer,
+                                       int include_timestamp) {
+  if (!writer) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  hdf5_status_t rc = hdf5_write_attribute_int(writer, "/", "schema_version",
+                                              QMC_EXPORT_SCHEMA_VERSION);
+  if (rc != HDF5_OK) {
+    return rc;
+  }
+
+  rc = hdf5_write_attribute_string(writer, "/", "library", QMC_LIBRARY_NAME);
+  if (rc != HDF5_OK) {
+    return rc;
+  }
+
+  rc = hdf5_write_attribute_string(writer, "/", "library_version",
+                                   QMC_LIBRARY_VERSION);
+  if (rc != HDF5_OK) {
+    return rc;
+  }
+
+  if (include_timestamp) {
+    char stamp[EXPORT_TIMESTAMP_SIZE];
+    if (export_timestamp_utc(stamp, sizeof stamp) != 0) {
+      return HDF5_ERR_WRITE;
+    }
+
+    rc = hdf5_write_attribute_string(writer, "/", "created", stamp);
+  }
+
+  return rc;
+}
+
+hdf5_status_t hdf5_flush(hdf5_writer_t *writer) {
+  if (!writer) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  return (H5Fflush(writer->file, H5F_SCOPE_LOCAL) < 0) ? HDF5_ERR_WRITE
+                                                       : HDF5_OK;
+}
+
+#define HDF5_DEFAULT_APPEND_CHUNK_ROWS 1024
+
+struct hdf5_dataset {
+  hid_t dset;
+  hid_t native_type;
+  int rank;
+  size_t row_width;
+  size_t rows;
+};
+
+static hdf5_dataset_t *dataset_create_fail(hdf5_status_t *out,
+                                           hdf5_status_t status) {
+  if (out) {
+    *out = status;
+  }
+
+  return NULL;
+}
+
+hdf5_dataset_t *hdf5_dataset_create(hdf5_writer_t *writer, const char *dataset,
+                                    hdf5_type_t type, size_t row_width,
+                                    const hdf5_dataset_options_t *options,
+                                    hdf5_status_t *status_out) {
+  if (!writer || !dataset || row_width == 0) {
+    return dataset_create_fail(status_out, HDF5_ERR_INVALID_ARGUMENT);
+  }
+
+  hdf5_status_t grc = ensure_parent_groups(writer->file, dataset);
+  if (grc != HDF5_OK) {
+    return dataset_create_fail(status_out, grc);
+  }
+
+  if (H5Lexists(writer->file, dataset, H5P_DEFAULT) > 0 &&
+      H5Ldelete(writer->file, dataset, H5P_DEFAULT) < 0) {
+    return dataset_create_fail(status_out, HDF5_ERR_CREATE_DATASET);
+  }
+
+  const int rank = (row_width > 1) ? 2 : 1;
+  const hsize_t dims[2] = {0, (hsize_t)row_width};
+  const hsize_t maxdims[2] = {H5S_UNLIMITED, (hsize_t)row_width};
+
+  const hdf5_dataset_options_t opts =
+      options ? *options : hdf5_dataset_options_default();
+  const hsize_t chunk_rows = (opts.chunk_size > 0)
+                                 ? (hsize_t)opts.chunk_size
+                                 : (hsize_t)HDF5_DEFAULT_APPEND_CHUNK_ROWS;
+  const hsize_t chunk[2] = {chunk_rows, (hsize_t)row_width};
+
+  hid_t space = H5Screate_simple(rank, dims, maxdims);
+  if (space < 0) {
+    return dataset_create_fail(status_out, HDF5_ERR_CREATE_DATASET);
+  }
+
+  hid_t dcpl = H5Pcreate(H5P_DATASET_CREATE);
+  if (dcpl < 0) {
+    H5Sclose(space);
+
+    return dataset_create_fail(status_out, HDF5_ERR_CREATE_DATASET);
+  }
+
+  int ok = (H5Pset_chunk(dcpl, rank, chunk) >= 0);
+  if (ok && opts.shuffle) {
+    ok = (H5Pset_shuffle(dcpl) >= 0);
+  }
+  if (ok && opts.compression_level > 0) {
+    ok = (H5Pset_deflate(dcpl, (unsigned)opts.compression_level) >= 0);
+  }
+
+  hid_t native_type = hdf5_native_type(type);
+  hid_t dset = -1;
+  if (ok) {
+    dset = H5Dcreate2(writer->file, dataset, native_type, space, H5P_DEFAULT,
+                      dcpl, H5P_DEFAULT);
+  }
+
+  H5Pclose(dcpl);
+  H5Sclose(space);
+
+  if (dset < 0) {
+    return dataset_create_fail(status_out, HDF5_ERR_CREATE_DATASET);
+  }
+
+  hdf5_dataset_t *ds = malloc(sizeof *ds);
+  if (!ds) {
+    H5Dclose(dset);
+
+    return dataset_create_fail(status_out, HDF5_ERR_CREATE_DATASET);
+  }
+
+  ds->dset = dset;
+  ds->native_type = native_type;
+  ds->rank = rank;
+  ds->row_width = row_width;
+  ds->rows = 0;
+
+  if (status_out) {
+    *status_out = HDF5_OK;
+  }
+
+  return ds;
+}
+
+hdf5_status_t hdf5_dataset_append(hdf5_dataset_t *ds, const void *data,
+                                  size_t nrows) {
+  if (!ds || (nrows > 0 && !data)) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  if (nrows == 0) {
+    return HDF5_OK;
+  }
+
+  const hsize_t old_rows = (hsize_t)ds->rows;
+  const hsize_t new_dims[2] = {old_rows + (hsize_t)nrows,
+                               (hsize_t)ds->row_width};
+  if (H5Dset_extent(ds->dset, new_dims) < 0) {
+    return HDF5_ERR_WRITE;
+  }
+
+  hid_t fspace = H5Dget_space(ds->dset);
+  if (fspace < 0) {
+    return HDF5_ERR_WRITE;
+  }
+
+  const hsize_t start[2] = {old_rows, 0};
+  const hsize_t count[2] = {(hsize_t)nrows, (hsize_t)ds->row_width};
+
+  hdf5_status_t rc = HDF5_OK;
+  hid_t mspace = -1;
+  if (H5Sselect_hyperslab(fspace, H5S_SELECT_SET, start, NULL, count, NULL) <
+      0) {
+    rc = HDF5_ERR_WRITE;
+  } else {
+    mspace = H5Screate_simple(ds->rank, count, NULL);
+    if (mspace < 0 || H5Dwrite(ds->dset, ds->native_type, mspace, fspace,
+                               H5P_DEFAULT, data) < 0) {
+      rc = HDF5_ERR_WRITE;
+    }
+  }
+
+  if (mspace >= 0) {
+    H5Sclose(mspace);
+  }
+  H5Sclose(fspace);
+
+  if (rc == HDF5_OK) {
+    ds->rows += nrows;
+  }
+
+  return rc;
+}
+
+size_t hdf5_dataset_rows(const hdf5_dataset_t *ds) { return ds ? ds->rows : 0; }
+
+hdf5_status_t hdf5_dataset_close(hdf5_dataset_t *ds) {
+  if (!ds) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  hdf5_status_t rc = (H5Dclose(ds->dset) < 0) ? HDF5_ERR_CLOSE : HDF5_OK;
+  free(ds);
+
+  return rc;
+}
+
 static int legacy_write_dataset(const char *filename, const char *dataset,
                                 const double *data, int rank,
                                 const hsize_t *dims) {
@@ -509,6 +782,7 @@ hdf5_writer_t *hdf5_open(const char *path) {
   (void)path;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return NULL;
 }
 
@@ -526,6 +800,7 @@ hdf5_status_t hdf5_writer_write_1d(hdf5_writer_t *writer, const char *dataset,
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+  
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -539,6 +814,7 @@ hdf5_status_t hdf5_writer_write_matrix(hdf5_writer_t *writer,
   (void)cols;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -550,6 +826,7 @@ int hdf5_write_1d(const char *filename, const char *dataset, const double *data,
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -562,12 +839,13 @@ int hdf5_write_matrix(const char *filename, const char *dataset,
   (void)cols;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
 hdf5_status_t hdf5_write_dataset(hdf5_writer_t *writer, const char *dataset,
-                                 hdf5_type_t type, int rank,
-                                 const size_t *dims, const void *data,
+                                 hdf5_type_t type, int rank, const size_t *dims,
+                                 const void *data,
                                  const hdf5_dataset_options_t *options) {
   (void)writer;
   (void)dataset;
@@ -578,6 +856,7 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *writer, const char *dataset,
   (void)options;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+  
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -590,30 +869,33 @@ hdf5_status_t hdf5_writer_write_f32_1d(hdf5_writer_t *writer,
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
 hdf5_status_t hdf5_writer_write_i32_1d(hdf5_writer_t *writer,
-                                       const char *dataset,
-                                       const int32_t *data, size_t len) {
+                                       const char *dataset, const int32_t *data,
+                                       size_t len) {
   (void)writer;
   (void)dataset;
   (void)data;
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
 hdf5_status_t hdf5_writer_write_i64_1d(hdf5_writer_t *writer,
-                                       const char *dataset,
-                                       const int64_t *data, size_t len) {
+                                       const char *dataset, const int64_t *data,
+                                       size_t len) {
   (void)writer;
   (void)dataset;
   (void)data;
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -622,6 +904,7 @@ hdf5_status_t hdf5_create_group(hdf5_writer_t *writer, const char *path) {
   (void)path;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -635,19 +918,101 @@ hdf5_status_t hdf5_write_attribute_string(hdf5_writer_t *writer,
   (void)value;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
 hdf5_status_t hdf5_write_attribute_double(hdf5_writer_t *writer,
                                           const char *object_path,
-                                          const char *attr_name,
-                                          double value) {
+                                          const char *attr_name, double value) {
   (void)writer;
   (void)object_path;
   (void)attr_name;
   (void)value;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+hdf5_status_t hdf5_write_attribute_int(hdf5_writer_t *writer,
+                                       const char *object_path,
+                                       const char *attr_name, long value) {
+  (void)writer;
+  (void)object_path;
+  (void)attr_name;
+  (void)value;
+
+  fprintf(stderr, "%s", kNoHdf5Msg);
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+hdf5_status_t hdf5_write_string(hdf5_writer_t *writer, const char *dataset,
+                                const char *value) {
+  (void)writer;
+  (void)dataset;
+  (void)value;
+
+  fprintf(stderr, "%s", kNoHdf5Msg);
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+hdf5_status_t hdf5_write_schema_header(hdf5_writer_t *writer,
+                                       int include_timestamp) {
+  (void)writer;
+  (void)include_timestamp;
+
+  fprintf(stderr, "%s", kNoHdf5Msg);
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+hdf5_status_t hdf5_flush(hdf5_writer_t *writer) {
+  (void)writer;
+
+  fprintf(stderr, "%s", kNoHdf5Msg);
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+hdf5_dataset_t *hdf5_dataset_create(hdf5_writer_t *writer, const char *dataset,
+                                    hdf5_type_t type, size_t row_width,
+                                    const hdf5_dataset_options_t *options,
+                                    hdf5_status_t *status_out) {
+  (void)writer;
+  (void)dataset;
+  (void)type;
+  (void)row_width;
+  (void)options;
+
+  fprintf(stderr, "%s", kNoHdf5Msg);
+  if (status_out) {
+    *status_out = HDF5_ERR_NOT_SUPPORTED;
+  }
+
+  return NULL;
+}
+
+hdf5_status_t hdf5_dataset_append(hdf5_dataset_t *ds, const void *data,
+                                  size_t nrows) {
+  (void)ds;
+  (void)data;
+  (void)nrows;
+
+  return HDF5_ERR_NOT_SUPPORTED;
+}
+
+size_t hdf5_dataset_rows(const hdf5_dataset_t *ds) {
+  (void)ds;
+
+  return 0;
+}
+
+hdf5_status_t hdf5_dataset_close(hdf5_dataset_t *ds) {
+  (void)ds;
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 

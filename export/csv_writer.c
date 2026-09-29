@@ -403,3 +403,47 @@ int csv_write_matrix(const char *filename, const double *data, size_t rows,
 
   return (int)csv_close(w);
 }
+
+csv_status_t csv_write_header_columns(csv_writer_t *writer,
+                                      const csv_column_t *columns, size_t n) {
+  if (!writer || (n > 0 && !columns)) {
+    return CSV_ERR_INVALID_ARGUMENT;
+  }
+
+  for (size_t j = 0; j < n; j++) {
+    if (!columns[j].name) {
+      return CSV_ERR_INVALID_ARGUMENT;
+    }
+
+    csv_status_t rc = csv_write_string(writer, columns[j].name);
+    if (rc != CSV_OK) {
+      return rc;
+    }
+  }
+
+  return csv_end_row(writer);
+}
+
+csv_status_t csv_write_table(const char *path, const csv_column_t *columns,
+                             size_t ncols, const double *data, size_t rows,
+                             const csv_options_t *options) {
+  if (!path || path[0] == '\0' || ncols == 0 || !columns ||
+      (rows > 0 && !data)) {
+    return CSV_ERR_INVALID_ARGUMENT;
+  }
+
+  csv_writer_t *w = csv_open(path, options);
+  if (!w) {
+    return CSV_ERR_OPEN;
+  }
+
+  csv_status_t rc = csv_write_header_columns(w, columns, ncols);
+
+  for (size_t i = 0; rc == CSV_OK && i < rows; i++) {
+    rc = csv_write_row(w, &data[i * ncols], ncols);
+  }
+
+  csv_status_t close_rc = csv_close(w);
+
+  return (rc != CSV_OK) ? rc : close_rc;
+}

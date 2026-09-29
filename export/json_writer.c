@@ -760,3 +760,96 @@ int json_write_metadata(const char *filename, const json_field_t *fields,
 
   return (rc == JSON_OK) ? 0 : -1;
 }
+
+json_status_t json_write_schema_header(json_writer_t *writer,
+                                       int include_timestamp) {
+  if (!writer) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  json_status_t rc =
+      json_write_int(writer, "schema_version", QMC_EXPORT_SCHEMA_VERSION);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = json_begin_object(writer, "library");
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = json_write_string(writer, "name", QMC_LIBRARY_NAME);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = json_write_string(writer, "version", QMC_LIBRARY_VERSION);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  rc = json_end_object(writer);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  if (include_timestamp) {
+    char stamp[EXPORT_TIMESTAMP_SIZE];
+    if (export_timestamp_utc(stamp, sizeof stamp) != 0) {
+      return set_error(writer, JSON_ERR_IO);
+    }
+
+    rc = json_write_string(writer, "created", stamp);
+  }
+
+  return rc;
+}
+
+json_status_t json_write_columns(json_writer_t *writer, const char *key,
+                                 const export_column_t *columns, size_t n) {
+  if (!writer || !key || (n > 0 && !columns)) {
+    return JSON_ERR_INVALID_ARGUMENT;
+  }
+
+  json_status_t rc = json_begin_array(writer, key);
+  if (rc != JSON_OK) {
+    return rc;
+  }
+
+  for (size_t i = 0; i < n; i++) {
+    if (!columns[i].name) {
+      return set_error(writer, JSON_ERR_INVALID_ARGUMENT);
+    }
+
+    rc = json_begin_object(writer, NULL);
+    if (rc != JSON_OK) {
+      return rc;
+    }
+
+    rc = json_write_string(writer, "name", columns[i].name);
+    if (rc != JSON_OK) {
+      return rc;
+    }
+
+    if (columns[i].unit) {
+      rc = json_write_string(writer, "unit", columns[i].unit);
+      if (rc != JSON_OK) {
+        return rc;
+      }
+    }
+
+    if (columns[i].description) {
+      rc = json_write_string(writer, "description", columns[i].description);
+      if (rc != JSON_OK) {
+        return rc;
+      }
+    }
+
+    rc = json_end_object(writer);
+    if (rc != JSON_OK) {
+      return rc;
+    }
+  }
+
+  return json_end_array(writer);
+}

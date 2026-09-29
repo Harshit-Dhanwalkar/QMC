@@ -311,7 +311,8 @@ LATEX_SRCS   = $(LATEX_DIR)/latex_gen.c
 PLOT_SRCS    = $(PLOT_SRC)
 
 # Data export: CSV and JSON metadata are always built
-EXPORT_DATA_SRCS = $(EXPORT_DIR)/csv_writer.c \
+EXPORT_DATA_SRCS = $(EXPORT_DIR)/export_schema.c \
+                   $(EXPORT_DIR)/csv_writer.c \
                    $(EXPORT_DIR)/json_writer.c \
                    $(EXPORT_DIR)/vtk_writer.c \
                    $(EXPORT_DIR)/hdf5_writer.c \

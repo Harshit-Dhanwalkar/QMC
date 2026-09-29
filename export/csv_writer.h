@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "export_schema.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +60,25 @@ csv_status_t csv_write_int(csv_writer_t *writer, long value);
 csv_status_t csv_end_row(csv_writer_t *writer);
 csv_status_t csv_write_row(csv_writer_t *writer, const double *values,
                            size_t n);
+
+/* Column descriptor (name / unit / description), shared with the JSON and HDF5
+ * exporters. Only `name` ever reaches the CSV itself - units and descriptions
+ * belong in the JSON sidecar (see json_write_columns) so the CSV header stays
+ * plain and parseable */
+typedef export_column_t csv_column_t;
+
+/* Writes one header row from `columns[i].name` and ends the row. Names go
+ * through the normal RFC 4180 escaping. Use with streaming csv_write_row() */
+csv_status_t csv_write_header_columns(csv_writer_t *writer,
+                                      const csv_column_t *columns, size_t n);
+
+/* One-shot table export (row-major `data`, rows x ncols) with a descriptor
+ * header. `path` is used verbatim (no implicit QMC_OUTPUT_DIR) and `options`
+ * may be NULL for defaults. rows == 0 writes a header-only file. Returns CSV_OK
+ * or a negative csv_status_t */
+csv_status_t csv_write_table(const char *path, const csv_column_t *columns,
+                             size_t ncols, const double *data, size_t rows,
+                             const csv_options_t *options);
 
 int csv_write_1d(const char *filename, const double *x, const double *y,
                  size_t n, const char *xlabel, const char *ylabel);

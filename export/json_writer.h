@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "export_schema.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -172,6 +174,30 @@ json_status_t json_write_field(json_writer_t *writer,
  */
 int json_write_metadata(const char *filename, const json_field_t *fields,
                         size_t n_fields);
+
+/*
+ * Writes standard QMC provenance block into current object:
+ *
+ *   "schema_version": 1,
+ *   "library": { "name": "QMC", "version": "..." },
+ *   "created": "YYYY-MM-DDTHH:MM:00Z"        (only if include_timestamp)
+ *
+ * Call it first, right after json_open() (or inside any begin_object), so
+ * every run.json is self-identifying. Pass include_timestamp = 0 for
+ * byte-reproducible output (e.g. golden-file tests)
+ */
+json_status_t json_write_schema_header(json_writer_t *writer,
+                                       int include_timestamp);
+
+/*
+ * Writes an array of column descriptors under `key`:
+ *   "key": [ {"name": "energy", "unit": "Ha", "description": "..."}, ... ]
+ * `unit` / `description` members are omitted when NULL. Pairs with
+ * csv_write_header_columns(): CSV carries plain names, this array carries
+ * units and descriptions
+ */
+json_status_t json_write_columns(json_writer_t *writer, const char *key,
+                                 const export_column_t *columns, size_t n);
 
 #ifdef __cplusplus
 }

@@ -8,11 +8,13 @@
  */
 
 #include "../export/json_writer.h"
+#include "export_schema.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -347,6 +349,96 @@ static void test_nonfinite_policy(void) {
   }
 }
 
+static void test_schema_header_and_columns(void) {
+  printf("  === Test schema header + column descriptors ===\n");
+
+  (void)mkdir(QMC_OUTPUT_DIR, 0755);
+  const char *path = QMC_OUTPUT_DIR "/test_json_schema.json";
+  json_writer_t *w = json_open(path);
+  check_true(w != NULL, "json_open succeeds");
+  if (!w) {
+    return;
+  }
+
+  check_true(json_write_schema_header(w, 0) == JSON_OK,
+             "schema header (no timestamp) succeeds");
+
+  const export_column_t cols[3] = {
+      {"step", NULL, NULL},
+      {"energy", "Ha", "Total energy"},
+      {"var \"x\"", NULL, "Variance"},
+  };
+  check_true(json_write_columns(w, "columns", cols, 3) == JSON_OK,
+             "json_write_columns succeeds");
+  check_true(json_close(w) == JSON_OK, "json_close succeeds");
+
+  char *txt = slurp(path);
+  check_true(txt != NULL, "file readable");
+  if (!txt) {
+    return;
+  }
+
+  char expect_ver[64];
+  snprintf(expect_ver, sizeof expect_ver, "\"version\": \"%s\"",
+           QMC_LIBRARY_VERSION);
+  check_true(strstr(txt, "\"schema_version\": 1") != NULL,
+             "schema_version written");
+  check_true(strstr(txt, "\"name\": \"QMC\"") != NULL, "library.name written");
+  check_true(strstr(txt, expect_ver) != NULL, "library.version written");
+  check_true(strstr(txt, "\"created\"") == NULL,
+             "no timestamp when include_timestamp == 0 (reproducible)");
+  check_true(strstr(txt, "\"unit\": \"Ha\"") != NULL &&
+                 strstr(txt, "\"description\": \"Total energy\"") != NULL,
+             "unit/description written when present");
+  check_true(strstr(txt, "var \\\"x\\\"") != NULL,
+             "column names are JSON-escaped");
+
+  // 'step' has neither unit nor description: exactly 2 "unit" members total
+  // (only the energy column has one) -> count occurrences
+  int units = 0;
+  for (const char *p = txt; (p = strstr(p, "\"unit\"")) != NULL; p++) {
+    units++;
+  }
+  check_true(units == 1, "NULL unit members are omitted, not written as null");
+  free(txt);
+
+  // With timestamp: ISO 8601 UTC "YYYY-MM-DDTHH:MM:SSZ"
+  w = json_open(path);
+  check_true(w != NULL, "reopen for timestamped header");
+  if (!w) {
+    return;
+  }
+  check_true(json_write_schema_header(w, 1) == JSON_OK,
+             "schema header (with timestamp) succeeds");
+  check_true(json_close(w) == JSON_OK, "close succeeds");
+
+  txt = slurp(path);
+  const char *created = txt ? strstr(txt, "\"created\": \"") : NULL;
+  check_true(created != NULL, "created field present");
+  if (created) {
+    const char *v = created + strlen("\"created\": \"");
+    check_true(strlen(v) > 20 && v[4] == '-' && v[7] == '-' && v[10] == 'T' &&
+                   v[13] == ':' && v[16] == ':' && v[19] == 'Z' && v[20] == '"',
+               "created is ISO 8601 UTC (YYYY-MM-DDTHH:MM:SSZ)");
+  }
+  free(txt);
+
+  // Error handling
+  check_true(json_write_schema_header(NULL, 0) == JSON_ERR_INVALID_ARGUMENT,
+             "NULL writer rejected (header)");
+  check_true(json_write_columns(NULL, "c", cols, 3) ==
+                 JSON_ERR_INVALID_ARGUMENT,
+             "NULL writer rejected (columns)");
+
+  w = json_open(path);
+  if (w) {
+    const export_column_t bad[1] = {{NULL, "Ha", NULL}};
+    check_true(json_write_columns(w, "c", bad, 1) == JSON_ERR_INVALID_ARGUMENT,
+               "column with NULL name rejected");
+    (void)json_close(w);
+  }
+}
+
 int main(void) {
   test_field_types_and_escaping();
   test_empty_and_invalid_input();
@@ -355,6 +447,7 @@ int main(void) {
   test_string_array();
   test_quantity();
   test_nonfinite_policy();
+  test_schema_header_and_columns();
 
   if (failures == 0) {
     printf("\nAll test_json_writer checks passed.\n");

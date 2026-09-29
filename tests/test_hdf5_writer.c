@@ -11,6 +11,7 @@
 #include "../export/hdf5_writer.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -243,7 +244,6 @@ static void test_attributes(void) {
       if (sz < sizeof buf) {
         H5Aread(attr, atype, buf);
       }
-
       check_true(strcmp(buf, "eV") == 0,
                  "'units' attribute reflects the overwritten value 'eV'");
 
@@ -343,6 +343,288 @@ static void test_chunking_and_compression(void) {
   H5Fclose(file);
 }
 
+static hid_t open_ro(const char *path) {
+  return H5Fopen(path, H5F_ACC_RDONLY, H5P_DEFAULT);
+}
+
+static void test_appendable_datasets(void) {
+  printf("  === Test appendable datasets (USE_HDF5=1) ===\n");
+
+  const char *path = QMC_OUTPUT_DIR "/test_hdf5_append.h5";
+  hdf5_writer_t *w = hdf5_open(path);
+  check_true(w != NULL, "hdf5_open succeeds");
+  if (!w) {
+    return;
+  }
+
+  // 1D f64, appended in uneven pieces incl. a zero-row no-op
+  hdf5_status_t st = HDF5_ERR_INVALID_ARGUMENT;
+  hdf5_dataset_options_t small_chunks = hdf5_dataset_options_default();
+  small_chunks.chunk_size = 4;
+  hdf5_dataset_t *e = hdf5_dataset_create(w, "observables/energy",
+                                          HDF5_TYPE_F64, 1, &small_chunks, &st);
+  check_true(e != NULL && st == HDF5_OK, "hdf5_dataset_create (1D) succeeds");
+  if (!e) {
+    hdf5_close(w);
+
+    return;
+  }
+
+  double expect[13];
+  for (int i = 0; i < 13; i++) {
+    expect[i] = -2.9 + 0.001 * i;
+  }
+  check_true(hdf5_dataset_append(e, expect, 5) == HDF5_OK, "append 5 rows");
+  check_true(hdf5_dataset_append(e, expect + 5, 1) == HDF5_OK, "append 1 row");
+  check_true(hdf5_dataset_append(e, NULL, 0) == HDF5_OK,
+             "zero-row append with NULL data is a no-op");
+  check_true(hdf5_dataset_append(e, expect + 6, 7) == HDF5_OK, "append 7 rows");
+  check_true(hdf5_dataset_rows(e) == 13, "row counter tracks appends");
+  check_true(hdf5_dataset_append(e, NULL, 3) == HDF5_ERR_INVALID_ARGUMENT,
+             "NULL data with nrows > 0 rejected");
+  check_true(hdf5_dataset_rows(e) == 13, "rejected append leaves count alone");
+  check_true(hdf5_flush(w) == HDF5_OK, "hdf5_flush succeeds mid-run");
+
+  // 2D i32, row_width 3, compressed + shuffled
+  hdf5_dataset_options_t comp = hdf5_dataset_options_default();
+  comp.chunk_size = 2;
+  comp.compression_level = 5;
+  comp.shuffle = 1;
+  hdf5_dataset_t *m =
+      hdf5_dataset_create(w, "configs/counts", HDF5_TYPE_I32, 3, &comp, &st);
+  check_true(m != NULL && st == HDF5_OK, "hdf5_dataset_create (2D) succeeds");
+
+  int32_t rows_i32[24];
+  for (int i = 0; i < 24; i++) {
+    rows_i32[i] = i * 7 - 40;
+  }
+  if (m) {
+    check_true(hdf5_dataset_append(m, rows_i32, 4) == HDF5_OK &&
+                   hdf5_dataset_append(m, rows_i32 + 12, 4) == HDF5_OK,
+               "append 2 x 4 rows of width 3");
+    check_true(hdf5_dataset_rows(m) == 8, "2D row counter correct");
+    check_true(hdf5_dataset_close(m) == HDF5_OK, "close 2D dataset");
+  }
+
+  // Bad arguments
+  check_true(hdf5_dataset_create(w, "z", HDF5_TYPE_F64, 0, NULL, &st) == NULL &&
+                 st == HDF5_ERR_INVALID_ARGUMENT,
+             "row_width == 0 rejected, reason reported");
+  check_true(hdf5_dataset_create(NULL, "z", HDF5_TYPE_F64, 1, NULL, NULL) ==
+                 NULL,
+             "NULL writer rejected (status_out may be NULL)");
+  check_true(hdf5_dataset_rows(NULL) == 0, "rows(NULL) == 0");
+
+  // Default options: 1024-row chunks
+  hdf5_dataset_t *d =
+      hdf5_dataset_create(w, "defaults", HDF5_TYPE_I64, 1, NULL, &st);
+  check_true(d != NULL && st == HDF5_OK, "create with NULL options succeeds");
+
+  if (d) {
+    const int64_t big[3] = {INT64_MIN, 0, INT64_MAX};
+    check_true(hdf5_dataset_append(d, big, 3) == HDF5_OK, "append i64 rows");
+    check_true(hdf5_dataset_close(d) == HDF5_OK, "close i64 dataset");
+  }
+  check_true(hdf5_dataset_close(e) == HDF5_OK, "close 1D dataset");
+  check_true(hdf5_close(w) == HDF5_OK, "hdf5_close succeeds");
+
+  // read everything back independently through the HDF5 C API
+  hid_t file = open_ro(path);
+  check_true(file >= 0, "file reopens read-only");
+  if (file < 0) {
+    return;
+  }
+
+  hid_t ds = H5Dopen2(file, "observables/energy", H5P_DEFAULT);
+  hid_t sp = H5Dget_space(ds);
+  hsize_t dims[2] = {0, 0}, maxd[2] = {0, 0};
+  H5Sget_simple_extent_dims(sp, dims, maxd);
+  check_true(H5Sget_simple_extent_ndims(sp) == 1 && dims[0] == 13,
+             "1D dataset has shape (13,)");
+  check_true(maxd[0] == H5S_UNLIMITED, "1D dataset is extendible (unlimited)");
+
+  hid_t dcpl = H5Dget_create_plist(ds);
+  check_true(H5Pget_layout(dcpl) == H5D_CHUNKED, "1D dataset is chunked");
+
+  hsize_t ck[2] = {0, 0};
+  H5Pget_chunk(dcpl, 1, ck);
+  check_true(ck[0] == 4, "options->chunk_size is rows-per-chunk");
+
+  double got[13];
+  H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, got);
+
+  // NOTE: Intentional bit-exact comparison of the whole array as written/read
+  // back NOLINTNEXTLINE(bugprone-suspicious-memory-comparison)
+  check_true(memcmp(got, expect, sizeof got) == 0,
+             "1D data reads back bit-for-bit, in append order");
+  H5Pclose(dcpl);
+  H5Sclose(sp);
+  H5Dclose(ds);
+
+  ds = H5Dopen2(file, "configs/counts", H5P_DEFAULT);
+  sp = H5Dget_space(ds);
+  H5Sget_simple_extent_dims(sp, dims, maxd);
+  check_true(H5Sget_simple_extent_ndims(sp) == 2 && dims[0] == 8 &&
+                 dims[1] == 3,
+             "2D dataset has shape (8, 3)");
+  check_true(maxd[0] == H5S_UNLIMITED && maxd[1] == 3,
+             "only the row axis is extendible");
+
+  int32_t got2[24];
+  H5Dread(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, got2);
+  int ok2 = (memcmp(got2, rows_i32, 12 * sizeof(int32_t)) == 0) &&
+            (memcmp(got2 + 12, rows_i32 + 12, 12 * sizeof(int32_t)) == 0);
+  check_true(ok2, "2D compressed data reads back identical, row-major");
+
+  dcpl = H5Dget_create_plist(ds);
+  check_true(H5Pget_nfilters(dcpl) == 2, "shuffle + deflate filters attached");
+
+  H5Pclose(dcpl);
+  H5Sclose(sp);
+  H5Dclose(ds);
+
+  ds = H5Dopen2(file, "defaults", H5P_DEFAULT);
+  dcpl = H5Dget_create_plist(ds);
+  H5Pget_chunk(dcpl, 1, ck);
+  check_true(ck[0] == 1024, "default appendable chunk is 1024 rows");
+
+  int64_t g64[3];
+  H5Dread(ds, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, g64);
+  check_true(g64[0] == INT64_MIN && g64[1] == 0 && g64[2] == INT64_MAX,
+             "i64 extremes survive");
+
+  H5Pclose(dcpl);
+  H5Dclose(ds);
+  H5Fclose(file);
+}
+
+static void test_strings_int_attrs_and_schema_header(void) {
+  printf("  === Test string dataset, int attribute, schema header ===\n");
+
+  const char *path = QMC_OUTPUT_DIR "/test_hdf5_schema.h5";
+  hdf5_writer_t *w = hdf5_open(path);
+  check_true(w != NULL, "hdf5_open succeeds");
+  if (!w) {
+    return;
+  }
+
+  check_true(hdf5_write_schema_header(w, 0) == HDF5_OK,
+             "schema header (no timestamp) succeeds");
+  check_true(hdf5_write_string(w, "metadata/method", "DMC") == HDF5_OK,
+             "hdf5_write_string into nested group succeeds");
+  check_true(hdf5_write_string(w, "metadata/method", "VMC longer name") ==
+                 HDF5_OK,
+             "hdf5_write_string replaces an existing dataset");
+  check_true(hdf5_create_group(w, "g") == HDF5_OK, "group created");
+  check_true(hdf5_write_attribute_int(w, "g", "n_walkers", 200) == HDF5_OK,
+             "hdf5_write_attribute_int succeeds");
+  check_true(hdf5_write_attribute_int(w, "g", "n_walkers", 400) == HDF5_OK,
+             "hdf5_write_attribute_int replaces existing attribute");
+  check_true(hdf5_write_string(NULL, "s", "x") == HDF5_ERR_INVALID_ARGUMENT &&
+                 hdf5_write_string(w, "s", NULL) == HDF5_ERR_INVALID_ARGUMENT,
+             "hdf5_write_string rejects NULL args");
+  check_true(hdf5_write_schema_header(NULL, 0) == HDF5_ERR_INVALID_ARGUMENT,
+             "schema header rejects NULL writer");
+  check_true(hdf5_close(w) == HDF5_OK, "hdf5_close succeeds");
+
+  hid_t file = open_ro(path);
+  check_true(file >= 0, "file reopens read-only");
+  if (file < 0) {
+    return;
+  }
+
+  hid_t root = H5Gopen2(file, "/", H5P_DEFAULT);
+  long ver = -1;
+  hid_t a = H5Aopen(root, "schema_version", H5P_DEFAULT);
+  if (a >= 0) {
+    H5Aread(a, H5T_NATIVE_LONG, &ver);
+
+    H5Aclose(a);
+  }
+  check_true(ver == QMC_EXPORT_SCHEMA_VERSION, "root schema_version == 1");
+
+  char buf[64] = {0};
+  a = H5Aopen(root, "library", H5P_DEFAULT);
+  hid_t at = (a >= 0) ? H5Aget_type(a) : -1;
+  if (a >= 0) {
+    H5Aread(a, at, buf);
+
+    H5Tclose(at);
+    H5Aclose(a);
+  }
+  check_true(strcmp(buf, QMC_LIBRARY_NAME) == 0, "root library attribute");
+
+  memset(buf, 0, sizeof buf);
+  a = H5Aopen(root, "library_version", H5P_DEFAULT);
+  at = (a >= 0) ? H5Aget_type(a) : -1;
+  if (a >= 0) {
+    H5Aread(a, at, buf);
+
+    H5Tclose(at);
+    H5Aclose(a);
+  }
+  check_true(strcmp(buf, QMC_LIBRARY_VERSION) == 0,
+             "root library_version attribute");
+  check_true(H5Aexists(root, "created") == 0,
+             "no created attribute when timestamp disabled");
+  H5Gclose(root);
+
+  hid_t ds = H5Dopen2(file, "metadata/method", H5P_DEFAULT);
+  memset(buf, 0, sizeof buf);
+  if (ds >= 0) {
+    hid_t t = H5Dget_type(ds);
+    H5Dread(ds, t, H5S_ALL, H5S_ALL, H5P_DEFAULT, buf);
+
+    H5Tclose(t);
+    H5Dclose(ds);
+  }
+  check_true(strcmp(buf, "VMC longer name") == 0,
+             "string dataset holds the replacement value");
+
+  hid_t g = H5Gopen2(file, "g", H5P_DEFAULT);
+  long nw = -1;
+  a = H5Aopen(g, "n_walkers", H5P_DEFAULT);
+  if (a >= 0) {
+    H5Aread(a, H5T_NATIVE_LONG, &nw);
+
+    H5Aclose(a);
+  }
+  check_true(nw == 400, "int attribute holds the replacement value");
+
+  H5Gclose(g);
+  H5Fclose(file);
+
+  // Timestamp variant
+  w = hdf5_open(path);
+  check_true(w && hdf5_write_schema_header(w, 1) == HDF5_OK,
+             "schema header (with timestamp) succeeds");
+  if (w) {
+    hdf5_close(w);
+  }
+
+  file = open_ro(path);
+  root = (file >= 0) ? H5Gopen2(file, "/", H5P_DEFAULT) : -1;
+  memset(buf, 0, sizeof buf);
+  if (root >= 0 && H5Aexists(root, "created") > 0) {
+    a = H5Aopen(root, "created", H5P_DEFAULT);
+    at = H5Aget_type(a);
+    H5Aread(a, at, buf);
+
+    H5Tclose(at);
+    H5Aclose(a);
+  }
+  check_true(strlen(buf) == 20 && buf[4] == '-' && buf[10] == 'T' &&
+                 buf[19] == 'Z',
+             "created is ISO 8601 UTC");
+
+  if (root >= 0) {
+    H5Gclose(root);
+  }
+  if (file >= 0) {
+    H5Fclose(file);
+  }
+}
+
 #else // !USE_HDF5
 
 static void test_apis_stub_without_crashing(void) {
@@ -370,6 +652,24 @@ static void test_apis_stub_without_crashing(void) {
   rc = hdf5_write_attribute_double(w, "/", "time_step", 0.01);
   check_true(rc == HDF5_ERR_NOT_SUPPORTED,
              "hdf5_write_attribute_double stub returns HDF5_ERR_NOT_SUPPORTED");
+
+  const hdf5_dataset_t *ds =
+      hdf5_dataset_create(w, "x", HDF5_TYPE_F64, 1, NULL, &rc);
+  check_true(ds == NULL && rc == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_dataset_create stub returns NULL + NOT_SUPPORTED");
+  check_true(hdf5_dataset_append(NULL, data, 1) == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_dataset_append stub returns HDF5_ERR_NOT_SUPPORTED");
+  check_true(hdf5_dataset_rows(NULL) == 0, "hdf5_dataset_rows stub returns 0");
+  check_true(hdf5_dataset_close(NULL) == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_dataset_close stub returns HDF5_ERR_NOT_SUPPORTED");
+  check_true(hdf5_write_string(w, "s", "v") == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_write_string stub returns HDF5_ERR_NOT_SUPPORTED");
+  check_true(hdf5_write_attribute_int(w, "/", "n", 1) == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_write_attribute_int stub returns HDF5_ERR_NOT_SUPPORTED");
+  check_true(hdf5_write_schema_header(w, 0) == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_write_schema_header stub returns HDF5_ERR_NOT_SUPPORTED");
+  check_true(hdf5_flush(w) == HDF5_ERR_NOT_SUPPORTED,
+             "hdf5_flush stub returns HDF5_ERR_NOT_SUPPORTED");
 }
 
 static void test_stub_returns_failure_without_crashing(void) {
@@ -401,6 +701,8 @@ int main(void) {
   test_groups_and_generic_types();
   test_attributes();
   test_chunking_and_compression();
+  test_appendable_datasets();
+  test_strings_int_attrs_and_schema_header();
 #else
   test_stub_returns_failure_without_crashing();
   test_apis_stub_without_crashing();

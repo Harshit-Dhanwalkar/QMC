@@ -9,8 +9,10 @@
 
 #include "../export/csv_writer.h"
 
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -306,6 +308,114 @@ static void test_legacy_write_1d_and_matrix(void) {
              "csv_write_matrix(NULL data, rows>0, cols>0) rejected cleanly");
 }
 
+static void test_column_descriptors_and_table(void) {
+  printf("  === Test column descriptors + csv_write_table ===\n");
+
+  const csv_column_t cols[3] = {
+      {"step", NULL, NULL},
+      {"Energy, total", "Ha", "Total energy"},
+      {"say \"hi\"", "Ha^2", "Variance"},
+  };
+  const double data[6] = {0.0, -2.5, 0.25, 1.0, -2.75, 0.125};
+
+  const char *path = QMC_OUTPUT_DIR "/test_csv_table.csv";
+  csv_options_t opts = csv_options_default();
+  opts.precision = 3;
+  opts.scientific = 0;
+  csv_status_t rc = csv_write_table(path, cols, 3, data, 2, &opts);
+  check_true(rc == CSV_OK, "csv_write_table succeeds");
+
+  char buf[512];
+  check_true(slurp_file(path, buf, sizeof buf), "table file readable");
+  check_true(strcmp(buf, "step,\"Energy, total\",\"say \"\"hi\"\"\"\n"
+                         "0,-2.5,0.25\n1,-2.75,0.125\n") == 0,
+             "descriptor names escaped per RFC 4180, %g values written");
+  check_true(strstr(buf, "Ha") == NULL,
+             "units/descriptions never leak into the CSV itself");
+
+  // rows == 0 -> header-only file, data may be NULL
+  rc = csv_write_table(path, cols, 3, NULL, 0, NULL);
+  check_true(rc == CSV_OK, "rows == 0 with NULL data is valid");
+  check_true(slurp_file(path, buf, sizeof buf) &&
+                 strcmp(buf, "step,\"Energy, total\",\"say \"\"hi\"\"\"\n") ==
+                     0,
+             "rows == 0 produces a header-only file");
+
+  check_true(csv_write_table(NULL, cols, 3, data, 2, NULL) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "NULL path rejected");
+  check_true(csv_write_table(path, NULL, 3, data, 2, NULL) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "NULL columns rejected");
+  check_true(csv_write_table(path, cols, 0, data, 2, NULL) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "zero columns rejected");
+  check_true(csv_write_table(path, cols, 3, NULL, 2, NULL) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "NULL data with rows > 0 rejected");
+
+  const csv_column_t bad[1] = {{NULL, "Ha", NULL}};
+  check_true(csv_write_table(path, bad, 1, data, 1, NULL) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "column with NULL name rejected");
+
+  check_true(csv_write_header_columns(NULL, cols, 3) ==
+                 CSV_ERR_INVALID_ARGUMENT,
+             "csv_write_header_columns(NULL writer) rejected");
+}
+
+static void test_bit_exact_round_trip(void) {
+  printf("  === Test CSV bit-exact round trip (precision 17) ===\n");
+
+  const double vals[10] = {0.1,
+                           1.0 / 3.0,
+                           -2.9037123456789012,
+                           1e-300,
+                           DBL_MAX,
+                           DBL_MIN,
+                           DBL_MIN / 4.0, /* subnormal */
+                           3.14159265358979323846,
+                           -0.0,
+                           123456789.987654321};
+  const csv_column_t col[1] = {{"v", NULL, NULL}};
+
+  const char *path = QMC_OUTPUT_DIR "/test_csv_roundtrip.csv";
+  csv_options_t opts = csv_options_default();
+  opts.precision = 17;
+  opts.scientific = 1;
+  check_true(csv_write_table(path, col, 1, vals, 10, &opts) == CSV_OK,
+             "write succeeds");
+
+  FILE *f = fopen(path, "r");
+  check_true(f != NULL, "file readable");
+  if (!f) {
+    return;
+  }
+
+  char line[128];
+  int header_ok = (fgets(line, sizeof line, f) != NULL);
+  int all_match = header_ok;
+  for (size_t i = 0; i < 10 && all_match; i++) {
+    if (!fgets(line, sizeof line, f)) {
+      all_match = 0;
+
+      break;
+    }
+
+    double back = strtod(line, NULL);
+    // Intentional bit-exact comparison, incl. -0.0 vs 0.0 which == treats as
+    // equal NOLINTNEXTLINE(bugprone-suspicious-memory-comparison)
+    if (memcmp(&back, &vals[i], sizeof back) != 0) {
+      all_match = 0;
+    }
+  }
+
+  fclose(f);
+  check_true(all_match,
+             "every value (incl. -0.0, subnormal, DBL_MAX) reads back "
+             "bit-for-bit identical");
+}
+
 int main(void) {
   (void)mkdir(QMC_OUTPUT_DIR, 0755);
 
@@ -316,6 +426,9 @@ int main(void) {
   test_append_mode();
   test_null_and_error_handling();
   test_legacy_write_1d_and_matrix();
+  test_column_descriptors_and_table();
+  test_bit_exact_round_trip();
+
 
   if (failures == 0) {
     printf("\nAll test_csv_writer checks passed.\n");
