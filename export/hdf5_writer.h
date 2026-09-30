@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 
 #include "export_schema.h"
 
@@ -32,10 +31,13 @@ typedef enum {
 
 /* Per-dataset chunking/compression knobs
  *
- * chunk_size == 0 means "no chunking" (dataset is written contiguously,
- * hdf5_writer_write_1d/matrix), in which case compression_level/shuffle are
- * ignored. Otherwise chunk_size is used as target chunk extent along every
- * dimension, clamped to that dimension's actual size
+ * chunk_size == 0 means "no explicit chunking". If compression_level > 0 or
+ * shuffle is requested with chunk_size == 0, an implementation-chosen default
+ * chunk extent (1024 elements per axis, clamped to dataset dimension) is used
+ * instead - HDF5 requires a chunked layout for filters. Otherwise dataset is
+ * written contiguously and compression/shuffle are ignored
+ * When chunk_size > 0, it is used as target chunk extent along every dimension,
+ * clamped to that dimension's actual size
  */
 typedef struct {
   int compression_level; /* 0 = none, 1-9 = gzip (deflate) level */

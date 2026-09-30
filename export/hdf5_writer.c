@@ -1,6 +1,7 @@
 #include "hdf5_writer.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -10,6 +11,7 @@
 #endif
 
 #define HDF5_MAX_PATH 4096
+#define HDF5_DEFAULT_CHUNK_ELEMS 1024
 
 const char *hdf5_strerror(hdf5_status_t status) {
   switch (status) {
@@ -132,6 +134,15 @@ static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
+  // data may be NULL only if the total element count is zero
+  size_t total = 1;
+  for (int i = 0; i < rank; i++) {
+    total *= dims[i];
+  }
+  if (total > 0 && !data) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
   hdf5_status_t grc = ensure_parent_groups(w->file, dataset);
   if (grc != HDF5_OK) {
     return grc;
@@ -228,6 +239,15 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
+  // data may be NULL only if the total element count is zero
+  size_t total = 1;
+  for (int i = 0; i < rank; i++) {
+    total *= dims[i];
+  }
+  if (total > 0 && !data) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
   hdf5_status_t grc = ensure_parent_groups(w->file, dataset);
   if (grc != HDF5_OK) {
     return grc;
@@ -252,9 +272,13 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
   hdf5_dataset_options_t opts =
       options ? *options : hdf5_dataset_options_default();
 
+  int wants_filters = (opts.compression_level > 0) || opts.shuffle;
+  int use_chunking = (opts.chunk_size > 0) || wants_filters;
+
   hid_t dcpl = H5P_DEFAULT;
   int owns_dcpl = 0;
-  if (opts.chunk_size > 0) {
+
+  if (use_chunking) {
     dcpl = H5Pcreate(H5P_DATASET_CREATE);
     if (dcpl < 0) {
       H5Sclose(space);
@@ -264,12 +288,16 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
 
     owns_dcpl = 1;
 
+    const size_t target = (opts.chunk_size > 0)
+                              ? opts.chunk_size
+                              : (size_t)HDF5_DEFAULT_CHUNK_ELEMS;
+
     hsize_t chunk_dims[HDF5_MAX_RANK];
     for (int i = 0; i < rank; i++) {
-      hsize_t c = (hsize_t)opts.chunk_size;
+      hsize_t c = (hsize_t)target;
       chunk_dims[i] = (c < h5dims[i]) ? c : h5dims[i];
       if (chunk_dims[i] == 0) {
-        chunk_dims[i] = 1; /* HDF5 rejects a zero-sized chunk dimension */
+        chunk_dims[i] = 1; // HDF5 rejects a zero-sized chunk dimension
       }
     }
 
@@ -369,10 +397,11 @@ hdf5_status_t hdf5_create_group(hdf5_writer_t *writer, const char *path) {
   return ensure_parent_groups(writer->file, probe);
 }
 
-static hdf5_status_t
-hdf5_write_attribute_common(hdf5_writer_t *writer, const char *object_path,
-                            const char *attr_name, hid_t attr_type,
-                            const void *value, size_t value_size) {
+static hdf5_status_t hdf5_write_attribute_common(hdf5_writer_t *writer,
+                                                 const char *object_path,
+                                                 const char *attr_name,
+                                                 hid_t attr_type,
+                                                 const void *value) {
   hid_t obj = H5Oopen(writer->file, object_path, H5P_DEFAULT);
   if (obj < 0) {
     return HDF5_ERR_INVALID_ARGUMENT;
@@ -395,8 +424,6 @@ hdf5_write_attribute_common(hdf5_writer_t *writer, const char *object_path,
   if (attr < 0 || H5Awrite(attr, attr_type, value) < 0) {
     rc = HDF5_ERR_WRITE;
   }
-
-  (void)value_size;
 
   if (attr >= 0) {
     H5Aclose(attr);
@@ -424,34 +451,23 @@ hdf5_status_t hdf5_write_attribute_string(hdf5_writer_t *writer,
     return HDF5_ERR_WRITE;
   }
 
-  hdf5_status_t rc = hdf5_write_attribute_common(writer, object_path, attr_name,
-                                                 type, value, 0);
+  hdf5_status_t rc =
+      hdf5_write_attribute_common(writer, object_path, attr_name, type, value);
 
   H5Tclose(type);
 
   return rc;
 }
 
-hdf5_status_t hdf5_write_attribute_double(hdf5_writer_t *writer,
-                                          const char *object_path,
-                                          const char *attr_name, double value) {
+hdf5_status_t hdf5_write_attribute_int(hdf5_writer_t *writer,
+                                       const char *object_path,
+                                       const char *attr_name, long value) {
   if (!writer || !object_path || !attr_name) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
   return hdf5_write_attribute_common(writer, object_path, attr_name,
-                                     H5T_NATIVE_DOUBLE, &value, sizeof value);
-}
-
-df5_status_t hdf5_write_attribute_int(hdf5_writer_t *writer,
-                                      const char *object_path,
-                                      const char *attr_name, long value) {
-  if (!writer || !object_path || !attr_name) {
-    return HDF5_ERR_INVALID_ARGUMENT;
-  }
-
-  return hdf5_write_attribute_common(writer, object_path, attr_name,
-                                     H5T_NATIVE_LONG, &value, sizeof value);
+                                     H5T_NATIVE_LONG, &value);
 }
 
 hdf5_status_t hdf5_write_string(hdf5_writer_t *writer, const char *dataset,
@@ -505,6 +521,17 @@ hdf5_status_t hdf5_write_string(hdf5_writer_t *writer, const char *dataset,
   H5Tclose(type);
 
   return rc;
+}
+
+hdf5_status_t hdf5_write_attribute_double(hdf5_writer_t *writer,
+                                          const char *object_path,
+                                          const char *attr_name, double value) {
+  if (!writer || !object_path || !attr_name) {
+    return HDF5_ERR_INVALID_ARGUMENT;
+  }
+
+  return hdf5_write_attribute_common(writer, object_path, attr_name,
+                                     H5T_NATIVE_DOUBLE, &value);
 }
 
 hdf5_status_t hdf5_write_schema_header(hdf5_writer_t *writer,
@@ -800,7 +827,7 @@ hdf5_status_t hdf5_writer_write_1d(hdf5_writer_t *writer, const char *dataset,
   (void)len;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
-  
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 
@@ -856,7 +883,7 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *writer, const char *dataset,
   (void)options;
 
   fprintf(stderr, "%s", kNoHdf5Msg);
-  
+
   return HDF5_ERR_NOT_SUPPORTED;
 }
 

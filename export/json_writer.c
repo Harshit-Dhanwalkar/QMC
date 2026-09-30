@@ -18,7 +18,7 @@
  * characters per RFC 8259 §7
  * NULL writes as ""
  */
-static void write_json_string(FILE *f, const char *s) {
+static json_status_t write_json_string(FILE *f, const char *s) {
   fputc('"', f);
   if (s) {
     for (const unsigned char *p = (const unsigned char *)s; *p; p++) {
@@ -49,6 +49,8 @@ static void write_json_string(FILE *f, const char *s) {
   }
 
   fputc('"', f);
+
+  return ferror(f) ? JSON_ERR_IO : JSON_OK;
 }
 
 /* Write a double as a JSON number, or `null` for NaN/Inf
@@ -251,7 +253,10 @@ static json_status_t write_key(json_writer_t *w, const char *key) {
     return JSON_OK; // unkeyed array element - nothing to write
   }
 
-  write_json_string(w->f, key);
+  json_status_t rc = write_json_string(w->f, key);
+  if (rc != JSON_OK) {
+    return set_error(w, rc);
+  }
 
   if (fputs(": ", w->f) == EOF) {
     return set_error(w, JSON_ERR_IO);
@@ -416,7 +421,10 @@ json_status_t json_write_string(json_writer_t *writer, const char *key,
     return rc;
   }
 
-  write_json_string(writer->f, value);
+  rc = write_json_string(writer->f, value);
+  if (rc != JSON_OK) {
+    return set_error(writer, rc);
+  }
 
   return JSON_OK;
 }
@@ -751,14 +759,20 @@ int json_write_metadata(const char *filename, const json_field_t *fields,
   for (size_t i = 0; i < n_fields; i++) {
     if (json_write_field(w, &fields[i]) != JSON_OK) {
       (void)json_close(w);
+      (void)remove(path);
 
       return -1;
     }
   }
 
   json_status_t rc = json_close(w);
+  if (rc != JSON_OK) {
+    (void)remove(path);
 
-  return (rc == JSON_OK) ? 0 : -1;
+    return -1;
+  }
+
+  return 0;
 }
 
 json_status_t json_write_schema_header(json_writer_t *writer,
