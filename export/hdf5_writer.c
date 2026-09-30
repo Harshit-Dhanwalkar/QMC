@@ -1,7 +1,7 @@
 #include "hdf5_writer.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -130,7 +130,7 @@ static hdf5_status_t ensure_parent_groups(hid_t file,
 static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
                                         const double *data, int rank,
                                         const hsize_t *dims) {
-  if (!w || !dataset || !data) {
+  if (!w || !dataset || rank <= 0) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
@@ -139,6 +139,7 @@ static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
   for (int i = 0; i < rank; i++) {
     total *= dims[i];
   }
+
   if (total > 0 && !data) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
@@ -168,8 +169,11 @@ static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_CREATE_DATASET;
   }
 
-  herr_t status =
-      H5Dwrite(dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  herr_t status = 0;
+  if (total > 0) {
+    status =
+        H5Dwrite(dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  }
 
   H5Dclose(dset);
   H5Sclose(space);
@@ -235,7 +239,7 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
                                  hdf5_type_t type, int rank, const size_t *dims,
                                  const void *data,
                                  const hdf5_dataset_options_t *options) {
-  if (!w || !dataset || !dims || !data || rank <= 0 || rank > HDF5_MAX_RANK) {
+  if (!w || !dataset || !dims || rank <= 0 || rank > HDF5_MAX_RANK) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
@@ -244,6 +248,7 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
   for (int i = 0; i < rank; i++) {
     total *= dims[i];
   }
+
   if (total > 0 && !data) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
@@ -338,8 +343,10 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_CREATE_DATASET;
   }
 
-  herr_t status =
-      H5Dwrite(dset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  herr_t status = 0;
+  if (total > 0) {
+    status = H5Dwrite(dset, native_type, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+  }
 
   H5Dclose(dset);
   H5Sclose(space);
