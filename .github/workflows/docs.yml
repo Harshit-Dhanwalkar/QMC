@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up PATH
         run: echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
@@ -34,7 +34,7 @@ jobs:
       # Cache mdBook
       - name: Cache mdBook
         id: cache-mdbook
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: bin/mdbook
           key: mdbook-v${{ env.MDBOOK_VERSION }}-${{ runner.os }}
@@ -48,7 +48,7 @@ jobs:
       # Cache mdbook-katex
       - name: Cache mdbook-katex
         id: cache-katex
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: bin/mdbook-katex
           key: mdbook-katex-v${{ env.MDBOOK_KATEX_VERSION }}-${{ runner.os }}
@@ -62,7 +62,7 @@ jobs:
       # Cache mdbook-linkcheck2
       - name: Cache mdbook-linkcheck2
         id: cache-linkcheck2
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: bin/mdbook-linkcheck2
           key: mdbook-linkcheck2-v${{ env.MDBOOK_LINKCHECK2_VERSION }}-${{ runner.os }}
@@ -82,10 +82,10 @@ jobs:
         run: mdbook build docs/
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/book
 
