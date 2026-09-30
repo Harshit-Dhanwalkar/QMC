@@ -398,6 +398,7 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_69_dmrg \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
+              $(BUILD_DIR)/eg_72_qaoa
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -443,6 +444,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_pimc \
               $(BUILD_DIR)/test_vqe \
               $(BUILD_DIR)/test_vqe_noisy \
+              $(BUILD_DIR)/test_qaoa \
               $(BUILD_DIR)/test_mp2 \
               $(BUILD_DIR)/test_lattice \
               $(BUILD_DIR)/test_lattice_chern \

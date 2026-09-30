@@ -2,6 +2,7 @@
 #ifndef QMC_PHYSICS_H
 #define QMC_PHYSICS_H
 
+// IWYU pragma: begin_exports
 /* Standard Libs */
 #include <math.h>
 #include <stdlib.h>
@@ -54,6 +55,7 @@
 #include "perturbation.h"
 #include "pimc.h"
 #include "potentials.h"
+#include "qaoa.h"
 #include "qec.h"
 #include "qec5.h"
 #include "qec_surface17.h"
@@ -79,5 +81,6 @@
 #include "wavefn.h"
 #include "wkb.h"
 #include "zeeman.h"
+// IWYU pragma: end_exports
 
 #endif
