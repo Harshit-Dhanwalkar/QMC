@@ -272,6 +272,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/lindblad.c \
                $(PHYSICS_DIR)/hartree_fock.c \
                $(PHYSICS_DIR)/driven.c \
+               $(PHYSICS_DIR)/floquet.c \
                $(PHYSICS_DIR)/soft.c \
                $(PHYSICS_DIR)/boson_sampling.c \
                $(PHYSICS_DIR)/zeeman.c \
