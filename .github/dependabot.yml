@@ -15,7 +15,7 @@ updates:
         patterns:
           - "*"
     commit-message:
-      prefix: "ci(deps)"
+      prefix: "ci"
       include: "scope"
     allow:
       - dependency-type: "all"
