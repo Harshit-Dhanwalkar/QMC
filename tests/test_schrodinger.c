@@ -1,16 +1,16 @@
 /*
  * Test: physics/schrodinger.c's TISE-shooting and TDSE-evolution functions
- * (solve_tise_shoot, evolve_tdse_crank, evolve_tdse_split_step).
+ * (solve_tise_shoot, evolve_tdse_crank, evolve_tdse_split_step)
  *
  *   1. solve_tise_shoot: harmonic-oscillator ground/first-excited energies
  *      against the exact analytic (n + 1/2) * \hbar * \omega, and
  *      cross-validated against solve_tise_matrix's independent diagonalization
- *      approach.
+ *      approach
  *   2. evolve_tdse_crank: norm conservation, and same coherent-state trajectory
  *      check - since this uses a completely different discretization
  *      (finite-difference + Crank-Nicolson, not FFT-based split-step),
  *      agreement between the two independently-implemented time-evolution
- *      methods is itself a strong cross-validation of both.
+ *      methods is itself a strong cross-validation of both
  */
 
 #include "../core/complex.h"
@@ -65,9 +65,10 @@ static void check_close(double got, double expected, double tol,
  * ------------------------------------------------------------------- */
 
 static void test_solve_tise_shoot_harmonic_oscillator(void) {
-  printf("Test: solve_tise_shoot on the harmonic oscillator matches exact "
-         "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
-         "solve_tise_matrix\n");
+  printf(
+      "  === Test: solve_tise_shoot on the harmonic oscillator matches exact "
+      "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
+      "solve_tise_matrix ===\n");
 
   int n = TEST_N_SMALL;
   double L = TEST_LENGTH;
@@ -181,7 +182,7 @@ static double compute_x_mean(const cvector_t *psi, const double *x, int n,
  * ------------------------------------------------------------------- */
 
 static void test_split_step_norm_conservation(void) {
-  printf("Test: evolve_tdse_split_step conserves probability norm\n");
+  printf("  === Test: evolve_tdse_split_step conserves probability norm ===\n");
 
   int n = 512; // power of two
   double L = 40.0;
@@ -211,8 +212,9 @@ static void test_split_step_norm_conservation(void) {
 }
 
 static void test_split_step_coherent_state_hbar_independence(void) {
-  printf("Test: evolve_tdse_split_step reproduces the exact coherent-state "
-         "trajectory x(t)=x0*cos(omega*t) at multiple hbar values\n");
+  printf(
+      "  === Test: evolve_tdse_split_step reproduces the exact coherent-state "
+      "trajectory x(t)=x0*cos(omega*t) at multiple hbar values ===\n");
 
   int n = TEST_N_MEDIUM;
   double L = 40.0;
@@ -260,7 +262,7 @@ static void test_split_step_coherent_state_hbar_independence(void) {
  * ------------------------------------------------------------------- */
 
 static void test_crank_norm_conservation(void) {
-  printf("Test: evolve_tdse_crank conserves probability norm\n");
+  printf("  === Test: evolve_tdse_crank conserves probability norm ===\n");
 
   int n = 500;
   double L = 40.0;
@@ -298,10 +300,10 @@ static void test_crank_norm_conservation(void) {
 }
 
 static void test_crank_matches_split_step(void) {
-  printf("Test: evolve_tdse_crank and evolve_tdse_split_step "
+  printf("  === Test: evolve_tdse_crank and evolve_tdse_split_step "
          "independently-implemented time-evolution schemes "
          "(finite-difference+Crank-Nicolson vs. FFT-based split-step) agree on "
-         "the same coherent-state trajectory\n");
+         "the same coherent-state trajectory ===\n");
 
   int n = TEST_N_MEDIUM;
   double L = 40.0;
@@ -354,9 +356,10 @@ static void test_crank_matches_split_step(void) {
 }
 
 static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
-  printf("Test: solve_tise_shoot_matching on the harmonic oscillator matches "
-         "the exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, "
-         "with node counts and parity\n");
+  printf(
+      " === Test: solve_tise_shoot_matching on the harmonic oscillator matches "
+      "the exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, "
+      "with node counts and parity ===\n");
 
   int n = TEST_N_LARGE;
   double L = TEST_LENGTH;
@@ -426,8 +429,8 @@ static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
 }
 
 static void test_solve_tise_shoot_matching_matches_shoot(void) {
-  printf("Test: solve_tise_shoot_matching's ground-state energy matches "
-         "solve_tise_shoot's independent diagonalization-based method");
+  printf("  === Test: solve_tise_shoot_matching's ground-state energy matches "
+         "solve_tise_shoot's independent diagonalization-based method ===\n");
 
   int n = TEST_N_LARGE;
   double L = TEST_LENGTH;

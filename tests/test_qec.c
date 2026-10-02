@@ -200,6 +200,8 @@ static void test_shor_code(void) {
 }
 
 int main(void) {
+  printf("  > Test QEC :\n");
+
   run_code_all_errors(QEC_BITFLIP, "bitflip");
   run_code_all_errors(QEC_PHASEFLIP, "phaseflip");
   test_shor_code();

@@ -128,7 +128,7 @@ static void run_all_errors(complex_t alpha, complex_t beta,
 }
 
 int main(void) {
-  printf("test_qec_surface17:\n");
+  printf("  > Test QEC surface17:\n");
 
   complex_t alpha1 = c_real(0.6);
   complex_t beta1 = c_new(0.7368487952023082, 0.31153467384692046);

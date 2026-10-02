@@ -1,19 +1,19 @@
 /*
- * Test: Jordan-Wigner fermion-to-qubit mapping.
+ * Test: Jordan-Wigner fermion-to-qubit mapping
  *
  * 1. Anticommutation relations {a_i, a_j^\dagger} = \delta_ij*I,
  *   {a_i, a_j} = 0 must hold exactly for JW operators, for every pair (i,j) in
  *   a 4-mode system : these are the defining algebraic relations of fermionic
  *   operators, and whole point of Z-string construction is to make bosonic
- *   qubit tensor products satisfy them.
+ *   qubit tensor products satisfy them
  * 2. The number operator a_j^dagger a_j must correctly read off mode j's
- *   occupation on a fixed test state.
+ *   occupation on a fixed test state
  * 3. Cross-validation: a Hamiltonian built by composing
  *   jw_creation_operator/jw_annihilation_operator (tensor-product construction)
  *   must exactly match (to machine precision) the same hamiltonian built by
  *   second_quant_build_hopping_hamiltonian (a completely independent direct
  *   bit-manipulation + fermionic-sign-counting construction, no tensor products
- *   at all) and their eigenvalue spectra must agree.
+ *   at all) and their eigenvalue spectra must agree
  */
 
 #include "../core/complex.h"
@@ -46,7 +46,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_anticommutation(void) {
-  printf("test_anticommutation:\n");
+  printf("  === Test anticommutation ===\n");
 
   int n_modes = 4;
   int dim = 1 << n_modes;
@@ -111,7 +111,7 @@ static void test_anticommutation(void) {
 }
 
 static void test_number_operator(void) {
-  printf("test_number_operator:\n");
+  printf("  === Test number operator ===\n");
 
   int n_modes = 4;
 
@@ -135,7 +135,7 @@ static void test_number_operator(void) {
 }
 
 static void test_jw_vs_direct_hamiltonian(void) {
-  printf("test_jw_vs_direct_hamiltonian:\n");
+  printf("  === Test jw vs direct hamiltonian ===\n");
 
   int n_modes = 4;
   int dim = 1 << n_modes;
@@ -248,7 +248,7 @@ static void test_jw_vs_direct_hamiltonian(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test invalid input ===\n");
 
   check_true(jw_creation_operator(-1, 3) == NULL, "negative mode rejected");
   check_true(jw_creation_operator(3, 3) == NULL, "mode >= n_modes rejected");
@@ -262,6 +262,8 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Test Second Quant:Jordan-Wigner fermion-to-qubit mapping:\n");
+
   test_anticommutation();
   test_number_operator();
   test_jw_vs_direct_hamiltonian();
