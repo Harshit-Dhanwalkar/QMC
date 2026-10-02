@@ -399,7 +399,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_69_dmrg \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
-              $(BUILD_DIR)/eg_72_qaoa
+              $(BUILD_DIR)/eg_72_qaoa \
+              $(BUILD_DIR)/eg_73_floquet
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -429,6 +430,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_lindblad \
               $(BUILD_DIR)/test_hartree_fock \
               $(BUILD_DIR)/test_driven \
+              $(BUILD_DIR)/test_floquet \
               $(BUILD_DIR)/test_soft \
               $(BUILD_DIR)/test_fermi_golden_rule \
               $(BUILD_DIR)/test_boson_sampling \

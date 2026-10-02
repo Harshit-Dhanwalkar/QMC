@@ -200,6 +200,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_70_dmrg.c</code></li>
   <li><code>eg_71_casscf</code></li>
   <li><code>eg_72_qaoa.c</code></li>
+  <li><code>eg_73_floquet.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -225,6 +226,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_dmrg.c</code></li>
   <li><code>test_finite_dmrg.c</code></li>
   <li><code>test_driven.c</code></li>
+  <li><code>test_floquet.c</code></li>
   <li><code>test_fci.c</code></li>
   <li><code>test_fermi_golden_rule.c</code></li>
   <li><code>test_fft.c</code></li>
