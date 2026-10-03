@@ -401,7 +401,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_70_finite_dmrg \
               $(BUILD_DIR)/eg_71_casscf \
               $(BUILD_DIR)/eg_72_qaoa \
-              $(BUILD_DIR)/eg_73_floquet
+              $(BUILD_DIR)/eg_73_floquet \
+              $(BUILD_DIR)/eg_74_td_perturbation
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -413,6 +414,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_hydrogen \
               $(BUILD_DIR)/test_helium \
               $(BUILD_DIR)/test_perturbation \
+              $(BUILD_DIR)/test_td_perturbation \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \

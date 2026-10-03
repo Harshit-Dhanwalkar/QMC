@@ -141,7 +141,7 @@ static void test_h2_optimization_from_collinear_guess(void) {
   check_true(result->grad_norm < 1e-4,
              "converged gradient is small (near a stationary point)");
   check_true(result->energy < e0,
-             "optimized energy is lower than the starting-geometry energy");
+             "optimized energy is lower than starting-geometry energy");
 
   double Req = bond_length(result->coords);
   printf("  H2/STO-3G optimized bond length: %.4f bohr (energy %.10f)\n", Req,
@@ -156,10 +156,10 @@ static void test_h2_optimization_from_collinear_guess(void) {
 static void test_h2_optimization_independent_of_atom_split(void) {
   printf("  === Test H2 optimization independent of atom split ===\n");
 
-  // NOTE: Same initial bond length (1.0 bohr) as the collinear-guess test
-  // above, but split asymmetrically and off-axis between the two atoms' own
-  // coordinates, and with whole pair translated away from the origin - a
-  // multi-coordinate starting point
+  // NOTE: Same initial bond length (1.0 bohr) as collinear-guess test above,
+  // but split asymmetrically and off-axis between two atoms' own coordinates,
+  // and with whole pair translated away from origin - a multi-coordinate
+  // starting point
   double const coords0[6] = {0.3, -0.2, 0.5, 0.3, -0.2, 1.5};
   check_true(fabs(bond_length(coords0) - 1.0) < 1e-9,
              "test setup: starting bond length is 1.0 bohr");
@@ -178,8 +178,8 @@ static void test_h2_optimization_independent_of_atom_split(void) {
   printf("  H2/STO-3G optimized bond length (off-axis start): %.4f bohr\n",
          Req);
   check_true(Req > 1.3 && Req < 1.45,
-             "converges to the same equilibrium bond-length range regardless "
-             "of how the initial displacement was split between atoms");
+             "converges to same equilibrium bond-length range regardless of "
+             "how initial displacement was split between atoms");
 
   geometry_optimization_result_free(result);
 }

@@ -201,6 +201,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_71_casscf</code></li>
   <li><code>eg_72_qaoa.c</code></li>
   <li><code>eg_73_floquet.c</code></li>
+  <li><code>eg_74_td_perturbation.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -257,6 +258,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_numerov.c</code></li>
   <li><code>test_openmp_qmc.c</code></li>
   <li><code>test_perturbation.c</code></li>
+  <li><code>test_td_perturbation.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>
