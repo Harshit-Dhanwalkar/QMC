@@ -259,6 +259,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/hydrogen.c \
                $(PHYSICS_DIR)/helium.c \
                $(PHYSICS_DIR)/perturbation.c \
+               $(PHYSICS_DIR)/td_perturbation.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \

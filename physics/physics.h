@@ -53,6 +53,7 @@
 #include "molecular_integrals.h"
 #include "mp2.h"
 #include "perturbation.h"
+#include "td_perturbation.h"
 #include "pimc.h"
 #include "potentials.h"
 #include "qaoa.h"
