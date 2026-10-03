@@ -285,6 +285,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/qaoa.c \
                $(PHYSICS_DIR)/mp2.c \
                $(PHYSICS_DIR)/lattice.c \
+               $(PHYSICS_DIR)/tight_binding.c \
                $(PHYSICS_DIR)/quantum_info.c \
                $(PHYSICS_DIR)/qec.c \
                $(PHYSICS_DIR)/qec5.c \
