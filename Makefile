@@ -403,7 +403,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_71_casscf \
               $(BUILD_DIR)/eg_72_qaoa \
               $(BUILD_DIR)/eg_73_floquet \
-              $(BUILD_DIR)/eg_74_td_perturbation
+              $(BUILD_DIR)/eg_74_td_perturbation \
+              $(BUILD_DIR)/eg_75_tight_binding
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -455,6 +456,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_mp2 \
               $(BUILD_DIR)/test_lattice \
               $(BUILD_DIR)/test_lattice_chern \
+              $(BUILD_DIR)/test_tight_binding \
               $(BUILD_DIR)/test_quantum_info \
               $(BUILD_DIR)/test_qec \
               $(BUILD_DIR)/test_qec5 \

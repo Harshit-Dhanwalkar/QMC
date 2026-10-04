@@ -202,6 +202,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_72_qaoa.c</code></li>
   <li><code>eg_73_floquet.c</code></li>
   <li><code>eg_74_td_perturbation.c</code></li>
+  <li><code>eg_75_tight_binding.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -247,6 +248,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_latex_gen.c</code></li>
   <li><code>test_lattice.c</code></li>
   <li><code>test_lattice_chern.c</code></li>
+  <li><code>test_tight_binding.c</code></li>
   <li><code>test_lih.c</code></li>
   <li><code>test_lindblad.c</code></li>
   <li><code>test_matrix.c</code></li>
