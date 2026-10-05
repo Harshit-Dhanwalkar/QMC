@@ -1,3 +1,6 @@
+[build]
+build-dir = "book/html"
+
 [book]
 title = "QMC : Quantum Mechanics implementations in C"
 authors = ["Harshit Dhanwalkar"]
@@ -6,6 +9,7 @@ language = "en"
 src = "src"
 
 [preprocessor.katex]
+after = ["linkcheck"]
 
 [output.html]
 smart-punctuation = true
@@ -21,6 +25,7 @@ edit-url-template = "https://github.com/Harshit-Dhanwalkar/QMC/edit/main/docs/sr
 
 [output.linkcheck2]
 follow-web-links = false
+# warning-policy = "ignore"
 
 [output.html.search]
 enable = true

@@ -116,14 +116,20 @@ jobs:
       - name: Build Documentation
         run: mdbook build docs/
 
+      - name: Copy WASM into book output
+        run: |
+          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm; do
+            cp "docs/src/playground/$f" "docs/book/html/playground/$f"
+          done
+
       - name: Confirm playground survived mdBook's asset copy
         run: |
-          for f in docs/book/playground/qmc.wasm \
-                   docs/book/playground/qmc_butterfly.wasm \
-                   docs/book/playground/qmc_dirac.wasm \
-                   docs/book/playground/index.html \
-                   docs/book/playground/butterfly.html \
-                   docs/book/playground/dirac.html; do
+          for f in docs/book/html/playground/qmc.wasm \
+                   docs/book/html/playground/qmc_butterfly.wasm \
+                   docs/book/html/playground/qmc_dirac.wasm \
+                   docs/book/html/playground/index.html \
+                   docs/book/html/playground/butterfly.html \
+                   docs/book/html/playground/dirac.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)
