@@ -26,6 +26,9 @@
   <br>
   Also: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.html">Hofstadter butterfly explorer</a>
   &mdash; every gap labelled by its Chern number, computed live from the tight-binding module.
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/dirac.html">Dirac Klein-paradox demo</a>
+  &mdash; a step taller than the electron's energy still transmits, through negative-energy states; plus Zitterbewegung.
 </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -215,6 +218,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_73_floquet.c</code></li>
   <li><code>eg_74_td_perturbation.c</code></li>
   <li><code>eg_75_tight_binding.c</code></li>
+  <li><code>eg_76_dirac_evolve.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -273,6 +277,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_openmp_qmc.c</code></li>
   <li><code>test_perturbation.c</code></li>
   <li><code>test_td_perturbation.c</code></li>
+  <li><code>test_dirac_evolve.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>
