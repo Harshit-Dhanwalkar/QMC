@@ -207,6 +207,7 @@
       <header>
         <h1><span>QMC</span> Playground &mdash; quantum double-slit</h1>
         <div class="links">
+          <a href="butterfly.html">Hofstadter butterfly</a>
           <a href="https://github.com/Harshit-Dhanwalkar/QMC"
             >&#9733; Star on GitHub</a
           >
@@ -235,6 +236,7 @@
           <button id="play" class="primary">Pause</button>
           <button id="fire">Fire again</button>
           <button id="clearscreen">Clear screen</button>
+          <label><input type="checkbox" id="auto" checked /> Auto-repeat</label>
           <span style="color: var(--muted)">Setup:</span>
           <button data-preset="double">Double slit</button>
           <button data-preset="single">Single slit</button>
@@ -436,6 +438,7 @@
           );
           return;
         }
+
         const mem = () => wasmMemory.buffer;
 
         // state
@@ -445,8 +448,8 @@
           tool = "draw",
           speed = 4,
           msPerStep = 0;
-        const acc = new Float64Array(N);
 
+        const acc = new Float64Array(N);
         const val = (id) => parseFloat($(id).value);
 
         function launch() {
@@ -454,6 +457,7 @@
           t = 0;
           vmax = 0.02;
         }
+
         function buildPreset(name) {
           const sep = val("sep"),
             sw = val("sw");
@@ -466,6 +470,7 @@
             w.qmc_fill_rect(1.5, 2.5, -BOX, BOX, 8.0);
           } else w.qmc_clear_potential();
         }
+
         let preset = "double";
         function applyPreset(name) {
           preset = name;
@@ -476,11 +481,11 @@
 
         // drawing walls
         let painting = false,
-          eraseMode = false;
-        function paintAt(ev) {
-          const r = sim.getBoundingClientRect();
-          const gx = ((ev.clientX - r.left) / r.width) * N,
-            gy = ((ev.clientY - r.top) / r.height) * N;
+          eraseMode = false,
+          lastG = null;
+
+        function stamp(gx, gy) {
+          gy = ((ev.clientY - r.top) / r.height) * N;
           const V = new Float64Array(mem(), w.qmc_potential(), N * N);
           const rad = 2.2,
             v = eraseMode || tool === "erase" ? 0 : WALL_V;
@@ -494,12 +499,31 @@
               iy <= Math.min(N - 1, Math.ceil(gy + rad + 1));
               iy++
             )
-              if ((ix + 0.5 - gx) ** 2 + (iy + 0.5 - gy) ** 2 <= rad * rad)
+              if ((ix + 0.5 - gx) ** 2 + (iy + 0.5 - gy) ** 2 <= rad * rad) {
                 V[ix * N + iy] = v;
+              }
+        }
+
+        function paintAt(ev) {
+          const r = sim.getBoundingClientRect();
+          const gx = ((ev.clientX - r.left) / r.width) * N,
+            gy = ((ev.clientY - r.top) / r.height) * N;
+          const from = lastG || [gx, gy];
+          const steps = Math.max(
+            1,
+            Math.ceil(Math.hypot(gx - from[0], gy - from[1])),
+          );
+          for (let s = 1; s <= steps; s++)
+            stamp(
+              from[0] + ((gx - from[0]) * s) / steps,
+              from[1] + ((gy - from[1]) * s) / steps,
+            );
+          lastG = [gx, gy];
         }
         sim.addEventListener("contextmenu", (e) => e.preventDefault());
         sim.addEventListener("pointerdown", (e) => {
           painting = true;
+          lastG = null;
           eraseMode = e.button === 2;
           sim.setPointerCapture(e.pointerId);
           paintAt(e);
@@ -592,6 +616,11 @@
             t += speed * DT;
           }
           render();
+
+          // fire next particle once last one has left box (or after a long time),
+          // keeping accumulated detector pattern so fringes keep building up
+          if (playing && $("auto").checked && (w.qmc_norm() < 0.02 || t > 40))
+            launch();
           last = now;
           requestAnimationFrame(frame);
         }
