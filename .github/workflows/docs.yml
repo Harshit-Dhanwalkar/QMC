@@ -5,6 +5,14 @@ on:
     branches: ["main"]
     paths:
       - "docs/**"
+      - "wasm/**"
+      - "physics/soft.c"
+      - "physics/soft.h"
+      - "core/vector.c"
+      - "core/vector.h"
+      - "core/complex.h"
+      - "core/fft/**"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -31,6 +39,7 @@ jobs:
       - name: Set up PATH
         run: echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
 
+      # ------------------ mdBook toolchain  -------------------
       # Cache mdBook
       - name: Cache mdBook
         id: cache-mdbook
@@ -77,9 +86,38 @@ jobs:
           chmod +x bin/mdbook-linkcheck2
           rm bin/mdbook-linkcheck2.tar.gz
 
+      # ---------------------- WASM playground  ---------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Zig (used by wasm/build.sh when emcc is absent)
+        run: pip install ziglang
+
+      - name: Build WASM playground
+        run: |
+          chmod +x wasm/build.sh
+          ./wasm/build.sh
+
+      - name: Verify WASM artifact landed in the docs tree
+        run: |
+          test -s docs/src/playground/qmc.wasm \
+            && echo " OK: docs/src/playground/qmc.wasm ($(stat -c%s docs/src/playground/qmc.wasm) bytes)" \
+            || (echo "ERROR: qmc.wasm missing" && exit 1)
+
+      # ------------------- Build & deploy --------------------------
       # Build, Validate links and Deploy Docs
       - name: Build Documentation
         run: mdbook build docs/
+
+      - name: Confirm playground survived mdBook's asset copy
+        run: |
+          test -f docs/book/playground/qmc.wasm \
+            && test -f docs/book/playground/index.html \
+            && echo " OK: playground copied into docs/book/" \
+            || (echo "ERROR: playground not in book output" && exit 1)
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

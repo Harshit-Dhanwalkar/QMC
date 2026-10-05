@@ -27,12 +27,25 @@ if command -v emcc >/dev/null 2>&1; then
   emcc -O3 $SRCS -o "$OUT/qmc.wasm" \
     -sSTANDALONE_WASM=1 -sALLOW_MEMORY_GROWTH=1 --no-entry \
     -sEXPORTED_FUNCTIONS="[$EXPORT_LIST]"
-else
-  echo "[wasm] emcc not found, using zig cc (pip install ziglang)"
+elif command -v zig >/dev/null 2>&1; then
+  echo "[wasm] using zig"
+  # shellcheck disable=SC2086
+  zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
+    -mexec-model=reactor -Wl,--no-entry -Wl,--strip-all \
+    $SRCS -lm -o "$OUT/qmc.wasm"
+elif python3 -c 'import ziglang' 2>/dev/null; then
+  echo "[wasm] using python -m ziglang"
   # shellcheck disable=SC2086
   python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-    -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=268435456 -Wl,--strip-all \
+    -mexec-model=reactor -Wl,--no-entry -Wl,--strip-all \
     $SRCS -lm -o "$OUT/qmc.wasm"
+else
+  echo "[wasm] ERROR: no suitable toolchain found." >&2
+  echo "Install one of:" >&2
+  echo "  - emcc (Emscripten):  https://emscripten.org/docs/getting_started/downloads.html" >&2
+  echo "  - zig:                https://ziglang.org/download/" >&2
+  echo "  - python3 -m pip install ziglang" >&2
+  exit 1
 fi
 
 ls -l "$OUT/qmc.wasm"

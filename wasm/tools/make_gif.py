@@ -34,14 +34,19 @@ for d in frames:
     side = Image.new("RGB", (SIDE, N * SCALE), (5, 7, 11))
     dr = ImageDraw.Draw(side)
     m = acc.max() or 1.0
+
     for iy in range(N):
         dr.rectangle([0, iy * SCALE, int(acc[iy] / m * (SIDE - 6)), iy * SCALE + SCALE - 1], fill=(61, 220, 151))
+
     dr2 = ImageDraw.Draw(img)
     x = int((SX + 0.5) * SCALE)
+
     for y in range(0, N * SCALE, 9):
         dr2.line([x, y, x, y + 4], fill=(61, 220, 151))
+
     canvas = Image.new("RGB", (N * SCALE + 6 + SIDE, N * SCALE), (11, 14, 20))
     canvas.paste(img, (0, 0)); canvas.paste(side, (N * SCALE + 6, 0))
     out.append(canvas.quantize(colors=96, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
+
 out[0].save(dst, save_all=True, append_images=out[1:], duration=40, loop=0, optimize=True)
 print(f"wrote {dst}: {len(out)} frames")

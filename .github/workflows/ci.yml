@@ -294,3 +294,34 @@ jobs:
           make run-tests PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 \
             EXTRA_CFLAGS="-O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
           # make run-tests PLOT_BACKEND=GR CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address,undefined"
+
+  wasm-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Cache pip
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: wasm-pip-${{ runner.os }}-ziglang
+
+      - name: Install Zig
+        run: pip install ziglang
+
+      - name: Build WASM playground
+        run: |
+          chmod +x wasm/build.sh
+          ./wasm/build.sh
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Native vs WASM agreement + fringe physics
+        run: |
+          chmod +x wasm/test/run.sh
+          ./wasm/test/run.sh
