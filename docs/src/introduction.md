@@ -8,6 +8,10 @@ engine that runs from 1D potentials up to relativistic wave equations, with
 publication-quality plots where math annotations render as actual symbols,
 not ASCII approximations.
 
+**[Try the interactive playground](playground/index.html)** - a live 2D
+double-slit experiment running the library's split-operator solver
+(`soft_evolve_2d`) in your browser via a 21 KB WebAssembly module.
+
 ## What this covers
 
 The physics spans a standard graduate QM curriculum:

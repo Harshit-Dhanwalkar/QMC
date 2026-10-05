@@ -741,7 +741,16 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall
+# WebAssembly playground (docs/src/playground/qmc.wasm).
+# Needs Emscripten (emcc) or `pip install ziglang`; see wasm/README.md.
+wasm:
+	./wasm/build.sh
+
+# Native-vs-WASM consistency check for the playground solver (needs node).
+wasm-test: wasm
+	./wasm/test/run.sh
+
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall wasm wasm-test
 
 # Info target: print external dependency
 info:
