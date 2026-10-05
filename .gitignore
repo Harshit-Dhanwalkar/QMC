@@ -74,3 +74,7 @@ coverage/
 *.gcda
 *.gcno
 *.gcov
+
+# Web Assembly
+/docs/src/playground/*.wasm
+/wasm/zig/

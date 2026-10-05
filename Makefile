@@ -260,6 +260,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/helium.c \
                $(PHYSICS_DIR)/perturbation.c \
                $(PHYSICS_DIR)/td_perturbation.c \
+               $(PHYSICS_DIR)/dirac_evolve.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
@@ -404,7 +405,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_72_qaoa \
               $(BUILD_DIR)/eg_73_floquet \
               $(BUILD_DIR)/eg_74_td_perturbation \
-              $(BUILD_DIR)/eg_75_tight_binding
+              $(BUILD_DIR)/eg_75_tight_binding \
+              $(BUILD_DIR)/eg_76_dirac_evolve
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -417,6 +419,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_helium \
               $(BUILD_DIR)/test_perturbation \
               $(BUILD_DIR)/test_td_perturbation \
+              $(BUILD_DIR)/test_dirac_evolve \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
@@ -741,7 +744,16 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall
+# WebAssembly playground (docs/src/playground/qmc.wasm).
+# Needs Emscripten (emcc) or `pip install ziglang`; see wasm/README.md.
+wasm:
+	./wasm/build.sh
+
+# Native-vs-WASM consistency check for the playground solver (needs node).
+wasm-test: wasm
+	./wasm/test/run.sh
+
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall wasm wasm-test
 
 # Info target: print external dependency
 info:

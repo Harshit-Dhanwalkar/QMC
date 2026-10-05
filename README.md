@@ -16,6 +16,21 @@
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="OS Linux">
 </p>
 
+<p align="center">
+  <a href="https://harshit-dhanwalkar.github.io/QMC/playground/index.html">
+    <img src="docs/src/playground/preview.gif" alt="Quantum double-slit simulation computed by QMC's split-operator solver, with interference fringes building up on a detector screen" width="640">
+  </a>
+  <br>
+  <b><a href="https://harshit-dhanwalkar.github.io/QMC/playground/index.html">Try it live in your browser</a></b>
+  &mdash; the same <code>soft_evolve_2d</code> C solver, compiled to a 21&nbsp;KB WebAssembly module. Draw walls, fire wavepackets, watch interference build up.
+  <br>
+  Also: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.html">Hofstadter butterfly explorer</a>
+  &mdash; every gap labelled by its Chern number, computed live from the tight-binding module.
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/dirac.html">Dirac Klein-paradox demo</a>
+  &mdash; a step taller than the electron's energy still transmits, through negative-energy states; plus Zitterbewegung.
+</p>
+
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 
 > **Units Convention:** Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take explicit physical parameters ($\hbar, m_e, e$, etc.).
@@ -203,6 +218,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_73_floquet.c</code></li>
   <li><code>eg_74_td_perturbation.c</code></li>
   <li><code>eg_75_tight_binding.c</code></li>
+  <li><code>eg_76_dirac_evolve.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -261,6 +277,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_openmp_qmc.c</code></li>
   <li><code>test_perturbation.c</code></li>
   <li><code>test_td_perturbation.c</code></li>
+  <li><code>test_dirac_evolve.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>

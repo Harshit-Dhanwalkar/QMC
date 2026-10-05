@@ -1,12 +1,12 @@
 /*
- * Test: dirac_1d complex-Hermitian eigensolver.
+ * Test: dirac_1d complex-Hermitian eigensolver
  *
  * 1. Hermiticity check: the 2N x 2N Dirac matrix must satisfy
- *    H[a][b] = conj(H[b][a]) for every entry.
+ *    H[a][b] = conj(H[b][a]) for every entry
  * 2. Physical interpretation: for free particle (V=0), eigenvalue spectrum
  *    should mostly split into two branches separated by ~2 * m * c^2
  *    (positive-energy states near/above +mc^2, negative-energy states
- *    near/below -m * c^2).
+ *    near/below -m * c^2)
  * 3. dirac_radial_solve validated against exact closed-form relativistic
  *    hydrogen spectrum (Sommerfeld formula)
  */
@@ -43,7 +43,7 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_hermiticity_of_construction(void) {
-  printf("Test: Dirac matrix Hermiticity\n");
+  printf("  === Test: Dirac matrix Hermiticity ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 10 : 20;
   double dx = 0.1;
@@ -102,7 +102,7 @@ static void test_hermiticity_of_construction(void) {
 }
 
 static void test_free_particle_branches(void) {
-  printf("Test: free particle +-mc^2 branch structure\n");
+  printf("  === Test: free particle +-mc^2 branch structure ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 20 : 40;
   double dx = 0.2;
@@ -155,10 +155,10 @@ static void test_free_particle_branches(void) {
  * Harmonic V(x) and c taken large (weak-relativistic-coupling limit),
  * Dirac equation's positive-energy branch must reduce exactly to ordinary
  * Schrodinger-equation spectrum shifted by the rest-mass energy,
- * E - m * c^2 -> (n + 1/2) * \hbar * \omega
+ *  E - m * c^2 -> (n + 1/2) * \hbar * \omega
  */
 static void test_nonrelativistic_limit(void) {
-  printf("Test: non-relativistic limit vs exact QHO spectrum\n");
+  printf("  === Test: non-relativistic limit vs exact QHO spectrum ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 60 : 150;
   double L = 20.0;
@@ -219,7 +219,8 @@ static void test_nonrelativistic_limit(void) {
 }
 
 static void test_dirac_hydrogen_sommerfeld(void) {
-  printf("Test: Dirac radial solve vs exact Sommerfeld hydrogen spectrum\n");
+  printf("  === Test: Dirac radial solve vs exact Sommerfeld hydrogen spectrum "
+         "===\n");
 
   double tol_rel = RUNNING_ON_VALGRIND ? 2e-5 : 5e-6;
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
@@ -301,7 +302,7 @@ static void test_dirac_hydrogen_sommerfeld(void) {
 // 2s_1/2 and 2p_1/2 should be exactly degenerate in point-charge Dirac spectrum
 // (both have n=2, |\kappa|=1)
 static void test_dirac_j_degeneracy(void) {
-  printf("Test: 2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1)\n");
+  printf("  === Test: 2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1) ===\n");
 
   double Z_charge = 1.0; // nuclear charge
   double E_2s = dirac_hydrogen_energy_level(2, -1, Z_charge, HBAR, M_ELECTRON,
@@ -317,6 +318,8 @@ static void test_dirac_j_degeneracy(void) {
 }
 
 int main(void) {
+  printf(" > Dirac 1d complex-Hermitian eigensolver tests\n");
+
   test_hermiticity_of_construction();
   test_free_particle_branches();
   test_nonrelativistic_limit();

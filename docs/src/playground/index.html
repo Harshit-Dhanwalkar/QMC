@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: quantum double-slit in your browser</title>
+    <meta
+      name="description"
+      content="Interactive 2D quantum wavepacket simulator. Pure C (QMC library, split-operator FFT) compiled to a 21 KB WebAssembly module. Draw walls, fire wavepackets, watch interference build up."
+    />
+    <meta
+      property="og:title"
+      content="QMC Playground: quantum double-slit in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Draw a potential, fire a wavepacket, watch interference. Runs QMC C library in your browser."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+        letter-spacing: 0.2px;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .stage {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+      .stage canvas {
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #000;
+        display: block;
+      }
+      #sim {
+        cursor: crosshair;
+        touch-action: none;
+      }
+      .sidecol {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .cap {
+        color: var(--muted);
+        font-size: 0.72rem;
+        line-height: 1.25;
+        max-width: 130px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-top: 14px;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      button.on {
+        border-color: var(--accent2);
+        color: var(--accent2);
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.2em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        width: 130px;
+      }
+      .stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 18px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-top: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+      .stats span b {
+        color: var(--text);
+        font-weight: 500;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; quantum double-slit</h1>
+        <div class="links">
+          <a href="butterfly.html">Hofstadter butterfly</a>
+          <a href="dirac.html">Dirac</a>
+          <a href="https://github.com/Harshit-Dhanwalkar/QMC"
+            >&#9733; Star on GitHub</a
+          >
+          <a href="../introduction.html">Docs</a>
+        </div>
+      </header>
+      <p class="sub">
+        A 2D wavepacket solved with the
+        <code>soft_evolve_2d</code> split-operator FFT routine from the QMC C
+        library, compiled to a 21&nbsp;KB WebAssembly module. Nothing is
+        precomputed &mdash; every frame is a live Schr&ouml;dinger solve.
+      </p>
+
+      <div class="stage" id="stage">
+        <canvas id="sim" width="128" height="128"></canvas>
+        <div class="sidecol">
+          <canvas id="screen" width="120" height="128"></canvas>
+          <div class="cap">
+            Detector screen: accumulated probability along the dashed line
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row">
+          <button id="play" class="primary">Pause</button>
+          <button id="fire">Fire again</button>
+          <button id="clearscreen">Clear screen</button>
+          <label><input type="checkbox" id="auto" checked /> Auto-repeat</label>
+          <span style="color: var(--muted)">Setup:</span>
+          <button data-preset="double">Double slit</button>
+          <button data-preset="single">Single slit</button>
+          <button data-preset="tunnel">Tunnelling barrier</button>
+          <button data-preset="empty">Empty</button>
+        </div>
+        <div class="row">
+          <label
+            >Slit spacing
+            <input
+              id="sep"
+              type="range"
+              min="3"
+              max="14"
+              step="0.5"
+              value="6" /><b id="sepv"></b
+          ></label>
+          <label
+            >Slit width
+            <input
+              id="sw"
+              type="range"
+              min="0.8"
+              max="4"
+              step="0.1"
+              value="1.6" /><b id="swv"></b
+          ></label>
+          <label
+            >Momentum k
+            <input
+              id="k"
+              type="range"
+              min="1.5"
+              max="5"
+              step="0.1"
+              value="3" /><b id="kv"></b
+          ></label>
+          <label
+            >Speed
+            <input
+              id="speed"
+              type="range"
+              min="1"
+              max="10"
+              step="1"
+              value="4" /><b id="speedv"></b
+          ></label>
+        </div>
+        <div class="row">
+          <button id="draw" class="on">Draw walls</button>
+          <button id="erase">Erase</button>
+          <span style="color: var(--muted); font-size: 0.88rem"
+            >Drag on the simulation to paint your own potential walls
+            (right-click drag erases). Try making a slit pattern with three or
+            four openings.</span
+          >
+        </div>
+        <div class="stats">
+          <span>t = <b id="st-t">0.00</b></span>
+          <span>probability left in box = <b id="st-n">1.0000</b></span>
+          <span>solver = <b id="st-ms">-</b> ms/step</span>
+          <span>grid = <b>128&times;128</b></span>
+        </div>
+      </div>
+
+      <div id="err"></div>
+
+      <footer>
+        Units: &hbar; = m = 1. Walls are potential V = 60 (far above the packet
+        energy, k&sup2;/2). The box edges absorb the wave so it does not wrap
+        around the periodic FFT grid. Source:
+        <a href="https://github.com/Harshit-Dhanwalkar/QMC/tree/main/wasm"
+          >wasm/qmc_wasm.c</a
+        >
+        and
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/soft.c"
+          >physics/soft.c</a
+        >. Licensed under PolyForm Noncommercial 1.0.0.
+      </footer>
+    </div>
+
+    <script>
+      "use strict";
+      (async function () {
+        const N = 128,
+          BOX = 40,
+          DT = 0.02,
+          WALL_V = 60;
+        const DX = BOX / N;
+        const SCREEN_X = 14; // detector position (physical units)
+        const SX = Math.round(N / 2 + SCREEN_X / DX); // detector column
+        const START_X = -12;
+
+        const $ = (id) => document.getElementById(id);
+        const sim = $("sim"),
+          scr = $("screen");
+        const sctx = sim.getContext("2d"),
+          rctx = scr.getContext("2d");
+        const off = document.createElement("canvas");
+        off.width = N;
+        off.height = N;
+        const octx = off.getContext("2d");
+        const img = octx.createImageData(N, N);
+
+        function showError(msg) {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = msg;
+        }
+
+        // load WebAssembly module
+        // The module is built with wasm32-wasi, so it declares a handful of WASI
+        // syscalls (fd_write, clock_time_get, ...) even though we never call most
+        // of them. The shim below satisfies those imports with browser-safe no-ops.
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+
+          const imports = {
+            wasi_snapshot_preview1: {
+              fd_write: (fd, iovsPtr, iovsLen, nwrittenPtr) => {
+                const mem = wasmMemory;
+                if (!mem) return 0;
+                const dv = new DataView(mem.buffer);
+                let written = 0;
+                for (let i = 0; i < iovsLen; i++) {
+                  const ptr = dv.getUint32(iovsPtr + i * 8, true);
+                  const len = dv.getUint32(iovsPtr + i * 8 + 4, true);
+                  const bytes = new Uint8Array(mem.buffer, ptr, len);
+                  console.warn(
+                    "[wasm fd",
+                    fd + "]",
+                    new TextDecoder().decode(bytes),
+                  );
+                  written += len;
+                }
+                if (nwrittenPtr) dv.setUint32(nwrittenPtr, written, true);
+                return 0;
+              },
+              fd_close: () => 0,
+              fd_seek: () => 0,
+              fd_fdstat_get: () => 0,
+              fd_prestat_get: () => 8,
+              fd_prestat_dir_name: () => 8,
+              args_sizes_get: (a, b) => {
+                if (!wasmMemory) return 0;
+                const dv = new DataView(wasmMemory.buffer);
+                dv.setUint32(a, 0, true);
+                dv.setUint32(b, 0, true);
+                return 0;
+              },
+              args_get: () => 0,
+              environ_sizes_get: (a, b) => {
+                if (!wasmMemory) return 0;
+                const dv = new DataView(wasmMemory.buffer);
+                dv.setUint32(a, 0, true);
+                dv.setUint32(b, 0, true);
+                return 0;
+              },
+              environ_get: () => 0,
+              random_get: (ptr, len) => {
+                if (!wasmMemory) return 0;
+                const buf = new Uint8Array(wasmMemory.buffer, ptr, len);
+                crypto.getRandomValues(buf);
+                return 0;
+              },
+              clock_time_get: (id, prec, ptr) => {
+                if (!wasmMemory) return 0;
+                new DataView(wasmMemory.buffer).setBigUint64(
+                  ptr,
+                  BigInt(Date.now()) * 1000000n,
+                  true,
+                );
+                return 0;
+              },
+              proc_exit: (code) => {
+                throw new Error("WASI proc_exit(" + code + ")");
+              },
+              proc_raise: () => 0,
+              sched_yield: () => 0,
+            },
+          };
+
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            imports,
+          );
+          w = instance.exports;
+          wasmMemory = w.memory; // capture memory for the shim's later calls
+
+          if (w._initialize) w._initialize();
+          if (w.qmc_init(N, BOX, DT) !== 0) throw new Error("qmc_init failed");
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc.wasm</code> (" + err.message + "). ...",
+          );
+          return;
+        }
+
+        const mem = () => wasmMemory.buffer;
+
+        // state
+        let playing = true,
+          t = 0,
+          vmax = 0.02,
+          tool = "draw",
+          speed = 4,
+          msPerStep = 0;
+
+        const acc = new Float64Array(N);
+        const val = (id) => parseFloat($(id).value);
+
+        function launch() {
+          w.qmc_wavepacket(START_X, 0, val("k"), 0, 2.0);
+          t = 0;
+          vmax = 0.02;
+        }
+
+        function buildPreset(name) {
+          const sep = val("sep"),
+            sw = val("sw");
+          if (name === "double")
+            w.qmc_build_slits(2.0, 1.0, 2, sep, sw, WALL_V);
+          else if (name === "single")
+            w.qmc_build_slits(2.0, 1.0, 1, sep, sw, WALL_V);
+          else if (name === "tunnel") {
+            w.qmc_clear_potential();
+            w.qmc_fill_rect(1.5, 2.5, -BOX, BOX, 8.0);
+          } else w.qmc_clear_potential();
+        }
+
+        let preset = "double";
+        function applyPreset(name) {
+          preset = name;
+          buildPreset(name);
+          launch();
+          acc.fill(0);
+        }
+
+        // drawing walls
+        let painting = false,
+          eraseMode = false,
+          lastG = null;
+
+        function stamp(gx, gy) {
+          gy = ((ev.clientY - r.top) / r.height) * N;
+          const V = new Float64Array(mem(), w.qmc_potential(), N * N);
+          const rad = 2.2,
+            v = eraseMode || tool === "erase" ? 0 : WALL_V;
+          for (
+            let ix = Math.max(0, Math.floor(gx - rad - 1));
+            ix <= Math.min(N - 1, Math.ceil(gx + rad + 1));
+            ix++
+          )
+            for (
+              let iy = Math.max(0, Math.floor(gy - rad - 1));
+              iy <= Math.min(N - 1, Math.ceil(gy + rad + 1));
+              iy++
+            )
+              if ((ix + 0.5 - gx) ** 2 + (iy + 0.5 - gy) ** 2 <= rad * rad) {
+                V[ix * N + iy] = v;
+              }
+        }
+
+        function paintAt(ev) {
+          const r = sim.getBoundingClientRect();
+          const gx = ((ev.clientX - r.left) / r.width) * N,
+            gy = ((ev.clientY - r.top) / r.height) * N;
+          const from = lastG || [gx, gy];
+          const steps = Math.max(
+            1,
+            Math.ceil(Math.hypot(gx - from[0], gy - from[1])),
+          );
+          for (let s = 1; s <= steps; s++)
+            stamp(
+              from[0] + ((gx - from[0]) * s) / steps,
+              from[1] + ((gy - from[1]) * s) / steps,
+            );
+          lastG = [gx, gy];
+        }
+        sim.addEventListener("contextmenu", (e) => e.preventDefault());
+        sim.addEventListener("pointerdown", (e) => {
+          painting = true;
+          lastG = null;
+          eraseMode = e.button === 2;
+          sim.setPointerCapture(e.pointerId);
+          paintAt(e);
+        });
+        sim.addEventListener("pointermove", (e) => {
+          if (painting) paintAt(e);
+        });
+        const stop = () => {
+          painting = false;
+        };
+        sim.addEventListener("pointerup", stop);
+        sim.addEventListener("pointercancel", stop);
+
+        // rendering
+        function render() {
+          const d = new Float32Array(mem(), w.qmc_density(), N * N);
+          const V = new Float64Array(mem(), w.qmc_potential(), N * N);
+          let m = 0;
+          for (let i = 0; i < d.length; i++) if (d[i] > m) m = d[i];
+          vmax = Math.max(vmax * 0.992, m, 0.003);
+          const px = img.data,
+            inv = 1 / vmax;
+          for (let ix = 0; ix < N; ix++) {
+            for (let iy = 0; iy < N; iy++) {
+              const i = ix * N + iy,
+                p = (iy * N + ix) * 4;
+              let idx = (Math.sqrt(d[i] * inv) * 255) | 0;
+              if (idx > 255) idx = 255;
+              let r = lut[idx * 3],
+                g = lut[idx * 3 + 1],
+                b = lut[idx * 3 + 2];
+              if (V[i] > 0.5) {
+                // walls: slate blue overlay
+                const a = V[i] > 20 ? 0.8 : 0.45;
+                r = r * (1 - a) + 130 * a;
+                g = g * (1 - a) + 160 * a;
+                b = b * (1 - a) + 210 * a;
+              }
+              px[p] = r;
+              px[p + 1] = g;
+              px[p + 2] = b;
+              px[p + 3] = 255;
+            }
+          }
+          octx.putImageData(img, 0, 0);
+          sctx.imageSmoothingEnabled = true;
+          sctx.drawImage(off, 0, 0, sim.width, sim.height);
+          // detector line
+          sctx.save();
+          sctx.strokeStyle = "rgba(61,220,151,.9)";
+          sctx.setLineDash([5, 4]);
+          sctx.lineWidth = 1.5;
+          const lx = ((SX + 0.5) / N) * sim.width;
+          sctx.beginPath();
+          sctx.moveTo(lx, 0);
+          sctx.lineTo(lx, sim.height);
+          sctx.stroke();
+          sctx.restore();
+
+          // accumulate detector + draw histogram
+          for (let iy = 0; iy < N; iy++) acc[iy] += d[SX * N + iy];
+          let am = 1e-12;
+          for (let iy = 0; iy < N; iy++) if (acc[iy] > am) am = acc[iy];
+          rctx.fillStyle = "#05070b";
+          rctx.fillRect(0, 0, scr.width, scr.height);
+          const bh = scr.height / N;
+          rctx.fillStyle = "#3ddc97";
+          for (let iy = 0; iy < N; iy++) {
+            const wd = (acc[iy] / am) * (scr.width - 6);
+            rctx.fillRect(0, iy * bh, wd, Math.max(1, bh - 0.5));
+          }
+          $("st-t").textContent = t.toFixed(2);
+          $("st-n").textContent = w.qmc_norm().toFixed(4);
+          $("st-ms").textContent = msPerStep ? msPerStep.toFixed(2) : "-";
+        }
+
+        // main loop
+        let last = performance.now();
+        function frame(now) {
+          if (playing) {
+            const t0 = performance.now();
+            if (w.qmc_step(speed) !== 0) {
+              showError("Solver returned an error.");
+              return;
+            }
+            const dt = performance.now() - t0;
+            msPerStep = msPerStep
+              ? msPerStep * 0.9 + (dt / speed) * 0.1
+              : dt / speed;
+            t += speed * DT;
+          }
+          render();
+
+          // fire next particle once last one has left box (or after a long time),
+          // keeping accumulated detector pattern so fringes keep building up
+          if (playing && $("auto").checked && (w.qmc_norm() < 0.02 || t > 40))
+            launch();
+          last = now;
+          requestAnimationFrame(frame);
+        }
+
+        // controls
+        function bindSlider(id, onchange) {
+          const el = $(id),
+            out = $(id + "v");
+          const upd = () => {
+            out.textContent = parseFloat(el.value).toString();
+          };
+          el.addEventListener("input", () => {
+            upd();
+            onchange && onchange();
+          });
+          upd();
+        }
+        bindSlider("sep", () => {
+          if (preset === "double") {
+            buildPreset("double");
+          }
+        });
+        bindSlider("sw", () => {
+          if (preset === "double" || preset === "single") buildPreset(preset);
+        });
+        bindSlider("k", null);
+        bindSlider("speed", () => {
+          speed = val("speed") | 0;
+        });
+        speed = val("speed") | 0;
+
+        $("play").addEventListener("click", () => {
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("fire").addEventListener("click", launch);
+        $("clearscreen").addEventListener("click", () => acc.fill(0));
+        document
+          .querySelectorAll("[data-preset]")
+          .forEach((b) =>
+            b.addEventListener("click", () => applyPreset(b.dataset.preset)),
+          );
+        $("draw").addEventListener("click", () => {
+          tool = "draw";
+          $("draw").classList.add("on");
+          $("erase").classList.remove("on");
+        });
+        $("erase").addEventListener("click", () => {
+          tool = "erase";
+          $("erase").classList.add("on");
+          $("draw").classList.remove("on");
+        });
+        window.addEventListener("keydown", (e) => {
+          if (e.code === "Space" && e.target === document.body) {
+            e.preventDefault();
+            $("play").click();
+          }
+        });
+
+        // responsive sizing: keep simulation square
+        function layout() {
+          const avail = $("stage").parentElement.clientWidth;
+          const side = avail < 560 ? 70 : 120;
+          const size = Math.max(220, Math.min(640, avail - side - 14));
+          sim.style.width = size + "px";
+          sim.style.height = size + "px";
+          scr.style.width = side + "px";
+          scr.style.height = size + "px";
+          // internal resolution: crisp on hi-dpi, cheap enough to draw
+          const dpr = Math.min(2, window.devicePixelRatio || 1);
+          sim.width = Math.round(size * dpr);
+          sim.height = Math.round(size * dpr);
+          scr.width = Math.round(side * dpr);
+          scr.height = Math.round(size * dpr);
+        }
+        window.addEventListener("resize", layout);
+        layout();
+
+        applyPreset("double");
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

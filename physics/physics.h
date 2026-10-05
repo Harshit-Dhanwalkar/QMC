@@ -54,6 +54,7 @@
 #include "mp2.h"
 #include "perturbation.h"
 #include "td_perturbation.h"
+#include "dirac_evolve.h"
 #include "pimc.h"
 #include "potentials.h"
 #include "qaoa.h"
