@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QMC Playground: Hofstadter butterfly</title>
+<meta name="description" content="Interactive Hofstadter butterfly computed live in your browser by the QMC C library (WebAssembly). Gaps are coloured by their Chern number; click any gap to verify it numerically.">
+<meta property="og:title" content="Hofstadter butterfly in pure C + WebAssembly">
+<meta property="og:description" content="Electrons on a lattice in a magnetic field: the fractal spectrum, with every gap labelled by its Chern number. Computed live in your browser.">
+<meta property="og:image" content="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  :root { --bg:#0b0e14; --panel:#131824; --line:#232b3d; --text:#d7dce5; --muted:#8993a8; --accent:#3ddc97; --accent2:#f5a524; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1040px; margin:0 auto; padding:18px 16px 40px; }
+  header { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  h1 { font-size:1.35rem; margin:0; } h1 span { color:var(--accent); }
+  .links a { color:var(--text); text-decoration:none; border:1px solid var(--line); padding:5px 10px;
+    border-radius:8px; margin-left:6px; font-size:.9rem; display:inline-block; }
+  .links a:hover { border-color:var(--accent); color:var(--accent); }
+  .sub { color:var(--muted); margin:0 0 14px; font-size:.95rem; }
+  #plot { position:relative; width:100%; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--bg); }
+  #plot canvas { display:block; position:absolute; left:0; top:0; width:100%; height:100%; }
+  #ov { cursor:crosshair; touch-action:pan-y; } /* taps and horizontal drags inspect; vertical swipes still scroll the page */
+  .legend { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; margin:10px 0 0; color:var(--muted); font-size:.82rem; }
+  .sw { display:inline-flex; align-items:center; gap:4px; }
+  .sw i { width:16px; height:12px; border-radius:3px; display:inline-block; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+  .row + .row { margin-top:10px; }
+  button { background:#1b2234; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:var(--accent); color:#05150e; border-color:var(--accent); font-weight:600; }
+  label { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem; }
+  label b { color:var(--text); font-weight:500; min-width:2.2em; text-align:right; font-variant-numeric:tabular-nums; }
+  input[type=range] { accent-color:var(--accent); width:150px; }
+  #info { min-height:6.2em; font-variant-numeric:tabular-nums; }
+  #info .k { color:var(--muted); }
+  #info .big { font-size:1.05rem; }
+  .chip { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:6px; }
+  .ok { color:var(--accent); } .warn { color:var(--accent2); }
+  #prog { color:var(--muted); font-size:.82rem; margin-top:8px; }
+  #err { display:none; background:#3a1620; border:1px solid #7a2b3f; color:#ffc9d4; padding:12px 14px; border-radius:10px; margin-top:14px; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:22px; }
+  footer a { color:var(--accent); }
+  code { background:#1b2234; padding:1px 5px; border-radius:4px; font-size:.88em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span>QMC</span> Playground &mdash; Hofstadter butterfly</h1>
+    <div class="links">
+      <a href="index.html">Double slit</a>
+      <a href="https://github.com/Harshit-Dhanwalkar/QMC">&#9733; Star on GitHub</a>
+      <a href="../introduction.html">Docs</a>
+    </div>
+  </header>
+  <p class="sub">Spectrum of an electron on a square lattice in a magnetic field, as a function of the flux
+    &alpha;&nbsp;=&nbsp;p/q per plaquette. Each vertical line is one diagonalisation by the QMC tight-binding module
+    (<code>tb_model_hofstadter</code>); the colour of every gap is its Chern number (the quantised Hall conductance).
+    Hover or tap to inspect, click a gap to check it numerically.</p>
+
+  <div id="plot"><canvas id="bf"></canvas><canvas id="ov"></canvas></div>
+  <div id="prog">loading&hellip;</div>
+  <div class="legend" id="legend"><span>Hall number &sigma;<sub>xy</sub>:</span></div>
+
+  <div class="panel">
+    <div id="info">Move the pointer over the picture.</div>
+  </div>
+
+  <div class="panel">
+    <div class="row">
+      <label>Max denominator q <input id="qmax" type="range" min="12" max="50" step="1" value="36"><b id="qmaxv">36</b></label>
+      <label><input type="checkbox" id="colored" checked> Colour gaps by Chern number</label>
+      <button id="png" class="primary">Download PNG</button>
+    </div>
+  </div>
+
+  <div id="err"></div>
+
+  <footer>
+    Hopping t = 1. Band edges come from four special k-points per flux (exact for this model, checked against a dense k-grid in
+    <a href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/test/butterfly_check.c">butterfly_check.c</a>);
+    gap labels come from the TKNN Diophantine equation, and clicking a gap recomputes the Chern number with the library's
+    Fukui&ndash;Hatsugai&ndash;Suzuki routine. The sign convention is the library's.
+    Source: <a href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_butterfly.c">wasm/qmc_butterfly.c</a>.
+    Licensed under PolyForm Noncommercial 1.0.0.
+  </footer>
+</div>
+
+<script>
+"use strict";
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const BG = "#0b0e14", BAND = "#161c2a", E_MAX = 4.15, INT_MIN = -2147483648;
+  const showError = (m) => { const e = $("err"); e.style.display = "block"; e.innerHTML = m; };
+
+  // ---- load WebAssembly (needs three do-nothing WASI imports for stdio) ----
+  let w, mem;
+  try {
+    const wasi = {
+      fd_close: () => 0, fd_seek: () => 70,
+      fd_write: (fd, iov, n, out) => {
+        const v = new DataView(mem.buffer); let tot = 0;
+        for (let i = 0; i < n; i++) tot += v.getUint32(iov + 8 * i + 4, true);
+        v.setUint32(out, tot, true); return 0;
+      },
+    };
+    const res = await fetch("qmc_butterfly.wasm");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const { instance } = await WebAssembly.instantiate(await res.arrayBuffer(), { wasi_snapshot_preview1: wasi });
+    w = instance.exports; mem = w.memory;
+    if (w._initialize) w._initialize();
+  } catch (err) {
+    showError("Could not load <code>qmc_butterfly.wasm</code> (" + err.message + "). If you opened this file directly " +
+      "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/butterfly.html</code>.");
+    $("prog").textContent = "";
+    return;
+  }
+  const MAXQ = Math.min(50, w.qmc_bf_max_q());
+
+  // ---- colours: gap colour by Hall number (same mapping as wasm/tools/make_butterfly_png.py) ----
+  function gapRGB(t) {
+    if (t === null) return [255, 255, 255];
+    if (t === 0) return [96, 110, 138];
+    const s = Math.min(Math.abs(t), 8) / 8;
+    const a = t > 0 ? [255, 214, 120] : [130, 228, 255], b = t > 0 ? [232, 40, 62] : [48, 84, 255];
+    return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * s));
+  }
+  const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+  const PLAIN = "rgb(190,200,220)";
+  const fmt = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(3);
+
+  // legend swatches
+  for (const t of [-8, -4, -2, -1, 0, 1, 2, 4, 8]) {
+    const s = document.createElement("span"); s.className = "sw";
+    s.innerHTML = `<i style="background:${css(gapRGB(t))}"></i>${t > 0 ? "+" : t < 0 ? "−" : ""}${Math.abs(t)}${Math.abs(t) === 8 ? "+" : ""}`;
+    $("legend").appendChild(s);
+  }
+
+  // ---- progressive computation ----
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  const list = [];                    // computed fluxes
+  let nextQ = 2, nextP = 1, qTarget = parseInt($("qmax").value, 10);
+  function computeOne() {
+    for (;;) {
+      if (nextQ > qTarget || nextQ > MAXQ) return false;
+      if (nextP >= nextQ) { nextQ++; nextP = 1; continue; }
+      const p = nextP++, q = nextQ;
+      if (gcd(p, q) !== 1) continue;
+      if (w.qmc_bf_edges(p, q) !== 0) continue;
+      const edges = new Float64Array(mem.buffer, w.qmc_bf_buffer(), 2 * q).slice();
+      const tknn = new Array(q - 1);
+      for (let r = 1; r < q; r++) { const t = w.qmc_bf_tknn(p, q, r); tknn[r - 1] = t === INT_MIN ? null : t; }
+      list.push({ p, q, alpha: p / q, edges, tknn });
+      return true;
+    }
+  }
+  let viewKey = "", viewCache = [];
+  function view(qmax) {
+    const key = qmax + ":" + list.length;
+    if (key !== viewKey) { viewCache = list.filter((f) => f.q <= qmax).sort((a, b) => a.alpha - b.alpha); viewKey = key; }
+    return viewCache;
+  }
+
+  // ---- drawing (used for the screen and for the PNG export) ----
+  function draw(ctx, W, H, o) {
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+    const ml = Math.round(H * 0.075), mr = Math.round(H * 0.02), mt = Math.round(H * (o.title ? 0.09 : 0.03)), mb = Math.max(Math.round(H * 0.095), 46);
+    const pw = W - ml - mr, ph = H - mt - mb;
+    const X = (a) => ml + a * pw, Y = (e) => mt + (E_MAX - e) / (2 * E_MAX) * ph;
+    const v = view(o.qmax);
+    for (let i = 0; i < v.length; i++) {
+      const f = v[i];
+      const left = i === 0 ? 0 : 0.5 * (v[i - 1].alpha + f.alpha), right = i === v.length - 1 ? 1 : 0.5 * (f.alpha + v[i + 1].alpha);
+      const x0 = Math.floor(X(left)), x1 = Math.max(x0 + 1, Math.floor(X(right))), wd = x1 - x0;
+      ctx.fillStyle = BAND;
+      for (let b = 0; b < f.q; b++) { const yt = Y(f.edges[2 * b + 1]), yb = Y(f.edges[2 * b]); ctx.fillRect(x0, yt, wd, Math.max(0.6, yb - yt)); }
+      for (let r = 1; r < f.q; r++) {
+        const lo = f.edges[2 * (r - 1) + 1], hi = f.edges[2 * r];
+        if (hi - lo > 1e-9) { ctx.fillStyle = o.colored ? css(gapRGB(f.tknn[r - 1])) : PLAIN; ctx.fillRect(x0, Y(hi), wd, Y(lo) - Y(hi)); }
+      }
+    }
+    const fs = Math.max(11, Math.round(H * 0.026)), fam = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = fs + "px " + fam; ctx.fillStyle = "#8993a8"; ctx.strokeStyle = "#8993a8"; ctx.lineWidth = 1;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (const [a, txt] of [[0, "0"], [0.25, "1/4"], [1 / 3, "1/3"], [0.5, "1/2"], [2 / 3, "2/3"], [0.75, "3/4"], [1, "1"]]) {
+      ctx.beginPath(); ctx.moveTo(X(a) + .5, Y(-E_MAX)); ctx.lineTo(X(a) + .5, Y(-E_MAX) + 5); ctx.stroke();
+      ctx.fillText(txt, X(a), Y(-E_MAX) + 8);
+    }
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (const e of [-4, -2, 0, 2, 4]) {
+      ctx.beginPath(); ctx.moveTo(ml - 5, Y(e) + .5); ctx.lineTo(ml, Y(e) + .5); ctx.stroke();
+      ctx.fillText(String(e), ml - 9, Y(e));
+    }
+    ctx.fillStyle = "#d7dce5"; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("magnetic flux per plaquette  α = p/q", ml + pw / 2, H - Math.round(H * 0.012));
+    ctx.textAlign = "left"; ctx.textBaseline = "top";
+    ctx.fillText("E / t", ml + 6, mt + 4);
+    ctx.textAlign = "right"; ctx.fillText("q ≤ " + o.qmax, W - mr - 6, mt + 4);
+    if (o.title) {
+      ctx.textAlign = "left"; ctx.font = "600 " + Math.round(H * 0.04) + "px " + fam; ctx.fillStyle = "#d7dce5";
+      ctx.fillText("Hofstadter butterfly — gaps coloured by Chern number", ml, Math.round(H * 0.022));
+      ctx.font = fs + "px " + fam; ctx.fillStyle = "#8993a8"; ctx.textAlign = "right"; ctx.textBaseline = "top";
+      ctx.fillText("QMC · github.com/Harshit-Dhanwalkar/QMC", W - mr, Math.round(H * 0.03));
+    }
+    return { X, Y, ml, mt, pw, ph, v };
+  }
+
+  // ---- canvases ----
+  const bf = $("bf"), ov = $("ov"), plot = $("plot");
+  let geo = null;
+  function layout() {
+    const cw = plot.clientWidth, ch = Math.max(300, Math.round(cw * 0.62));
+    plot.style.height = ch + "px";
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    for (const c of [bf, ov]) { c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr); }
+    redraw();
+  }
+  function redraw() {
+    geo = draw(bf.getContext("2d"), bf.width, bf.height, { qmax: parseInt($("qmax").value, 10), colored: $("colored").checked });
+    drawOverlay();
+  }
+
+  // ---- inspection ----
+  let hover = null, pinned = null;       // {flux, E}
+  function locate(ev) {
+    if (!geo) return null;
+    const r = ov.getBoundingClientRect(), sx = ov.width / r.width, sy = ov.height / r.height;
+    const px = (ev.clientX - r.left) * sx, py = (ev.clientY - r.top) * sy;
+    const alpha = (px - geo.ml) / geo.pw, E = E_MAX - ((py - geo.mt) / geo.ph) * 2 * E_MAX;
+    if (alpha < 0 || alpha > 1 || E < -E_MAX || E > E_MAX || !geo.v.length) return null;
+    let lo = 0, hi = geo.v.length - 1;           // nearest flux by binary search
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (geo.v[mid].alpha < alpha) lo = mid + 1; else hi = mid; }
+    let best = lo; if (lo > 0 && Math.abs(geo.v[lo - 1].alpha - alpha) < Math.abs(geo.v[lo].alpha - alpha)) best = lo - 1;
+    return { flux: geo.v[best], E };
+  }
+  function classify(sel) {          // what is at energy E for this flux?
+    const f = sel.flux, E = sel.E;
+    for (let r = 1; r < f.q; r++) {
+      const lo = f.edges[2 * (r - 1) + 1], hi = f.edges[2 * r];
+      if (E > lo && E < hi) return { kind: "gap", r, lo, hi, t: f.tknn[r - 1] };
+    }
+    for (let b = 0; b < f.q; b++) if (E >= f.edges[2 * b] && E <= f.edges[2 * b + 1]) return { kind: "band", b, lo: f.edges[2 * b], hi: f.edges[2 * b + 1] };
+    return { kind: "none" };
+  }
+  function drawOverlay() {
+    const c = ov.getContext("2d"); c.clearRect(0, 0, ov.width, ov.height);
+    if (!geo) return;
+    const mark = (sel, solid) => {
+      if (!sel) return;
+      const x = geo.X(sel.flux.alpha), y = geo.Y(sel.E);
+      c.strokeStyle = solid ? "rgba(255,255,255,.95)" : "rgba(255,255,255,.55)"; c.lineWidth = Math.max(1, ov.height / 500);
+      c.setLineDash(solid ? [] : [5, 4]);
+      c.beginPath(); c.moveTo(x, geo.mt); c.lineTo(x, geo.mt + geo.ph); c.moveTo(geo.ml, y); c.lineTo(geo.ml + geo.pw, y); c.stroke();
+      c.setLineDash([]); c.beginPath(); c.arc(x, y, Math.max(4, ov.height / 90), 0, 2 * Math.PI); c.stroke();
+    };
+    mark(hover, false); mark(pinned, true);
+  }
+  function describe(sel, extra) {
+    const f = sel.flux, c = classify(sel);
+    let h = `<div class="big"><span class="k">flux</span> α = <b>${f.p}/${f.q}</b> &nbsp;<span class="k">(${f.q} bands, E/t = ${fmt(sel.E)})</span></div>`;
+    if (c.kind === "gap") {
+      if (c.t === null) {
+        h += `<div>Gap ${c.r} (above the lowest ${c.r} bands) is <b>closed</b>: the two middle bands touch at E = 0 (Dirac points), so no Hall number is defined.</div>`;
+      } else {
+        h += `<div><span class="chip" style="background:${css(gapRGB(c.t))}"></span>Gap above the lowest <b>${c.r}</b> band${c.r > 1 ? "s" : ""}: E/t ∈ (${fmt(c.lo)}, ${fmt(c.hi)}), width ${(c.hi - c.lo).toFixed(3)}</div>`;
+        h += `<div>Hall number <b>σ<sub>xy</sub> = ${c.t < 0 ? "−" : c.t > 0 ? "+" : ""}${Math.abs(c.t)}</b> <span class="k">(TKNN: ${c.r} = ${f.q}·s + ${f.p}·t)</span></div>`;
+      }
+    } else if (c.kind === "band") {
+      h += `<div>Inside band ${c.b + 1} of ${f.q}: E/t ∈ [${fmt(c.lo)}, ${fmt(c.hi)}], bandwidth ${(c.hi - c.lo).toFixed(3)}</div>`;
+    } else { h += `<div class="k">Outside the spectrum.</div>`; }
+    return h + (extra || "");
+  }
+  const sameSel = (a, b) => a && b && a.flux === b.flux;
+  let checkHTML = "";
+  function showPinned() { if (pinned) $("info").innerHTML = describe(pinned, checkHTML); }
+
+  function numericCheck(sel) {
+    const c = classify(sel), f = sel.flux; checkHTML = "";
+    if (c.kind !== "gap" || c.t === null) { showPinned(); return; }
+    // The FHS integer is only right if the k-grid resolves the Berry curvature, so scale it with |t|;
+    // cost ~ 1.5e-4 * q^3 * n_k^2 ms, skip when that would freeze the page.
+    const est = (nk) => 1.5e-4 * f.q ** 3 * nk * nk;
+    let nk = Math.max(8, Math.min(40, 2 * Math.abs(c.t) + 8));
+    if (est(nk) > 5000) {
+      checkHTML = `<div class="warn">Live check skipped: resolving a Hall number of ${Math.abs(c.t)} at q = ${f.q} would take about ${(est(nk) / 1000).toFixed(0)} s in the browser. The TKNN value above is exact.</div>`;
+      showPinned(); return;
+    }
+    checkHTML = `<div class="k">Computing Chern number with the library (n<sub>k</sub> = ${nk})…</div>`; showPinned();
+    const token = sel;
+    setTimeout(() => {
+      if (pinned !== token) return;
+      let t0 = performance.now(), C = w.qmc_bf_chern(f.p, f.q, c.r, nk), ms = performance.now() - t0;
+      let ok = Math.abs(C - c.t) < 0.05;
+      if (!ok && est(Math.ceil(nk * 1.6)) < 5000) {            // under-resolved grid: refine once
+        nk = Math.ceil(nk * 1.6); t0 = performance.now(); C = w.qmc_bf_chern(f.p, f.q, c.r, nk); ms += performance.now() - t0;
+        ok = Math.abs(C - c.t) < 0.05;
+      }
+      if (pinned !== token) return;
+      if (Number.isNaN(C)) checkHTML = `<div class="warn">Library check: grid too coarse or gap too small at n<sub>k</sub> = ${nk} (the library refuses to guess).</div>`;
+      else if (ok) checkHTML = `<div class="ok">✓ Library check: Fukui–Hatsugai–Suzuki C = ${Math.round(C)} on a ${nk}×${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
+      else checkHTML = `<div class="warn">Library check at n<sub>k</sub> = ${nk} gave C = ${C.toFixed(3)}: the grid does not resolve the Berry curvature of this gap (a Chern number from a too-coarse grid is aliased). TKNN is exact.</div>`;
+      showPinned();
+    }, 30);
+  }
+
+  ov.addEventListener("pointermove", (e) => { hover = locate(e); drawOverlay(); if (!pinned && hover) $("info").innerHTML = describe(hover); });
+  ov.addEventListener("pointerleave", () => { hover = null; drawOverlay(); });
+  ov.addEventListener("pointerdown", (e) => {
+    const s = locate(e); if (!s) return;
+    pinned = s; hover = null; drawOverlay(); checkHTML = ""; showPinned(); numericCheck(s);
+  });
+
+  // ---- controls ----
+  $("qmax").addEventListener("input", () => {
+    qTarget = parseInt($("qmax").value, 10); $("qmaxv").textContent = String(qTarget); redraw(); schedule();
+  });
+  $("colored").addEventListener("change", redraw);
+  $("png").addEventListener("click", () => {
+    const c = document.createElement("canvas"); c.width = 2400; c.height = 1500;
+    draw(c.getContext("2d"), c.width, c.height, { qmax: parseInt($("qmax").value, 10), colored: $("colored").checked, title: true });
+    c.toBlob((b) => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "hofstadter_butterfly.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+  });
+  window.addEventListener("resize", layout);
+
+  // ---- pump: compute in small slices so the butterfly visibly grows ----
+  let pumping = false, lastDraw = 0;
+  function totalFor(qm) { let n = 0; for (let q = 2; q <= qm; q++) for (let p = 1; p < q; p++) if (gcd(p, q) === 1) n++; return n; }
+  function pump() {
+    const t0 = performance.now(); let did = false;
+    while (performance.now() - t0 < 14 && computeOne()) did = true;
+    const done = list.filter((f) => f.q <= qTarget).length, total = totalFor(Math.min(qTarget, MAXQ));
+    const finished = done >= total;
+    $("prog").textContent = finished ? `${total} fluxes (q ≤ ${qTarget}) computed in your browser` : `computing fluxes… ${done} / ${total}`;
+    const now = performance.now();
+    if (did && (finished || now - lastDraw > 120)) { redraw(); lastDraw = now;
+      if (!pinned && !hover) { /* keep hint */ } }
+    if (!finished) requestAnimationFrame(pump); else pumping = false;
+    if (finished && !pinned) {                                  // start with the textbook 1/3 case pinned
+      const f = list.find((x) => x.p === 1 && x.q === 3);
+      if (f) { pinned = { flux: f, E: 0.5 * (f.edges[1] + f.edges[2]) }; drawOverlay(); showPinned(); numericCheck(pinned); }
+    }
+  }
+  function schedule() { if (!pumping) { pumping = true; requestAnimationFrame(pump); } }
+
+  layout();
+  schedule();
+})();
+</script>
+</body>
+</html>

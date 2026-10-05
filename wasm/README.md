@@ -4,6 +4,12 @@
 solver (`physics/soft.c` -> `core/fft/fft2d.c`). The browser page in
 `docs/src/playground/index.html` calls it every animation frame.
 
+`qmc_butterfly.c` does the same for the tight-binding module: the Hofstadter
+butterfly page (`docs/src/playground/butterfly.html`) diagonalises
+`tb_model_hofstadter` for every flux p/q up to q = 50, labels each gap with its
+Chern number (TKNN equation) and, on click, recomputes that number with the
+library's Fukui-Hatsugai-Suzuki `tb_chern_number`.
+
 ## Build
 
 ```sh
@@ -43,13 +49,33 @@ python3 wasm/tools/make_gif.py /tmp/qmc_frames.bin docs/src/playground/preview.g
 
 ## JavaScript API (exports of `qmc.wasm`)
 
-| function                                                | purpose                                                    |
-| ------------------------------------------------------- | ---------------------------------------------------------- |
-| `qmc_init(n, box, dt)`                                  | allocate an `n x n` grid (n a power of two, <= 256)        |
-| `qmc_build_slits(wall_x, thick, slits, sep, width, v0)` | vertical wall with 1 or 2 slits                            |
-| `qmc_fill_rect(x0, x1, y0, y1, v0)`                     | add a rectangular potential                                |
-| `qmc_potential()`                                       | pointer to `double` potential array (write to paint walls) |
-| `qmc_wavepacket(x0, y0, kx, ky, sigma)`                 | Gaussian packet with momentum                              |
-| `qmc_step(steps)`                                       | advance with `soft_evolve_2d`                              |
-| `qmc_density()`                                         | pointer to `float` \|psi\|^2                               |
-| `qmc_norm()`                                            | probability left in box                                    |
+| function                                                | purpose                                                        |
+| ------------------------------------------------------- | -------------------------------------------------------------- |
+| `qmc_init(n, box, dt)`                                  | allocate an `n x n` grid (n a power of two, <= 256)            |
+| `qmc_build_slits(wall_x, thick, slits, sep, width, v0)` | vertical wall with 1 or 2 slits                                |
+| `qmc_fill_rect(x0, x1, y0, y1, v0)`                     | add a rectangular potential                                    |
+| `qmc_potential()`                                       | pointer to the `double` potential array (write to paint walls) |
+| `qmc_wavepacket(x0, y0, kx, ky, sigma)`                 | Gaussian packet with momentum                                  |
+| `qmc_step(steps)`                                       | advance with `soft_evolve_2d`                                  |
+| `qmc_density()`                                         | pointer to `float` \|psi\|^2                                   |
+| `qmc_norm()`                                            | probability left in the box                                    |
+
+Butterfly module (`qmc_butterfly.wasm`, needs three no-op WASI imports for
+stdio: `fd_write`, `fd_seek`, `fd_close`; see the page for a 10-line shim):
+
+| function                     | purpose                                                                                |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `qmc_bf_edges(p, q)`         | band intervals at flux p/q, written to `qmc_bf_buffer()` as (lo, hi) pairs             |
+| `qmc_bf_tknn(p, q, r)`       | Hall number of the gap above the lowest r bands (TKNN); `INT_MIN` if the gap is closed |
+| `qmc_bf_chern(p, q, r, n_k)` | the same number computed numerically by the library (NaN if closed or grid too coarse) |
+
+The numerical Chern number is an integer only when the k-grid resolves the Berry
+curvature; for large Hall numbers use `n_k` of at least about `2|t| + 8`.
+
+Regenerate the butterfly images:
+
+```sh
+node wasm/tools/dump_butterfly.mjs 50 /tmp/butterfly.json
+python3 wasm/tools/make_butterfly_png.py /tmp/butterfly.json \
+    docs/src/playground/butterfly.png docs/src/playground/butterfly_grow.gif
+```

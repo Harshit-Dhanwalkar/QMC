@@ -23,6 +23,9 @@
   <br>
   <b><a href="https://harshit-dhanwalkar.github.io/QMC/playground/index.html">Try it live in your browser</a></b>
   &mdash; the same <code>soft_evolve_2d</code> C solver, compiled to a 21&nbsp;KB WebAssembly module. Draw walls, fire wavepackets, watch interference build up.
+  <br>
+  Also: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.html">Hofstadter butterfly explorer</a>
+  &mdash; every gap labelled by its Chern number, computed live from the tight-binding module.
 </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).

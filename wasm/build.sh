@@ -1,44 +1,32 @@
 #!/bin/sh
-# Build the QMC WebAssembly playground module.
+# Build the QMC WebAssembly modules used by the browser demos.
 #
 #   ./wasm/build.sh            # uses emcc if installed, otherwise zig cc
 #
-# Output: docs/src/playground/qmc.wasm (picked up by the mdBook docs deploy).
+# Output:
+#   docs/src/playground/qmc.wasm            2D double-slit playground
+#   docs/src/playground/qmc_butterfly.wasm  Hofstadter butterfly explorer
 #
-# Toolchains (either one works):
+# Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
-#   * Zig (no install needed, just pip):  pip install ziglang
+#   * Zig:         https://ziglang.org/download/
+#   * Zig via pip: pip install ziglang
 set -eu
 
 cd "$(dirname "$0")/.."
 OUT=docs/src/playground
 mkdir -p "$OUT"
 
-SRCS="wasm/qmc_wasm.c core/vector.c core/fft/fft.c core/fft/fft2d.c \
-core/fft/fft3d.c physics/soft.c"
-
-EXPORTS="qmc_init qmc_n qmc_box qmc_potential qmc_clear_potential \
-qmc_fill_rect qmc_build_slits qmc_wavepacket qmc_step qmc_norm qmc_density"
-
+# Pick a toolchain once.
 if command -v emcc >/dev/null 2>&1; then
   echo "[wasm] using emcc"
-  EXPORT_LIST=$(printf '"_%s",' $EXPORTS | sed 's/,$//')
-  # shellcheck disable=SC2086
-  emcc -O3 $SRCS -o "$OUT/qmc.wasm" \
-    -sSTANDALONE_WASM=1 -sALLOW_MEMORY_GROWTH=1 --no-entry \
-    -sEXPORTED_FUNCTIONS="[$EXPORT_LIST]"
+  TOOL=emcc
 elif command -v zig >/dev/null 2>&1; then
   echo "[wasm] using zig"
-  # shellcheck disable=SC2086
-  zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-    -mexec-model=reactor -Wl,--no-entry -Wl,--strip-all \
-    $SRCS -lm -o "$OUT/qmc.wasm"
+  TOOL=zig
 elif python3 -c 'import ziglang' 2>/dev/null; then
   echo "[wasm] using python -m ziglang"
-  # shellcheck disable=SC2086
-  python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-    -mexec-model=reactor -Wl,--no-entry -Wl,--strip-all \
-    $SRCS -lm -o "$OUT/qmc.wasm"
+  TOOL=ziglang
 else
   echo "[wasm] ERROR: no suitable toolchain found." >&2
   echo "Install one of:" >&2
@@ -48,4 +36,40 @@ else
   exit 1
 fi
 
-ls -l "$OUT/qmc.wasm"
+# build_module <output.wasm> "<exported functions>" <source files...>
+build_module() {
+  out=$1; exports=$2; shift 2
+  case "$TOOL" in
+    emcc)
+      export_list=$(printf '"_%s",' $exports | sed 's/,$//')
+      # shellcheck disable=SC2086
+      emcc -O3 "$@" -o "$out" -Icore -Icore/linalg -Iphysics \
+        -sSTANDALONE_WASM=1 -sALLOW_MEMORY_GROWTH=1 --no-entry \
+        -sEXPORTED_FUNCTIONS="[$export_list]"
+      ;;
+    zig)
+      # shellcheck disable=SC2086
+      zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
+        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=268435456 \
+        -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
+      ;;
+    ziglang)
+      # shellcheck disable=SC2086
+      python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
+        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=268435456 \
+        -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
+      ;;
+  esac
+  ls -l "$out"
+}
+
+build_module "$OUT/qmc.wasm" \
+  "qmc_init qmc_n qmc_box qmc_potential qmc_clear_potential qmc_fill_rect \
+qmc_build_slits qmc_wavepacket qmc_step qmc_norm qmc_density" \
+  wasm/qmc_wasm.c core/vector.c core/fft/fft.c core/fft/fft2d.c \
+  core/fft/fft3d.c physics/soft.c
+
+build_module "$OUT/qmc_butterfly.wasm" \
+  "qmc_bf_buffer qmc_bf_max_q qmc_bf_edges qmc_bf_tknn qmc_bf_chern" \
+  wasm/qmc_butterfly.c physics/tight_binding.c core/matrix.c core/vector.c \
+  core/linalg/*.c

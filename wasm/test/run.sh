@@ -28,3 +28,17 @@ PY
 
 echo "--- double-slit fringe check ---"
 node wasm/test/fringes.mjs | grep -E 'peak|gaps|predicted'
+
+echo "--- Hofstadter butterfly: band edges, TKNN vs library Chern numbers ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg \
+  wasm/test/butterfly_check.c wasm/qmc_butterfly.c physics/tight_binding.c \
+  core/matrix.c core/vector.c core/linalg/*.c -lm -o "$TMP/qmc_bf_check"
+"$TMP/qmc_bf_check" > "$TMP/qmc_bf_native.txt"   # exits non-zero on any failure
+cat "$TMP/qmc_bf_native.txt"
+node wasm/test/butterfly_check.mjs 2>/dev/null | grep digest > "$TMP/qmc_bf_wasm.txt"
+if grep digest "$TMP/qmc_bf_native.txt" | diff -u - "$TMP/qmc_bf_wasm.txt"; then
+  echo "OK: butterfly WASM matches native"
+else
+  echo "FAIL: butterfly WASM and native results differ" >&2
+  exit 1
+fi

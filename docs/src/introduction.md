@@ -11,6 +11,8 @@ not ASCII approximations.
 **[Try the interactive playground](playground/index.html)** - a live 2D
 double-slit experiment running the library's split-operator solver
 (`soft_evolve_2d`) in your browser via a 21 KB WebAssembly module.
+There is also a **[Hofstadter butterfly explorer](playground/butterfly.html)**
+with every spectral gap labelled by its Chern number.
 
 ## What this covers
 
