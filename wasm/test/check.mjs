@@ -1,0 +1,22 @@
+// Runs the same scenario as native_ref.c inside the compiled WASM module.
+import fs from "node:fs";
+const bytes = fs.readFileSync(new URL("../../docs/src/playground/qmc.wasm", import.meta.url));
+const { instance } = await WebAssembly.instantiate(bytes, {});
+const w = instance.exports;
+if (w._initialize) w._initialize();
+if (w.qmc_init(128, 40.0, 0.02) !== 0) throw new Error("init failed");
+w.qmc_build_slits(2.0, 1.0, 2, 6.0, 1.6, 60.0);
+w.qmc_wavepacket(-10.0, 0.0, 3.0, 0.0, 2.0);
+console.log("norm0 " + w.qmc_norm().toFixed(12));
+const t0 = performance.now();
+if (w.qmc_step(300) !== 0) throw new Error("step failed");
+const ms = performance.now() - t0;
+console.log("norm300 " + w.qmc_norm().toFixed(12));
+const ptr = w.qmc_density();
+const d = new Float32Array(w.memory.buffer, ptr, 128 * 128);
+let s = 0, wsum = 0;
+for (let i = 0; i < d.length; i++) s += d[i];
+for (let ix = 0; ix < 128; ix++) for (let iy = 0; iy < 128; iy++) wsum += d[ix * 128 + iy] * (ix * 3 + iy);
+console.log("sum " + s.toExponential(9));
+console.log("wsum " + wsum.toExponential(9));
+console.error(`(300 steps took ${ms.toFixed(0)} ms, ${(ms / 300).toFixed(2)} ms/step)`);
