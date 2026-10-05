@@ -42,3 +42,16 @@ else
   echo "FAIL: butterfly WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Dirac: Klein step vs closed form, Zitterbewegung, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/dirac_ref.c wasm/qmc_dirac.c physics/dirac_evolve.c \
+  core/vector.c core/fft/fft.c -lm -o "$TMP/qmc_dirac_ref"
+"$TMP/qmc_dirac_ref" > "$TMP/qmc_dirac_native.txt"   # exits non-zero on physics failure
+cat "$TMP/qmc_dirac_native.txt"
+node wasm/test/dirac_check.mjs > "$TMP/qmc_dirac_wasm.txt"
+if diff -u "$TMP/qmc_dirac_native.txt" "$TMP/qmc_dirac_wasm.txt"; then
+  echo "OK: Dirac WASM matches native"
+else
+  echo "FAIL: Dirac WASM and native results differ" >&2
+  exit 1
+fi

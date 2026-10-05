@@ -6,6 +6,7 @@
 # Output:
 #   docs/src/playground/qmc.wasm            2D double-slit playground
 #   docs/src/playground/qmc_butterfly.wasm  Hofstadter butterfly explorer
+#   docs/src/playground/qmc_dirac.wasm      Dirac Klein-paradox demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -73,3 +74,9 @@ build_module "$OUT/qmc_butterfly.wasm" \
   "qmc_bf_buffer qmc_bf_max_q qmc_bf_edges qmc_bf_tknn qmc_bf_chern" \
   wasm/qmc_butterfly.c physics/tight_binding.c core/matrix.c core/vector.c \
   core/linalg/*.c
+
+build_module "$OUT/qmc_dirac.wasm" \
+  "qmc_dc_n qmc_dc_dx qmc_dc_dt qmc_dc_time qmc_dc_buffer qmc_dc_density \
+qmc_dc_klein qmc_dc_zitter qmc_dc_step qmc_dc_norm qmc_dc_position \
+qmc_dc_right qmc_dc_exact" \
+  wasm/qmc_dirac.c physics/dirac_evolve.c core/vector.c core/fft/fft.c

@@ -76,5 +76,5 @@ coverage/
 *.gcov
 
 # Web Assembly
-/docs/src/playground/qmc.wasm
+/docs/src/playground/*.wasm
 /wasm/zig/

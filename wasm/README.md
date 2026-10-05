@@ -10,6 +10,11 @@ butterfly page (`docs/src/playground/butterfly.html`) diagonalises
 Chern number (TKNN equation) and, on click, recomputes that number with the
 library's Fukui-Hatsugai-Suzuki `tb_chern_number`.
 
+`qmc_dirac.c` wraps the Dirac time-evolution module (`physics/dirac_evolve.c`):
+`docs/src/playground/dirac.html` fires a positive-energy packet at a sharp step
+(Klein paradox, compared live with `dirac_step_transmission`) or shows
+Zitterbewegung of a packet built from both energy signs.
+
 ## Build
 
 ```sh
@@ -71,6 +76,18 @@ stdio: `fd_write`, `fd_seek`, `fd_close`; see the page for a 10-line shim):
 
 The numerical Chern number is an integer only when the k-grid resolves the Berry
 curvature; for large Hall numbers use `n_k` of at least about `2|t| + 8`.
+
+Dirac module (`qmc_dirac.wasm`, no imports; one global simulation, N = 2048,
+dx = 0.1, dt = 0.04, units hbar = m = c = 1):
+
+| function | purpose |
+| --- | --- |
+| `qmc_dc_klein(k0, v0)` | positive-energy packet at x = -50 aimed at a step of height v0 at x = 0 |
+| `qmc_dc_zitter()` | wide packet of spinor (1, i)/sqrt(2) at rest, no potential |
+| `qmc_dc_step(n)` | advance n steps with `dirac_evolve_1d` |
+| `qmc_dc_density()` / `qmc_dc_buffer()` | fill / locate scratch buffer: \|upper\|^2, \|lower\|^2, V |
+| `qmc_dc_right()`, `qmc_dc_position()`, `qmc_dc_norm()` | transmitted probability, mean position, total probability |
+| `qmc_dc_exact(k0, v0)` | closed-form transmission (`dirac_step_transmission`) |
 
 Regenerate the butterfly images:
 
