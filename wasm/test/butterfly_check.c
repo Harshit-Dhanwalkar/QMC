@@ -1,6 +1,4 @@
-/* Native checks for wasm/qmc_butterfly.c, plus a digest that
- * wasm/test/butterfly_check.mjs must reproduce from the WASM build.
- *
+ /*
  *   1. band edges from 4 special k-points == dense k-grid (all coprime p/q,
  *      q<=14)
  *   2. TKNN Hall numbers == library Fukui-Hatsugai-Suzuki Chern numbers

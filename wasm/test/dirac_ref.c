@@ -1,6 +1,3 @@
-/* Native reference for wasm/qmc_dirac.c: prints the same scenarios as
- * wasm/test/dirac_check.mjs so run.sh can diff native against WASM, and
- * checks the physics (Klein transmission vs closed form, Zitterbewegung). */
 #include <math.h>
 #include <stdio.h>
 
@@ -24,7 +21,8 @@ int main(void) {
 
     printf("klein V0=%.1f norm=%.10f T=%.10f\n", heights[h], qmc_dc_norm(), t);
     if (fabs(t - ex) > 0.01 || fabs(qmc_dc_norm() - 1.0) > 1e-9) {
-      fprintf(stderr, "FAIL klein V0=%.1f T=%.4f exact=%.4f\n", heights[h], t, ex);
+      fprintf(stderr, "FAIL klein V0=%.1f T=%.4f exact=%.4f\n", heights[h], t,
+              ex);
       fails++;
     }
   }

@@ -70,3 +70,17 @@ else
   echo "FAIL: orbital WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Bloch sphere: Lindblad qubit, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg wasm/test/bloch_ref.c wasm/qmc_bloch.c \
+  physics/bloch.c physics/lindblad.c physics/rabi.c core/matrix.c core/vector.c core/utils.c \
+  core/fft/fft.c core/linalg/*.c core/ode/*.c -lm -o "$TMP/qmc_bloch_ref"
+"$TMP/qmc_bloch_ref" > "$TMP/qmc_bloch_native.txt"
+cat "$TMP/qmc_bloch_native.txt"
+node wasm/test/bloch_check.mjs > "$TMP/qmc_bloch_wasm.txt"
+if diff -u "$TMP/qmc_bloch_native.txt" "$TMP/qmc_bloch_wasm.txt"; then
+  echo "OK: Bloch WASM matches native"
+else
+  echo "FAIL: Bloch WASM and native results differ" >&2
+  exit 1
+fi

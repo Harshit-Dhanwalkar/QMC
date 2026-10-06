@@ -1,5 +1,3 @@
-// Physics check: run playground's double-slit scenario and compare
-// detector fringe spacing with theoretical estimate  dy = \lambda * L / d
 import fs from "node:fs";
 import { makeWasiImports } from "../wasi-shim.mjs";
 

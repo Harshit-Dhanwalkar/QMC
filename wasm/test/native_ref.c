@@ -1,5 +1,3 @@
-/* Native reference run of playground scenario; compared against WASM
- * build by wasm/test/check.mjs. Build: see wasm/test/run.sh */
 #include <stdio.h>
 
 double *qmc_potential(void);

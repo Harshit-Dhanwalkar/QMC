@@ -119,7 +119,7 @@ jobs:
 
       - name: Copy WASM into book output
         run: |
-          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm; do
+          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm qmc_bloch.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -132,7 +132,7 @@ jobs:
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/butterfly.html \
                    docs/book/html/playground/dirac.html \
-                   docs/book/html/playground/orbitals.html; do
+                   docs/book/html/playground/qmc_bloch.wasm; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)

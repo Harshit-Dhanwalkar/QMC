@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Bloch sphere</title>
+    <meta
+      name="description"
+      content="A qubit on the Bloch sphere, driven and damped. Rabi oscillations, pi pulses, Ramsey fringes, T1 decay and dephasing, computed live in your browser by the QMC C library's Lindblad solver (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Bloch sphere with Rabi drive, T1 and T2 in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Drive a qubit, detune it, let it decay. The state vector, its precession axis and the mixed-state interior are all computed live by a pure-C Lindblad solver."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/bloch.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; Bloch sphere</h1>
+        <div class="links">
+          <a href="index.html">Double slit</a>
+          <a href="butterfly.html">Butterfly</a>
+          <a href="dirac.html">Dirac</a>
+          <a href="orbitals.html">Orbitals</a>
+          <a href="https://github.com/Harshit-Dhanwalkar/QMC"
+            >&#9733; Star on GitHub</a
+          >
+          <a href="../introduction.html">Docs</a>
+        </div>
+      </header>
+      <p class="sub">
+        One qubit, one arrow. Drive it with a resonant or detuned field and it
+        precesses about the amber axis
+        <b>b</b>&nbsp;=&nbsp;(&Omega;,&nbsp;0,&nbsp;&Delta;); let it decay and
+        the arrow shrinks into the ball as the state becomes mixed. Every step
+        is a 4th-order Runge&ndash;Kutta step of the Lindblad equation in the
+        QMC library (<code>bloch_evolve</code>), running in your browser. Drag
+        the sphere to rotate.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="sphere">
+            <canvas id="sc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="cv" id="hist"><canvas id="hc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i style="background: var(--accent)"></i>excited-state
+              probability P<sub>e</sub></span
+            >
+            <span
+              ><i style="background: var(--blue)"></i>coherence
+              |&rho;<sub>ge</sub>|</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>ideal undamped Rabi
+              curve</span
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Experiments</h2>
+            <div class="row" id="presets">
+              <button data-p="rabi" class="on">Rabi oscillation</button>
+              <button data-p="pi">&pi; pulse</button>
+              <button data-p="detuned">Detuned drive</button>
+              <button data-p="ramsey">Ramsey</button>
+              <button data-p="t1">T1 decay</button>
+              <button data-p="t2">T2 dephasing</button>
+              <button data-p="steady">Driven + damped</button>
+            </div>
+            <div class="row">
+              <span style="color: var(--muted); font-size: 0.85rem"
+                >start in</span
+              >
+              <button data-s="g">|g&#9002;</button
+              ><button data-s="e">|e&#9002;</button>
+              <button data-s="+">|+&#9002;</button
+              ><button data-s="i">|+i&#9002;</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Parameters</h2>
+            <div class="row">
+              <label
+                ><span>Drive &Omega;</span
+                ><input
+                  id="om"
+                  type="range"
+                  min="0"
+                  max="4"
+                  step="0.05"
+                  value="1"
+                /><b id="omv">1.00</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>Detuning &Delta;</span
+                ><input
+                  id="de"
+                  type="range"
+                  min="-4"
+                  max="4"
+                  step="0.05"
+                  value="0"
+                /><b id="dev">0.00</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>T1 rate &gamma;<sub>1</sub></span
+                ><input
+                  id="g1"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0"
+                /><b id="g1v">0.00</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>Dephasing &gamma;<sub>&phi;</sub></span
+                ><input
+                  id="gp"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="0"
+                /><b id="gpv">0.00</b></label
+              >
+            </div>
+            <div class="row">
+              <button id="play" class="primary">Pause</button>
+              <button id="restart">Restart</button>
+              <button id="clear">Clear trail</button>
+              <label style="width: auto"
+                ><span style="min-width: 0">Speed</span
+                ><input
+                  id="spd"
+                  type="range"
+                  min="1"
+                  max="12"
+                  step="1"
+                  value="3"
+                  style="width: 90px; flex: none"
+              /></label>
+            </div>
+            <div id="note"></div>
+          </div>
+
+          <div class="panel">
+            <h2>State</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        &#295;&nbsp;=&nbsp;1. Basis: |g&#9002; = north pole (z&nbsp;=&nbsp;+1),
+        |e&#9002; = south pole, |+&#9002; = (|g&#9002;+|e&#9002;)/&radic;2 on
+        +x. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/bloch.c"
+          ><code>physics/bloch.c</code></a
+        >,
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/lindblad.c"
+          ><code>physics/lindblad.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_bloch.c"
+          ><code>wasm/qmc_bloch.c</code></a
+        >. Without damping, |<b>v</b>| stays 1 and the dashed gray curve
+        (closed-form <code>rabi_excited_probability</code>) lies exactly under
+        the simulated one.
+      </footer>
+    </div>
+
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+
+        let w;
+        try {
+          const res = await fetch("qmc_bloch.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            {},
+          );
+          w = instance.exports;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_bloch.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/bloch.html</code>.",
+          );
+          return;
+        }
+        const DT = w.qmc_bl_dt();
+        const vec = () => new Float64Array(w.memory.buffer, w.qmc_bl_vec(), 3);
+
+        // ---- state ----
+        let om = 1,
+          de = 0,
+          g1 = 0,
+          gp = 0,
+          spf = 3,
+          playing = true;
+        let start = [0, 0, 1],
+          windows = null; // windows: list of [t0, t1] during which the drive is on (null = always)
+        let ideal = true; // ideal Rabi curve valid (ground start, no damping, no windows)
+        let yaw = 0.7,
+          pitch = 0.35,
+          trail = [],
+          hist = [],
+          tMax = 12,
+          preset = "rabi";
+
+        function setStart(s) {
+          start = s;
+        }
+        function reset() {
+          if (w.qmc_bl_reset(start[0], start[1], start[2]) !== 0) {
+            showError("reset rejected");
+            return;
+          }
+          trail = [[...start]];
+          hist = [[0, ...stateStats()]];
+          updateIdeal();
+          render();
+        }
+        function updateIdeal() {
+          ideal = start[2] === 1 && g1 === 0 && gp === 0 && !windows;
+        }
+
+        function stateStats() {
+          const v = vec();
+          return [(1 - v[2]) / 2, Math.hypot(v[0], v[1]) / 2];
+        }
+        function driveNow() {
+          if (!windows) return om;
+          const t = w.qmc_bl_time();
+          return windows.some(([a, b]) => t >= a && t < b) ? om : 0;
+        }
+
+        function advance(n) {
+          for (let i = 0; i < n; i++) {
+            if (w.qmc_bl_step(driveNow(), de, g1, gp, 1) !== 0) {
+              showError("solver step failed");
+              playing = false;
+              return;
+            }
+            const v = vec();
+            trail.push([v[0], v[1], v[2]]);
+            if (i % 3 === 2 || n < 3)
+              hist.push([w.qmc_bl_time(), ...stateStats()]);
+          }
+          if (trail.length > 900) trail.splice(0, trail.length - 900);
+          if (hist.length > 6000) hist.splice(0, hist.length - 6000);
+          const t = w.qmc_bl_time();
+          if (t > tMax * 0.92) tMax = Math.max(tMax, t * 1.25);
+        }
+
+        // ---- presets ----
+        const P = {
+          rabi: () => {
+            om = 1;
+            de = 0;
+            g1 = 0;
+            gp = 0;
+            windows = null;
+            start = [0, 0, 1];
+            tMax = 14;
+            return "Resonant drive: the arrow circles the y-z plane, P_e = sin²(Ωt/2).";
+          },
+          pi: () => {
+            om = 2;
+            de = 0;
+            g1 = 0;
+            gp = 0;
+            windows = [[0, Math.PI / 2]];
+            start = [0, 0, 1];
+            tMax = 8;
+            return "A pulse of area Ωt = π flips |g⟩ to |e⟩, then the drive switches off.";
+          },
+          detuned: () => {
+            om = 1;
+            de = 1.5;
+            g1 = 0;
+            gp = 0;
+            windows = null;
+            start = [0, 0, 1];
+            tMax = 14;
+            return "Off resonance the arrow circles the tilted axis b: faster, but P_e only reaches Ω²/(Ω²+Δ²).";
+          },
+          ramsey: () => {
+            om = 4;
+            de = 0.8;
+            g1 = 0;
+            gp = 0;
+            const a = Math.PI / 8;
+            windows = [
+              [0, a],
+              [6, 6 + a],
+            ];
+            start = [0, 0, 1];
+            tMax = 10;
+            return "Two π/2 pulses separated by free precession at the detuning Δ: the second pulse turns the accumulated phase into population.";
+          },
+          t1: () => {
+            om = 0;
+            de = 0;
+            g1 = 0.3;
+            gp = 0;
+            windows = null;
+            start = [0, 0, -1];
+            tMax = 14;
+            return "No drive: |e⟩ relaxes to |g⟩, z = 1 − 2e^{−γ₁t}. Transverse parts would decay at γ₁/2.";
+          },
+          t2: () => {
+            om = 0;
+            de = 0;
+            g1 = 0;
+            gp = 0.4;
+            windows = null;
+            start = [1, 0, 0];
+            tMax = 14;
+            return "Pure dephasing: the arrow shrinks toward the z axis, the populations never change.";
+          },
+          steady: () => {
+            om = 1.5;
+            de = 0.5;
+            g1 = 0.5;
+            gp = 0;
+            windows = null;
+            start = [0, 0, 1];
+            tMax = 25;
+            return "Drive against decay: the arrow spirals to a steady state inside the sphere, P_e = (Ω²/4)/(Δ²+γ²/4+Ω²/2).";
+          },
+        };
+        function syncSliders() {
+          $("om").value = om;
+          $("de").value = de;
+          $("g1").value = g1;
+          $("gp").value = gp;
+          $("omv").textContent = om.toFixed(2);
+          $("dev").textContent = de.toFixed(2);
+          $("g1v").textContent = g1.toFixed(2);
+          $("gpv").textContent = gp.toFixed(2);
+        }
+        function applyPreset(name) {
+          preset = name;
+          $("note").textContent = P[name]();
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) => b.classList.toggle("on", b.dataset.p === name));
+          syncSliders();
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        }
+
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) =>
+            b.addEventListener("click", () => applyPreset(b.dataset.p)),
+          );
+        const STARTS = {
+          g: [0, 0, 1],
+          e: [0, 0, -1],
+          "+": [1, 0, 0],
+          i: [0, 1, 0],
+        };
+        document.querySelectorAll("[data-s]").forEach((b) =>
+          b.addEventListener("click", () => {
+            start = STARTS[b.dataset.s].slice();
+            reset();
+          }),
+        );
+
+        const bind = (id, vid, set) =>
+          $(id).addEventListener("input", () => {
+            const x = parseFloat($(id).value);
+            set(x);
+            $(vid).textContent = x.toFixed(2);
+            windowsFree();
+            updateIdeal();
+          });
+        function windowsFree() {
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) => b.classList.remove("on"));
+        }
+        bind("om", "omv", (x) => {
+          om = x;
+        });
+        bind("de", "dev", (x) => {
+          de = x;
+        });
+        bind("g1", "g1v", (x) => {
+          g1 = x;
+        });
+        bind("gp", "gpv", (x) => {
+          gp = x;
+        });
+        $("spd").addEventListener("input", () => {
+          spf = parseInt($("spd").value, 10);
+        });
+        $("play").addEventListener("click", () => {
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", () => {
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        });
+        $("clear").addEventListener("click", () => {
+          trail = [[...vec()]];
+        });
+
+        // ---- drawing ----
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect(),
+            d = window.devicePixelRatio || 1;
+          const W = Math.max(2, Math.round(r.width * d)),
+            H = Math.max(2, Math.round(r.height * d));
+          if (canvas.width !== W || canvas.height !== H) {
+            canvas.width = W;
+            canvas.height = H;
+          }
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+          return { g, W: r.width, H: r.height };
+        }
+        const css = (n) =>
+          getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+        function drawSphere() {
+          const { g, W, H } = fit($("sc")),
+            cx = W / 2,
+            cy = H / 2,
+            R = 0.36 * Math.min(W, H);
+          g.clearRect(0, 0, W, H);
+          const ca = Math.cos(yaw),
+            sa = Math.sin(yaw),
+            ce = Math.cos(pitch),
+            se = Math.sin(pitch);
+          const P3 = (p) => {
+            const xr = p[0] * ca - p[1] * sa,
+              yr = p[0] * sa + p[1] * ca;
+            return [
+              cx + xr * R,
+              cy - (p[2] * ce - yr * se) * R,
+              yr * ce + p[2] * se,
+            ];
+          }; // x, y, depth (+ = away)
+
+          // shaded ball
+          const grd = g.createRadialGradient(
+            cx - R * 0.3,
+            cy - R * 0.35,
+            R * 0.1,
+            cx,
+            cy,
+            R,
+          );
+          grd.addColorStop(0, "rgba(90,120,170,.22)");
+          grd.addColorStop(1, "rgba(20,30,50,.08)");
+          g.fillStyle = grd;
+          g.beginPath();
+          g.arc(cx, cy, R, 0, 7);
+          g.fill();
+          g.strokeStyle = "rgba(160,175,205,.45)";
+          g.lineWidth = 1.2;
+          g.beginPath();
+          g.arc(cx, cy, R, 0, 7);
+          g.stroke();
+
+          // great circles with depth-faded segments
+          const ring = (f) => {
+            const N = 96;
+            let prev = P3(f(0));
+            for (let i = 1; i <= N; i++) {
+              const q = P3(f((i / N) * 2 * Math.PI)),
+                a =
+                  0.13 +
+                  (0.22 *
+                    (1 - Math.max(-1, Math.min(1, (prev[2] + q[2]) / 2)))) /
+                    2;
+              g.strokeStyle = `rgba(150,165,200,${a})`;
+              g.beginPath();
+              g.moveTo(prev[0], prev[1]);
+              g.lineTo(q[0], q[1]);
+              g.stroke();
+              prev = q;
+            }
+          };
+          g.lineWidth = 1;
+          ring((t) => [Math.cos(t), Math.sin(t), 0]);
+          ring((t) => [Math.cos(t), 0, Math.sin(t)]);
+          ring((t) => [0, Math.cos(t), Math.sin(t)]);
+
+          // axes + labels
+          const axes = [
+            [[1, 0, 0], "|+⟩", "#ff8a8a"],
+            [[-1, 0, 0], "|−⟩", "#ff8a8a"],
+            [[0, 1, 0], "|+i⟩", "#8affb0"],
+            [[0, -1, 0], "|−i⟩", "#8affb0"],
+            [[0, 0, 1], "|g⟩", "#9cc4ff"],
+            [[0, 0, -1], "|e⟩", "#9cc4ff"],
+          ];
+          g.font = "13px system-ui";
+          g.textAlign = "center";
+          const o = P3([0, 0, 0]);
+          for (const [p, label, col] of axes) {
+            const q = P3(p),
+              q2 = P3(p.map((c) => c * 1.16));
+            g.strokeStyle = col;
+            g.globalAlpha = q[2] > 0 ? 0.25 : 0.55;
+            g.lineWidth = 1;
+            g.beginPath();
+            g.moveTo(o[0], o[1]);
+            g.lineTo(q[0], q[1]);
+            g.stroke();
+            g.globalAlpha = q[2] > 0 ? 0.55 : 1;
+            g.fillStyle = col;
+            g.fillText(label, q2[0], q2[1] + 4);
+            g.globalAlpha = 1;
+          }
+
+          // rotation axis b = (Omega, 0, Delta)
+          const eff = driveNow(),
+            bl = Math.hypot(eff, de);
+          if (bl > 1e-9) {
+            const bn = [eff / bl, 0, de / bl],
+              a = P3(bn.map((c) => -c * 1.1)),
+              b = P3(bn.map((c) => c * 1.1));
+            g.setLineDash([5, 4]);
+            g.strokeStyle = css("--accent2");
+            g.lineWidth = 1.6;
+            g.beginPath();
+            g.moveTo(a[0], a[1]);
+            g.lineTo(b[0], b[1]);
+            g.stroke();
+            g.setLineDash([]);
+            g.fillStyle = css("--accent2");
+            g.font = "12px system-ui";
+            g.fillText("b", b[0] + 8, b[1] - 6);
+          }
+
+          // trail
+          if (trail.length > 1) {
+            let prev = P3(trail[0]);
+            for (let i = 1; i < trail.length; i++) {
+              const q = P3(trail[i]),
+                age = i / trail.length;
+              g.strokeStyle = `rgba(61,220,151,${0.05 + 0.75 * age * age})`;
+              g.lineWidth = 1 + 1.8 * age;
+              g.beginPath();
+              g.moveTo(prev[0], prev[1]);
+              g.lineTo(q[0], q[1]);
+              g.stroke();
+              prev = q;
+            }
+          }
+
+          // state arrow
+          const v = vec(),
+            tip = P3([v[0], v[1], v[2]]),
+            len = Math.hypot(v[0], v[1], v[2]);
+          g.strokeStyle = "#ffffff";
+          g.fillStyle = "#ffffff";
+          g.lineWidth = 2.6;
+          g.beginPath();
+          g.moveTo(o[0], o[1]);
+          g.lineTo(tip[0], tip[1]);
+          g.stroke();
+          g.beginPath();
+          g.arc(tip[0], tip[1], 5.5, 0, 7);
+          g.fill();
+          g.strokeStyle = "rgba(255,255,255,.25)";
+          g.lineWidth = 1;
+          g.setLineDash([2, 3]); // drop line to the equatorial plane
+          const foot = P3([v[0], v[1], 0]);
+          g.beginPath();
+          g.moveTo(tip[0], tip[1]);
+          g.lineTo(foot[0], foot[1]);
+          g.stroke();
+          g.setLineDash([]);
+
+          $("readout").innerHTML =
+            `t = ${w.qmc_bl_time().toFixed(2)}<br>|v| = ${len.toFixed(3)}` +
+            (len < 0.995 ? " <span style='color:#f5a524'>mixed</span>" : "");
+        }
+
+        function drawHist() {
+          const { g, W, H } = fit($("hc")),
+            pl = 38,
+            pr = 10,
+            pt = 12,
+            pb = 22;
+          const X = (t) => pl + (t / tMax) * (W - pl - pr),
+            Y = (p) => pt + (1 - p) * (H - pt - pb);
+          g.clearRect(0, 0, W, H);
+          g.strokeStyle = "#232b3d";
+          g.fillStyle = css("--muted");
+          g.font = "11px system-ui";
+          g.lineWidth = 1;
+          g.textAlign = "right";
+          for (const p of [0, 0.5, 1]) {
+            g.beginPath();
+            g.moveTo(pl, Y(p));
+            g.lineTo(W - pr, Y(p));
+            g.stroke();
+            g.fillText(p.toFixed(1), pl - 5, Y(p) + 4);
+          }
+          g.textAlign = "center";
+          const step = tMax > 30 ? 10 : tMax > 12 ? 5 : 2;
+          for (let t = 0; t <= tMax; t += step)
+            g.fillText(String(t), X(t), H - 7);
+          if (windows) {
+            g.fillStyle = "rgba(245,165,36,.12)";
+            for (const [a, b] of windows)
+              g.fillRect(X(a), pt, X(Math.min(b, tMax)) - X(a), H - pt - pb);
+          }
+          if (ideal && om > 0) {
+            // closed-form Rabi curve
+            g.strokeStyle = "#8993a8";
+            g.setLineDash([4, 4]);
+            g.beginPath();
+            for (let i = 0; i <= 300; i++) {
+              const t = (i / 300) * tMax,
+                px = X(t),
+                py = Y(w.qmc_bl_rabi(t, om, de));
+              i ? g.lineTo(px, py) : g.moveTo(px, py);
+            }
+            g.stroke();
+            g.setLineDash([]);
+          }
+          const line = (idx, col) => {
+            g.strokeStyle = col;
+            g.lineWidth = 2;
+            g.beginPath();
+            hist.forEach((h, i) => {
+              const px = X(h[0]),
+                py = Y(h[idx]);
+              i ? g.lineTo(px, py) : g.moveTo(px, py);
+            });
+            g.stroke();
+          };
+          line(2, css("--blue"));
+          line(1, css("--accent"));
+        }
+
+        function updateStats() {
+          const v = vec(),
+            pur = w.qmc_bl_purity(),
+            or = Math.hypot(om, de);
+          const T2 = g1 / 2 + gp;
+          $("stats").innerHTML =
+            `<div class="stat"><span>Excited probability P<sub>e</sub></span><span>${((1 - v[2]) / 2).toFixed(3)}</span></div>
+       <div class="stat"><span>Bloch vector (x, y, z)</span><span>${v[0].toFixed(2)}, ${v[1].toFixed(2)}, ${v[2].toFixed(2)}</span></div>
+       <div class="stat"><span>Purity Tr&rho;&sup2;</span><span>${pur.toFixed(3)}</span></div>
+       <div class="stat"><span>Generalised Rabi frequency</span><span>${or.toFixed(2)}</span></div>
+       <div class="stat"><span>T1 / T2</span><span>${g1 > 0 ? (1 / g1).toFixed(1) : "∞"} / ${T2 > 0 ? (1 / T2).toFixed(1) : "∞"}</span></div>`;
+        }
+
+        function render() {
+          drawSphere();
+          drawHist();
+          updateStats();
+        }
+
+        // ---- interaction ----
+        const stage = $("sphere");
+        let drag = null;
+        stage.addEventListener("pointerdown", (e) => {
+          drag = { x: e.clientX, y: e.clientY };
+          stage.setPointerCapture(e.pointerId);
+        });
+        stage.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          yaw += (e.clientX - drag.x) * 0.008;
+          pitch = Math.max(
+            -1.5,
+            Math.min(1.5, pitch + (e.clientY - drag.y) * 0.008),
+          );
+          drag = { x: e.clientX, y: e.clientY };
+          render();
+        });
+        const end = () => {
+          drag = null;
+        };
+        stage.addEventListener("pointerup", end);
+        stage.addEventListener("pointercancel", end);
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (playing) {
+            advance(spf);
+            render();
+          }
+          requestAnimationFrame(frame);
+        }
+        applyPreset("rabi");
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

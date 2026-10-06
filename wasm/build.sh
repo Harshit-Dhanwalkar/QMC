@@ -8,6 +8,7 @@
 #   docs/src/playground/qmc_butterfly.wasm  Hofstadter butterfly explorer
 #   docs/src/playground/qmc_dirac.wasm      Dirac Klein-paradox demo
 #   docs/src/playground/qmc_orbital.wasm    hydrogen orbital viewer
+#   docs/src/playground/qmc_bloch.wasm      Bloch-sphere qubit demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -87,3 +88,8 @@ build_module "$OUT/qmc_orbital.wasm" \
   wasm/qmc_orbital.c physics/orbital_sample.c physics/hydrogen.c \
   physics/central_potential.c physics/potentials.c physics/wavefn.c \
   core/special/*.c core/vector.c core/matrix.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c
+
+build_module "$OUT/qmc_bloch.wasm" \
+  "qmc_bl_dt qmc_bl_vec qmc_bl_time qmc_bl_reset qmc_bl_step qmc_bl_purity qmc_bl_rabi" \
+  wasm/qmc_bloch.c physics/bloch.c physics/lindblad.c physics/rabi.c \
+  core/matrix.c core/vector.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c

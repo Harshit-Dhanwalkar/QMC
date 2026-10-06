@@ -1,4 +1,3 @@
-// Runs same scenario as native_ref.c inside compiled WASM module
 import fs from "node:fs";
 import { makeWasiImports } from "../wasi-shim.mjs";
 
@@ -29,11 +28,16 @@ console.log("norm300 " + w.qmc_norm().toFixed(12));
 
 const ptr = w.qmc_density();
 const d = new Float32Array(w.memory.buffer, ptr, 128 * 128);
-let s = 0,
-  wsum = 0;
-for (let i = 0; i < d.length; i++) s += d[i];
-for (let ix = 0; ix < 128; ix++)
-  for (let iy = 0; iy < 128; iy++) wsum += d[ix * 128 + iy] * (ix * 3 + iy);
+let s = 0;
+let wsum = 0;
+for (let i = 0; i < d.length; i++) {
+  s += d[i];
+}
+for (let ix = 0; ix < 128; ix++) {
+  for (let iy = 0; iy < 128; iy++) {
+    wsum += d[ix * 128 + iy] * (ix * 3 + iy);
+  }
+}
 console.log("sum " + s.toExponential(9));
 console.log("wsum " + wsum.toExponential(9));
 console.error(

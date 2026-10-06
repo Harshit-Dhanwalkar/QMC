@@ -1,22 +1,14 @@
 # QMC in browser (WebAssembly)
 
-`qmc_wasm.c` is a thin wrapper around the library's own 2D split-operator
-solver (`physics/soft.c` -> `core/fft/fft2d.c`). The browser page in
-`docs/src/playground/index.html` calls it every animation frame.
+`qmc_wasm.c` is a thin wrapper around the library's own 2D split-operator solver (`physics/soft.c` -> `core/fft/fft2d.c`). The browser page in `docs/src/playground/index.html` calls it every animation frame.
 
-`qmc_butterfly.c` does the same for the tight-binding module: the Hofstadter
-butterfly page (`docs/src/playground/butterfly.html`) diagonalises
-`tb_model_hofstadter` for every flux p/q up to q = 50, labels each gap with its
-Chern number (TKNN equation) and, on click, recomputes that number with the
-library's Fukui-Hatsugai-Suzuki `tb_chern_number`.
+`qmc_butterfly.c` does the same for the tight-binding module: the Hofstadter butterfly page (`docs/src/playground/butterfly.html`) diagonalises `tb_model_hofstadter` for every flux p/q up to q = 50, labels each gap with its Chern number (TKNN equation) and, on click, recomputes that number with the library's Fukui-Hatsugai-Suzuki `tb_chern_number`.
 
-`qmc_dirac.c` wraps the Dirac time-evolution module (`physics/dirac_evolve.c`):
-`docs/src/playground/dirac.html` fires a positive-energy packet at a sharp step
-(Klein paradox, compared live with `dirac_step_transmission`) or shows
-Zitterbewegung of a packet built from both energy signs.
+`qmc_dirac.c` wraps the Dirac time-evolution module (`physics/dirac_evolve.c`): `docs/src/playground/dirac.html` fires a positive-energy packet at a sharp step (Klein paradox, compared live with `dirac_step_transmission`) or shows Zitterbewegung of a packet built from both energy signs.
 
-`qmc_orbital.c` wraps the orbital sampler (`physics/orbital_sample.c`): `docs/src/playground/orbitals.html`
-draws any hydrogen orbital (n up to 8, real or complex) as a rotatable 3D point cloud sampled from |psi_nlm|^2.
+`qmc_orbital.c` wraps the orbital sampler (`physics/orbital_sample.c`): `docs/src/playground/orbitals.html` draws any hydrogen orbital (n up to 8, real or complex) as a rotatable 3D point cloud sampled from |psi_nlm|^2.
+
+`qmc_bloch.c` wraps the Bloch-vector module (`physics/bloch.c`, RK4 Lindblad evolution): `docs/src/playground/bloch.html` drives and damps a qubit and plots the state on the Bloch sphere next to the closed-form Rabi curve.
 
 ## Build
 
@@ -83,18 +75,18 @@ curvature; for large Hall numbers use `n_k` of at least about `2|t| + 8`.
 Dirac module (`qmc_dirac.wasm`, no imports; one global simulation, N = 2048,
 dx = 0.1, dt = 0.04, units hbar = m = c = 1):
 
-| function | purpose |
-| --- | --- |
-| `qmc_dc_klein(k0, v0)` | positive-energy packet at x = -50 aimed at a step of height v0 at x = 0 |
-| `qmc_dc_zitter()` | wide packet of spinor (1, i)/sqrt(2) at rest, no potential |
-| `qmc_dc_step(n)` | advance n steps with `dirac_evolve_1d` |
-| `qmc_dc_density()` / `qmc_dc_buffer()` | fill / locate scratch buffer: \|upper\|^2, \|lower\|^2, V |
-| `qmc_dc_right()`, `qmc_dc_position()`, `qmc_dc_norm()` | transmitted probability, mean position, total probability |
-| `qmc_dc_exact(k0, v0)` | closed-form transmission (`dirac_step_transmission`) |
+| function                                               | purpose                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `qmc_dc_klein(k0, v0)`                                 | positive-energy packet at x = -50 aimed at a step of height v0 at x = 0 |
+| `qmc_dc_zitter()`                                      | wide packet of spinor (1, i)/sqrt(2) at rest, no potential              |
+| `qmc_dc_step(n)`                                       | advance n steps with `dirac_evolve_1d`                                  |
+| `qmc_dc_density()` / `qmc_dc_buffer()`                 | fill / locate scratch buffer: \|upper\|^2, \|lower\|^2, V               |
+| `qmc_dc_right()`, `qmc_dc_position()`, `qmc_dc_norm()` | transmitted probability, mean position, total probability               |
+| `qmc_dc_exact(k0, v0)`                                 | closed-form transmission (`dirac_step_transmission`)                    |
 
-Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)`
-draws points from |psi_nlm|^2 via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point,
-in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
+Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)` draws points from |psi_nlm|^2 via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
+
+Bloch module (`qmc_bloch.wasm`, no imports): `qmc_bl_reset(x, y, z)` sets the state, `qmc_bl_step(omega, delta, gamma1, gamma_phi, steps)` advances `steps` RK4 steps of 0.01 with `bloch_evolve`, `qmc_bl_vec()` points at the Bloch vector, `qmc_bl_rabi(t, omega, delta)` is the closed-form Rabi curve.
 
 Regenerate the butterfly images:
 
