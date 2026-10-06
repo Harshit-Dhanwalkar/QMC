@@ -45,7 +45,7 @@ double dE = zeeman_energy_shift(1, j_2, /*mj_2=*/1, B, 1.0);
 double zeeman_sz_expect_from_coupling(int l, int j_2, int mj_2);
 ```
 
-This mirrors the validation pattern already used in [Fine Structure](fine_structure.md)'s `spin_orbit_ls_expect_from_coupling` — an independent recomputation from the Clebsch-Gordan coupling coefficients, cross-checked against the closed-form result rather than trusting a single derivation. Since $\langle S_z\rangle/\hbar = (g_J-1)m_j$ follows algebraically from the same angular momentum algebra that gives $g_J$ itself, agreement between `zeeman_sz_expect_from_coupling` and `(zeeman_lande_g_factor(l, j_2) - 1) * mj` confirms both the `couple_states`/Clebsch-Gordan implementation and the closed-form Land$\'e$ formula are consistent with each other.
+This mirrors the validation pattern already used in [Fine Structure](fine_structure.md)'s `spin_orbit_ls_expect_from_coupling` - an independent recomputation from the Clebsch-Gordan coupling coefficients, cross-checked against the closed-form result rather than trusting a single derivation. Since $\langle S_z\rangle/\hbar = (g_J-1)m_j$ follows algebraically from the same angular momentum algebra that gives $g_J$ itself, agreement between `zeeman_sz_expect_from_coupling` and `(zeeman_lande_g_factor(l, j_2) - 1) * mj` confirms both the `couple_states`/Clebsch-Gordan implementation and the closed-form Land$\'e$ formula are consistent with each other.
 
 ## Running the Example
 

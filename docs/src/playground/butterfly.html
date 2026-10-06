@@ -247,11 +247,11 @@
       </header>
       <p class="sub">
         Spectrum of an electron on a square lattice in a magnetic field, as a
-        function of flux &alpha;&nbsp;=&nbsp;p/q per plaquette. Each
-        vertical line is one diagonalisation by the QMC tight-binding module
+        function of flux &alpha;&nbsp;=&nbsp;p/q per plaquette. Each vertical
+        line is one diagonalisation by the QMC tight-binding module
         (<code>tb_model_hofstadter</code>); the colour of every gap is its Chern
-        number (quantised Hall conductance). Hover or tap to inspect, click
-        a gap to check it numerically.
+        number (quantised Hall conductance). Hover or tap to inspect, click a
+        gap to check it numerically.
       </p>
 
       <div id="plot"><canvas id="bf"></canvas><canvas id="ov"></canvas></div>
@@ -318,7 +318,7 @@
           e.innerHTML = m;
         };
 
-        // ---- load WebAssembly (needs three do-nothing WASI imports for stdio) ----
+        // load WebAssembly (needs three do-nothing WASI imports for stdio)
         let w, mem;
         try {
           const wasi = {
@@ -354,7 +354,7 @@
         }
         const MAXQ = Math.min(50, w.qmc_bf_max_q());
 
-        // ---- colours: gap colour by Hall number (same mapping as wasm/tools/make_butterfly_png.py) ----
+        // colours: gap colour by Hall number
         function gapRGB(t) {
           if (t === null) return [255, 255, 255];
           if (t === 0) return [96, 110, 138];
@@ -375,7 +375,7 @@
           $("legend").appendChild(s);
         }
 
-        // ---- progressive computation ----
+        // progressive computation
         const gcd = (a, b) => (b ? gcd(b, a % b) : a);
         const list = []; // computed fluxes
         let nextQ = 2,
@@ -420,7 +420,7 @@
           return viewCache;
         }
 
-        // ---- drawing (used for the screen and for the PNG export) ----
+        // drawing (used for the screen and for the PNG export)
         function draw(ctx, W, H, o) {
           ctx.fillStyle = BG;
           ctx.fillRect(0, 0, W, H);
@@ -505,7 +505,7 @@
             ctx.font = "600 " + Math.round(H * 0.04) + "px " + fam;
             ctx.fillStyle = "#d7dce5";
             ctx.fillText(
-              "Hofstadter butterfly — gaps coloured by Chern number",
+              "Hofstadter butterfly - gaps coloured by Chern number",
               ml,
               Math.round(H * 0.022),
             );
@@ -522,7 +522,7 @@
           return { X, Y, ml, mt, pw, ph, v };
         }
 
-        // ---- canvases ----
+        // canvases
         const bf = $("bf"),
           ov = $("ov"),
           plot = $("plot");
@@ -546,7 +546,7 @@
           drawOverlay();
         }
 
-        // ---- inspection ----
+        // inspection
         let hover = null,
           pinned = null; // {flux, E}
         function locate(ev) {
@@ -718,7 +718,7 @@
           numericCheck(s);
         });
 
-        // ---- controls ----
+        // controls
         $("qmax").addEventListener("input", () => {
           qTarget = parseInt($("qmax").value, 10);
           $("qmaxv").textContent = String(qTarget);
@@ -745,13 +745,16 @@
         });
         window.addEventListener("resize", layout);
 
-        // ---- pump: compute in small slices so the butterfly visibly grows ----
+        // pump: compute in small slices so the butterfly visibly grows
         let pumping = false,
           lastDraw = 0;
         function totalFor(qm) {
           let n = 0;
-          for (let q = 2; q <= qm; q++)
-            for (let p = 1; p < q; p++) if (gcd(p, q) === 1) n++;
+          for (let q = 2; q <= qm; q++) {
+            for (let p = 1; p < q; p++) {
+              if (gcd(p, q) === 1) n++;
+            }
+          }
           return n;
         }
         function pump() {

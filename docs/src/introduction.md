@@ -8,16 +8,7 @@ engine that runs from 1D potentials up to relativistic wave equations, with
 publication-quality plots where math annotations render as actual symbols,
 not ASCII approximations.
 
-**[Try the interactive playground](playground/index.html)** - a live 2D
-double-slit experiment running the library's split-operator solver
-(`soft_evolve_2d`) in your browser via a 21 KB WebAssembly module.
-There is also a **[Hofstadter butterfly explorer](playground/butterfly.html)**
-with every spectral gap labelled by its Chern number, and a
-**[Dirac Klein-paradox demo](playground/dirac.html)** that evolves a relativistic
-wavepacket into a potential step (`dirac_evolve_1d`) and compares the result with the
-closed-form transmission.
-There is also a **[hydrogen orbital viewer](playground/orbitals.html)** that samples any hydrogen orbital as a
-rotatable 3D point cloud (`hydrogen_orbital_sample`).
+See all five live demos on the **[Showcase](showcase.md)** page
 
 ## What this covers
 
