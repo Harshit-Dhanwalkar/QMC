@@ -6,12 +6,15 @@ on:
     paths:
       - "docs/**"
       - "wasm/**"
+      - "physics/bloch.c"
+      - "physics/bloch.h"
+      - "physics/lindblad.c"
+      - "physics/lindblad.h"
+      - "physics/rabi.c"
+      - "physics/rabi.h"
       - "physics/soft.c"
       - "physics/soft.h"
-      - "core/vector.c"
-      - "core/vector.h"
-      - "core/complex.h"
-      - "core/fft/**"
+      - "core/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -129,10 +132,10 @@ jobs:
                    docs/book/html/playground/qmc_butterfly.wasm \
                    docs/book/html/playground/qmc_dirac.wasm \
                    docs/book/html/playground/qmc_orbital.wasm \
+                   docs/book/html/playground/qmc_bloch.wasm \
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/butterfly.html \
-                   docs/book/html/playground/dirac.html \
-                   docs/book/html/playground/qmc_bloch.wasm; do
+                   docs/book/html/playground/dirac.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)
