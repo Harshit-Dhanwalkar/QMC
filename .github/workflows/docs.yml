@@ -115,7 +115,7 @@ jobs:
       # ------------------- Build & deploy --------------------------
       # Build, Validate links and Deploy Docs
       - name: Build Documentation
-        run: mdbook build docs/ --dest-dir "$(pwd)/docs/book/html"
+        run: mdbook build docs/ --dest-dir "$(pwd)/docs/book"
 
       - name: Copy WASM into book output
         run: |
