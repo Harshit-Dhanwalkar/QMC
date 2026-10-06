@@ -409,7 +409,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_74_td_perturbation \
               $(BUILD_DIR)/eg_75_tight_binding \
               $(BUILD_DIR)/eg_76_dirac_evolve \
-              $(BUILD_DIR)/eg_77_orbital_sample
+              $(BUILD_DIR)/eg_77_orbital_sample \
+              $(BUILD_DIR)/eg_78_bloch
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -424,6 +425,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_td_perturbation \
               $(BUILD_DIR)/test_dirac_evolve \
               $(BUILD_DIR)/test_orbital_sample \
+              $(BUILD_DIR)/test_bloch \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
