@@ -7,6 +7,7 @@
 #   docs/src/playground/qmc.wasm            2D double-slit playground
 #   docs/src/playground/qmc_butterfly.wasm  Hofstadter butterfly explorer
 #   docs/src/playground/qmc_dirac.wasm      Dirac Klein-paradox demo
+#   docs/src/playground/qmc_orbital.wasm    hydrogen orbital viewer
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -80,3 +81,9 @@ build_module "$OUT/qmc_dirac.wasm" \
 qmc_dc_klein qmc_dc_zitter qmc_dc_step qmc_dc_norm qmc_dc_position \
 qmc_dc_right qmc_dc_exact" \
   wasm/qmc_dirac.c physics/dirac_evolve.c core/vector.c core/fft/fft.c
+
+build_module "$OUT/qmc_orbital.wasm" \
+  "qmc_orb_max_points qmc_orb_buffer qmc_orb_sample qmc_orb_energy_ev qmc_orb_max_n" \
+  wasm/qmc_orbital.c physics/orbital_sample.c physics/hydrogen.c \
+  physics/central_potential.c physics/potentials.c physics/wavefn.c \
+  core/special/*.c core/vector.c core/matrix.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c

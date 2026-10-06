@@ -105,7 +105,8 @@ jobs:
         run: |
           for f in docs/src/playground/qmc.wasm \
                    docs/src/playground/qmc_butterfly.wasm \
-                   docs/src/playground/qmc_dirac.wasm; do
+                   docs/src/playground/qmc_dirac.wasm \
+                   docs/src/playground/qmc_orbital.wasm; do
             test -s "$f" \
               && echo " OK: $f ($(stat -c%s "$f") bytes)" \
               || (echo "ERROR: $f missing" && exit 1)
@@ -114,11 +115,11 @@ jobs:
       # ------------------- Build & deploy --------------------------
       # Build, Validate links and Deploy Docs
       - name: Build Documentation
-        run: mdbook build docs/
+        run: mdbook build docs/ --dest-dir "$(pwd)/docs/book/html"
 
       - name: Copy WASM into book output
         run: |
-          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm; do
+          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -127,9 +128,11 @@ jobs:
           for f in docs/book/html/playground/qmc.wasm \
                    docs/book/html/playground/qmc_butterfly.wasm \
                    docs/book/html/playground/qmc_dirac.wasm \
+                   docs/book/html/playground/qmc_orbital.wasm \
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/butterfly.html \
-                   docs/book/html/playground/dirac.html; do
+                   docs/book/html/playground/dirac.html \
+                   docs/book/html/playground/orbitals.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)

@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Hydrogen orbitals</title>
+    <meta
+      name="description"
+      content="Hydrogen atom orbitals as live 3D point clouds, sampled from |\psi|^2 by QMC C library (WebAssembly). Drag to rotate, pick any n, l, m up to n = 8, switch between real and complex orbitals."
+    />
+    <meta
+      property="og:title"
+      content="Hydrogen orbitals in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Every dot is a draw from |psi(r)|^2. Pick n, l, m, drag to rotate. Sampled live in your browser by a 34 KB WebAssembly build of a pure-C library."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/orbitals.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      #stage {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+        touch-action: none;
+        cursor: grab;
+      }
+      #stage:active {
+        cursor: grabbing;
+      }
+      #stage canvas#cv {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #label {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        pointer-events: none;
+        text-shadow: 0 1px 6px #000;
+      }
+      #label small {
+        display: block;
+        font-size: 0.78rem;
+        font-weight: 400;
+        color: var(--muted);
+      }
+      #wheel {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        pointer-events: none;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      .row > span.k {
+        color: var(--muted);
+        font-size: 0.85rem;
+        min-width: 2.2em;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: default;
+        border-color: var(--line);
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      .seg button {
+        padding: 5px 9px;
+        min-width: 2.1em;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.2em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        width: 140px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; Hydrogen orbitals</h1>
+        <div class="links">
+          <a href="index.html">Double slit</a>
+          <a href="butterfly.html">Butterfly</a>
+          <a href="dirac.html">Dirac</a>
+          <a href="https://github.com/Harshit-Dhanwalkar/QMC"
+            >&#9733; Star on GitHub</a
+          >
+          <a href="../introduction.html">Docs</a>
+        </div>
+      </header>
+      <p class="sub">
+        Every dot is one draw from electron's probability density
+        |&psi;<sub>nlm</sub>|&sup2;: radial positions by inverse-CDF of
+        library's analytic <i>R</i><sub>nl</sub>, angles by rejection sampling
+        of its spherical harmonics (<code>hydrogen_orbital_sample</code>). Drag
+        to rotate, scroll or use zoom slider.
+      </p>
+
+      <div class="main">
+        <div id="stage">
+          <canvas id="cv"></canvas>
+          <div id="label"></div>
+          <canvas
+            id="wheel"
+            width="84"
+            height="84"
+            style="width: 84px; height: 84px"
+          ></canvas>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Orbital</h2>
+            <div class="row" id="presets"></div>
+            <div class="row">
+              <span class="k">n</span><span class="seg row" id="nsel"></span>
+            </div>
+            <div class="row">
+              <span class="k">l</span><span class="seg row" id="lsel"></span>
+            </div>
+            <div class="row">
+              <span class="k">m</span><span class="seg row" id="msel"></span>
+            </div>
+            <div class="row">
+              <span class="k">form</span>
+              <span class="seg row"
+                ><button id="fReal" class="on">Real</button
+                ><button id="fCx">Complex</button></span
+              >
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Properties</h2>
+            <div id="stats"></div>
+          </div>
+
+          <div class="panel">
+            <h2>View</h2>
+            <div class="row">
+              <label
+                >Points
+                <input
+                  id="cnt"
+                  type="range"
+                  min="5000"
+                  max="80000"
+                  step="5000"
+                  value="60000"
+                /><b id="cntv">60k</b></label
+              >
+              <label
+                >Zoom
+                <input
+                  id="zoom"
+                  type="range"
+                  min="0.5"
+                  max="2.5"
+                  step="0.05"
+                  value="1"
+                /><b id="zoomv">1.0&times;</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><input type="checkbox" id="spin" checked /> Auto-rotate</label
+              >
+              <button id="resample">Resample</button>
+              <button id="png" class="primary">Save PNG</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        Atomic units; lengths in Bohr radii a&#8320;. Real orbitals are 
+        textbook p<sub>x</sub>, d<sub>z&sup2;</sub>, &hellip; combinations
+        (blue/orange = sign of &psi;); complex orbitals are coloured by phase
+        arg&nbsp;&psi; = m&phi;. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/orbital_sample.c"
+          ><code>physics/orbital_sample.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_orbital.c"
+          ><code>wasm/qmc_orbital.c</code></a
+        >.
+      </footer>
+    </div>
+
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+
+        // load WebAssembly (module has no imports)
+        let w;
+        try {
+          const res = await fetch("qmc_orbital.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            {},
+          );
+          w = instance.exports;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_orbital.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/orbitals.html</code>.",
+          );
+          return;
+        }
+        const MAXN = w.qmc_orb_max_n(),
+          MAXP = w.qmc_orb_max_points();
+        const LETTER = "spdfghik";
+
+        // state
+        let n = 3,
+          l = 2,
+          m = 0,
+          real = true,
+          count = 60000,
+          seed = 1;
+        let yaw = 0.6,
+          pitch = 0.35,
+          zoom = 1,
+          spin = true,
+          viewR = 10;
+        let X, Y, Z, R, G, B; // sampled points and their colours (Float32Array)
+
+        // real-orbital names
+        function realName(l, m) {
+          const L = LETTER[l];
+          if (l === 0) return n + "s";
+          const tag = {
+            1: { 0: "z", 1: "x", "-1": "y" },
+            2: { 0: "z²", 1: "xz", "-1": "yz", 2: "x²−y²", "-2": "xy" },
+            3: {
+              0: "z³",
+              1: "xz²",
+              "-1": "yz²",
+              2: "xyz",
+              "-2": "z(x²−y²)",
+              3: "x(x²−3y²)",
+              "-3": "y(3x²−y²)",
+            },
+          }[l];
+          const t = tag && tag[String(m)];
+          return (
+            n +
+            L +
+            (t
+              ? "<sub>" + t + "</sub>"
+              : "<sub>m=" +
+                (m > 0 ? "+" : "") +
+                m +
+                " " +
+                (m > 0 ? "cos" : "sin") +
+                "</sub>")
+          );
+        }
+        const cxName = () =>
+          n + LETTER[l] + " (m = " + (m > 0 ? "+" : "") + m + ")";
+
+        // colour
+        function hsl2rgb(h, s, v) {
+          // h in [0,1)
+          const i = Math.floor(h * 6),
+            f = h * 6 - i,
+            p = v * (1 - s),
+            q = v * (1 - f * s),
+            t = v * (1 - (1 - f) * s);
+          return [
+            [v, t, p],
+            [q, v, p],
+            [p, v, t],
+            [p, q, v],
+            [t, p, v],
+            [v, p, q],
+          ][i % 6];
+        }
+        const POS = [0.35, 0.65, 1.0],
+          NEG = [1.0, 0.55, 0.3];
+
+        function resample() {
+          if (w.qmc_orb_sample(n, l, m, real ? 1 : 0, count, seed) !== 0) {
+            showError("Sampler rejected n=" + n + ", l=" + l + ", m=" + m);
+            return;
+          }
+          const p = new Float64Array(
+            w.memory.buffer,
+            w.qmc_orb_buffer(),
+            4 * count,
+          );
+          X = new Float32Array(count);
+          Y = new Float32Array(count);
+          Z = new Float32Array(count);
+          R = new Float32Array(count);
+          G = new Float32Array(count);
+          B = new Float32Array(count);
+          const rr = new Float32Array(count);
+          for (let i = 0; i < count; i++) {
+            X[i] = p[4 * i];
+            Y[i] = p[4 * i + 1];
+            Z[i] = p[4 * i + 2];
+            rr[i] = Math.hypot(X[i], Y[i], Z[i]);
+            let c;
+            if (real) c = p[4 * i + 3] > 1 ? NEG : POS;
+            else
+              c = hsl2rgb(
+                (((p[4 * i + 3] / (2 * Math.PI)) % 1) + 1) % 1,
+                0.75,
+                1.0,
+              );
+            R[i] = c[0];
+            G[i] = c[1];
+            B[i] = c[2];
+          }
+          const sorted = Array.from(rr).sort((a, b) => a - b);
+          viewR = sorted[Math.floor(0.985 * (count - 1))] * 1.08;
+          updateInfo(sorted);
+        }
+
+        // UI build
+        const PRESETS = [
+          [1, 0, 0, "1s"],
+          [2, 0, 0, "2s"],
+          [2, 1, 0, "2p₂"],
+          [3, 2, 0, "3d₂²"],
+          [3, 2, -2, "3dₓᵧ"],
+          [4, 3, 0, "4f"],
+          [5, 2, 2, "5dₓ²−ᵧ²"],
+          [6, 0, 0, "6s"],
+        ];
+        PRESETS.forEach(([pn, pl, pm, name]) => {
+          const b = document.createElement("button");
+          b.textContent = name;
+          b.addEventListener("click", () => {
+            n = pn;
+            l = pl;
+            m = pm;
+            real = true;
+            refreshUI();
+            resample();
+          });
+          $("presets").appendChild(b);
+        });
+
+        function refreshUI() {
+          const mk = (id, items, cur, fn, label) => {
+            const el = $(id);
+            el.innerHTML = "";
+            items.forEach((v) => {
+              const b = document.createElement("button");
+              b.textContent = label ? label(v) : String(v);
+              if (v === cur) b.classList.add("on");
+              b.addEventListener("click", () => fn(v));
+              el.appendChild(b);
+            });
+          };
+          mk(
+            "nsel",
+            Array.from({ length: MAXN }, (_, i) => i + 1),
+            n,
+            (v) => {
+              n = v;
+              if (l >= n) l = n - 1;
+              if (Math.abs(m) > l) m = 0;
+              refreshUI();
+              resample();
+            },
+          );
+          mk(
+            "lsel",
+            Array.from({ length: n }, (_, i) => i),
+            l,
+            (v) => {
+              l = v;
+              if (Math.abs(m) > l) m = 0;
+              refreshUI();
+              resample();
+            },
+            (v) => LETTER[v] + " (" + v + ")",
+          );
+          mk(
+            "msel",
+            Array.from({ length: 2 * l + 1 }, (_, i) => i - l),
+            m,
+            (v) => {
+              m = v;
+              refreshUI();
+              resample();
+            },
+            (v) => (v > 0 ? "+" : "") + v,
+          );
+          $("fReal").classList.toggle("on", real);
+          $("fCx").classList.toggle("on", !real);
+          $("label").innerHTML =
+            (real ? realName(l, m) : cxName()) +
+            "<small>" +
+            (real ? "real orbital" : "complex orbital") +
+            "</small>";
+          drawWheel();
+        }
+
+        function updateInfo(sortedR) {
+          const E = w.qmc_orb_energy_ev(n),
+            mean = (3 * n * n - l * (l + 1)) / 2;
+          let s = 0;
+          for (let i = 0; i < sortedR.length; i++) s += sortedR[i];
+          $("stats").innerHTML =
+            `<div class="stat"><span>Energy</span><span>${E.toFixed(3)} eV</span></div>
+       <div class="stat"><span>Radial nodes (n &minus; l &minus; 1)</span><span>${n - l - 1}</span></div>
+       <div class="stat"><span>Angular nodes (l)</span><span>${l}</span></div>
+       <div class="stat"><span>&#9001;r&#9002; exact</span><span>${mean.toFixed(2)} a&#8320;</span></div>
+       <div class="stat"><span>&#9001;r&#9002; of dots</span><span>${(s / sortedR.length).toFixed(2)} a&#8320;</span></div>`;
+        }
+
+        function drawWheel() {
+          const c = $("wheel"),
+            g = c.getContext("2d");
+          g.clearRect(0, 0, 84, 84);
+          if (real) {
+            g.font = "12px system-ui";
+            g.fillStyle = "rgb(90,165,255)";
+            g.fillRect(8, 56, 12, 12);
+            g.fillText("ψ > 0", 24, 66);
+            g.fillStyle = "rgb(255,140,77)";
+            g.fillRect(8, 38, 12, 12);
+            g.fillText("ψ < 0", 24, 48);
+          } else {
+            for (let a = 0; a < 360; a += 3) {
+              const [r, gg, b] = hsl2rgb(a / 360, 0.75, 1);
+              g.strokeStyle = `rgb(${(r * 255) | 0},${(gg * 255) | 0},${(b * 255) | 0})`;
+              g.lineWidth = 7;
+              g.beginPath();
+              g.arc(42, 42, 30, (a * Math.PI) / 180, ((a + 4) * Math.PI) / 180);
+              g.stroke();
+            }
+            g.fillStyle = "#d7dce5";
+            g.font = "11px system-ui";
+            g.textAlign = "center";
+            g.fillText("arg ψ", 42, 46);
+          }
+        }
+
+        // renderer: additive splatting into a float buffer, tone-mapped
+        const cv = $("cv");
+        let ctx = cv.getContext("2d"),
+          W = 0,
+          H = 0,
+          acc,
+          img;
+        const LUT = new Uint8ClampedArray(2048);
+        for (let i = 0; i < 2048; i++)
+          LUT[i] = 255 * (1 - Math.exp((-i / 256) * 1.1));
+        function fitCanvas() {
+          const r = cv.parentElement.getBoundingClientRect(),
+            d = Math.min(window.devicePixelRatio || 1, 1.5);
+          const nw = Math.max(64, Math.round(r.width * d)),
+            nh = Math.max(64, Math.round(r.height * d));
+          if (nw !== W || nh !== H) {
+            W = cv.width = nw;
+            H = cv.height = nh;
+            acc = new Float32Array(W * H * 3);
+            img = ctx.createImageData(W, H);
+          }
+        }
+
+        function render() {
+          fitCanvas();
+          if (!X) return;
+          acc.fill(0);
+          const ca = Math.cos(yaw),
+            sa = Math.sin(yaw),
+            ce = Math.cos(pitch),
+            se = Math.sin(pitch);
+          const scale = ((0.46 * Math.min(W, H)) / viewR) * zoom,
+            cx = W / 2,
+            cy = H / 2;
+          const gain =
+            1.05 *
+            Math.sqrt(40000 / count) *
+            (0.55 + 0.45 * Math.min(1, W / 700));
+          for (let i = 0; i < count; i++) {
+            const x = X[i],
+              y = Y[i],
+              z = Z[i];
+            const xr = x * ca - y * sa,
+              yr = x * sa + y * ca;
+            const sx = cx + xr * scale,
+              sy = cy - (z * ce - yr * se) * scale;
+            const depth = (yr * ce + z * se) / viewR; // -~1 .. ~1, + = away from viewer
+            const f = gain * (0.65 - 0.3 * Math.max(-1, Math.min(1, depth)));
+            const ix = sx | 0,
+              iy = sy | 0;
+            if (ix < 1 || iy < 1 || ix >= W - 1 || iy >= H - 1) continue;
+            const k = (iy * W + ix) * 3,
+              r = R[i] * f,
+              g = G[i] * f,
+              b = B[i] * f;
+            acc[k] += r;
+            acc[k + 1] += g;
+            acc[k + 2] += b;
+            const k2 = k + 3;
+            acc[k2] += r * 0.6;
+            acc[k2 + 1] += g * 0.6;
+            acc[k2 + 2] += b * 0.6;
+            const k3 = k + W * 3;
+            acc[k3] += r * 0.6;
+            acc[k3 + 1] += g * 0.6;
+            acc[k3 + 2] += b * 0.6;
+          }
+          const d = img.data;
+          for (let p = 0, q = 0; p < W * H; p++, q += 4) {
+            const a = p * 3;
+            d[q] = LUT[Math.min(2047, acc[a] * 256) | 0];
+            d[q + 1] = LUT[Math.min(2047, acc[a + 1] * 256) | 0];
+            d[q + 2] = LUT[Math.min(2047, acc[a + 2] * 256) | 0];
+            d[q + 3] = 255;
+          }
+          ctx.putImageData(img, 0, 0);
+          // nucleus and scale bar
+          ctx.fillStyle = "rgba(255,255,255,.9)";
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2.2, 0, 7);
+          ctx.fill();
+          const nice =
+              [1, 2, 5, 10, 20, 50, 100]
+                .filter((v) => v * scale < W * 0.25)
+                .pop() || 1,
+            len = nice * scale;
+          ctx.strokeStyle = "rgba(215,220,229,.7)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(14, H - 16);
+          ctx.lineTo(14 + len, H - 16);
+          ctx.moveTo(14, H - 20);
+          ctx.lineTo(14, H - 12);
+          ctx.moveTo(14 + len, H - 20);
+          ctx.lineTo(14 + len, H - 12);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(215,220,229,.8)";
+          ctx.font = 11 * Math.min(2, W / 600 + 0.4) + "px system-ui";
+          ctx.fillText(nice + " a₀", 14, H - 24);
+        }
+
+        // interaction
+        const stage = $("stage");
+        let drag = null;
+        stage.addEventListener("pointerdown", (e) => {
+          drag = { x: e.clientX, y: e.clientY };
+          stage.setPointerCapture(e.pointerId);
+        });
+        stage.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          yaw += (e.clientX - drag.x) * 0.008;
+          pitch = Math.max(
+            -1.5,
+            Math.min(1.5, pitch + (e.clientY - drag.y) * 0.008),
+          );
+          drag = { x: e.clientX, y: e.clientY };
+        });
+        const end = () => {
+          drag = null;
+        };
+        stage.addEventListener("pointerup", end);
+        stage.addEventListener("pointercancel", end);
+        stage.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            setZoom(zoom * Math.exp(-e.deltaY * 0.001));
+          },
+          { passive: false },
+        );
+        function setZoom(z) {
+          zoom = Math.max(0.5, Math.min(2.5, z));
+          $("zoom").value = zoom;
+          $("zoomv").textContent = zoom.toFixed(1) + "×";
+        }
+
+        $("fReal").addEventListener("click", () => {
+          real = true;
+          refreshUI();
+          resample();
+        });
+        $("fCx").addEventListener("click", () => {
+          real = false;
+          refreshUI();
+          resample();
+        });
+        $("cnt").addEventListener("input", () => {
+          count = Math.min(MAXP, parseInt($("cnt").value, 10));
+          $("cntv").textContent = count / 1000 + "k";
+          resample();
+        });
+        $("zoom").addEventListener("input", () =>
+          setZoom(parseFloat($("zoom").value)),
+        );
+        $("spin").addEventListener("change", () => {
+          spin = $("spin").checked;
+        });
+        $("resample").addEventListener("click", () => {
+          seed++;
+          resample();
+        });
+        $("png").addEventListener("click", () => {
+          render();
+          const out = document.createElement("canvas");
+          out.width = W;
+          out.height = H;
+          const g = out.getContext("2d");
+          g.drawImage(cv, 0, 0);
+          g.fillStyle = "rgba(255,255,255,.9)";
+          g.font = (22 * W) / 800 + "px system-ui";
+          g.fillText(
+            (real ? realName(l, m) : cxName()).replace(/<[^>]+>/g, ""),
+            18,
+            (36 * W) / 800,
+          );
+          g.fillStyle = "rgba(137,147,168,.9)";
+          g.font = (13 * W) / 800 + "px system-ui";
+          g.textAlign = "right";
+          g.fillText("QMC — github.com/Harshit-Dhanwalkar/QMC", W - 14, H - 12);
+          out.toBlob((b) => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(b);
+            a.download = `hydrogen_${n}${LETTER[l]}_m${m}.png`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+          });
+        });
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (spin && !drag) yaw += 0.006;
+          render();
+          requestAnimationFrame(frame);
+        }
+        refreshUI();
+        resample();
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

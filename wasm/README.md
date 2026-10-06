@@ -15,6 +15,9 @@ library's Fukui-Hatsugai-Suzuki `tb_chern_number`.
 (Klein paradox, compared live with `dirac_step_transmission`) or shows
 Zitterbewegung of a packet built from both energy signs.
 
+`qmc_orbital.c` wraps the orbital sampler (`physics/orbital_sample.c`): `docs/src/playground/orbitals.html`
+draws any hydrogen orbital (n up to 8, real or complex) as a rotatable 3D point cloud sampled from |psi_nlm|^2.
+
 ## Build
 
 ```sh
@@ -88,6 +91,10 @@ dx = 0.1, dt = 0.04, units hbar = m = c = 1):
 | `qmc_dc_density()` / `qmc_dc_buffer()` | fill / locate scratch buffer: \|upper\|^2, \|lower\|^2, V |
 | `qmc_dc_right()`, `qmc_dc_position()`, `qmc_dc_norm()` | transmitted probability, mean position, total probability |
 | `qmc_dc_exact(k0, v0)` | closed-form transmission (`dirac_step_transmission`) |
+
+Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)`
+draws points from |psi_nlm|^2 via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point,
+in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
 
 Regenerate the butterfly images:
 

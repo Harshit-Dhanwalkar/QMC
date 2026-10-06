@@ -16,6 +16,8 @@ with every spectral gap labelled by its Chern number, and a
 **[Dirac Klein-paradox demo](playground/dirac.html)** that evolves a relativistic
 wavepacket into a potential step (`dirac_evolve_1d`) and compares the result with the
 closed-form transmission.
+There is also a **[hydrogen orbital viewer](playground/orbitals.html)** that samples any hydrogen orbital as a
+rotatable 3D point cloud (`hydrogen_orbital_sample`).
 
 ## What this covers
 

@@ -55,3 +55,18 @@ else
   echo "FAIL: Dirac WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Hydrogen orbitals: native vs WASM sampling ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg wasm/test/orbital_ref.c wasm/qmc_orbital.c \
+  physics/orbital_sample.c physics/hydrogen.c physics/central_potential.c physics/potentials.c \
+  physics/wavefn.c core/special/*.c core/vector.c core/matrix.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c \
+  -lm -o "$TMP/qmc_orbital_ref"
+"$TMP/qmc_orbital_ref" > "$TMP/qmc_orbital_native.txt"
+cat "$TMP/qmc_orbital_native.txt"
+node wasm/test/orbital_check.mjs > "$TMP/qmc_orbital_wasm.txt"
+if diff -u "$TMP/qmc_orbital_native.txt" "$TMP/qmc_orbital_wasm.txt"; then
+  echo "OK: orbital WASM matches native"
+else
+  echo "FAIL: orbital WASM and native results differ" >&2
+  exit 1
+fi

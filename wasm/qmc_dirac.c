@@ -1,13 +1,12 @@
 /*
- * qmc_dirac.c - WebAssembly front end for the Dirac Klein-paradox and
- * Zitterbewegung demo.
+ * qmc_dirac.c - WebAssembly front end for Dirac Klein-paradox and
+ * Zitterbewegung demo
  *
- * All physics comes from the library's physics/dirac_evolve.c: packet
- * construction (dirac_packet_1d), split-operator propagation
- * (dirac_evolve_1d), observables, and the analytic step transmission
- * (dirac_step_transmission). This file only owns one global simulation
- * (N = 2048 points, dx = 0.1, units hbar = m = c = 1) and the scratch buffer
- * JavaScript reads the densities from.
+ * All physics comes from library's physics/dirac_evolve.c: packet construction
+ * (dirac_packet_1d), split-operator propagation (dirac_evolve_1d), observables,
+ * and analytic step transmission (dirac_step_transmission). This file only owns
+ * one global simulation (N = 2048 points, dx = 0.1, units hbar = m = c = 1) and
+ * scratch buffer JavaScript reads densities from.
  *
  * Scenes:
  *   qmc_dc_klein(k0, V0)  positive-energy packet at x = -50 hitting a sharp
@@ -62,16 +61,17 @@ double qmc_dc_dt(void) { return DC_DT; }
 QMC_EXPORT(qmc_dc_time)
 double qmc_dc_time(void) { return g_t; }
 
-/* Scratch buffer: [0,N) |upper|^2, [N,2N) |lower|^2, [2N,3N) V. */
+// Scratch buffer: [0,N) |upper|^2, [N,2N) |lower|^2, [2N,3N) V
 QMC_EXPORT(qmc_dc_buffer)
 double *qmc_dc_buffer(void) { return g_buf; }
 
-/* Refresh the scratch buffer from the current state. */
+// Refresh scratch buffer from current state
 QMC_EXPORT(qmc_dc_density)
 void qmc_dc_density(void) {
   if (!g_u || !g_l) {
     return;
   }
+
   for (int i = 0; i < DC_N; i++) {
     g_buf[i] = c_abs2(g_u->data[i]);
     g_buf[DC_N + i] = c_abs2(g_l->data[i]);
@@ -79,21 +79,23 @@ void qmc_dc_density(void) {
   }
 }
 
-/* Klein scene. k0 in (0, 3], V0 in [0, 20]. Returns 0 on success. */
+// Klein scene. k0 in (0, 3], V0 in [0, 20]. Returns 0 on success
 QMC_EXPORT(qmc_dc_klein)
 int qmc_dc_klein(double k0, double v0) {
-  if (!ensure_alloc() || !(k0 > 0.0 && k0 <= 3.0) || !(v0 >= 0.0 && v0 <= 20.0)) {
+  if (!ensure_alloc() || !(k0 > 0.0 && k0 <= 3.0) ||
+      !(v0 >= 0.0 && v0 <= 20.0)) {
     return -1;
   }
   for (int i = 0; i < DC_N; i++) {
     g_v[i] = (i > DC_N / 2) ? v0 : 0.0;
   }
+
   g_t = 0.0;
 
   return dirac_packet_1d(g_u, g_l, DC_DX, -50.0, k0, 6.0, 1, 1.0, 1.0, 1.0);
 }
 
-/* Zitterbewegung scene. Returns 0 on success. */
+// Zitterbewegung scene. Returns 0 on success
 QMC_EXPORT(qmc_dc_zitter)
 int qmc_dc_zitter(void) {
   if (!ensure_alloc()) {
@@ -102,10 +104,12 @@ int qmc_dc_zitter(void) {
   for (int i = 0; i < DC_N; i++) {
     g_v[i] = 0.0;
   }
+
   g_t = 0.0;
   if (dirac_packet_1d(g_u, g_l, DC_DX, 0.0, 0.0, 5.0, 0, 1.0, 1.0, 1.0) != 0) {
     return -1;
   }
+
   for (int i = 0; i < DC_N; i++) {
     complex_t g = g_u->data[i];
 
@@ -116,14 +120,14 @@ int qmc_dc_zitter(void) {
   return 0;
 }
 
-/* Advance n steps of DC_DT. Returns 0 on success. */
+// Advance n steps of DC_DT. Returns 0 on success
 QMC_EXPORT(qmc_dc_step)
 int qmc_dc_step(int n) {
   if (!g_u || !g_l || n < 1) {
     return -1;
   }
-  int rc = dirac_evolve_1d(g_u, g_l, g_v, DC_DX, DC_DT, n, 1.0, 1.0, 1.0);
 
+  int rc = dirac_evolve_1d(g_u, g_l, g_v, DC_DX, DC_DT, n, 1.0, 1.0, 1.0);
   if (rc == 0) {
     g_t += DC_DT * n;
   }
@@ -137,12 +141,13 @@ double qmc_dc_norm(void) { return dirac_norm_1d(g_u, g_l, DC_DX); }
 QMC_EXPORT(qmc_dc_position)
 double qmc_dc_position(void) { return dirac_position_1d(g_u, g_l, DC_DX); }
 
-/* Probability to the right of the step (x > 0). */
+// Probability to the right of step (x > 0)
 QMC_EXPORT(qmc_dc_right)
 double qmc_dc_right(void) {
   if (!g_u || !g_l) {
     return NAN;
   }
+
   double sum = 0.0;
 
   for (int i = DC_N / 2 + 1; i < DC_N; i++) {
@@ -152,7 +157,7 @@ double qmc_dc_right(void) {
   return sum * DC_DX;
 }
 
-/* Analytic plane-wave transmission for wave number k0 and step V0. */
+// Analytic plane-wave transmission for wave number k0 and step V0
 QMC_EXPORT(qmc_dc_exact)
 double qmc_dc_exact(double k0, double v0) {
   return dirac_step_transmission(sqrt(k0 * k0 + 1.0), v0, 1.0, 1.0, 1.0);
