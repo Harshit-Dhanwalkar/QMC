@@ -1,6 +1,3 @@
-[build]
-build-dir = "book/html"
-
 [book]
 title = "QMC : Quantum Mechanics implementations in C"
 authors = ["Harshit Dhanwalkar"]
