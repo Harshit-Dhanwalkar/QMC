@@ -66,6 +66,7 @@
 #include "qpe.h"
 #include "quantum_algorithms.h"
 #include "quantum_info.h"
+#include "quantum_walk.h"
 #include "qubits.h"
 #include "rabi.h"
 #include "relativistic.h"
