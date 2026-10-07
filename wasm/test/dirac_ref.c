@@ -28,7 +28,7 @@ int main(void) {
   }
 
   qmc_dc_zitter();
-  qmc_dc_step(39); /* t = 1.56 ~ pi/2: <x> = -(1 - cos 2t)/2 ~ -1 */
+  qmc_dc_step(39); /* t = 1.56 ~ \pi/2: <x> = -(1 - \cos 2t)/2 ~ -1 */
   double x = qmc_dc_position();
   printf("zitter x=%.10f\n", x);
   if (fabs(x + 0.5 * (1.0 - cos(2.0 * 1.56))) > 0.02) {

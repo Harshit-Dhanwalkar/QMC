@@ -1,4 +1,5 @@
 import fs from "node:fs";
+
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_butterfly.wasm", import.meta.url),
 );
@@ -23,8 +24,8 @@ mem = w.memory;
 if (w._initialize) w._initialize();
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const INT_MIN = -2147483648;
-let sum = 0,
-  tsum = 0;
+let sum = 0;
+let tsum = 0;
 for (let q = 2; q <= 24; q++)
   for (let p = 1; p < q; p++) {
     if (gcd(p, q) !== 1) continue;
@@ -39,6 +40,7 @@ for (let q = 2; q <= 24; q++)
     }
   }
 console.log(`digest edges=${sum.toFixed(9)} tknn=${tsum}`);
+
 // live spot checks (same calls the page makes on click)
 const c = w.qmc_bf_chern(1, 3, 1, 16);
 console.error(

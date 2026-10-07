@@ -140,7 +140,7 @@ jobs:
                    docs/book/html/playground/anderson.html \
                    docs/book/html/playground/bloch.html \
                    docs/book/html/playground/butterfly.html \
-                   docs/book/html/playground/dirac.html 
+                   docs/book/html/playground/dirac.html \
                    docs/book/html/playground/orbitals.html; do
             test -s "$f" \
               && echo " OK: $f" \

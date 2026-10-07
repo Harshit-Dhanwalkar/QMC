@@ -1,4 +1,5 @@
 import fs from "node:fs";
+
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_dirac.wasm", import.meta.url),
 );
@@ -15,6 +16,7 @@ for (const v0 of [0.0, 0.5, 4.0, 10.0]) {
 w.qmc_dc_zitter();
 w.qmc_dc_step(39);
 console.log(`zitter x=${w.qmc_dc_position().toFixed(10)}`);
+
 // invalid input must be rejected, not crash
 if (w.qmc_dc_klein(-1, 0) !== -1 || w.qmc_dc_klein(1, 99) !== -1) {
   console.error("bad args accepted");
