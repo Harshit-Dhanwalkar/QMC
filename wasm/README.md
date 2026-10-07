@@ -10,6 +10,8 @@
 
 `qmc_bloch.c` wraps the Bloch-vector module (`physics/bloch.c`, RK4 Lindblad evolution): `docs/src/playground/bloch.html` drives and damps a qubit and plots the state on the Bloch sphere next to the closed-form Rabi curve.
 
+`qmc_anderson.c` wraps the Anderson-localisation module (`physics/anderson.c`): `docs/src/playground/anderson.html` evolves a particle on a disordered tight-binding chain and shows it spreading, then freezing.
+
 ## Build
 
 ```sh
@@ -87,6 +89,9 @@ dx = 0.1, dt = 0.04, units hbar = m = c = 1):
 Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)` draws points from |psi_nlm|^2 via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
 
 Bloch module (`qmc_bloch.wasm`, no imports): `qmc_bl_reset(x, y, z)` sets the state, `qmc_bl_step(omega, delta, gamma1, gamma_phi, steps)` advances `steps` RK4 steps of 0.01 with `bloch_evolve`, `qmc_bl_vec()` points at the Bloch vector, `qmc_bl_rabi(t, omega, delta)` is the closed-form Rabi curve.
+
+Anderson module (`qmc_anderson.wasm`, no imports): `qmc_an_reset(w, seed)` draws new disorder of strength `w` and puts the particle on the middle of the 801-site chain, `qmc_an_step(n)` advances `n` RK4 steps of 0.01 (hop t = 1) with `anderson_evolve`, `qmc_an_buffer()` holds |psi|^2 then the on-site energies (refreshed by every step), `qmc_an_width()`, `qmc_an_ipr()`, `qmc_an_energy()` and `qmc_an_norm()` are the observables, and `qmc_an_xi(w, e)` is the weak-disorder localisation length.
++
 
 Regenerate the butterfly images:
 

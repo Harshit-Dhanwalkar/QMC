@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Anderson localisation</title>
+    <meta
+      name="description"
+      content="Anderson localisation on a 1D chain: a quantum particle spreads ballistically, then freezes in place once random disorder is added. Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Anderson localisation in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Watch a quantum particle spread, then stop. Add disorder and the wavefunction freezes with an exponential tail, computed live by a pure-C tight-binding solver."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/anderson.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      .cv.wide {
+        aspect-ratio: 2 / 1.25;
+      }
+      #prof {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #wid {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; Anderson localisation</h1>
+        <div class="links">
+          <a href="index.html">Double slit</a>
+          <a href="butterfly.html">Butterfly</a>
+          <a href="dirac.html">Dirac</a>
+          <a href="orbitals.html">Orbitals</a>
+          <a href="bloch.html">Bloch</a>
+          <a href="https://github.com/Harshit-Dhanwalkar/QMC"
+            ><svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="currentColor"
+              aria-hidden="true"
+              style="vertical-align: -2px; margin-right: 5px"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+              /></svg
+            >GitHub</a
+          >
+          <a href="../introduction.html">Docs</a>
+        </div>
+      </header>
+      <p class="sub">
+        A particle starts on the middle site of a chain. With a clean lattice it
+        spreads at a steady speed, so the cloud grows linearly in time. Give
+        every site a random energy and it <b>stops</b>: the wavefunction freezes
+        with an exponential tail, in one dimension for any amount of disorder.
+        The picture shows |&psi;|&sup2; (colour, log scale) against time running
+        downwards. Every step is a 4th-order Runge&ndash;Kutta step of the
+        Schr&ouml;dinger equation in the QMC library
+        (<code>anderson_evolve</code>), running in your browser.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv wide" id="wf">
+            <canvas id="wc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="cv" id="prof"><canvas id="pc"></canvas></div>
+          <div class="cv" id="wid"><canvas id="dc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i style="background: var(--accent)"></i>packet width
+              &radic;(&lang;x&sup2;&rang;&minus;&lang;x&rang;&sup2;)</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>clean chain
+              &radic;2&thinsp;t&tau;</span
+            >
+            <span
+              ><i style="background: var(--accent2)"></i>on-site energies
+              (profile plot)</span
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Disorder</h2>
+            <div class="row" id="presets">
+              <button data-w="0">Clean</button>
+              <button data-w="1">Weak W=1</button>
+              <button data-w="3" class="on">Medium W=3</button>
+              <button data-w="8">Strong W=8</button>
+            </div>
+            <div class="row">
+              <label
+                ><span>Strength W</span
+                ><input
+                  id="w"
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="0.25"
+                  value="3"
+                /><b id="wv">3.00</b></label
+              >
+            </div>
+            <div class="row">
+              <button id="play" class="primary">Pause</button>
+              <button id="restart">Restart</button>
+              <button id="newdis">New disorder</button>
+              <label style="width: auto"
+                ><span style="min-width: 0">Speed</span
+                ><input
+                  id="spd"
+                  type="range"
+                  min="1"
+                  max="8"
+                  step="1"
+                  value="3"
+                  style="width: 90px; flex: none"
+              /></label>
+            </div>
+            <div id="note"></div>
+          </div>
+
+          <div class="panel">
+            <h2>State</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        Chain of 801 sites, hopping t&nbsp;=&nbsp;1, on-site energies uniform in
+        [&minus;W/2,&nbsp;W/2], hard walls. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/anderson.c"
+          ><code>physics/anderson.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_anderson.c"
+          ><code>wasm/qmc_anderson.c</code></a
+        >. On a clean chain the exact answer is
+        &lang;x&sup2;&rang;&nbsp;=&nbsp;2&thinsp;t&sup2;&tau;&sup2; (the dashed
+        curve); the weak-disorder localisation length
+        1/&xi;&nbsp;=&nbsp;W&sup2;/(24(4t&sup2;&minus;E&sup2;)) is checked
+        against a transfer-matrix calculation in
+        <code>tests/test_anderson.c</code>.
+      </footer>
+    </div>
+
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        let w;
+        try {
+          const res = await fetch("qmc_anderson.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            {},
+          );
+          w = instance.exports;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_anderson.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/anderson.html</code>.",
+          );
+          return;
+        }
+        const N = w.qmc_an_n(),
+          DT = w.qmc_an_dt();
+        const buf = () =>
+          new Float64Array(w.memory.buffer, w.qmc_an_buffer(), 2 * N);
+
+        const STEPS_PER_ROW = 40; // tau per row = 0.4
+        const ROWS = 400; // tau_max = 160
+        const stops = [
+          [0, 0, 4],
+          [40, 11, 84],
+          [101, 21, 110],
+          [159, 42, 99],
+          [212, 72, 66],
+          [245, 125, 21],
+          [250, 193, 39],
+          [252, 255, 164],
+        ];
+        const lut = new Uint8Array(256 * 3);
+        for (let i = 0; i < 256; i++) {
+          const t = (i / 255) * (stops.length - 1),
+            k = Math.min(stops.length - 2, Math.floor(t)),
+            f = t - k;
+          for (let c = 0; c < 3; c++)
+            lut[i * 3 + c] = stops[k][c] + (stops[k + 1][c] - stops[k][c]) * f;
+        }
+        const off = document.createElement("canvas");
+        off.width = N;
+        off.height = ROWS;
+        const octx = off.getContext("2d");
+        const img = octx.createImageData(N, ROWS);
+
+        let W = 3,
+          seed = 2024,
+          row = 0,
+          playing = true,
+          spf = 3,
+          widths = [];
+        const FLOOR = 6; // decades shown below the row maximum
+
+        function reset() {
+          if (w.qmc_an_reset(W, seed) !== 0) {
+            showError("reset rejected");
+            return;
+          }
+          row = 0;
+          widths = [[0, 0]];
+          img.data.fill(0);
+          for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+          paintRow();
+          render();
+        }
+
+        function paintRow() {
+          const b = buf();
+          let m = 0;
+          for (let j = 0; j < N; j++) if (b[j] > m) m = b[j];
+          if (!(m > 0) || row >= ROWS) return;
+          const lm = Math.log10(m);
+          for (let j = 0; j < N; j++) {
+            const v = (Math.log10(Math.max(b[j], 1e-300)) - lm + FLOOR) / FLOOR;
+            const idx = Math.max(0, Math.min(255, (v * 255) | 0));
+            const p = (row * N + j) * 4;
+            img.data[p] = lut[idx * 3];
+            img.data[p + 1] = lut[idx * 3 + 1];
+            img.data[p + 2] = lut[idx * 3 + 2];
+            img.data[p + 3] = 255;
+          }
+          octx.putImageData(img, 0, 0);
+        }
+
+        function advance() {
+          if (row >= ROWS - 1) {
+            playing = false;
+            $("play").textContent = "Play";
+            return;
+          }
+          for (let k = 0; k < spf; k++) {
+            if (row >= ROWS - 1) break;
+            if (w.qmc_an_step(STEPS_PER_ROW) !== 0) {
+              showError("step failed");
+              playing = false;
+              return;
+            }
+            row++;
+            paintRow();
+            widths.push([w.qmc_an_time(), w.qmc_an_width()]);
+          }
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect(),
+            d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+          return { g, W: r.width, H: r.height };
+        }
+
+        function drawWaterfall() {
+          const { g, W: cw, H: ch } = fit($("wc"));
+          g.imageSmoothingEnabled = true;
+          g.drawImage(off, 0, 0, N, ROWS, 0, 0, cw, ch);
+          g.strokeStyle = "rgba(255,255,255,.35)";
+          g.setLineDash([4, 4]);
+          g.lineWidth = 1;
+          // clean-chain light cone x = +/- 2 t tau
+          const tauMax = ROWS * STEPS_PER_ROW * DT;
+          g.beginPath();
+          g.moveTo(cw / 2, 0);
+          g.lineTo(cw / 2 + ((2 * tauMax) / N) * cw, ch);
+          g.moveTo(cw / 2, 0);
+          g.lineTo(cw / 2 - ((2 * tauMax) / N) * cw, ch);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = "rgba(215,220,229,.8)";
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("time \u2193", 8, ch - 8);
+          g.fillText("max speed 2t", cw / 2 + 8, 14);
+          $("readout").textContent = "\u03c4 = " + w.qmc_an_time().toFixed(1);
+        }
+
+        function drawProfile() {
+          const { g, W: cw, H: ch } = fit($("pc"));
+          const b = buf();
+          const lo = -FLOOR - 0.0,
+            X = (j) => (j / (N - 1)) * cw;
+          let m = 0;
+          for (let j = 0; j < N; j++) if (b[j] > m) m = b[j];
+          const lm = Math.log10(m || 1);
+          const Y = (p) =>
+            ch -
+            10 -
+            (ch - 22) *
+              Math.max(
+                0,
+                Math.min(
+                  1,
+                  (Math.log10(Math.max(p, 1e-300)) - lm + FLOOR) / FLOOR,
+                ),
+              );
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          for (let k = 0; k <= FLOOR; k += 2) {
+            const y = Y(Math.pow(10, lm - k));
+            g.beginPath();
+            g.moveTo(0, y);
+            g.lineTo(cw, y);
+            g.stroke();
+          }
+          // on-site energies, scaled to W/2
+          const Wt = Math.max(W, 1e-9);
+          g.strokeStyle = css("--accent2");
+          g.globalAlpha = 0.45;
+          g.beginPath();
+          for (let j = 0; j < N; j++) {
+            const y = ch / 2 - (b[N + j] / Wt) * (ch / 2 - 6);
+            j ? g.lineTo(X(j), y) : g.moveTo(X(j), y);
+          }
+          g.stroke();
+          g.globalAlpha = 1;
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 1.8;
+          g.beginPath();
+          for (let j = 0; j < N; j++) {
+            const y = Y(b[j]);
+            j ? g.lineTo(X(j), y) : g.moveTo(X(j), y);
+          }
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText(
+            "|\u03c8|\u00b2 on a log scale (" +
+              FLOOR +
+              " decades), disorder in amber",
+            8,
+            14,
+          );
+        }
+
+        function drawWidth() {
+          const { g, W: cw, H: ch } = fit($("dc"));
+          const tMax = ROWS * STEPS_PER_ROW * DT;
+          let yMax = Math.SQRT2 * tMax;
+          yMax = Math.max(10, Math.min(yMax, N / 2));
+          const X = (t) => 28 + (t / tMax) * (cw - 36),
+            Y = (v) => ch - 16 - (ch - 26) * Math.min(1, v / yMax);
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(28, 6);
+          g.lineTo(28, ch - 16);
+          g.lineTo(cw - 8, ch - 16);
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("width (sites)", 34, 14);
+          g.fillText("\u03c4 = " + tMax.toFixed(0), cw - 62, ch - 3);
+          g.fillText("0", 20, ch - 3);
+          g.setLineDash([5, 4]);
+          g.strokeStyle = "#8993a8";
+          g.beginPath();
+          g.moveTo(X(0), Y(0));
+          g.lineTo(X(tMax), Y(Math.SQRT2 * tMax));
+          g.stroke();
+          g.setLineDash([]);
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          widths.forEach((p, i) => {
+            const x = X(p[0]),
+              y = Y(p[1]);
+            i ? g.lineTo(x, y) : g.moveTo(x, y);
+          });
+          g.stroke();
+        }
+
+        function updateStats() {
+          const xi = W > 0 ? w.qmc_an_xi(W, 1.0) : Infinity;
+          $("stats").innerHTML =
+            `<div class="stat"><span>Time \u03c4</span><span>${w.qmc_an_time().toFixed(1)}</span></div>
+       <div class="stat"><span>Width \u221a(\u27e8x\u00b2\u27e9\u2212\u27e8x\u27e9\u00b2)</span><span>${w.qmc_an_width().toFixed(2)} sites</span></div>
+       <div class="stat"><span>Clean-chain width \u221a2\u00b7\u03c4</span><span>${(Math.SQRT2 * w.qmc_an_time()).toFixed(2)} sites</span></div>
+       <div class="stat"><span>Sites occupied 1/IPR</span><span>${(1 / w.qmc_an_ipr()).toFixed(1)}</span></div>
+       <div class="stat"><span>Energy \u27e8H\u27e9</span><span>${w.qmc_an_energy().toFixed(3)}</span></div>
+       <div class="stat"><span>Norm</span><span>${w.qmc_an_norm().toFixed(6)}</span></div>
+       <div class="stat"><span>\u03be at E=1 (weak-disorder)</span><span>${isFinite(xi) ? xi.toFixed(1) + " sites" : "\u221e"}</span></div>`;
+          $("note").textContent =
+            W === 0
+              ? "Clean chain: the packet spreads at the maximum speed 2t and the width follows \u221a2\u00b7\u03c4 exactly."
+              : W < 2
+                ? "Weak disorder: the packet spreads for a long time before it stops. The localisation length is long (\u03be \u221d 1/W\u00b2)."
+                : "Strong disorder: the packet freezes within a few sites and the tail falls off exponentially, a straight line on the log plot.";
+        }
+
+        function render() {
+          drawWaterfall();
+          drawProfile();
+          drawWidth();
+          updateStats();
+        }
+
+        function setW(v, preset) {
+          W = v;
+          $("w").value = v;
+          $("wv").textContent = v.toFixed(2);
+          playing = true;
+          $("play").textContent = "Pause";
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) =>
+              b.classList.toggle("on", preset && +b.dataset.w === v),
+            );
+          reset();
+        }
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) =>
+            b.addEventListener("click", () => setW(+b.dataset.w, true)),
+          );
+        $("w").addEventListener("input", (e) => setW(+e.target.value, true));
+        $("play").addEventListener("click", () => {
+          if (row >= ROWS - 1) reset();
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", () => {
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        });
+        $("newdis").addEventListener("click", () => {
+          seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        });
+        $("spd").addEventListener("input", (e) => {
+          spf = +e.target.value;
+        });
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (playing) {
+            advance();
+            render();
+          }
+          requestAnimationFrame(frame);
+        }
+        setW(3, true);
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

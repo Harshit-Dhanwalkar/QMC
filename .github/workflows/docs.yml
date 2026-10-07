@@ -107,6 +107,8 @@ jobs:
       - name: Verify WASM artifacts landed in docs tree
         run: |
           for f in docs/src/playground/qmc.wasm \
+                   docs/src/playground/qmc_anderson.wasm \
+                   docs/src/playground/qmc_bloch.wasm \
                    docs/src/playground/qmc_butterfly.wasm \
                    docs/src/playground/qmc_dirac.wasm \
                    docs/src/playground/qmc_orbital.wasm; do
@@ -122,20 +124,24 @@ jobs:
 
       - name: Copy WASM into book output
         run: |
-          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm qmc_bloch.wasm; do
+          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm qmc_bloch.wasm qmc_anderson.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
       - name: Confirm playground survived mdBook's asset copy
         run: |
           for f in docs/book/html/playground/qmc.wasm \
+                   docs/book/html/playground/qmc_anderson.wasm \
+                   docs/book/html/playground/qmc_bloch.wasm \
                    docs/book/html/playground/qmc_butterfly.wasm \
                    docs/book/html/playground/qmc_dirac.wasm \
                    docs/book/html/playground/qmc_orbital.wasm \
-                   docs/book/html/playground/qmc_bloch.wasm \
                    docs/book/html/playground/index.html \
+                   docs/book/html/playground/anderson.html \
+                   docs/book/html/playground/bloch.html \
                    docs/book/html/playground/butterfly.html \
-                   docs/book/html/playground/dirac.html; do
+                   docs/book/html/playground/dirac.html 
+                   docs/book/html/playground/orbitals.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)

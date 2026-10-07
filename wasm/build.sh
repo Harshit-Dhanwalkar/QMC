@@ -9,6 +9,7 @@
 #   docs/src/playground/qmc_dirac.wasm      Dirac Klein-paradox demo
 #   docs/src/playground/qmc_orbital.wasm    hydrogen orbital viewer
 #   docs/src/playground/qmc_bloch.wasm      Bloch-sphere qubit demo
+#   docs/src/playground/qmc_anderson.wasm   Anderson-localisation demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -93,3 +94,8 @@ build_module "$OUT/qmc_bloch.wasm" \
   "qmc_bl_dt qmc_bl_vec qmc_bl_time qmc_bl_reset qmc_bl_step qmc_bl_purity qmc_bl_rabi" \
   wasm/qmc_bloch.c physics/bloch.c physics/lindblad.c physics/rabi.c \
   core/matrix.c core/vector.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c
+
+build_module "$OUT/qmc_anderson.wasm" \
+  "qmc_an_n qmc_an_dt qmc_an_time qmc_an_buffer qmc_an_density qmc_an_reset \
+qmc_an_step qmc_an_norm qmc_an_width qmc_an_ipr qmc_an_energy qmc_an_xi" \
+  wasm/qmc_anderson.c physics/anderson.c core/vector.c

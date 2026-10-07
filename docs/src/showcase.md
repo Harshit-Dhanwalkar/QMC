@@ -1,18 +1,19 @@
 # Showcase: quantum mechanics that runs in your browser
 
-Five interactive demos, all computed live by the same C library you can
+Six interactive demos, all computed live by the same C library you can
 read in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module (19 to 51 KB) compiled from the QMC sources, and
 JavaScript only draws what the C code returns. Every module is checked
 against closed-form results and against a native build of the same code.
 
-| Demo                                              | Physics                                    | Library routine                     | Size  |
-| ------------------------------------------------- | ------------------------------------------ | ----------------------------------- | ----- |
-| [Double slit](playground/index.html)              | 2D wave interference                       | `soft_evolve_2d`                    | 21 KB |
-| [Hofstadter butterfly](playground/butterfly.html) | Electrons in a magnetic field on a lattice | Hofstadter spectrum + Chern numbers | 51 KB |
-| [Klein paradox](playground/dirac.html)            | Relativistic electron hitting a barrier    | `dirac_evolve_1d`                   | 24 KB |
-| [Hydrogen orbitals](playground/orbitals.html)     | Atomic orbitals in 3D                      | `hydrogen_orbital_sample`           | 34 KB |
-| [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                   | `bloch_evolve`                      | 19 KB |
+| Demo                                              | Physics                                               | Library routine                     | Size  |
+| ------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
+| [Double slit](playground/index.html)              | 2D wave interference                                  | `soft_evolve_2d`                    | 21 KB |
+| [Hofstadter butterfly](playground/butterfly.html) | Electrons in a magnetic field on a lattice            | Hofstadter spectrum + Chern numbers | 51 KB |
+| [Klein paradox](playground/dirac.html)            | Relativistic electron hitting a barrier               | `dirac_evolve_1d`                   | 24 KB |
+| [Hydrogen orbitals](playground/orbitals.html)     | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
+| [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
+| [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
 
 ## The double slit, solved rather than drawn
 
@@ -88,6 +89,22 @@ step. Detuning, drive strength and both decay rates are adjustable, and the
 steady state matches the analytic result for a driven, damped qubit.
 
 [Open the demo](playground/bloch.html)
+
+## Anderson localisation: why disorder stops a wave
+
+[![Anderson localisation](playground/anderson.gif)](playground/anderson.html)
+
+On a perfect chain a particle started on one site spreads at a fixed speed,
+so the cloud grows in proportion to time. Give every site a random energy
+and, in one dimension, it stops: the wavefunction freezes with an
+exponential tail, however weak the disorder. This is Anderson localisation,
+the reason a disordered wire is an insulator. The demo draws |ψ|² against
+time as a waterfall, so the light cone of the clean chain and the frozen
+column of the disordered one sit side by side. The clean-chain width matches
+the exact result √2·t·τ, and the weak-disorder localisation length is
+checked against a transfer-matrix calculation in the test suite.
+
+[Open the demo](playground/anderson.html)
 
 ## Run it yourself
 

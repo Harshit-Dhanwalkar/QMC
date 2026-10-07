@@ -84,3 +84,16 @@ else
   echo "FAIL: Bloch WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Anderson localisation: tight-binding chain, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/anderson_ref.c wasm/qmc_anderson.c physics/anderson.c \
+  core/vector.c -lm -o "$TMP/qmc_anderson_ref"
+"$TMP/qmc_anderson_ref" > "$TMP/qmc_anderson_native.txt"
+cat "$TMP/qmc_anderson_native.txt"
+node wasm/test/anderson_check.mjs > "$TMP/qmc_anderson_wasm.txt"
+if diff -u "$TMP/qmc_anderson_native.txt" "$TMP/qmc_anderson_wasm.txt"; then
+  echo "OK: Anderson WASM matches native"
+else
+  echo "FAIL: Anderson WASM and native results differ" >&2
+  exit 1
+fi
