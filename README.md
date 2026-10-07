@@ -227,6 +227,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_76_dirac_evolve.c</code></li>
   <li><code>eg_77_orbital_sample.c</code></li>
   <li><code>eg_78_bloch.c</code></li>
+  <li><code>eg_79_anderson.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -288,6 +289,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_dirac_evolve.c</code></li>
   <li><code>test_orbital_sample.c</code></li>
   <li><code>test_bloch.c</code></li>
+  <li><code>test_anderson.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>

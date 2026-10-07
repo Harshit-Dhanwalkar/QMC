@@ -25,9 +25,11 @@
 #include "../core/vector.h"
 
 /* Physics modules */
+#include "anderson.h"
 #include "angular.h"
 #include "basis_parser.h"
 #include "boson_sampling.h"
+#include "bloch.h"
 #include "casscf.h"
 #include "ccsd.h"
 #include "ccsd_t.h"
