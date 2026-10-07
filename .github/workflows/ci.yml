@@ -297,19 +297,34 @@ jobs:
 
   wasm-check:
     runs-on: ubuntu-latest
+    env:
+      ZIG_VERSION: "0.13.0"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Cache pip
+      - name: Set up PATH
+        run: echo "$GITHUB_WORKSPACE/bin/zig" >> $GITHUB_PATH
+
+      - name: Cache Zig
+        id: cache-zig
         uses: actions/cache@v6
         with:
-          path: ~/.cache/pip
-          key: wasm-pip-${{ runner.os }}-ziglang
+          path: bin/zig
+          key: zig-${{ env.ZIG_VERSION }}-${{ runner.os }}
 
       - name: Install Zig
-        run: pip install ziglang
+        if: steps.cache-zig.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p bin/zig
+          curl -sSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+            | tar -xJ --strip-components=1 -C bin/zig
+
+      - name: Sanity-check Zig on PATH
+        run: |
+          command -v zig
+          zig version
 
       - name: Build WASM playground
         run: |

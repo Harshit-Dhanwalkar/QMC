@@ -34,13 +34,16 @@ jobs:
       MDBOOK_VERSION: "0.5.4"
       MDBOOK_KATEX_VERSION: "0.10.0"
       MDBOOK_LINKCHECK2_VERSION: "0.12.2"
+      ZIG_VERSION: "0.13.0"
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
 
       - name: Set up PATH
-        run: echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/bin"       >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/bin/zig"   >> $GITHUB_PATH
 
       # ------------------ mdBook toolchain  -------------------
       # Cache mdBook
@@ -90,14 +93,19 @@ jobs:
           rm bin/mdbook-linkcheck2.tar.gz
 
       # ---------------------- WASM playground  ---------------------
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Cache Zig
+        id: cache-zig
+        uses: actions/cache@v6
         with:
-          python-version: "3.12"
-          # cache: pip
+          path: bin/zig
+          key: zig-${{ env.ZIG_VERSION }}-${{ runner.os }}
 
-      - name: Install Zig (used by wasm/build.sh when emcc is absent)
-        run: pip install ziglang
+      - name: Install Zig
+        if: steps.cache-zig.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p bin/zig
+          curl -sSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+            | tar -xJ --strip-components=1 -C bin/zig
 
       - name: Build WASM playground
         run: |
@@ -111,7 +119,8 @@ jobs:
                    docs/src/playground/qmc_bloch.wasm \
                    docs/src/playground/qmc_butterfly.wasm \
                    docs/src/playground/qmc_dirac.wasm \
-                   docs/src/playground/qmc_orbital.wasm; do
+                   docs/src/playground/qmc_orbital.wasm \
+                   docs/src/playground/qmc_qwalk.wasm; do
             test -s "$f" \
               && echo " OK: $f ($(stat -c%s "$f") bytes)" \
               || (echo "ERROR: $f missing" && exit 1)
@@ -124,7 +133,8 @@ jobs:
 
       - name: Copy WASM into book output
         run: |
-          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm qmc_bloch.wasm qmc_anderson.wasm; do
+          for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm \
+                   qmc_bloch.wasm qmc_anderson.wasm qmc_qwalk.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -136,12 +146,14 @@ jobs:
                    docs/book/html/playground/qmc_butterfly.wasm \
                    docs/book/html/playground/qmc_dirac.wasm \
                    docs/book/html/playground/qmc_orbital.wasm \
+                   docs/book/html/playground/qmc_qwalk.wasm \
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/anderson.html \
                    docs/book/html/playground/bloch.html \
                    docs/book/html/playground/butterfly.html \
                    docs/book/html/playground/dirac.html \
-                   docs/book/html/playground/orbitals.html; do
+                   docs/book/html/playground/orbitals.html \
+                   docs/book/html/playground/quantum_walk.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)
