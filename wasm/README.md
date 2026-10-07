@@ -12,6 +12,8 @@
 
 `qmc_anderson.c` wraps the Anderson-localisation module (`physics/anderson.c`): `docs/src/playground/anderson.html` evolves a particle on a disordered tight-binding chain and shows it spreading, then freezing.
 
+`qmc_qwalk.c` wraps the quantum walk (`physics/quantum_walk.c`): `docs/src/playground/quantum_walk.html` runs a coin-and-shift walk next to the classical random walk.
+
 ## Build
 
 ```sh
@@ -91,7 +93,8 @@ Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, 
 Bloch module (`qmc_bloch.wasm`, no imports): `qmc_bl_reset(x, y, z)` sets the state, `qmc_bl_step(omega, delta, gamma1, gamma_phi, steps)` advances `steps` RK4 steps of 0.01 with `bloch_evolve`, `qmc_bl_vec()` points at the Bloch vector, `qmc_bl_rabi(t, omega, delta)` is the closed-form Rabi curve.
 
 Anderson module (`qmc_anderson.wasm`, no imports): `qmc_an_reset(w, seed)` draws new disorder of strength `w` and puts the particle on the middle of the 801-site chain, `qmc_an_step(n)` advances `n` RK4 steps of 0.01 (hop t = 1) with `anderson_evolve`, `qmc_an_buffer()` holds |psi|^2 then the on-site energies (refreshed by every step), `qmc_an_width()`, `qmc_an_ipr()`, `qmc_an_energy()` and `qmc_an_norm()` are the observables, and `qmc_an_xi(w, e)` is the weak-disorder localisation length.
-+
+
+Quantum-walk module (`qmc_qwalk.wasm`, no imports): `qmc_qw_reset(theta, coin)` restarts the walk (coin 0 = up, 1 = down, 2 = symmetric), `qmc_qw_step(n)` advances `n` steps (at most 480 in total), `qmc_qw_buffer()` holds the quantum then the classical probability of each of the 1024 sites, and `qmc_qw_variance()` / `qmc_qw_mean()` / `qmc_qw_asymptote()` give the observables and the (1 - sin theta) limit of variance / t^2.
 
 Regenerate the butterfly images:
 

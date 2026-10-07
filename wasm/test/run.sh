@@ -97,3 +97,16 @@ else
   echo "FAIL: Anderson WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Quantum walk: coin + shift, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/qwalk_ref.c wasm/qmc_qwalk.c physics/quantum_walk.c \
+  core/vector.c -lm -o "$TMP/qmc_qwalk_ref"
+"$TMP/qmc_qwalk_ref" > "$TMP/qmc_qwalk_native.txt"
+cat "$TMP/qmc_qwalk_native.txt"
+node wasm/test/qwalk_check.mjs > "$TMP/qmc_qwalk_wasm.txt"
+if diff -u "$TMP/qmc_qwalk_native.txt" "$TMP/qmc_qwalk_wasm.txt"; then
+  echo "OK: quantum-walk WASM matches native"
+else
+  echo "FAIL: quantum-walk WASM and native results differ" >&2
+  exit 1
+fi

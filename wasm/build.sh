@@ -10,6 +10,7 @@
 #   docs/src/playground/qmc_orbital.wasm    hydrogen orbital viewer
 #   docs/src/playground/qmc_bloch.wasm      Bloch-sphere qubit demo
 #   docs/src/playground/qmc_anderson.wasm   Anderson-localisation demo
+#   docs/src/playground/qmc_qwalk.wasm      quantum-walk demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -99,3 +100,8 @@ build_module "$OUT/qmc_anderson.wasm" \
   "qmc_an_n qmc_an_dt qmc_an_time qmc_an_buffer qmc_an_density qmc_an_reset \
 qmc_an_step qmc_an_norm qmc_an_width qmc_an_ipr qmc_an_energy qmc_an_xi" \
   wasm/qmc_anderson.c physics/anderson.c core/vector.c
+
+build_module "$OUT/qmc_qwalk.wasm" \
+  "qmc_qw_n qmc_qw_tmax qmc_qw_time qmc_qw_buffer qmc_qw_reset qmc_qw_step \
+qmc_qw_norm qmc_qw_mean qmc_qw_variance qmc_qw_asymptote" \
+  wasm/qmc_qwalk.c physics/quantum_walk.c core/vector.c

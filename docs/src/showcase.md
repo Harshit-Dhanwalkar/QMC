@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-Six interactive demos, all computed live by the same C library you can
+Seven interactive demos, all computed live by the same C library you can
 read in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module (19 to 51 KB) compiled from the QMC sources, and
 JavaScript only draws what the C code returns. Every module is checked
@@ -14,6 +14,7 @@ against closed-form results and against a native build of the same code.
 | [Hydrogen orbitals](playground/orbitals.html)     | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
 | [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
 | [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
+| [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -105,6 +106,21 @@ the exact result √2·t·τ, and the weak-disorder localisation length is
 checked against a transfer-matrix calculation in the test suite.
 
 [Open the demo](playground/anderson.html)
+
+## The quantum walk
+
+[![Quantum walk against a classical random walk](playground/quantum_walk.gif)](playground/quantum_walk.html)
+
+Flip a coin, then step left or right. A classical walker ends up within about
+√t steps of the start after t steps. A quantum walker uses a quantum coin and
+keeps both outcomes in superposition, so its amplitudes interfere: the cloud
+spreads in proportion to t, and the probability piles up near the edges of
+the light cone instead of the middle. The demo draws both walks together and
+lets you change the coin angle, for which the spreading rate has the exact
+form √(1 − sin θ) · t. This is the same mechanism behind quantum-walk search
+algorithms.
+
+[Open the demo](playground/quantum_walk.html)
 
 ## Run it yourself
 
