@@ -94,33 +94,6 @@ int bloch_evolve(double v[3], double omega, double delta, double gamma1,
     n_ops++;
   }
 
-  if (!rho || !H) {
-    goto done;
-  }
-
-  CMAT(H, 0, 0) = c_real(0.5 * delta);
-  CMAT(H, 1, 1) = c_real(-0.5 * delta);
-  CMAT(H, 0, 1) = c_real(0.5 * omega);
-  CMAT(H, 1, 0) = c_real(0.5 * omega);
-
-  if (gamma1 > 0.0) {
-    ops[n_ops] = lindblad_amplitude_damping_op(1, 0, gamma1);
-    if (!ops[n_ops]) {
-      goto done;
-    }
-
-    n_ops++;
-  }
-
-  if (gamma_phi > 0.0) {
-    ops[n_ops] = lindblad_dephasing_op(1, 0, gamma_phi);
-    if (!ops[n_ops]) {
-      goto done;
-    }
-
-    n_ops++;
-  }
-
   if (lindblad_evolve(rho, H, n_ops ? ops : NULL, n_ops, dt, steps) != 0) {
     rc = -1;
     goto done;
