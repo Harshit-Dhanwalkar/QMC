@@ -415,7 +415,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_77_orbital_sample \
               $(BUILD_DIR)/eg_78_bloch \
               $(BUILD_DIR)/eg_79_anderson \
-              $(BUILD_DIR)/eg_80_quantum_walk
+              $(BUILD_DIR)/eg_80_quantum_walk \
+              $(BUILD_DIR)/eg_81_landau_zener
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -433,6 +434,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_bloch \
               $(BUILD_DIR)/test_anderson \
               $(BUILD_DIR)/test_quantum_walk \
+              $(BUILD_DIR)/test_landau_zener \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
