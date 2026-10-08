@@ -14,6 +14,8 @@
 
 `qmc_qwalk.c` wraps the quantum walk (`physics/quantum_walk.c`): `docs/src/playground/quantum_walk.html` runs a coin-and-shift walk next to the classical random walk.
 
+`qmc_lz.c` wraps the Landau-Zener integrator (`physics/landau_zener.c`): `docs/src/playground/landau_zener.html` sweeps a qubit through an avoided crossing and compares the jump probability with exp(-pi Omega^2 / 2 rate).
+
 ## Build
 
 ```sh
@@ -82,19 +84,21 @@ dx = 0.1, dt = 0.04, units hbar = m = c = 1):
 | function                                               | purpose                                                                 |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- |
 | `qmc_dc_klein(k0, v0)`                                 | positive-energy packet at x = -50 aimed at a step of height v0 at x = 0 |
-| `qmc_dc_zitter()`                                      | wide packet of spinor (1, i)/sqrt(2) at rest, no potential              |
+| `qmc_dc_zitter()`                                      | wide packet of spinor $(1, i)/\sqrt{2}$ at rest, no potential           |
 | `qmc_dc_step(n)`                                       | advance n steps with `dirac_evolve_1d`                                  |
 | `qmc_dc_density()` / `qmc_dc_buffer()`                 | fill / locate scratch buffer: \|upper\|^2, \|lower\|^2, V               |
 | `qmc_dc_right()`, `qmc_dc_position()`, `qmc_dc_norm()` | transmitted probability, mean position, total probability               |
 | `qmc_dc_exact(k0, v0)`                                 | closed-form transmission (`dirac_step_transmission`)                    |
 
-Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)` draws points from |psi_nlm|^2 via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
+Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, count, seed)` draws points from $|psi_{nlm}|^2$ via `hydrogen_orbital_sample` into `qmc_orb_buffer()` (x, y, z, phase per point in Bohr radii); `qmc_orb_energy_ev(n)` gives the Bohr energy.
 
 Bloch module (`qmc_bloch.wasm`, no imports): `qmc_bl_reset(x, y, z)` sets the state, `qmc_bl_step(omega, delta, gamma1, gamma_phi, steps)` advances `steps` RK4 steps of 0.01 with `bloch_evolve`, `qmc_bl_vec()` points at the Bloch vector, `qmc_bl_rabi(t, omega, delta)` is the closed-form Rabi curve.
 
 Anderson module (`qmc_anderson.wasm`, no imports): `qmc_an_reset(w, seed)` draws new disorder of strength `w` and puts the particle on the middle of the 801-site chain, `qmc_an_step(n)` advances `n` RK4 steps of 0.01 (hop t = 1) with `anderson_evolve`, `qmc_an_buffer()` holds |psi|^2 then the on-site energies (refreshed by every step), `qmc_an_width()`, `qmc_an_ipr()`, `qmc_an_energy()` and `qmc_an_norm()` are the observables, and `qmc_an_xi(w, e)` is the weak-disorder localisation length.
 
-Quantum-walk module (`qmc_qwalk.wasm`, no imports): `qmc_qw_reset(theta, coin)` restarts the walk (coin 0 = up, 1 = down, 2 = symmetric), `qmc_qw_step(n)` advances `n` steps (at most 480 in total), `qmc_qw_buffer()` holds the quantum then the classical probability of each of the 1024 sites, and `qmc_qw_variance()` / `qmc_qw_mean()` / `qmc_qw_asymptote()` give the observables and the (1 - sin theta) limit of variance / t^2.
+Quantum-walk module (`qmc_qwalk.wasm`, no imports): `qmc_qw_reset(theta, coin)` restarts the walk (coin 0 = up, 1 = down, 2 = symmetric), `qmc_qw_step(n)` advances `n` steps (at most 480 in total), `qmc_qw_buffer()` holds the quantum then the classical probability of each of the 1024 sites, and `qmc_qw_variance()` / `qmc_qw_mean()` / `qmc_qw_asymptote()` give the observables and the (1 - sin theta) limit of variance / $t^2$.
+
+Landau-Zener module (`qmc_lz.wasm`, no imports): `qmc_lz_reset(omega, rate, amp, passes)` starts a sweep of the detuning between -amp and +amp in the lower adiabatic state, `qmc_lz_step(duration)` advances it (returns 1 when finished), `qmc_lz_vec()` points at the Bloch vector, `qmc_lz_delta()` / `qmc_lz_upper()` / `qmc_lz_exact()` give the detuning, upper-level population and closed-form jump probability, and `qmc_lz_scan_rate` / `qmc_lz_scan_amp` fill `qmc_lz_scan_buffer()` with whole-sweep scans.
 
 Regenerate the butterfly images:
 

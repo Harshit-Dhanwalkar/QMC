@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Landau–Zener</title>
+    <meta
+      name="description"
+      content="Sweep a qubit through an avoided crossing and watch it jump between energy levels with the Landau-Zener probability, and interfere with itself on the way back (Stueckelberg fringes). Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Landau-Zener transitions and Stueckelberg fringes in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Drag a two-level system through an avoided crossing. Slow sweeps follow the energy level, fast sweeps jump across; two sweeps interfere. Computed live in pure C."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/landau_zener.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #lv {
+        aspect-ratio: 2 / 1.1;
+      }
+      #pp {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Landau-Zener</h1>
+        <div class="links">
+          <a href="index.html">Double slit</a>
+          <a href="butterfly.html">Butterfly</a>
+          <a href="dirac.html">Dirac</a>
+          <a href="orbitals.html">Orbitals</a>
+          <a href="bloch.html">Bloch</a>
+          <a href="anderson.html">Anderson</a>
+          <a href="https://github.com/Harshit-Dhanwalkar/QMC"
+            ><svg
+              viewBox="0 0 16 16"
+              width="14"
+              height="14"
+              fill="currentColor"
+              aria-hidden="true"
+              style="vertical-align: -2px; margin-right: 5px"
+            >
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+              /></svg
+            >GitHub</a
+          >
+          <a href="../introduction.html">Docs</a>
+        </div>
+      </header>
+      <p class="sub">
+        Two energy levels that would cross are pushed apart by a coupling
+        &Omega; into an <b>avoided crossing</b>. Sweep the detuning through it:
+        slowly, the system follows its level (adiabatic); quickly, it jumps
+        across the gap (diabatic), with probability
+        <b>P = exp(&minus;&pi;&Omega;&sup2;/2v)</b>, the Landau-Zener
+        formula. Sweep back and the two paths interfere, giving St&uuml;ckelberg
+        fringes. Each point is a 4th-order Runge-Kutta integration in the
+        QMC library (<code>lz_sweep</code>), running in your browser.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="lv">
+            <canvas id="lc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="cv" id="pp"><canvas id="pc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i style="background: var(--accent)"></i>population of the upper
+              level</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>diabatic levels
+              &plusmn;&delta;/2 (dashed)</span
+            >
+            <span
+              ><i style="background: var(--accent2)"></i>Landau-Zener
+              P</span
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Sweep</h2>
+            <div class="row">
+              <label
+                ><span>Coupling &Omega;</span
+                ><input
+                  id="om"
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="0.05"
+                  value="1"
+                /><b id="omv">1.00</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>Sweep rate v</span
+                ><input
+                  id="rt"
+                  type="range"
+                  min="-1.3"
+                  max="1.3"
+                  step="0.02"
+                  value="0"
+                /><b id="rtv">1.00</b></label
+              >
+            </div>
+            <div class="row" id="passes">
+              <span style="color: var(--muted); font-size: 0.85rem"
+                >passes</span
+              >
+              <button data-p="1" class="on">1 (one crossing)</button
+              ><button data-p="2">2 (out and back)</button>
+            </div>
+            <div class="row">
+              <button id="play" class="primary">Pause</button>
+              <button id="restart">Restart</button>
+              <label style="width: auto"
+                ><span style="min-width: 0">Speed</span
+                ><input
+                  id="spd"
+                  type="range"
+                  min="1"
+                  max="6"
+                  step="1"
+                  value="2"
+                  style="width: 90px; flex: none"
+              /></label>
+            </div>
+            <div id="note"></div>
+          </div>
+
+          <div class="panel">
+            <h2 id="scanh">Jump probability vs sweep rate</h2>
+            <div class="cv" id="sc" style="aspect-ratio: 16/8">
+              <canvas id="sk"></canvas>
+            </div>
+            <div class="legend" id="scanleg"></div>
+          </div>
+
+          <div class="panel">
+            <h2>State</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        H(t) = &frac12;[&Omega;&sigma;<sub>x</sub> +
+        &delta;(t)&sigma;<sub>z</sub>], &delta; swept linearly between &minus;10
+        and +10; &#295; = 1, the qubit starts in the lower adiabatic level.
+        Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/landau_zener.c"
+          ><code>physics/landau_zener.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_lz.c"
+          ><code>wasm/qmc_lz.c</code></a
+        >. The dots in the scan are full integrations; the curve is the closed
+        form. They agree to about 1e-3 for this finite sweep range (about 1e-5
+        for &plusmn;40), and the two-pass fringes stay inside the envelope
+        4P(1&minus;P) (checked in <code>tests/test_landau_zener.c</code>).
+      </footer>
+    </div>
+
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        let w;
+        try {
+          const res = await fetch("qmc_lz.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            {},
+          );
+          w = instance.exports;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_lz.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/landau_zener.html</code>.",
+          );
+          return;
+        }
+        const AMP = 10,
+          NSCAN = 56;
+        const scanBuf = () =>
+          new Float64Array(w.memory.buffer, w.qmc_lz_scan_buffer(), 256);
+
+        let om = 1,
+          rate = 1,
+          passes = 1,
+          speed = 2,
+          playing = true,
+          hist = [],
+          finished = false;
+        let scan = { rate: null, amp: null };
+
+        function reset() {
+          if (w.qmc_lz_reset(om, rate, AMP, passes) !== 0) {
+            showError("reset rejected");
+            return;
+          }
+          hist = [[0, w.qmc_lz_upper()]];
+          finished = false;
+          render();
+        }
+        function advance() {
+          if (finished) {
+            playing = false;
+            $("play").textContent = "Replay";
+            return;
+          }
+          const total = w.qmc_lz_total_time();
+          const rc = w.qmc_lz_step((total / 400) * speed);
+          if (rc < 0) {
+            showError("step failed");
+            playing = false;
+            return;
+          }
+          hist.push([w.qmc_lz_time(), w.qmc_lz_upper()]);
+          if (rc === 1) finished = true;
+        }
+
+        function computeScan() {
+          scan = { rate: null, amp: null };
+          if (w.qmc_lz_scan_rate(om, AMP, NSCAN, 0.05, 20) === 0) {
+            const b = scanBuf();
+            scan.rate = Array.from(b.subarray(0, NSCAN));
+          }
+          if (w.qmc_lz_scan_amp(om, rate, 120, 8, 12) === 0) {
+            const b = scanBuf();
+            scan.amp = Array.from(b.subarray(0, 120));
+          }
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect(),
+            d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+          return { g, W: r.width, H: r.height };
+        }
+
+        function drawLevels() {
+          const { g, W: cw, H: ch } = fit($("lc"));
+          const x0 = 40,
+            x1 = cw - 14,
+            y0 = ch - 24,
+            y1 = 14;
+          const E = AMP * 0.55 + 0.3 * om,
+            X = (d) => x0 + ((d + AMP) / (2 * AMP)) * (x1 - x0),
+            Y = (e) => (y0 + y1) / 2 - (e / E) * ((y0 - y1) / 2);
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x0, y0);
+          g.lineTo(x1, y0);
+          g.moveTo(x0, y1);
+          g.lineTo(x0, y0);
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText(
+            "detuning \u03b4  (\u2212" + AMP + " \u2192 +" + AMP + ")",
+            x0 + 6,
+            ch - 8,
+          );
+          g.fillText("energy", 6, y1 + 2);
+          g.setLineDash([5, 4]);
+          g.strokeStyle = "#8993a8";
+          g.beginPath();
+          g.moveTo(X(-AMP), Y(-AMP / 2));
+          g.lineTo(X(AMP), Y(AMP / 2));
+          g.moveTo(X(-AMP), Y(AMP / 2));
+          g.lineTo(X(AMP), Y(-AMP / 2));
+          g.stroke();
+          g.setLineDash([]);
+          g.lineWidth = 2;
+          g.strokeStyle = css("--text");
+          for (const s of [1, -1]) {
+            g.beginPath();
+            for (let i = 0; i <= 240; i++) {
+              const d = -AMP + (2 * AMP * i) / 240,
+                e = s * 0.5 * Math.hypot(om, d);
+              i ? g.lineTo(X(d), Y(e)) : g.moveTo(X(d), Y(e));
+            }
+            g.stroke();
+          }
+          // state: two dots on the adiabatic levels, area ~ population
+          const d = w.qmc_lz_delta(),
+            pu = w.qmc_lz_upper(),
+            eb = 0.5 * Math.hypot(om, d);
+          const dot = (e, p, col) => {
+            if (p < 0.004) return;
+            g.fillStyle = col;
+            g.globalAlpha = 0.9;
+            g.beginPath();
+            g.arc(X(d), Y(e), 4 + 15 * Math.sqrt(p), 0, 7);
+            g.fill();
+            g.globalAlpha = 1;
+          };
+          dot(-eb, 1 - pu, css("--blue"));
+          dot(eb, pu, css("--accent"));
+          g.fillStyle = css("--muted");
+          g.fillText("dot area = population of that level", x1 - 225, ch - 8);
+          $("readout").textContent =
+            "t = " + w.qmc_lz_time().toFixed(1) + "  \u03b4 = " + d.toFixed(2);
+        }
+
+        function drawPop() {
+          const { g, W: cw, H: ch } = fit($("pc"));
+          const x0 = 34,
+            x1 = cw - 10,
+            y0 = ch - 20,
+            y1 = 10,
+            T = w.qmc_lz_total_time();
+          const X = (t) => x0 + (t / T) * (x1 - x0),
+            Y = (p) => y0 - (y0 - y1) * p;
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x0, y1);
+          g.lineTo(x0, y0);
+          g.lineTo(x1, y0);
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("1", 20, y1 + 8);
+          g.fillText("0", 20, y0);
+          g.fillText("time", x1 - 30, ch - 4);
+          const ex = w.qmc_lz_exact();
+          g.setLineDash([5, 4]);
+          g.strokeStyle = css("--accent2");
+          g.beginPath();
+          g.moveTo(x0, Y(ex));
+          g.lineTo(x1, Y(ex));
+          g.stroke();
+          g.setLineDash([]);
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          hist.forEach((h, i) => {
+            const px = X(h[0]),
+              py = Y(h[1]);
+            i ? g.lineTo(px, py) : g.moveTo(px, py);
+          });
+          g.stroke();
+        }
+
+        function drawScan() {
+          const { g, W: cw, H: ch } = fit($("sk"));
+          const x0 = 30,
+            x1 = cw - 8,
+            y0 = ch - 18,
+            y1 = 8;
+          const Y = (p) => y0 - (y0 - y1) * p;
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x0, y1);
+          g.lineTo(x0, y0);
+          g.lineTo(x1, y0);
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("1", 14, y1 + 8);
+          g.fillText("0", 14, y0);
+          if (passes === 1) {
+            $("scanh").textContent = "Jump probability vs sweep rate";
+            $("scanleg").innerHTML =
+              '<span><i style="background:var(--accent2)"></i>exp(\u2212\u03c0\u03a9\u00b2/2v)</span><span><i style="background:var(--accent)"></i>integrated</span>';
+            const lo = Math.log10(0.05),
+              hi = Math.log10(20),
+              X = (r) => x0 + ((Math.log10(r) - lo) / (hi - lo)) * (x1 - x0);
+            g.fillText("sweep rate v (log scale)", (x0 + x1) / 2 - 62, ch - 4);
+            g.fillText("0.05", x0 + 2, ch - 4);
+            g.fillText("20", x1 - 16, ch - 4);
+            g.strokeStyle = css("--accent2");
+            g.lineWidth = 2;
+            g.beginPath();
+            for (let i = 0; i <= 200; i++) {
+              const r = Math.pow(10, lo + ((hi - lo) * i) / 200),
+                p = Math.exp((-Math.PI * om * om) / (2 * r));
+              i ? g.lineTo(X(r), Y(p)) : g.moveTo(X(r), Y(p));
+            }
+            g.stroke();
+            if (scan.rate) {
+              g.fillStyle = css("--accent");
+              scan.rate.forEach((p, i) => {
+                const r = Math.pow(10, lo + ((hi - lo) * i) / (NSCAN - 1));
+                g.beginPath();
+                g.arc(X(r), Y(p), 2.6, 0, 7);
+                g.fill();
+              });
+            }
+            g.strokeStyle = css("--muted");
+            g.setLineDash([3, 3]);
+            g.beginPath();
+            g.moveTo(X(rate), y1);
+            g.lineTo(X(rate), y0);
+            g.stroke();
+            g.setLineDash([]);
+          } else {
+            $("scanh").textContent = "Fringes vs sweep amplitude (2 passes)";
+            $("scanleg").innerHTML =
+              '<span><i style="background:var(--accent2)"></i>envelope 4P(1\u2212P)</span><span><i style="background:var(--accent)"></i>upper-level population</span>';
+            const X = (a) => x0 + ((a - 8) / 4) * (x1 - x0),
+              P = Math.exp((-Math.PI * om * om) / (2 * rate)),
+              env = 4 * P * (1 - P);
+            g.fillText("sweep amplitude (8 \u2192 12)", x0 + 6, ch - 4);
+            g.setLineDash([5, 4]);
+            g.strokeStyle = css("--accent2");
+            g.lineWidth = 1.5;
+            g.beginPath();
+            g.moveTo(x0, Y(env));
+            g.lineTo(x1, Y(env));
+            g.stroke();
+            g.setLineDash([]);
+            if (scan.amp) {
+              g.strokeStyle = css("--accent");
+              g.lineWidth = 2;
+              g.beginPath();
+              scan.amp.forEach((p, i) => {
+                const a = 8 + (4 * i) / (scan.amp.length - 1);
+                i ? g.lineTo(X(a), Y(p)) : g.moveTo(X(a), Y(p));
+              });
+              g.stroke();
+            }
+          }
+        }
+
+        function updateStats() {
+          const P = w.qmc_lz_exact(),
+            pu = w.qmc_lz_upper();
+          $("stats").innerHTML =
+            `<div class="stat"><span>Upper-level population</span><span>${pu.toFixed(4)}</span></div>
+       <div class="stat"><span>Landau\u2013Zener P (one crossing)</span><span>${P.toFixed(4)}</span></div>
+       <div class="stat"><span>Interference envelope 4P(1\u2212P)</span><span>${(4 * P * (1 - P)).toFixed(4)}</span></div>
+       <div class="stat"><span>Minimum gap \u03a9</span><span>${om.toFixed(2)}</span></div>
+       <div class="stat"><span>Sweep rate v</span><span>${rate.toFixed(3)}</span></div>`;
+          $("note").textContent =
+            P < 0.05
+              ? "Slow sweep: adiabatic. The system follows its energy level and stays on the lower curve."
+              : P > 0.95
+                ? "Fast sweep: diabatic. The system cannot follow the gap and jumps across it."
+                : "In between: the state splits, part following the level and part jumping, so both dots appear.";
+        }
+
+        function render() {
+          drawLevels();
+          drawPop();
+          drawScan();
+          updateStats();
+        }
+        function restart() {
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        }
+        let timer = null;
+        function rescan() {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            computeScan();
+            render();
+          }, 120);
+        }
+
+        $("om").addEventListener("input", (e) => {
+          om = +e.target.value;
+          $("omv").textContent = om.toFixed(2);
+          restart();
+          rescan();
+        });
+        $("rt").addEventListener("input", (e) => {
+          rate = Math.pow(10, +e.target.value);
+          $("rtv").textContent = rate.toFixed(2);
+          restart();
+          rescan();
+        });
+        document.querySelectorAll("#passes button").forEach((b) =>
+          b.addEventListener("click", () => {
+            passes = +b.dataset.p;
+            document
+              .querySelectorAll("#passes button")
+              .forEach((x) => x.classList.toggle("on", x === b));
+            restart();
+          }),
+        );
+        $("play").addEventListener("click", () => {
+          if (finished) {
+            restart();
+            return;
+          }
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", restart);
+        $("spd").addEventListener("input", (e) => {
+          speed = +e.target.value;
+        });
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (playing) {
+            advance();
+            render();
+          }
+          requestAnimationFrame(frame);
+        }
+        computeScan();
+        reset();
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>

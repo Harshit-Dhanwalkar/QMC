@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-Seven interactive demos, all computed live by the same C library you can
+8 interactive demos, all computed live by the same C library you can
 read in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module (19 to 51 KB) compiled from the QMC sources, and
 JavaScript only draws what the C code returns. Every module is checked
@@ -15,6 +15,7 @@ against closed-form results and against a native build of the same code.
 | [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
 | [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
 | [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
+| [Landau–Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -72,8 +73,8 @@ Pick any n, l and m and the page draws that orbital as tens of thousands of
 points, each one a position where the electron could be found. The radial
 distance is sampled from the library's hydrogen radial wavefunction and the
 direction from the spherical harmonic, in real or complex form, with colour
-marking the sign of the wavefunction. Rotate it, and compare s, p, d and f
-shapes directly.
+marking the sign of the wavefunction. Rotate it, and compare `s`, `p`, `d` 
+and `f` shapes directly.
 
 [Open the demo](playground/orbitals.html) ·
 [Background: the hydrogen atom](physics/hydrogen.md)
@@ -102,7 +103,7 @@ exponential tail, however weak the disorder. This is Anderson localisation,
 the reason a disordered wire is an insulator. The demo draws |ψ|² against
 time as a waterfall, so the light cone of the clean chain and the frozen
 column of the disordered one sit side by side. The clean-chain width matches
-the exact result √2·t·τ, and the weak-disorder localisation length is
+the exact result $\sqrt{2} \cdot t \cdot \tau$, and the weak-disorder localisation length is
 checked against a transfer-matrix calculation in the test suite.
 
 [Open the demo](playground/anderson.html)
@@ -117,10 +118,26 @@ keeps both outcomes in superposition, so its amplitudes interfere: the cloud
 spreads in proportion to t, and the probability piles up near the edges of
 the light cone instead of the middle. The demo draws both walks together and
 lets you change the coin angle, for which the spreading rate has the exact
-form √(1 − sin θ) · t. This is the same mechanism behind quantum-walk search
-algorithms.
+form $\sqrt{1 − \sin(\theta) \codt t}$. This is the same mechanism behind 
+quantum-walk search algorithms.
 
 [Open the demo](playground/quantum_walk.html)
+
+## Landau–Zener: jumping across an avoided crossing
+
+[![Landau-Zener sweep](playground/landau_zener.gif)](playground/landau_zener.html)
+
+Two energy levels that would cross are pushed apart by a coupling into an
+avoided crossing. Sweep the control parameter through it slowly and the
+system follows its level; sweep it quickly and it jumps across the gap, with
+the probability $\exp(−\pi\Omega^2/2v)$ found independently by Landau, Zener,
+Stückelberg and Majorana in 1932. The demo integrates a qubit through the crossing 
+and overlays the closed form on a scan of the sweep rate, then sweeps out and
+back so the two paths interfere: the fringes stay inside the envelope
+4P(1−P). This is how qubits are initialised, read out and probed in many
+superconducting and spin-qubit experiments.
+
+[Open the demo](playground/landau_zener.html)
 
 ## Run it yourself
 

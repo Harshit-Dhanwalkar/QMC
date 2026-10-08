@@ -120,7 +120,8 @@ jobs:
                    docs/src/playground/qmc_butterfly.wasm \
                    docs/src/playground/qmc_dirac.wasm \
                    docs/src/playground/qmc_orbital.wasm \
-                   docs/src/playground/qmc_qwalk.wasm; do
+                   docs/src/playground/qmc_qwalk.wasm \
+                   docs/src/playground/qmc_lz.wasm; do
             test -s "$f" \
               && echo " OK: $f ($(stat -c%s "$f") bytes)" \
               || (echo "ERROR: $f missing" && exit 1)
@@ -134,7 +135,7 @@ jobs:
       - name: Copy WASM into book output
         run: |
           for f in qmc.wasm qmc_butterfly.wasm qmc_dirac.wasm qmc_orbital.wasm \
-                   qmc_bloch.wasm qmc_anderson.wasm qmc_qwalk.wasm; do
+                   qmc_bloch.wasm qmc_anderson.wasm qmc_qwalk.wasm qmc_lz.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -147,13 +148,15 @@ jobs:
                    docs/book/html/playground/qmc_dirac.wasm \
                    docs/book/html/playground/qmc_orbital.wasm \
                    docs/book/html/playground/qmc_qwalk.wasm \
+                   docs/book/html/playground/qmc_lz.wasm \
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/anderson.html \
                    docs/book/html/playground/bloch.html \
                    docs/book/html/playground/butterfly.html \
                    docs/book/html/playground/dirac.html \
                    docs/book/html/playground/orbitals.html \
-                   docs/book/html/playground/quantum_walk.html; do
+                   docs/book/html/playground/quantum_walk.html \
+                   docs/book/html/playground/landau_zener.html; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)

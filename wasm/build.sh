@@ -11,6 +11,7 @@
 #   docs/src/playground/qmc_bloch.wasm      Bloch-sphere qubit demo
 #   docs/src/playground/qmc_anderson.wasm   Anderson-localisation demo
 #   docs/src/playground/qmc_qwalk.wasm      quantum-walk demo
+#   docs/src/playground/qmc_lz.wasm         Landau-Zener / Stueckelberg demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -55,13 +56,13 @@ build_module() {
     zig)
       # shellcheck disable=SC2086
       zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=268435456 \
+        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
         -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
       ;;
     ziglang)
       # shellcheck disable=SC2086
       python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=268435456 \
+        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
         -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
       ;;
   esac
@@ -105,3 +106,8 @@ build_module "$OUT/qmc_qwalk.wasm" \
   "qmc_qw_n qmc_qw_tmax qmc_qw_time qmc_qw_buffer qmc_qw_reset qmc_qw_step \
 qmc_qw_norm qmc_qw_mean qmc_qw_variance qmc_qw_asymptote" \
   wasm/qmc_qwalk.c physics/quantum_walk.c core/vector.c
+
+build_module "$OUT/qmc_lz.wasm" \
+  "qmc_lz_vec qmc_lz_scan_buffer qmc_lz_scan_max qmc_lz_time qmc_lz_total_time qmc_lz_delta \
+qmc_lz_upper qmc_lz_exact qmc_lz_reset qmc_lz_step qmc_lz_scan_rate qmc_lz_scan_amp" \
+  wasm/qmc_lz.c physics/landau_zener.c

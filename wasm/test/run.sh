@@ -110,3 +110,16 @@ else
   echo "FAIL: quantum-walk WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Landau-Zener: swept two-level system, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/lz_ref.c wasm/qmc_lz.c physics/landau_zener.c \
+  -lm -o "$TMP/qmc_lz_ref"
+"$TMP/qmc_lz_ref" > "$TMP/qmc_lz_native.txt"
+cat "$TMP/qmc_lz_native.txt"
+node wasm/test/lz_check.mjs > "$TMP/qmc_lz_wasm.txt"
+if diff -u "$TMP/qmc_lz_native.txt" "$TMP/qmc_lz_wasm.txt"; then
+  echo "OK: Landau-Zener WASM matches native"
+else
+  echo "FAIL: Landau-Zener WASM and native results differ" >&2
+  exit 1
+fi
