@@ -399,6 +399,7 @@
       </footer>
     </div>
 
+    <script src="wasi-shim.js"></script>
     <script type="module">
       (async () => {
         const $ = (id) => document.getElementById(id);
@@ -410,15 +411,18 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
+        // load WebAssembly
         let w;
+        let wasmMemory = null;
         try {
           const res = await fetch("qmc_anderson.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
-            {},
+            makeWasiImports(() => wasmMemory),
           );
           w = instance.exports;
+          wasmMemory = w.memory;
           if (w._initialize) w._initialize();
         } catch (err) {
           showError(

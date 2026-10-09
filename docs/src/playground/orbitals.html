@@ -373,10 +373,12 @@
           e.innerHTML = m;
         };
 
-        // load WebAssembly (module has no imports)
-        let w,
-          wasmMemory = null;
+        // load WebAssembly
+        let w;
+        let wasmMemory = null;
         try {
+          const res = await fetch("qmc_orbital.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
             makeWasiImports(() => wasmMemory),
@@ -394,31 +396,43 @@
           );
           return;
         }
+
         const MAXN = w.qmc_orb_max_n(),
           MAXP = w.qmc_orb_max_points();
         const LETTER = "spdfghik";
 
         // state
-        let n = 3,
-          l = 2,
-          m = 0,
-          real = true,
-          count = 60000,
-          seed = 1;
-        let yaw = 0.6,
-          pitch = 0.35,
-          zoom = 1,
-          spin = true,
-          viewR = 10;
-        let X, Y, Z, R, G, B; // sampled points and their colours (Float32Array)
+        let n = 3;
+        let l = 2;
+        let m = 0;
+        let real = true;
+        let count = 60000;
+        let seed = 1;
+
+        let yaw = 0.6;
+        let pitch = 0.35;
+        let zoom = 1;
+        let spin = true;
+        let viewR = 10;
+        let X, Y, Z, R, G, B; // sampled points and their colours
 
         // real-orbital names
         function realName(l, m) {
           const L = LETTER[l];
           if (l === 0) return n + "s";
           const tag = {
-            1: { 0: "z", 1: "x", "-1": "y" },
-            2: { 0: "z²", 1: "xz", "-1": "yz", 2: "x²−y²", "-2": "xy" },
+            1: {
+              0: "z",
+              1: "x",
+              "-1": "y",
+            },
+            2: {
+              0: "z²",
+              1: "xz",
+              "-1": "yz",
+              2: "x²−y²",
+              "-2": "xy",
+            },
             3: {
               0: "z³",
               1: "xz²",
@@ -429,6 +443,7 @@
               "-3": "y(3x²−y²)",
             },
           }[l];
+
           const t = tag && tag[String(m)];
           return (
             n +
@@ -443,6 +458,7 @@
                 "</sub>")
           );
         }
+
         const cxName = () =>
           n + LETTER[l] + " (m = " + (m > 0 ? "+" : "") + m + ")";
 
@@ -463,19 +479,22 @@
             [v, p, q],
           ][i % 6];
         }
-        const POS = [0.35, 0.65, 1.0],
-          NEG = [1.0, 0.55, 0.3];
+
+        const POS = [0.35, 0.65, 1.0];
+        const NEG = [1.0, 0.55, 0.3];
 
         function resample() {
           if (w.qmc_orb_sample(n, l, m, real ? 1 : 0, count, seed) !== 0) {
             showError("Sampler rejected n=" + n + ", l=" + l + ", m=" + m);
             return;
           }
+
           const p = new Float64Array(
             w.memory.buffer,
             w.qmc_orb_buffer(),
             4 * count,
           );
+
           X = new Float32Array(count);
           Y = new Float32Array(count);
           Z = new Float32Array(count);
@@ -488,18 +507,23 @@
             Y[i] = p[4 * i + 1];
             Z[i] = p[4 * i + 2];
             rr[i] = Math.hypot(X[i], Y[i], Z[i]);
+
             let c;
-            if (real) c = p[4 * i + 3] > 1 ? NEG : POS;
-            else
+            if (real) {
+              c = p[4 * i + 3] > 1 ? NEG : POS;
+            } else {
               c = hsl2rgb(
                 (((p[4 * i + 3] / (2 * Math.PI)) % 1) + 1) % 1,
                 0.75,
                 1.0,
               );
+            }
+
             R[i] = c[0];
             G[i] = c[1];
             B[i] = c[2];
           }
+
           const sorted = Array.from(rr).sort((a, b) => a - b);
           viewR = sorted[Math.floor(0.985 * (count - 1))] * 1.08;
           updateInfo(sorted);
@@ -516,6 +540,7 @@
           [5, 2, 2, "5dₓ²−ᵧ²"],
           [6, 0, 0, "6s"],
         ];
+
         PRESETS.forEach(([pn, pl, pm, name]) => {
           const b = document.createElement("button");
           b.textContent = name;
@@ -542,6 +567,7 @@
               el.appendChild(b);
             });
           };
+
           mk(
             "nsel",
             Array.from({ length: MAXN }, (_, i) => i + 1),
@@ -577,6 +603,7 @@
             },
             (v) => (v > 0 ? "+" : "") + v,
           );
+
           $("fReal").classList.toggle("on", real);
           $("fCx").classList.toggle("on", !real);
           $("label").innerHTML =
@@ -588,10 +615,12 @@
         }
 
         function updateInfo(sortedR) {
-          const E = w.qmc_orb_energy_ev(n),
-            mean = (3 * n * n - l * (l + 1)) / 2;
+          const E = w.qmc_orb_energy_ev(n);
+          const mean = (3 * n * n - l * (l + 1)) / 2;
           let s = 0;
-          for (let i = 0; i < sortedR.length; i++) s += sortedR[i];
+          for (let i = 0; i < sortedR.length; i++) {
+            s += sortedR[i];
+          }
           $("stats").innerHTML =
             `<div class="stat"><span>Energy</span><span>${E.toFixed(3)} eV</span></div>
        <div class="stat"><span>Radial nodes (n &minus; l &minus; 1)</span><span>${n - l - 1}</span></div>
@@ -601,8 +630,8 @@
         }
 
         function drawWheel() {
-          const c = $("wheel"),
-            g = c.getContext("2d");
+          const c = $("wheel");
+          const g = c.getContext("2d");
           g.clearRect(0, 0, 84, 84);
           if (real) {
             g.font = "12px system-ui";
@@ -621,6 +650,7 @@
               g.arc(42, 42, 30, (a * Math.PI) / 180, ((a + 4) * Math.PI) / 180);
               g.stroke();
             }
+
             g.fillStyle = "#d7dce5";
             g.font = "11px system-ui";
             g.textAlign = "center";
@@ -630,19 +660,21 @@
 
         // renderer: additive splatting into a float buffer, tone-mapped
         const cv = $("cv");
-        let ctx = cv.getContext("2d"),
-          W = 0,
-          H = 0,
-          acc,
-          img;
+        let ctx = cv.getContext("2d");
+        let W = 0;
+        let H = 0;
+        let acc;
+        let img;
         const LUT = new Uint8ClampedArray(2048);
-        for (let i = 0; i < 2048; i++)
+        for (let i = 0; i < 2048; i++) {
           LUT[i] = 255 * (1 - Math.exp((-i / 256) * 1.1));
+        }
+
         function fitCanvas() {
-          const r = cv.parentElement.getBoundingClientRect(),
-            d = Math.min(window.devicePixelRatio || 1, 1.5);
-          const nw = Math.max(64, Math.round(r.width * d)),
-            nh = Math.max(64, Math.round(r.height * d));
+          const r = cv.parentElement.getBoundingClientRect();
+          const d = Math.min(window.devicePixelRatio || 1, 1.5);
+          const nw = Math.max(64, Math.round(r.width * d));
+          const nh = Math.max(64, Math.round(r.height * d));
           if (nw !== W || nh !== H) {
             W = cv.width = nw;
             H = cv.height = nh;
@@ -655,34 +687,37 @@
           fitCanvas();
           if (!X) return;
           acc.fill(0);
-          const ca = Math.cos(yaw),
-            sa = Math.sin(yaw),
-            ce = Math.cos(pitch),
-            se = Math.sin(pitch);
-          const scale = ((0.46 * Math.min(W, H)) / viewR) * zoom,
-            cx = W / 2,
-            cy = H / 2;
+          const ca = Math.cos(yaw);
+          const sa = Math.sin(yaw);
+          const ce = Math.cos(pitch);
+          const se = Math.sin(pitch);
+
+          const scale = ((0.46 * Math.min(W, H)) / viewR) * zoom;
+          const cx = W / 2;
+          const cy = H / 2;
           const gain =
             1.05 *
             Math.sqrt(40000 / count) *
             (0.55 + 0.45 * Math.min(1, W / 700));
+
           for (let i = 0; i < count; i++) {
-            const x = X[i],
-              y = Y[i],
-              z = Z[i];
-            const xr = x * ca - y * sa,
-              yr = x * sa + y * ca;
-            const sx = cx + xr * scale,
-              sy = cy - (z * ce - yr * se) * scale;
+            const x = X[i];
+            const y = Y[i];
+            const z = Z[i];
+            const xr = x * ca - y * sa;
+            const yr = x * sa + y * ca;
+            const sx = cx + xr * scale;
+            const sy = cy - (z * ce - yr * se) * scale;
             const depth = (yr * ce + z * se) / viewR; // -~1 .. ~1, + = away from viewer
             const f = gain * (0.65 - 0.3 * Math.max(-1, Math.min(1, depth)));
-            const ix = sx | 0,
-              iy = sy | 0;
+            const ix = sx | 0;
+            const iy = sy | 0;
             if (ix < 1 || iy < 1 || ix >= W - 1 || iy >= H - 1) continue;
-            const k = (iy * W + ix) * 3,
-              r = R[i] * f,
-              g = G[i] * f,
-              b = B[i] * f;
+            const k = (iy * W + ix) * 3;
+            const r = R[i] * f;
+            const g = G[i] * f;
+            const b = B[i] * f;
+
             acc[k] += r;
             acc[k + 1] += g;
             acc[k + 2] += b;
@@ -695,6 +730,7 @@
             acc[k3 + 1] += g * 0.6;
             acc[k3 + 2] += b * 0.6;
           }
+
           const d = img.data;
           for (let p = 0, q = 0; p < W * H; p++, q += 4) {
             const a = p * 3;
@@ -703,6 +739,7 @@
             d[q + 2] = LUT[Math.min(2047, acc[a + 2] * 256) | 0];
             d[q + 3] = 255;
           }
+
           ctx.putImageData(img, 0, 0);
           // nucleus and scale bar
           ctx.fillStyle = "rgba(255,255,255,.9)";

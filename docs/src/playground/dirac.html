@@ -386,16 +386,18 @@
           e.innerHTML = m;
         };
 
-        // load WebAssembly (module has no imports)
+        // load WebAssembly
         let w;
+        let wasmMemory = null;
         try {
           const res = await fetch("qmc_dirac.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
-            {},
+            makeWasiImports(() => wasmMemory),
           );
           w = instance.exports;
+          wasmMemory = w.memory;
           if (w._initialize) w._initialize();
         } catch (err) {
           showError(
