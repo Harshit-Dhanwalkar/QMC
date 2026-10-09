@@ -1,10 +1,9 @@
 # Showcase: quantum mechanics that runs in your browser
 
-8 interactive demos, all computed live by the same C library you can
-read in this repository. There is no JavaScript physics: each page loads a
-WebAssembly module (19 to 51 KB) compiled from the QMC sources, and
-JavaScript only draws what the C code returns. Every module is checked
-against closed-form results and against a native build of the same code.
+8 interactive demos, all computed live by the same C library you can read
+in this repository. There is no JavaScript physics: each page loads a
+WebAssembly module compiled from the QMC sources and JavaScript only draws
+what the C code returns.
 
 | Demo                                              | Physics                                               | Library routine                     | Size  |
 | ------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
@@ -73,7 +72,7 @@ Pick any n, l and m and the page draws that orbital as tens of thousands of
 points, each one a position where the electron could be found. The radial
 distance is sampled from the library's hydrogen radial wavefunction and the
 direction from the spherical harmonic, in real or complex form, with colour
-marking the sign of the wavefunction. Rotate it, and compare `s`, `p`, `d` 
+marking the sign of the wavefunction. Rotate it, and compare `s`, `p`, `d`
 and `f` shapes directly.
 
 [Open the demo](playground/orbitals.html) ·
@@ -118,7 +117,7 @@ keeps both outcomes in superposition, so its amplitudes interfere: the cloud
 spreads in proportion to t, and the probability piles up near the edges of
 the light cone instead of the middle. The demo draws both walks together and
 lets you change the coin angle, for which the spreading rate has the exact
-form $\sqrt{1 − \sin(\theta) \codt t}$. This is the same mechanism behind 
+form $\sqrt{1 − \sin(\theta) \codt t}$. This is the same mechanism behind
 quantum-walk search algorithms.
 
 [Open the demo](playground/quantum_walk.html)
@@ -131,7 +130,7 @@ Two energy levels that would cross are pushed apart by a coupling into an
 avoided crossing. Sweep the control parameter through it slowly and the
 system follows its level; sweep it quickly and it jumps across the gap, with
 the probability $\exp(−\pi\Omega^2/2v)$ found independently by Landau, Zener,
-Stückelberg and Majorana in 1932. The demo integrates a qubit through the crossing 
+Stückelberg and Majorana in 1932. The demo integrates a qubit through the crossing
 and overlays the closed form on a scan of the sweep rate, then sweeps out and
 back so the two paths interfere: the fringes stay inside the envelope
 4P(1−P). This is how qubits are initialised, read out and probed in many

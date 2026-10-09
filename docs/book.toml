@@ -16,7 +16,7 @@ mathjax-support = false
 git-repository-url = "https://github.com/Harshit-Dhanwalkar/QMC"
 git-repository-icon = "fab-github"
 edit-url-template = "https://github.com/Harshit-Dhanwalkar/QMC/edit/main/docs/src/{path}"
-# additional-css = ["custom.css"]
+additional-css = ["custom.css"]
 # default-theme = "navy"
 # preferred-dark-theme = "navy"
 
