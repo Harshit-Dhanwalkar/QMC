@@ -295,43 +295,33 @@
       </footer>
     </div>
 
+    <script src="wasi-shim.js"></script>
     <script>
       "use strict";
       (async function () {
         const $ = (id) => document.getElementById(id);
-        const BG = "#0b0e14",
-          BAND = "#161c2a",
-          E_MAX = 4.15,
-          INT_MIN = -2147483648;
+        const BG = "#0b0e14";
+        const BAND = "#161c2a";
+        const E_MAX = 4.15;
+        const INT_MIN = -2147483648;
         const showError = (m) => {
           const e = $("err");
           e.style.display = "block";
           e.innerHTML = m;
         };
 
-        // load WebAssembly (needs three do-nothing WASI imports for stdio)
-        let w, mem;
+        // load WebAssembly (needs do-nothing WASI imports for stdio)
+        let w;
+        let wasmMemory = null;
         try {
-          const wasi = {
-            fd_close: () => 0,
-            fd_seek: () => 70,
-            fd_write: (fd, iov, n, out) => {
-              const v = new DataView(mem.buffer);
-              let tot = 0;
-              for (let i = 0; i < n; i++)
-                tot += v.getUint32(iov + 8 * i + 4, true);
-              v.setUint32(out, tot, true);
-              return 0;
-            },
-          };
           const res = await fetch("qmc_butterfly.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
-            { wasi_snapshot_preview1: wasi },
+            makeWasiImports(() => wasmMemory),
           );
           w = instance.exports;
-          mem = w.memory;
+          wasmMemory = w.memory;
           if (w._initialize) w._initialize();
         } catch (err) {
           showError(
@@ -343,6 +333,7 @@
           $("prog").textContent = "";
           return;
         }
+
         const MAXQ = Math.min(50, w.qmc_bf_max_q());
 
         // colours: gap colour by Hall number
@@ -350,8 +341,8 @@
           if (t === null) return [255, 255, 255];
           if (t === 0) return [96, 110, 138];
           const s = Math.min(Math.abs(t), 8) / 8;
-          const a = t > 0 ? [255, 214, 120] : [130, 228, 255],
-            b = t > 0 ? [232, 40, 62] : [48, 84, 255];
+          const a = t > 0 ? [255, 214, 120] : [130, 228, 255];
+          const  b = t > 0 ? [232, 40, 62] : [48, 84, 255];
           return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * s));
         }
         const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
@@ -385,7 +376,7 @@
             if (gcd(p, q) !== 1) continue;
             if (w.qmc_bf_edges(p, q) !== 0) continue;
             const edges = new Float64Array(
-              mem.buffer,
+              wasmMemory.buffer,
               w.qmc_bf_buffer(),
               2 * q,
             ).slice();
@@ -398,6 +389,7 @@
             return true;
           }
         }
+
         let viewKey = "",
           viewCache = [];
         function view(qmax) {
@@ -557,31 +549,37 @@
             !geo.v.length
           )
             return null;
-          let lo = 0,
-            hi = geo.v.length - 1; // nearest flux by binary search
+          let lo = 0;
+          let hi = geo.v.length - 1; // nearest flux by binary search
           while (lo < hi) {
             const mid = (lo + hi) >> 1;
-            if (geo.v[mid].alpha < alpha) lo = mid + 1;
-            else hi = mid;
+            if (geo.v[mid].alpha < alpha) {
+              lo = mid + 1;
+            } else {
+              hi = mid;
+            }
           }
+
           let best = lo;
           if (
             lo > 0 &&
             Math.abs(geo.v[lo - 1].alpha - alpha) <
               Math.abs(geo.v[lo].alpha - alpha)
-          )
+          ) {
             best = lo - 1;
+          }
           return { flux: geo.v[best], E };
         }
         function classify(sel) {
           // what is at energy E for this flux?
-          const f = sel.flux,
-            E = sel.E;
+          const f = sel.flux;
+          const E = sel.E;
           for (let r = 1; r < f.q; r++) {
             const lo = f.edges[2 * (r - 1) + 1],
               hi = f.edges[2 * r];
-            if (E > lo && E < hi)
+            if (E > lo && E < hi) {
               return { kind: "gap", r, lo, hi, t: f.tknn[r - 1] };
+            }
           }
           for (let b = 0; b < f.q; b++)
             if (E >= f.edges[2 * b] && E <= f.edges[2 * b + 1])
@@ -593,14 +591,15 @@
               };
           return { kind: "none" };
         }
+
         function drawOverlay() {
           const c = ov.getContext("2d");
           c.clearRect(0, 0, ov.width, ov.height);
           if (!geo) return;
           const mark = (sel, solid) => {
             if (!sel) return;
-            const x = geo.X(sel.flux.alpha),
-              y = geo.Y(sel.E);
+            const x = geo.X(sel.flux.alpha);
+            const y = geo.Y(sel.E);
             c.strokeStyle = solid
               ? "rgba(255,255,255,.95)"
               : "rgba(255,255,255,.55)";
@@ -617,12 +616,14 @@
             c.arc(x, y, Math.max(4, ov.height / 90), 0, 2 * Math.PI);
             c.stroke();
           };
+
           mark(hover, false);
           mark(pinned, true);
         }
+
         function describe(sel, extra) {
-          const f = sel.flux,
-            c = classify(sel);
+          const f = sel.flux;
+          const c = classify(sel);
           let h = `<div class="big"><span class="k">flux</span> α = <b>${f.p}/${f.q}</b> &nbsp;<span class="k">(${f.q} bands, E/t = ${fmt(sel.E)})</span></div>`;
           if (c.kind === "gap") {
             if (c.t === null) {
@@ -636,8 +637,10 @@
           } else {
             h += `<div class="k">Outside the spectrum.</div>`;
           }
+
           return h + (extra || "");
         }
+
         const sameSel = (a, b) => a && b && a.flux === b.flux;
         let checkHTML = "";
         function showPinned() {
@@ -645,15 +648,16 @@
         }
 
         function numericCheck(sel) {
-          const c = classify(sel),
-            f = sel.flux;
+          const c = classify(sel);
+          const f = sel.flux;
           checkHTML = "";
           if (c.kind !== "gap" || c.t === null) {
             showPinned();
             return;
           }
+
           // The FHS integer is only right if the k-grid resolves the Berry curvature, so scale it with |t|;
-          // cost ~ 1.5e-4 * q^3 * n_k^2 ms, skip when that would freeze the page.
+          // cost ~ 1.5e-4 * q^3 * n_k^2 ms, skip when that would freeze the page
           const est = (nk) => 1.5e-4 * f.q ** 3 * nk * nk;
           let nk = Math.max(8, Math.min(40, 2 * Math.abs(c.t) + 8));
           if (est(nk) > 5000) {
@@ -661,14 +665,15 @@
             showPinned();
             return;
           }
+
           checkHTML = `<div class="k">Computing Chern number with the library (n<sub>k</sub> = ${nk})…</div>`;
           showPinned();
           const token = sel;
           setTimeout(() => {
             if (pinned !== token) return;
-            let t0 = performance.now(),
-              C = w.qmc_bf_chern(f.p, f.q, c.r, nk),
-              ms = performance.now() - t0;
+            let t0 = performance.now();
+            let C = w.qmc_bf_chern(f.p, f.q, c.r, nk);
+            let ms = performance.now() - t0;
             let ok = Math.abs(C - c.t) < 0.05;
             if (!ok && est(Math.ceil(nk * 1.6)) < 5000) {
               // under-resolved grid: refine once
@@ -679,10 +684,10 @@
               ok = Math.abs(C - c.t) < 0.05;
             }
             if (pinned !== token) return;
-            if (Number.isNaN(C))
+            if (Number.isNaN(C)) {
               checkHTML = `<div class="warn">Library check: grid too coarse or gap too small at n<sub>k</sub> = ${nk} (the library refuses to guess).</div>`;
             else if (ok)
-              checkHTML = `<div class="ok">✓ Library check: Fukui–Hatsugai–Suzuki C = ${Math.round(C)} on a ${nk}×${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
+              checkHTML = `<div class="ok">✓ Library check: Fukui-Hatsugai-Suzuki C = ${Math.round(C)} on a ${nk}×${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
             else
               checkHTML = `<div class="warn">Library check at n<sub>k</sub> = ${nk} gave C = ${C.toFixed(3)}: the grid does not resolve the Berry curvature of this gap (a Chern number from a too-coarse grid is aliased). TKNN is exact.</div>`;
             showPinned();
@@ -748,6 +753,7 @@
           }
           return n;
         }
+
         function pump() {
           const t0 = performance.now();
           let did = false;

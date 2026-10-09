@@ -313,6 +313,7 @@
       </footer>
     </div>
 
+    <script src="wasi-shim.js"></script>
     <script>
       "use strict";
       (async function () {
@@ -342,93 +343,33 @@
           e.innerHTML = msg;
         }
 
-        // load WebAssembly module
-        // The module is built with wasm32-wasi, so it declares a handful of WASI
-        // syscalls (fd_write, clock_time_get, ...) even though we never call most
-        // of them. The shim below satisfies those imports with browser-safe no-ops.
+        // load WebAssembly module (qmc.wasm is built with wasm32-wasi;
+        // wasi-shim.js provides the browser-safe WASI no-ops it imports)
         let w;
         let wasmMemory = null;
         try {
           const res = await fetch("qmc.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
 
-          const imports = {
-            wasi_snapshot_preview1: {
-              fd_write: (fd, iovsPtr, iovsLen, nwrittenPtr) => {
-                const mem = wasmMemory;
-                if (!mem) return 0;
-                const dv = new DataView(mem.buffer);
-                let written = 0;
-                for (let i = 0; i < iovsLen; i++) {
-                  const ptr = dv.getUint32(iovsPtr + i * 8, true);
-                  const len = dv.getUint32(iovsPtr + i * 8 + 4, true);
-                  const bytes = new Uint8Array(mem.buffer, ptr, len);
-                  console.warn(
-                    "[wasm fd",
-                    fd + "]",
-                    new TextDecoder().decode(bytes),
-                  );
-                  written += len;
-                }
-                if (nwrittenPtr) dv.setUint32(nwrittenPtr, written, true);
-                return 0;
-              },
-              fd_close: () => 0,
-              fd_seek: () => 0,
-              fd_fdstat_get: () => 0,
-              fd_prestat_get: () => 8,
-              fd_prestat_dir_name: () => 8,
-              args_sizes_get: (a, b) => {
-                if (!wasmMemory) return 0;
-                const dv = new DataView(wasmMemory.buffer);
-                dv.setUint32(a, 0, true);
-                dv.setUint32(b, 0, true);
-                return 0;
-              },
-              args_get: () => 0,
-              environ_sizes_get: (a, b) => {
-                if (!wasmMemory) return 0;
-                const dv = new DataView(wasmMemory.buffer);
-                dv.setUint32(a, 0, true);
-                dv.setUint32(b, 0, true);
-                return 0;
-              },
-              environ_get: () => 0,
-              random_get: (ptr, len) => {
-                if (!wasmMemory) return 0;
-                const buf = new Uint8Array(wasmMemory.buffer, ptr, len);
-                crypto.getRandomValues(buf);
-                return 0;
-              },
-              clock_time_get: (id, prec, ptr) => {
-                if (!wasmMemory) return 0;
-                new DataView(wasmMemory.buffer).setBigUint64(
-                  ptr,
-                  BigInt(Date.now()) * 1000000n,
-                  true,
-                );
-                return 0;
-              },
-              proc_exit: (code) => {
-                throw new Error("WASI proc_exit(" + code + ")");
-              },
-              proc_raise: () => 0,
-              sched_yield: () => 0,
-            },
-          };
-
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
-            imports,
+            makeWasiImports(() => wasmMemory),
           );
-          w = instance.exports;
-          wasmMemory = w.memory; // capture memory for the shim's later calls
 
+          w = instance.exports;
+          wasmMemory = w.memory;
           if (w._initialize) w._initialize();
-          if (w.qmc_init(N, BOX, DT) !== 0) throw new Error("qmc_init failed");
+          if (w.qmc_init(N, BOX, DT) !== 0) {
+            throw new Error("qmc_init failed");
+          }
         } catch (err) {
           showError(
-            "Could not load <code>qmc.wasm</code> (" + err.message + "). ...",
+            "Could not load <code>qmc.wasm</code> (" +
+              err.message +
+              "). " +
+              "If you opened this file directly from disk, serve the folder: " +
+              "<code>python3 -m http.server</code> and open " +
+              "<code>http://localhost:8000/index.html</code>.",
           );
           return;
         }
@@ -448,21 +389,21 @@
         ];
         const lut = new Uint8Array(256 * 3);
         for (let i = 0; i < 256; i++) {
-          const t = (i / 255) * (stops.length - 1),
-            k = Math.min(stops.length - 2, Math.floor(t)),
-            f = t - k;
+          const t = (i / 255) * (stops.length - 1);
+          const k = Math.min(stops.length - 2, Math.floor(t));
+          const f = t - k;
           for (let c = 0; c < 3; c++) {
             lut[i * 3 + c] = stops[k][c] + (stops[k + 1][c] - stops[k][c]) * f;
           }
         }
 
         // state
-        let playing = true,
-          t = 0,
-          vmax = 0.02,
-          tool = "draw",
-          speed = 4,
-          msPerStep = 0;
+        let playing = true;
+        let t = 0;
+        let vmax = 0.02;
+        let tool = "draw";
+        let speed = 4;
+        let msPerStep = 0;
 
         const acc = new Float64Array(N);
         const val = (id) => parseFloat($(id).value);
@@ -474,16 +415,18 @@
         }
 
         function buildPreset(name) {
-          const sep = val("sep"),
-            sw = val("sw");
-          if (name === "double")
+          const sep = val("sep");
+          const sw = val("sw");
+          if (name === "double") {
             w.qmc_build_slits(2.0, 1.0, 2, sep, sw, WALL_V);
-          else if (name === "single")
+          } else if (name === "single") {
             w.qmc_build_slits(2.0, 1.0, 1, sep, sw, WALL_V);
-          else if (name === "tunnel") {
+          } else if (name === "tunnel") {
             w.qmc_clear_potential();
             w.qmc_fill_rect(1.5, 2.5, -BOX, BOX, 8.0);
-          } else w.qmc_clear_potential();
+          } else {
+            w.qmc_clear_potential();
+          }
         }
 
         let preset = "double";
@@ -495,15 +438,14 @@
         }
 
         // drawing walls
-        let painting = false,
-          eraseMode = false,
-          lastG = null;
+        let painting = false;
+        let eraseMode = false;
+        let lastG = null;
 
         function stamp(gx, gy) {
-          gy = ((ev.clientY - r.top) / r.height) * N;
           const V = new Float64Array(mem(), w.qmc_potential(), N * N);
-          const rad = 2.2,
-            v = eraseMode || tool === "erase" ? 0 : WALL_V;
+          const rad = 2.2;
+          const v = eraseMode || tool === "erase" ? 0 : WALL_V;
           for (
             let ix = Math.max(0, Math.floor(gx - rad - 1));
             ix <= Math.min(N - 1, Math.ceil(gx + rad + 1));
@@ -521,8 +463,8 @@
 
         function paintAt(ev) {
           const r = sim.getBoundingClientRect();
-          const gx = ((ev.clientX - r.left) / r.width) * N,
-            gy = ((ev.clientY - r.top) / r.height) * N;
+          const gx = ((ev.clientX - r.left) / r.width) * N;
+          const gy = ((ev.clientY - r.top) / r.height) * N;
           const from = lastG || [gx, gy];
           const steps = Math.max(
             1,
@@ -563,13 +505,13 @@
             inv = 1 / vmax;
           for (let ix = 0; ix < N; ix++) {
             for (let iy = 0; iy < N; iy++) {
-              const i = ix * N + iy,
-                p = (iy * N + ix) * 4;
+              const i = ix * N + iy;
+              const p = (iy * N + ix) * 4;
               let idx = (Math.sqrt(d[i] * inv) * 255) | 0;
               if (idx > 255) idx = 255;
-              let r = lut[idx * 3],
-                g = lut[idx * 3 + 1],
-                b = lut[idx * 3 + 2];
+              let r = lut[idx * 3];
+              let g = lut[idx * 3 + 1];
+              let b = lut[idx * 3 + 2];
               if (V[i] > 0.5) {
                 // walls: slate blue overlay
                 const a = V[i] > 20 ? 0.8 : 0.45;
@@ -577,12 +519,14 @@
                 g = g * (1 - a) + 160 * a;
                 b = b * (1 - a) + 210 * a;
               }
+
               px[p] = r;
               px[p + 1] = g;
               px[p + 2] = b;
               px[p + 3] = 255;
             }
           }
+
           octx.putImageData(img, 0, 0);
           sctx.imageSmoothingEnabled = true;
           sctx.drawImage(off, 0, 0, sim.width, sim.height);
@@ -599,9 +543,15 @@
           sctx.restore();
 
           // accumulate detector + draw histogram
-          for (let iy = 0; iy < N; iy++) acc[iy] += d[SX * N + iy];
+          for (let iy = 0; iy < N; iy++) {
+            acc[iy] += d[SX * N + iy];
+          }
           let am = 1e-12;
-          for (let iy = 0; iy < N; iy++) if (acc[iy] > am) am = acc[iy];
+          for (let iy = 0; iy < N; iy++) {
+            if (acc[iy] > am) {
+              am = acc[iy];
+            }
+          }
           rctx.fillStyle = "#05070b";
           rctx.fillRect(0, 0, scr.width, scr.height);
           const bh = scr.height / N;
@@ -610,6 +560,7 @@
             const wd = (acc[iy] / am) * (scr.width - 6);
             rctx.fillRect(0, iy * bh, wd, Math.max(1, bh - 0.5));
           }
+
           $("st-t").textContent = t.toFixed(2);
           $("st-n").textContent = w.qmc_norm().toFixed(4);
           $("st-ms").textContent = msPerStep ? msPerStep.toFixed(2) : "-";
@@ -634,16 +585,17 @@
 
           // fire next particle once last one has left box (or after a long time),
           // keeping accumulated detector pattern so fringes keep building up
-          if (playing && $("auto").checked && (w.qmc_norm() < 0.02 || t > 40))
+          if (playing && $("auto").checked && (w.qmc_norm() < 0.02 || t > 40)) {
             launch();
+          }
           last = now;
           requestAnimationFrame(frame);
         }
 
         // controls
         function bindSlider(id, onchange) {
-          const el = $(id),
-            out = $(id + "v");
+          const el = $(id);
+          const out = $(id + "v");
           const upd = () => {
             out.textContent = parseFloat(el.value).toString();
           };

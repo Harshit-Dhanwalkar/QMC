@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>QMC Playground: Landau–Zener</title>
+    <title>QMC Playground: Landau-Zener</title>
     <meta
       name="description"
       content="Sweep a qubit through an avoided crossing and watch it jump between energy levels with the Landau-Zener probability, and interfere with itself on the way back (Stueckelberg fringes). Computed live in your browser by the QMC C library (WebAssembly)."
@@ -414,6 +414,7 @@
       </footer>
     </div>
 
+    <script src="wasi-shim.js"></script>
     <script type="module">
       (async () => {
         const $ = (id) => document.getElementById(id);

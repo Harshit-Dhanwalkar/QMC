@@ -48,7 +48,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(double *r, int N, double Z,
 void hf_result_free(hf_result_t *res);
 ```
 
-`r` should be a **uniform** radial grid with `r[0] > 0` (avoiding the Coulomb singularity - same convention as [Central Potentials](central_potential.md)'s `central_potential_radial_solve`), and `N >= 10` or so for anything meaningful. `mix` is a linear density-mixing fraction in $(0,1]$ (`new = (1-mix)*old + mix*new_raw`) applied each SCF update for stability - `1.0` means no damping; smaller values (0.3–0.5) trade convergence speed for stability against oscillation.
+`r` should be a **uniform** radial grid with `r[0] > 0` (avoiding the Coulomb singularity - same convention as [Central Potentials](central_potential.md)'s `central_potential_radial_solve`), and `N >= 10` or so for anything meaningful. `mix` is a linear density-mixing fraction in $(0,1]$ (`new = (1-mix)*old + mix*new_raw`) applied each SCF update for stability - `1.0` means no damping; smaller values (0.3-0.5) trade convergence speed for stability against oscillation.
 
 ```c
 double *r = linspace(1e-4, 20.0, 2000);

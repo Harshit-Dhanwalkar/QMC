@@ -48,7 +48,7 @@ numerov_solution_t *numerov_shoot_matching(numerov_params_t *params,
                                            int n_scan, double tol);
 ```
 
-Bidirectional Numerov integration with log-derivative matching at the outer classical turning point, bracketed on `[E_min, E_max]` and refined by bisection (`n_scan` points used to find a sign change before bisecting). Validated to roughly $10^{-9}$–$10^{-11}$ against the harmonic oscillator's known spectrum.
+Bidirectional Numerov integration with log-derivative matching at the outer classical turning point, bracketed on `[E_min, E_max]` and refined by bisection (`n_scan` points used to find a sign change before bisecting). Validated to roughly $10^{-9}$-$10^{-11}$ against the harmonic oscillator's known spectrum.
 
 This exists because naive single-direction shooting - integrate outward from one boundary and look for a zero-crossing at some matching point - cannot detect eigenvalues in a classically-allowed region: a Taylor-series analysis of the recurrence shows the characteristic ratio stays above 1, so the trial solution never changes sign there regardless of step size or grid resolution. Bidirectional matching (integrate from both ends and match log-derivatives at a turning point) sidesteps the problem entirely.
 

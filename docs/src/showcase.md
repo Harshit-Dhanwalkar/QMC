@@ -14,7 +14,7 @@ what the C code returns.
 | [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
 | [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
 | [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
-| [Landau–Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
+| [Landau-Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -117,12 +117,12 @@ keeps both outcomes in superposition, so its amplitudes interfere: the cloud
 spreads in proportion to t, and the probability piles up near the edges of
 the light cone instead of the middle. The demo draws both walks together and
 lets you change the coin angle, for which the spreading rate has the exact
-form $\sqrt{1 − \sin(\theta) \codt t}$. This is the same mechanism behind
+form $\sqrt{1 − \sin(\theta) \cdot t}$. This is the same mechanism behind
 quantum-walk search algorithms.
 
 [Open the demo](playground/quantum_walk.html)
 
-## Landau–Zener: jumping across an avoided crossing
+## Landau-Zener: jumping across an avoided crossing
 
 [![Landau-Zener sweep](playground/landau_zener.gif)](playground/landau_zener.html)
 

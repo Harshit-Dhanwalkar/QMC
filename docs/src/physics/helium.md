@@ -6,7 +6,7 @@ $$
 H = -\frac{\hbar^2}{2m} \nabla_1^2 -\frac{\hbar^2}{2m} \nabla_2^2 - \frac{2e^2}{4\pi\varepsilon_0 r_1} - \frac{2e^2}{4\pi\varepsilon_0 r_2} + \frac{e^2}{4\pi\varepsilon_0 \vert{}\mathbf{r}_1 - \mathbf{r}_2\vert{}}
 $$
 
-Ground-state energy of a two-electron atom or ion via the classic effective-nuclear-charge variational method (Griffiths Ch. 7; Bransden & Joachain Ch. 5–7). Implemented in `physics/helium.h`.
+Ground-state energy of a two-electron atom or ion via the classic effective-nuclear-charge variational method (Griffiths Ch. 7; Bransden & Joachain Ch. 5-7). Implemented in `physics/helium.h`.
 
 ## The variational ansatz
 
