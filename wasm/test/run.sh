@@ -12,7 +12,7 @@ gcc -O2 -Wall -Wextra -I. wasm/test/native_ref.c wasm/qmc_wasm.c core/vector.c \
   -o "$TMP/qmc_native_ref"
 
 "$TMP/qmc_native_ref" | grep -E '^norm' > "$TMP/qmc_native.txt"
-node wasm/test/check.mjs 2>/dev/null | grep -E '^norm' > "$TMP/qmc_wasm.txt"
+node wasm/test/check.mjs| grep -E '^norm' > "$TMP/qmc_wasm.txt"
 
 python3 - "$TMP/qmc_native.txt" "$TMP/qmc_wasm.txt" <<'PY'
 import sys
@@ -35,7 +35,7 @@ gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg \
   core/matrix.c core/vector.c core/linalg/*.c -lm -o "$TMP/qmc_bf_check"
 "$TMP/qmc_bf_check" > "$TMP/qmc_bf_native.txt"   # exits non-zero on any failure
 cat "$TMP/qmc_bf_native.txt"
-node wasm/test/butterfly_check.mjs 2>/dev/null | grep digest > "$TMP/qmc_bf_wasm.txt"
+node wasm/test/butterfly_check.mjs| grep digest > "$TMP/qmc_bf_wasm.txt"
 if grep digest "$TMP/qmc_bf_native.txt" | diff -u - "$TMP/qmc_bf_wasm.txt"; then
   echo "OK: butterfly WASM matches native"
 else

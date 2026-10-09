@@ -57,6 +57,9 @@ dkms.conf
 # python cache and bindings files
 __pycache__/
 
+# python venv
+venv/
+
 # Build, Test and Examples generated
 build/
 output/

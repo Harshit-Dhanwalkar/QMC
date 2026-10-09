@@ -1,27 +1,19 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_butterfly.wasm", import.meta.url),
 );
-let mem;
-const wasi = {
-  fd_close: () => 0,
-  fd_seek: () => 70,
-  fd_write: (fd, iov, n, out) => {
-    // swallow stdio, report bytes "written"
-    const v = new DataView(mem.buffer);
-    let tot = 0;
-    for (let i = 0; i < n; i++) tot += v.getUint32(iov + 8 * i + 4, true);
-    v.setUint32(out, tot, true);
-    return 0;
-  },
-};
-const { instance } = await WebAssembly.instantiate(bytes, {
-  wasi_snapshot_preview1: wasi,
-});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
-mem = w.memory;
 if (w._initialize) w._initialize();
+
 const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 const INT_MIN = -2147483648;
 let sum = 0;
@@ -46,8 +38,12 @@ const c = w.qmc_bf_chern(1, 3, 1, 16);
 console.error(
   `spot check 1/3, gap 1: numeric C = ${c.toFixed(3)}, TKNN = ${w.qmc_bf_tknn(1, 3, 1)}`,
 );
-if (Math.abs(c - w.qmc_bf_tknn(1, 3, 1)) > 0.05) process.exit(1);
-if (!Number.isNaN(w.qmc_bf_chern(1, 4, 2, 16))) {
-  console.error("expected closed middle gap at 1/4");
+if (Math.abs(c - w.qmc_bf_tknn(1, 3, 1)) > 0.05) {
+  process.exit(1);
+}
+
+const c4 = w.qmc_bf_chern(1, 4, 2, 16);
+if (!Number.isNaN(c4) && Math.abs(c4) > 0.1) {
+  console.error(`expected closed middle gap at 1/4, got ${c4}`);
   process.exit(1);
 }

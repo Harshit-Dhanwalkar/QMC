@@ -53,16 +53,27 @@ build_module() {
         -sSTANDALONE_WASM=1 -sALLOW_MEMORY_GROWTH=1 --no-entry \
         -sEXPORTED_FUNCTIONS="[$export_list]"
       ;;
+    # zig)
+    #   shellcheck disable=SC2086
+    #   zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
+    #     -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
+    #     -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
+    #   ;;
+    # ziglang)
+    #   # shellcheck disable=SC2086
+    #   python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
+    #     -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
+    #     -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
+    #   ;;
     zig)
-      # shellcheck disable=SC2086
       zig cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
+        -mexec-model=reactor -Wl,--no-entry \
         -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
       ;;
     ziglang)
       # shellcheck disable=SC2086
       python3 -m ziglang cc -target wasm32-wasi -O2 -fno-sanitize=undefined \
-        -mexec-model=reactor -Wl,--no-entry -Wl,--max-memory=0x10000000 \
+        -mexec-model=reactor -Wl,--no-entry \
         -Wl,--strip-all -Icore -Icore/linalg -Iphysics "$@" -lm -o "$out"
       ;;
   esac
