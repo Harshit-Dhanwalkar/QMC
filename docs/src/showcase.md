@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-8 interactive demos, all computed live by the same C library you can read
+9 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -15,6 +15,7 @@ what the C code returns.
 | [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
 | [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
 | [Landau-Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
+| [Kicked rotor](playground/kicked_rotor.html)      | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -137,6 +138,24 @@ back so the two paths interfere: the fringes stay inside the envelope
 superconducting and spin-qubit experiments.
 
 [Open the demo](playground/landau_zener.html)
+
+## The kicked rotor: where quantum mechanics tames chaos
+
+[![Kicked rotor](playground/kicked_rotor.gif)](playground/kicked_rotor.html)
+
+Kick a rotor with the same impulse once per turn. Classically this is the
+Chirikov standard map: for strong kicks the motion is chaotic and the
+momentum random-walks without limit, so its mean square grows in proportion
+to the number of kicks. The quantum rotor, kicked in exactly the same way,
+follows the classical diffusion for a few kicks and then stops. Quantum
+interference freezes the spreading, leaving a momentum distribution with
+exponential tails: dynamical localisation, the momentum-space cousin of
+Anderson localisation, and one of the first signatures of quantum chaos. At
+the special value ℏ = 4π the free rotation drops out and the spreading is
+ballistic with the exact result ⟨m²⟩ = (nK/ℏ)²/2, which the test suite
+checks to 1e-13.
+
+[Open the demo](playground/kicked_rotor.html)
 
 ## Run it yourself
 

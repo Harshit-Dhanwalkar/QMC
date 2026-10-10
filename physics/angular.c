@@ -38,6 +38,7 @@ complex_t l_minus_op(int orbital_l, int proj_m, int proj_m_prime) {
   if (proj_m <= -orbital_l || proj_m > orbital_l) {
     return c_zero();
   }
+
   double val = sqrt((double)(orbital_l + proj_m) * (orbital_l - proj_m + 1));
 
   return c_real(val);
@@ -64,6 +65,7 @@ cmatrix_t *lz_matrix(int l) {
   if (!M) {
     return NULL;
   }
+
   for (int i = 0; i < dim; i++) {
     int m = i - l;
     CMAT(M, i, i) = c_real(m);
@@ -129,7 +131,12 @@ double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2,
     return 0.0;
   }
 
-  int j1 = j1_2, m1 = m1_2, j2 = j2_2, m2 = m2_2, J = J_2, M = M_2;
+  int j1 = j1_2;
+  int m1 = m1_2;
+  int j2 = j2_2;
+  int m2 = m2_2;
+  int J = J_2;
+  int M = M_2;
   double log_pref =
       0.5 * (log((double)(J + 1)) + lfact((J + j1 - j2) / 2) +
              lfact((J - j1 + j2) / 2) + lfact((j1 + j2 - J) / 2) -
@@ -156,6 +163,7 @@ double clebsch_gordan(int j1_2, int m1_2, int j2_2, int m2_2, int J_2,
     if (k % 2 != 0) {
       term = -term;
     }
+
     sum += term;
   }
 
@@ -192,7 +200,7 @@ cvector_t *couple_states(int j1_2, int j2_2, int J_2, int M_2) {
     return NULL;
   }
 
-  int dim1 = j1_2 + 1; // = 2*j1+1, whether j1 integer or half-integer
+  int dim1 = j1_2 + 1; // = 2 * j1 + 1, whether j1 integer or half-integer
   int dim2 = j2_2 + 1;
 
   cvector_t *v = cvector_alloc(dim1 * dim2);
@@ -204,8 +212,10 @@ cvector_t *couple_states(int j1_2, int j2_2, int J_2, int M_2) {
     v->data[i] = c_zero();
   }
 
-  // Same index convention as lz_matrix: index i -> m = i - j, so m1_2 = -j1_2 +
-  // 2*i1 and m2_2 = -j2_2 + 2*i2.
+  // Same index convention as lz_matrix:
+  // index i -> m = i - j,
+  // so: m1_2 = -j1_2 + 2 * i1
+  //     m2_2 = -j2_2 + 2 * i2
   for (int i1 = 0; i1 < dim1; i1++) {
     int m1_2 = -j1_2 + 2 * i1;
     for (int i2 = 0; i2 < dim2; i2++) {
@@ -230,7 +240,7 @@ double gaunt_coefficient(int l, int m, int k, int lp, int mp) {
   double cg_m = clebsch_gordan(2 * l, -2 * m, 2 * k, 2 * q, 2 * lp, -2 * mp);
 
   // Parity check via bitwise AND: negative operands under two's-complement
-  // representation, unlike (m-mp) % 2.
+  // representation, unlike (m-mp) % 2
   double sign = ((m - mp) & 1) ? -1.0 : 1.0;
 
   return sign * sqrt((2.0 * l + 1.0) / (2.0 * lp + 1.0)) * cg_triangle * cg_m;

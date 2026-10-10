@@ -317,20 +317,20 @@
     <script>
       "use strict";
       (async function () {
-        const N = 128,
-          BOX = 40,
-          DT = 0.02,
-          WALL_V = 60;
+        const N = 128;
+        const BOX = 40;
+        const DT = 0.02;
+        const WALL_V = 60;
         const DX = BOX / N;
         const SCREEN_X = 14; // detector position (physical units)
         const SX = Math.round(N / 2 + SCREEN_X / DX); // detector column
         const START_X = -12;
 
         const $ = (id) => document.getElementById(id);
-        const sim = $("sim"),
-          scr = $("screen");
-        const sctx = sim.getContext("2d"),
-          rctx = scr.getContext("2d");
+        const sim = $("sim");
+        const scr = $("screen");
+        const sctx = sim.getContext("2d");
+        const rctx = scr.getContext("2d");
         const off = document.createElement("canvas");
         off.width = N;
         off.height = N;
@@ -350,7 +350,6 @@
         try {
           const res = await fetch("qmc.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
-
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
             makeWasiImports(() => wasmMemory),

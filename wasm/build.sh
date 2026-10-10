@@ -12,6 +12,7 @@
 #   docs/src/playground/qmc_anderson.wasm   Anderson-localisation demo
 #   docs/src/playground/qmc_qwalk.wasm      quantum-walk demo
 #   docs/src/playground/qmc_lz.wasm         Landau-Zener / Stueckelberg demo
+#   docs/src/playground/qmc_rotor.wasm      kicked-rotor demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -122,3 +123,8 @@ build_module "$OUT/qmc_lz.wasm" \
   "qmc_lz_vec qmc_lz_scan_buffer qmc_lz_scan_max qmc_lz_time qmc_lz_total_time qmc_lz_delta \
 qmc_lz_upper qmc_lz_exact qmc_lz_reset qmc_lz_step qmc_lz_scan_rate qmc_lz_scan_amp" \
   wasm/qmc_lz.c physics/landau_zener.c
+
+build_module "$OUT/qmc_rotor.wasm" \
+  "qmc_kr_n qmc_kr_np qmc_kr_tmax qmc_kr_time qmc_kr_qbuffer qmc_kr_cbuffer qmc_kr_reset \
+qmc_kr_step qmc_kr_qm2 qmc_kr_cm2 qmc_kr_norm qmc_kr_diffusion qmc_kr_edge" \
+  wasm/qmc_rotor.c physics/kicked_rotor.c core/vector.c core/fft/fft.c

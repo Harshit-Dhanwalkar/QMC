@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Kicked rotor</title>
+    <meta
+      name="description"
+      content="The quantum kicked rotor next to the classical standard map. Classical chaos spreads momentum without limit; the quantum rotor freezes (dynamical localisation). Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Quantum chaos and dynamical localisation in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Kick a rotor again and again. The classical map diffuses forever, the quantum one stops after a few kicks. Computed live by a pure-C FFT split-step solver."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/kicked_rotor.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #ph {
+        aspect-ratio: 16 / 8.6;
+      }
+      #dist {
+        aspect-ratio: 16 / 6;
+        margin-top: 14px;
+      }
+      #grow {
+        aspect-ratio: 16 / 5.4;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Kicked rotor</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        Kick a spinning rotor with a force K sin&thinsp;&theta; once per turn,
+        again and again. For K above about 1 the classical motion is
+        <b>chaotic</b> and the momentum diffuses without limit,
+        &lang;p&sup2;&rang; &asymp; (K&sup2;/2)&thinsp;n. The quantum rotor
+        follows it for a few kicks and then <b>stops</b>: interference freezes
+        the spreading (dynamical localisation, the cousin of Anderson
+        localisation) and leaves exponential tails. Every kick is an FFT
+        split-step in the QMC library (<code>krotor_step</code>), running in
+        your browser.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="ph">
+            <canvas id="pc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="cv" id="dist"><canvas id="dc"></canvas></div>
+          <div class="cv" id="grow"><canvas id="gc"></canvas></div>
+          <div class="legend">
+            <span><i style="background: var(--accent)"></i>quantum rotor</span>
+            <span
+              ><i style="background: var(--accent2)"></i>classical standard
+              map</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>quasilinear diffusion
+              K&sup2;/2&hbar;&sup2; per kick</span
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Kicks</h2>
+            <div class="row" id="presets">
+              <button data-k="5" data-h="1" class="on">Localisation</button>
+              <button data-k="8" data-h="0.5">Near classical</button>
+              <button data-k="0.8" data-h="1">Regular</button>
+              <button data-k="5" data-h="12.566">Resonance</button>
+            </div>
+            <div class="row">
+              <label
+                ><span>Kick K</span
+                ><input
+                  id="kk"
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="0.1"
+                  value="5"
+                /><b id="kkv">5.0</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>Planck &hbar;</span
+                ><input
+                  id="hh"
+                  type="range"
+                  min="0.5"
+                  max="13"
+                  step="0.05"
+                  value="1"
+                /><b id="hhv">1.00</b></label
+              >
+            </div>
+            <div class="row">
+              <button id="play" class="primary">Pause</button>
+              <button id="restart">Restart</button>
+              <button id="reseed">New ensemble</button>
+              <label style="width: auto"
+                ><span style="min-width: 0">Speed</span
+                ><input
+                  id="spd"
+                  type="range"
+                  min="1"
+                  max="8"
+                  step="1"
+                  value="2"
+                  style="width: 90px; flex: none"
+              /></label>
+            </div>
+            <div id="note"></div>
+          </div>
+
+          <div class="panel">
+            <h2>State</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        Map: p&prime; = p + K sin&thinsp;&theta;, &theta;&prime; = &theta; +
+        p&prime; classically; quantum: &psi; &rarr;
+        e<sup>&minus;i&hbar;m&sup2;/2</sup>e<sup>&minus;i(K/&hbar;)cos&thinsp;&theta;</sup>&psi;
+        with p&nbsp;=&nbsp;&hbar;m. Phase space shows 3000 classical points (p
+        wrapped to one period); the quantum state starts in m&nbsp;=&nbsp;0 on
+        2048 angle points. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/kicked_rotor.c"
+          ><code>physics/kicked_rotor.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_rotor.c"
+          ><code>wasm/qmc_rotor.c</code></a
+        >. At &hbar;&nbsp;=&nbsp;4&pi; (resonance) the free rotation does
+        nothing and &lang;m&sup2;&rang;&nbsp;=&nbsp;(nK/&hbar;)&sup2;/2 exactly;
+        this and the diffusion rate are checked in
+        <code>tests/test_kicked_rotor.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_rotor.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_rotor.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/kicked_rotor.html</code>.",
+          );
+          return;
+        }
+
+        const N = w.qmc_kr_n();
+        const NP = w.qmc_kr_np();
+        const TMAX = w.qmc_kr_tmax();
+        const TWO_PI = 2 * Math.PI;
+        const qbuf = () =>
+          new Float64Array(w.memory.buffer, w.qmc_kr_qbuffer(), N);
+        const cbuf = () =>
+          new Float64Array(w.memory.buffer, w.qmc_kr_cbuffer(), 2 * NP);
+
+        let K = 5;
+        let H = 1;
+        let seed = 7;
+        let spf = 2;
+        let playing = true;
+        let hist = [];
+        let finished = false;
+
+        function reset() {
+          if (w.qmc_kr_reset(K, H, seed) !== 0) {
+            showError("reset rejected");
+            return;
+          }
+          hist = [[0, 0, 0]];
+          finished = false;
+          render();
+        }
+
+        function advance() {
+          if (finished) {
+            playing = false;
+            $("play").textContent = "Replay";
+            return;
+          }
+
+          const n = Math.min(spf, TMAX - w.qmc_kr_time());
+          if (n < 1 || w.qmc_kr_step(n) !== 0) {
+            showError("step failed");
+            playing = false;
+            return;
+          }
+
+          hist.push([w.qmc_kr_time(), w.qmc_kr_qm2(), w.qmc_kr_cm2()]);
+          if (w.qmc_kr_time() >= TMAX) {
+            finished = true;
+          }
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const  d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+          return { g, W: r.width, H: r.height };
+        }
+
+        function drawPhase() {
+          const { g, W: cw, H: ch } = fit($("pc"));
+          const c = cbuf();
+          const x0 = 8;
+          const x1 = cw - 8;
+          const y0 = ch - 22;
+          const y1 = 8;
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          g.fillStyle = css("--accent2");
+          g.globalAlpha = 0.75;
+          for (let i = 0; i < NP; i++) {
+            let p = c[2 * i + 1] + Math.PI;
+            p -= Math.floor(p / TWO_PI) * TWO_PI; // wrap to [0, 2pi)
+            const px = x0 + (c[2 * i] / TWO_PI) * (x1 - x0);
+            const  py = y0 - (p / TWO_PI) * (y0 - y1);
+            g.fillRect(px, py, 1.6, 1.6);
+          }
+
+          g.globalAlpha = 1;
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText(
+            "classical phase space: angle \u03b8 (0 \u2192 2\u03c0) vs momentum p (wrapped, one period)",
+            x0 + 2,
+            ch - 6,
+          );
+          $("readout").textContent = "kicks n = " + w.qmc_kr_time();
+        }
+
+        function drawDist() {
+          const { g, W: cw, H: ch } = fit($("dc"));
+          const q = qbuf();
+          const c = cbuf();
+          const x0 = 36;
+          const x1 = cw - 10;
+          const y0 = ch - 20;
+          const y1 = 14;
+          const FLOOR = 7;
+
+          const rms = Math.sqrt(Math.max(w.qmc_kr_qm2(), w.qmc_kr_cm2(), 4));
+          const  half = Math.min(N / 2 - 1, Math.max(30, Math.ceil(rms * 3.6)));
+          const X = (m) => x0 + ((m + half) / (2 * half)) * (x1 - x0);
+
+          // classical histogram of p/hbar, bin width in units of m
+          const bw = Math.max(1, Math.round(half / 60));
+          const nb = Math.ceil((2 * half) / bw),
+          const hc = new Float64Array(nb);
+          for (let i = 0; i < NP; i++) {
+            const m = c[2 * i + 1] / H;
+            const  b = Math.floor((m + half) / bw);
+            if (b >= 0 && b < nb) { hc[b] += 1 / (NP * bw); }
+          }
+
+          let top = 1e-12;
+          for (let m = -half; m <= half; m++) top = Math.max(top, q[m + N / 2]);
+          for (let b = 0; b < nb; b++) top = Math.max(top, hc[b]);
+          const Y = (p) =>
+            y0 -
+            (y0 - y1) *
+              Math.max(
+                0,
+                Math.min(
+                  1,
+                  (Math.log10(Math.max(p, 1e-300)) - Math.log10(top) + FLOOR) /
+                    FLOOR,
+                ),
+              );
+
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          for (let k = 0; k <= FLOOR; k += 2) {
+            const y = Y(top * Math.pow(10, -k));
+            g.beginPath();
+            g.moveTo(x0, y);
+            g.lineTo(x1, y);
+            g.stroke();
+          }
+
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("\u2212" + half, x0, ch - 5);
+          g.fillText("0", X(0) - 3, ch - 5);
+          g.fillText("+" + half + "  (m = p/\u210f)", x1 - 98, ch - 5);
+          g.fillText("probability (log, " + FLOOR + " decades)", x0 + 4, 11);
+          g.globalAlpha = 0.55;
+          g.fillStyle = css("--accent2");
+          for (let b = 0; b < nb; b++) {
+            if (hc[b] <= 0) continue;
+            const xa = X(-half + b * bw),
+              xb = X(-half + (b + 1) * bw),
+              yy = Y(hc[b]);
+            g.fillRect(xa, yy, Math.max(1, xb - xa - 0.5), y0 - yy);
+          }
+          g.globalAlpha = 1;
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 1.6;
+          g.beginPath();
+          for (let m = -half; m <= half; m++) {
+            const px = X(m),
+              py = Y(q[m + N / 2]);
+            m === -half ? g.moveTo(px, py) : g.lineTo(px, py);
+          }
+          g.stroke();
+        }
+
+        function drawGrowth() {
+          const { g, W: cw, H: ch } = fit($("gc"));
+          const x0 = 40;
+          const  x1 = cw - 10;
+          const  y0 = ch - 18;
+          const  y1 = 10;
+          const D = w.qmc_kr_diffusion();
+          let yMax = 10;
+          for (const h of hist) {
+            yMax = Math.max(yMax, h[1], h[2]);
+          }
+          yMax = Math.max(yMax, Math.min(D * TMAX, 3 * yMax)) * 1.05;
+
+          const X = (t) => x0 + (t / TMAX) * (x1 - x0);
+          const Y = (v) => y0 - (y0 - y1) * Math.min(1, v / yMax);
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x0, y1);
+          g.lineTo(x0, y0);
+          g.lineTo(x1, y0);
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("\u27e8m\u00b2\u27e9", 6, y1 + 8);
+          g.fillText("kicks (0 \u2192 " + TMAX + ")", x1 - 100, ch - 4);
+          g.fillText(yMax.toFixed(0), 4, y1 + 22);
+          g.setLineDash([5, 4]);
+          g.strokeStyle = "#8993a8";
+          g.beginPath();
+          g.moveTo(X(0), Y(0));
+          g.lineTo(X(TMAX), Y(D * TMAX));
+          g.stroke();
+          g.setLineDash([]);
+
+          const line = (idx, col) => {
+            g.strokeStyle = col;
+            g.lineWidth = 2;
+            g.beginPath();
+            hist.forEach((h, i) => {
+              const px = X(h[0]);
+              const py = Y(h[idx]);
+              i ? g.lineTo(px, py) : g.moveTo(px, py);
+            });
+            g.stroke();
+          };
+
+          line(2, css("--accent2"));
+          line(1, css("--accent"));
+        }
+
+        function updateStats() {
+          const qm = w.qmc_kr_qm2();
+          const cm = w.qmc_kr_cm2();
+          const D = w.qmc_kr_diffusion();
+          const n = w.qmc_kr_time();
+          const res = Math.abs(H - 4 * Math.PI) < 0.01;
+          $("stats").innerHTML =
+            `<div class="stat"><span>Kicks n</span><span>${n}</span></div>
+       <div class="stat"><span>Quantum \u27e8m\u00b2\u27e9</span><span>${qm.toFixed(1)}</span></div>
+       <div class="stat"><span>Classical \u27e8p\u00b2\u27e9/\u210f\u00b2</span><span>${cm.toFixed(1)}</span></div>
+       <div class="stat"><span>Quantum / classical</span><span>${n ? (qm / cm).toFixed(2) : "\u2014"}</span></div>
+       <div class="stat"><span>Quasilinear D = K\u00b2/2\u210f\u00b2</span><span>${D.toFixed(1)} per kick</span></div>
+       <div class="stat"><span>Norm</span><span>${w.qmc_kr_norm().toFixed(9)}</span></div>`;
+          const edge =
+            w.qmc_kr_edge() > 1e-4
+              ? " Warning: the distribution reaches the edge of the momentum grid, so the quantum result is aliased."
+              : "";
+          $("note").textContent =
+            (res
+              ? "Quantum resonance: the free rotation is trivial, so the spreading is ballistic (\u27e8m\u00b2\u27e9 \u221d n\u00b2) and exactly (nK/\u210f)\u00b2/2."
+              : K < 1
+                ? "Below K \u2248 1 the classical motion is regular: momentum stays bounded and the points stay in a narrow band of phase space."
+                : n > 40 && qm < 0.35 * cm
+                  ? "Dynamical localisation: the classical map keeps diffusing but the quantum rotor has stopped, with exponential tails on the log plot."
+                  : "Early times: the quantum rotor still follows the classical diffusion. Wait for the break time, or raise \u210f to shorten it.") +
+            edge;
+        }
+
+        function render() {
+          drawPhase();
+          drawDist();
+          drawGrowth();
+          updateStats();
+        }
+        function restart() {
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        }
+        function setParams(k, h, fromPreset) {
+          K = k;
+          H = h;
+          $("kk").value = k;
+          $("hh").value = h;
+          $("kkv").textContent = k.toFixed(1);
+          $("hhv").textContent = h.toFixed(2);
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) =>
+              b.classList.toggle(
+                "on",
+                fromPreset &&
+                  +b.dataset.k === k &&
+                  Math.abs(+b.dataset.h - h) < 0.01,
+              ),
+            );
+          restart();
+        }
+
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) =>
+            b.addEventListener("click", () =>
+              setParams(+b.dataset.k, +b.dataset.h, true),
+            ),
+          );
+        $("kk").addEventListener("input", (e) =>
+          setParams(+e.target.value, H, false),
+        );
+        $("hh").addEventListener("input", (e) =>
+          setParams(K, +e.target.value, false),
+        );
+        $("play").addEventListener("click", () => {
+          if (finished) {
+            restart();
+            return;
+          }
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", restart);
+        $("reseed").addEventListener("click", () => {
+          seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+          restart();
+        });
+        $("spd").addEventListener("input", (e) => {
+          spf = +e.target.value;
+        });
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (playing) {
+            advance();
+            render();
+          }
+          requestAnimationFrame(frame);
+        }
+        reset();
+        requestAnimationFrame(frame);
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

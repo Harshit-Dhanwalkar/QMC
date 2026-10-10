@@ -123,3 +123,16 @@ else
   echo "FAIL: Landau-Zener WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Kicked rotor: quantum map + standard map, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/rotor_ref.c wasm/qmc_rotor.c physics/kicked_rotor.c \
+  core/vector.c core/fft/fft.c -lm -o "$TMP/qmc_rotor_ref"
+"$TMP/qmc_rotor_ref" > "$TMP/qmc_rotor_native.txt"
+cat "$TMP/qmc_rotor_native.txt"
+node wasm/test/rotor_check.mjs > "$TMP/qmc_rotor_wasm.txt"
+if diff -u "$TMP/qmc_rotor_native.txt" "$TMP/qmc_rotor_wasm.txt"; then
+  echo "OK: kicked-rotor WASM matches native"
+else
+  echo "FAIL: kicked-rotor WASM and native results differ" >&2
+  exit 1
+fi
