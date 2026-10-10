@@ -378,488 +378,495 @@
 
     <script src="wasi-shim.js"></script>
     <script type="module">
-            (async () => {
-              const $ = (id) => document.getElementById(id);
-              const showError = (m) => {
-                const e = $("err");
-                e.style.display = "block";
-                e.innerHTML = m;
-              };
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
 
-              // load WebAssembly
-              let w;
-              let wasmMemory = null;
-              try {
-                const res = await fetch("qmc_dirac.wasm");
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                const { instance } = await WebAssembly.instantiate(
-                  await res.arrayBuffer(),
-                  makeWasiImports(() => wasmMemory),
-                );
-                w = instance.exports;
-                wasmMemory = w.memory;
-                if (w._initialize) w._initialize();
-              } catch (err) {
-                showError(
-                  "Could not load <code>qmc_dirac.wasm</code> (" +
-                    err.message +
-                    "). If you opened this file directly " +
-                    "from disk, serve folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/dirac.html</code>.",
-                );
-                return;
-              }
-              const N = w.qmc_dc_n();
-              const DX = w.qmc_dc_dx();
-              const DT = w.qmc_dc_dt();
+        // load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_dirac.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_dirac.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/dirac.html</code>.",
+          );
 
-              // state
-              let scene = "klein";
-              let v0 = 4;
-              let k0 = 1.73;
-              let playing = true;
-              let ymax = 1;
-              let tEnd = 140;
-              let trace = [];
+          return;
+        }
 
-              const view = () => (scene === "klein" ? [-100, 100] : [-30, 30]);
-              const energy = () => Math.sqrt(k0 * k0 + 1);
-              const vg = () => k0 / energy();
+        const N = w.qmc_dc_n();
+        const DX = w.qmc_dc_dx();
+        const DT = w.qmc_dc_dt();
 
-              function buffers() {
-                // re-wrap every time: wasm memory may have grown
-                w.qmc_dc_density();
-                const b = new Float64Array(w.memory.buffer, w.qmc_dc_buffer(), 3 * N);
+        // state
+        let scene = "klein";
+        let v0 = 4;
+        let k0 = 1.73;
+        let playing = true;
+        let ymax = 1;
+        let tEnd = 140;
+        let trace = [];
 
-                return {
-                  up: b.subarray(0, N),
-                  lo: b.subarray(N, 2 * N),
-                  v: b.subarray(2 * N, 3 * N),
-                };
-              }
+        const view = () => (scene === "klein" ? [-100, 100] : [-30, 30]);
+        const energy = () => Math.sqrt(k0 * k0 + 1);
+        const vg = () => k0 / energy();
 
-              function restart() {
-                if (scene === "klein") {
-                  if (w.qmc_dc_klein(k0, v0) !== 0) {
-                    showError("qmc_dc_klein rejected parameters.");
-                    return;
-                  }
+        function buffers() {
+          // re-wrap every time: wasm memory may have grown
+          w.qmc_dc_density();
+          const b = new Float64Array(w.memory.buffer, w.qmc_dc_buffer(), 3 * N);
 
-                  tEnd = 50 / vg() + 80;
-                } else {
-                  if (w.qmc_dc_zitter() !== 0) {
-                    showError("qmc_dc_zitter failed.");
-                    return;
-                  }
+          return {
+            up: b.subarray(0, N),
+            lo: b.subarray(N, 2 * N),
+            v: b.subarray(2 * N, 3 * N),
+          };
+        }
 
-                  tEnd = 30;
-                  trace = [];
-                }
+        function restart() {
+          if (scene === "klein") {
+            if (w.qmc_dc_klein(k0, v0) !== 0) {
+              showError("qmc_dc_klein rejected parameters.");
+              return;
+            }
 
-                const b = buffers();
-                let m = 0;
-                for (let i = 0; i < N; i++) {
-                  m = Math.max(m, b.up[i] + b.lo[i]);
-                }
+            tEnd = 50 / vg() + 80;
+          } else {
+            if (w.qmc_dc_zitter() !== 0) {
+              showError("qmc_dc_zitter failed.");
+              return;
+            }
 
-                ymax = m * 1.18;
-                if (scene !== "klein") {
-                  trace.push([0, w.qmc_dc_position()]);
+            tEnd = 30;
+            trace = [];
+          }
 
-                }
+          const b = buffers();
+          let m = 0;
+          for (let i = 0; i < N; i++) {
+            m = Math.max(m, b.up[i] + b.lo[i]);
+          }
 
-                render();
-              }
+          ymax = m * 1.18;
+          if (scene !== "klein") {
+            trace.push([0, w.qmc_dc_position()]);
+          }
 
-              // drawing helpers
-              function fit(canvas) {
-                const r = canvas.parentElement.getBoundingClientRect();
-                const d = window.devicePixelRatio || 1;
-                const W = Math.max(2, Math.round(r.width * d));
-                const H = Math.max(2, Math.round(r.height * d));
-                if (canvas.width !== W || canvas.height !== H) {
-                  canvas.width = W;
-                  canvas.height = H;
-                }
+          render();
+        }
 
-                const g = canvas.getContext("2d");
-                g.setTransform(d, 0, 0, d, 0, 0);
+        // drawing helpers
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          const W = Math.max(2, Math.round(r.width * d));
+          const H = Math.max(2, Math.round(r.height * d));
+          if (canvas.width !== W || canvas.height !== H) {
+            canvas.width = W;
+            canvas.height = H;
+          }
 
-                return { g, W: r.width, H: r.height };
-              }
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
 
-              const css = (n) =>
-                getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+          return { g, W: r.width, H: r.height };
+        }
 
-              function drawWave() {
-                const { g, W, H } = fit($("wc"));
-                const b = buffers();
-                const [x0, x1] = view();
-                const padL = 10;
-                const padR = 10;
-                const padT = 12;
-                const padB = 26;
-                const X = (x) => padL + ((x - x0) / (x1 - x0)) * (W - padL - padR);
-                const Y = (f) => H - padB - f * (H - padT - padB); // f in [0,1] of ymax
+        const css = (n) =>
+          getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-                g.clearRect(0, 0, W, H);
+        function drawWave() {
+          const { g, W, H } = fit($("wc"));
+          const b = buffers();
+          const [x0, x1] = view();
+          const padL = 10;
+          const padR = 10;
+          const padT = 12;
+          const padB = 26;
+          const X = (x) => padL + ((x - x0) / (x1 - x0)) * (W - padL - padR);
+          const Y = (f) => H - padB - f * (H - padT - padB); // f in [0,1] of ymax
 
-                // potential step
-                if (scene === "klein") {
-                  const vmax = 20;
-                  const h = Math.min(1, v0 / vmax);
+          g.clearRect(0, 0, W, H);
 
-                  g.fillStyle = "rgba(245,165,36,.10)";
-                  g.fillRect(X(0), padT, W - padR - X(0), H - padT - padB);
-                  g.strokeStyle = css("--accent2");
-                  g.lineWidth = 2;
-                  g.beginPath();
-                  g.moveTo(padL, Y(0.02));
-                  g.lineTo(X(0), Y(0.02));
-                  g.lineTo(X(0), Y(0.02 + 0.9 * h));
-                  g.lineTo(W - padR, Y(0.02 + 0.9 * h));
-                  g.stroke();
-                  g.fillStyle = css("--accent2");
-                  g.font = "12px system-ui";
-                  g.textAlign = "right";
-                  g.fillText(
-                    "V₀ = " + v0.toFixed(1) + " mc²",
-                    W - padR - 4,
-                    Y(0.02 + 0.9 * h) - 6,
-                  );
-                }
+          // potential step
+          if (scene === "klein") {
+            const vmax = 20;
+            const h = Math.min(1, v0 / vmax);
 
-                // axis
-                g.strokeStyle = "#232b3d";
-                g.lineWidth = 1;
-                g.beginPath();
-                g.moveTo(padL, Y(0));
-                g.lineTo(W - padR, Y(0));
-                g.stroke();
-                g.fillStyle = css("--muted");
-                g.font = "11px system-ui";
-                g.textAlign = "center";
+            g.fillStyle = "rgba(245,165,36,.10)";
+            g.fillRect(X(0), padT, W - padR - X(0), H - padT - padB);
+            g.strokeStyle = css("--accent2");
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(padL, Y(0.02));
+            g.lineTo(X(0), Y(0.02));
+            g.lineTo(X(0), Y(0.02 + 0.9 * h));
+            g.lineTo(W - padR, Y(0.02 + 0.9 * h));
+            g.stroke();
+            g.fillStyle = css("--accent2");
+            g.font = "12px system-ui";
+            g.textAlign = "right";
+            g.fillText(
+              "V₀ = " + v0.toFixed(1) + " mc²",
+              W - padR - 4,
+              Y(0.02 + 0.9 * h) - 6,
+            );
+          }
 
-                const tick = scene === "klein" ? 25 : 10;
-                for (let x = Math.ceil(x0 / tick) * tick; x <= x1; x += tick) {
-                  g.fillText(String(x), X(x), H - 9);
-                  g.beginPath();
-                  g.moveTo(X(x), Y(0));
-                  g.lineTo(X(x), Y(0) + 4);
-                  g.stroke();
-                }
+          // axis
+          g.strokeStyle = "#232b3d";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(padL, Y(0));
+          g.lineTo(W - padR, Y(0));
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px system-ui";
+          g.textAlign = "center";
 
-                g.textAlign = "right";
-                g.fillText("x  (ħ/mc)", W - padR - 4, padT + 8);
+          const tick = scene === "klein" ? 25 : 10;
+          for (let x = Math.ceil(x0 / tick) * tick; x <= x1; x += tick) {
+            g.fillText(String(x), X(x), H - 9);
+            g.beginPath();
+            g.moveTo(X(x), Y(0));
+            g.lineTo(X(x), Y(0) + 4);
+            g.stroke();
+          }
 
-                const i0 = Math.max(0, Math.floor(x0 / DX + N / 2));
-                const i1 = Math.min(N - 1, Math.ceil(x1 / DX + N / 2));
-                const xs = (i) => (i - N / 2) * DX;
-                const path = (arr) => {
-                  g.beginPath();
-                  for (let i = i0; i <= i1; i++) {
-                    const px = X(xs(i));
-                    const py = Y(Math.min(1.02, arr[i] / ymax));
-                    i === i0 ? g.moveTo(px, py) : g.lineTo(px, py);
-                  }
-                };
+          g.textAlign = "right";
+          g.fillText("x  (ħ/mc)", W - padR - 4, padT + 8);
 
-                // total density fill
-                const tot = new Float64Array(N);
-                for (let i = 0; i < N; i++) { tot[i] = b.up[i] + b.lo[i]; }
-                path(tot);
-                g.lineTo(X(xs(i1)), Y(0));
-                g.lineTo(X(xs(i0)), Y(0));
-                g.closePath();
-                g.fillStyle = "rgba(232,237,247,.14)";
-                g.fill();
-                path(tot);
-                g.strokeStyle = "#e8edf7";
-                g.lineWidth = 1.6;
-                g.stroke();
-                path(b.up);
-                g.strokeStyle = css("--up");
-                g.lineWidth = 1.2;
-                g.stroke();
-                path(b.lo);
-                g.strokeStyle = css("--lo");
-                g.lineWidth = 1.2;
-                g.stroke();
+          const i0 = Math.max(0, Math.floor(x0 / DX + N / 2));
+          const i1 = Math.min(N - 1, Math.ceil(x1 / DX + N / 2));
+          const xs = (i) => (i - N / 2) * DX;
+          const path = (arr) => {
+            g.beginPath();
+            for (let i = i0; i <= i1; i++) {
+              const px = X(xs(i));
+              const py = Y(Math.min(1.02, arr[i] / ymax));
+              i === i0 ? g.moveTo(px, py) : g.lineTo(px, py);
+            }
+          };
 
-                // time label
-                g.fillStyle = css("--text");
-                g.font = "12px ui-monospace,monospace";
-                g.textAlign = "left";
-                g.fillText(
-                  "t = " + w.qmc_dc_time().toFixed(1) + " ħ/mc²",
-                  padL + 4,
-                  padT + 8,
-                );
-              }
+          // total density fill
+          const tot = new Float64Array(N);
+          for (let i = 0; i < N; i++) {
+            tot[i] = b.up[i] + b.lo[i];
+          }
+          path(tot);
+          g.lineTo(X(xs(i1)), Y(0));
+          g.lineTo(X(xs(i0)), Y(0));
+          g.closePath();
+          g.fillStyle = "rgba(232,237,247,.14)";
+          g.fill();
+          path(tot);
+          g.strokeStyle = "#e8edf7";
+          g.lineWidth = 1.6;
+          g.stroke();
+          path(b.up);
+          g.strokeStyle = css("--up");
+          g.lineWidth = 1.2;
+          g.stroke();
+          path(b.lo);
+          g.strokeStyle = css("--lo");
+          g.lineWidth = 1.2;
+          g.stroke();
 
-              function drawSide() {
-                const { g, W, H } = fit($("sc"));
-                g.clearRect(0, 0, W, H);
-                if (scene === "klein") {
-                  $("sidetitle").innerHTML = "Energy levels (units: <i>mc</i>&sup2;)";
-                  const E = energy();
-                  const lo = -2.6;
-                  const hi = Math.max(v0 + 3.6, E + 1.2);
-                  const padL = 44;
-                  const padR = 10;
-                  const padT = 10;
-                  const padB = 24;
-                  const mid = (padL + W - padR) / 2;
-                  const Y = (e) =;
-                  const H - padB - ((e - lo) / (hi - lo)) * (H - padT - padB);
-                  const band = (xa, xb, shift) => {
-                    g.fillStyle = "rgba(61,220,151,.22)";
-                    g.fillRect(xa, Y(hi), xb - xa, Y(shift + 1) - Y(hi));
-                    g.fillStyle = "rgba(160,120,255,.25)";
-                    g.fillRect(xa, Y(shift - 1), xb - xa, Y(lo) - Y(shift - 1));
-                    g.strokeStyle = "#3a4560";
-                    g.lineWidth = 1;
-                    g.strokeRect(xa, Y(hi), xb - xa, Y(lo) - Y(hi));
-                  };
+          // time label
+          g.fillStyle = css("--text");
+          g.font = "12px ui-monospace,monospace";
+          g.textAlign = "left";
+          g.fillText(
+            "t = " + w.qmc_dc_time().toFixed(1) + " ħ/mc²",
+            padL + 4,
+            padT + 8,
+          );
+        }
 
-                  band(padL, mid, 0);
-                  band(mid, W - padR, v0);
+        function drawSide() {
+          const { g, W, H } = fit($("sc"));
+          g.clearRect(0, 0, W, H);
+          if (scene === "klein") {
+            $("sidetitle").innerHTML = "Energy levels (units: <i>mc</i>&sup2;)";
+            const E = energy();
+            const lo = -2.6;
+            const hi = Math.max(v0 + 3.6, E + 1.2);
+            const padL = 44;
+            const padR = 10;
+            const padT = 10;
+            const padB = 24;
+            const mid = (padL + W - padR) / 2;
+            const Y = (e) =>
+              H - padB - ((e - lo) / (hi - lo)) * (H - padT - padB);
+            const band = (xa, xb, shift) => {
+              g.fillStyle = "rgba(61,220,151,.22)";
+              g.fillRect(xa, Y(hi), xb - xa, Y(shift + 1) - Y(hi));
+              g.fillStyle = "rgba(160,120,255,.25)";
+              g.fillRect(xa, Y(shift - 1), xb - xa, Y(lo) - Y(shift - 1));
+              g.strokeStyle = "#3a4560";
+              g.lineWidth = 1;
+              g.strokeRect(xa, Y(hi), xb - xa, Y(lo) - Y(hi));
+            };
 
-                  g.fillStyle = css("--text");
-                  g.font = "11px system-ui";
-                  g.textAlign = "center";
-                  g.fillText("x < 0", (padL + mid) / 2, Y(lo) + 16);
-                  g.fillText("x > 0", (mid + W - padR) / 2, Y(lo) + 16);
-                  g.fillStyle = "rgba(215,220,229,.75)";
-                  g.fillText("electrons", (padL + mid) / 2, Y(hi - 0.7));
-                  g.fillText("Dirac sea", (padL + mid) / 2, Y(-1.8));
-                  g.fillText("electrons", (mid + W - padR) / 2, Y(v0 + 1.9));
-                  g.fillText("Dirac sea", (mid + W - padR) / 2, Y(v0 - 1.8));
-                  // axis labels
-                  g.textAlign = "right";
-                  g.fillStyle = css("--muted");
-                  const step = hi - lo > 14 ? 5 : 2;
-                  for (let e = Math.ceil(lo / step) * step; e <= hi; e += step) {
-                    g.fillText(String(e), padL - 6, Y(e) + 4);
-                  }
+            band(padL, mid, 0);
+            band(mid, W - padR, v0);
 
-                  // energy line
-                  g.strokeStyle = css("--accent2");
-                  g.setLineDash([6, 4]);
-                  g.lineWidth = 2;
-                  g.beginPath();
-                  g.moveTo(padL, Y(E));
-                  g.lineTo(W - padR, Y(E));
-                  g.stroke();
-                  g.setLineDash([]);
-                  g.fillStyle = css("--accent2");
-                  g.textAlign = "left";
-                  g.fillText("E = " + E.toFixed(2), padL + 4, Y(E) - 5);
-                  // regime marker at step
-                  const ep = E - v0;
-                  const r = ep > 1 ? 0 : ep >= -1 ? 1 : 2;
-                  g.fillStyle =
-                    r === 0 ? css("--accent") : r === 1 ? "#ff6b81" : css("--accent");
-                  g.beginPath();
-                  g.arc(mid + 12, Y(E), 4, 0, 7);
-                  g.fill();
-                } else {
-                  $("sidetitle").innerHTML =
-                    "Mean position &#9001;x&#9002; (units: &#295;/<i>mc</i>)";
-                  const padL = 44;
-                  const padR = 10;
-                  const padT = 14;
-                  const padB = 26;
-                  const T = tEnd;
-                  const X = (t) => padL + (t / T) * (W - padL - padR);
-                  const ya = 0.25;
-                  const yb = -1.25;
-                  const Y = (x) => padT + ((ya - x) / (ya - yb)) * (H - padT - padB);
-                  g.strokeStyle = "#232b3d";
-                  g.lineWidth = 1;
-                  g.beginPath();
-                  g.moveTo(padL, Y(0));
-                  g.lineTo(W - padR, Y(0));
-                  g.stroke();
-                  g.fillStyle = css("--muted");
-                  g.font = "11px system-ui";
-                  g.textAlign = "right";
-                  for (const v of [0, -0.5, -1]) {
-                    g.fillText(String(v), padL - 6, Y(v) + 4);
-                  }
-                  g.textAlign = "center";
-                  for (let t = 0; t <= T; t += 5) {
-                    g.fillText(String(t), X(t), H - 9);
-                  }
-                  g.textAlign = "right";
-                  g.fillText("t  (ħ/mc²)", W - padR, H - 9);
-                  g.setLineDash([4, 4]);
-                  g.strokeStyle = css("--muted");
-                  g.beginPath();
-                  for (let i = 0; i <= 300; i++) {
-                    const t = (i / 300) * T;
-                    const px = X(t);
-                    const py = Y(-0.5 * (1 - Math.cos(2 * t)));
-                    i ? g.lineTo(px, py) : g.moveTo(px, py);
-                  }
-                  g.stroke();
-                  g.setLineDash([]);
-                  g.strokeStyle = css("--accent");
-                  g.lineWidth = 2;
-                  g.beginPath();
-                  trace.forEach(([t, x], i) => {
-                    const px = X(t);
-                    const py = Y(x);
-                    i ? g.lineTo(px, py) : g.moveTo(px, py);
-                  });
-                  g.stroke();
-                  g.fillStyle = css("--muted");
-                  g.textAlign = "left";
-                  g.fillText(
-                    "dashed: free-electron  −(1−cos 2mc²t/ħ)/2",
-                    padL + 6,
-                    padT + 6,
-                  );
-                }
-              }
+            g.fillStyle = css("--text");
+            g.font = "11px system-ui";
+            g.textAlign = "center";
+            g.fillText("x < 0", (padL + mid) / 2, Y(lo) + 16);
+            g.fillText("x > 0", (mid + W - padR) / 2, Y(lo) + 16);
+            g.fillStyle = "rgba(215,220,229,.75)";
+            g.fillText("electrons", (padL + mid) / 2, Y(hi - 0.7));
+            g.fillText("Dirac sea", (padL + mid) / 2, Y(-1.8));
+            g.fillText("electrons", (mid + W - padR) / 2, Y(v0 + 1.9));
+            g.fillText("Dirac sea", (mid + W - padR) / 2, Y(v0 - 1.8));
+            // axis labels
+            g.textAlign = "right";
+            g.fillStyle = css("--muted");
+            const step = hi - lo > 14 ? 5 : 2;
+            for (let e = Math.ceil(lo / step) * step; e <= hi; e += step) {
+              g.fillText(String(e), padL - 6, Y(e) + 4);
+            }
 
-              function updateStats() {
-                const t = w.qmc_dc_time();
-                const norm = w.qmc_dc_norm();
-                if (scene === "klein") {
-                  const right = w.qmc_dc_right();
-                  const left = norm - right;
-                  const exact = w.qmc_dc_exact(k0, v0);
-                  const pct = (x) => (100 * x).toFixed(1) + "%";
-                  $("stats").innerHTML =
-                    `<div class="stat"><span>Transmitted (x &gt; 0)</span><span>${pct(right)}</span></div>
+            // energy line
+            g.strokeStyle = css("--accent2");
+            g.setLineDash([6, 4]);
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(padL, Y(E));
+            g.lineTo(W - padR, Y(E));
+            g.stroke();
+            g.setLineDash([]);
+            g.fillStyle = css("--accent2");
+            g.textAlign = "left";
+            g.fillText("E = " + E.toFixed(2), padL + 4, Y(E) - 5);
+            // regime marker at step
+            const ep = E - v0;
+            const r = ep > 1 ? 0 : ep >= -1 ? 1 : 2;
+            g.fillStyle =
+              r === 0 ? css("--accent") : r === 1 ? "#ff6b81" : css("--accent");
+            g.beginPath();
+            g.arc(mid + 12, Y(E), 4, 0, 7);
+            g.fill();
+          } else {
+            $("sidetitle").innerHTML =
+              "Mean position &#9001;x&#9002; (units: &#295;/<i>mc</i>)";
+            const padL = 44;
+            const padR = 10;
+            const padT = 14;
+            const padB = 26;
+            const T = tEnd;
+            const X = (t) => padL + (t / T) * (W - padL - padR);
+            const ya = 0.25;
+            const yb = -1.25;
+            const Y = (x) => padT + ((ya - x) / (ya - yb)) * (H - padT - padB);
+            g.strokeStyle = "#232b3d";
+            g.lineWidth = 1;
+            g.beginPath();
+            g.moveTo(padL, Y(0));
+            g.lineTo(W - padR, Y(0));
+            g.stroke();
+            g.fillStyle = css("--muted");
+            g.font = "11px system-ui";
+            g.textAlign = "right";
+            for (const v of [0, -0.5, -1]) {
+              g.fillText(String(v), padL - 6, Y(v) + 4);
+            }
+
+            g.textAlign = "center";
+            for (let t = 0; t <= T; t += 5) {
+              g.fillText(String(t), X(t), H - 9);
+            }
+
+            g.textAlign = "right";
+            g.fillText("t  (ħ/mc²)", W - padR, H - 9);
+            g.setLineDash([4, 4]);
+            g.strokeStyle = css("--muted");
+            g.beginPath();
+
+            for (let i = 0; i <= 300; i++) {
+              const t = (i / 300) * T;
+              const px = X(t);
+              const py = Y(-0.5 * (1 - Math.cos(2 * t)));
+              i ? g.lineTo(px, py) : g.moveTo(px, py);
+            }
+
+            g.stroke();
+            g.setLineDash([]);
+            g.strokeStyle = css("--accent");
+            g.lineWidth = 2;
+            g.beginPath();
+            trace.forEach(([t, x], i) => {
+              const px = X(t);
+              const py = Y(x);
+              i ? g.lineTo(px, py) : g.moveTo(px, py);
+            });
+            g.stroke();
+            g.fillStyle = css("--muted");
+            g.textAlign = "left";
+            g.fillText(
+              "dashed: free-electron  −(1−cos 2mc²t/ħ)/2",
+              padL + 6,
+              padT + 6,
+            );
+          }
+        }
+
+        function updateStats() {
+          const t = w.qmc_dc_time();
+          const norm = w.qmc_dc_norm();
+          if (scene === "klein") {
+            const right = w.qmc_dc_right();
+            const left = norm - right;
+            const exact = w.qmc_dc_exact(k0, v0);
+            const pct = (x) => (100 * x).toFixed(1) + "%";
+            $("stats").innerHTML =
+              `<div class="stat"><span>Transmitted (x &gt; 0)</span><span>${pct(right)}</span></div>
                <div class="bar"><i style="width:${100 * Math.min(1, right)}%"></i><u style="left:${100 * (Number.isNaN(exact) ? 0 : exact)}%"></u></div>
                <div class="stat"><span>Reflected (x &lt; 0)</span><span>${pct(left)}</span></div>
                <div class="stat"><span>Closed form T</span><span>${Number.isNaN(exact) ? "n/a" : pct(exact)}</span></div>
                <div class="stat"><span>Total probability</span><span>${norm.toFixed(9)}</span></div>`;
-                  const E = energy();
-                  const ep = E - v0;
-                  const settled = t > 50 / vg() + 45;
-                  let msg;
-                  if (ep > 1) {
-                    msg = `Ordinary regime: E &minus; V&#8320; = ${ep.toFixed(2)} &gt; mc&sup2;, a propagating electron state exists on the right.`;
-                  } else if (ep >= -1) {
-                    msg = `Blocked: E &minus; V&#8320; = ${ep.toFixed(2)} lies in the gap (|E&minus;V&#8320;| &lt; mc&sup2;), so wave only decays into step.`;
-                  } else {
-                    msg = `<span class="ok">Klein regime:</span> E &minus; V&#8320; = ${ep.toFixed(2)} &lt; &minus;mc&sup2;. The electron crosses as a negative-energy (Dirac sea) state; transmission grows with step instead of vanishing.`;
-                  }
-                  if (settled && !Number.isNaN(exact)) {
-                    const d = Math.abs(right - exact);
-                    msg +=
-                      d < 0.03
-                        ? ` <span class="ok">Simulation vs closed form: ${(100 * d).toFixed(1)} points apart.</span>`
-                        : ` <span class="warn">${(100 * d).toFixed(1)} points from plane-wave value: packet is broad in momentum.</span>`;
-                  } else if (!settled) {
-                    msg += ` <span class="mut">(packet still arriving)</span>`;
-                  }
-                  $("note").innerHTML = msg;
-                } else {
-                  const x = w.qmc_dc_position();
-                  $("stats").innerHTML =
-                    `<div class="stat"><span>&#9001;x&#9002;</span><span>${x.toFixed(3)} &#295;/mc</span></div>
+            const E = energy();
+            const ep = E - v0;
+            const settled = t > 50 / vg() + 45;
+            let msg;
+            if (ep > 1) {
+              msg = `Ordinary regime: E &minus; V&#8320; = ${ep.toFixed(2)} &gt; mc&sup2;, a propagating electron state exists on the right.`;
+            } else if (ep >= -1) {
+              msg = `Blocked: E &minus; V&#8320; = ${ep.toFixed(2)} lies in the gap (|E&minus;V&#8320;| &lt; mc&sup2;), so wave only decays into step.`;
+            } else {
+              msg = `<span class="ok">Klein regime:</span> E &minus; V&#8320; = ${ep.toFixed(2)} &lt; &minus;mc&sup2;. The electron crosses as a negative-energy (Dirac sea) state; transmission grows with step instead of vanishing.`;
+            }
+            if (settled && !Number.isNaN(exact)) {
+              const d = Math.abs(right - exact);
+              msg +=
+                d < 0.03
+                  ? ` <span class="ok">Simulation vs closed form: ${(100 * d).toFixed(1)} points apart.</span>`
+                  : ` <span class="warn">${(100 * d).toFixed(1)} points from plane-wave value: packet is broad in momentum.</span>`;
+            } else if (!settled) {
+              msg += ` <span class="mut">(packet still arriving)</span>`;
+            }
+            $("note").innerHTML = msg;
+          } else {
+            const x = w.qmc_dc_position();
+            $("stats").innerHTML =
+              `<div class="stat"><span>&#9001;x&#9002;</span><span>${x.toFixed(3)} &#295;/mc</span></div>
                <div class="stat"><span>Free-electron prediction</span><span>${(-0.5 * (1 - Math.cos(2 * t))).toFixed(3)}</span></div>
                <div class="stat"><span>Total probability</span><span>${norm.toFixed(9)}</span></div>`;
-                  $("note").innerHTML =
-                    `A packet built from <i>both</i> energy signs (spinor (1,&nbsp;i)/&radic;2 at rest) trembles at 2<i>mc</i>&sup2;/&#295;. Tremor fades because the finite packet width dephases its momentum components.`;
-                }
+            $("note").innerHTML =
+              `A packet built from <i>both</i> energy signs (spinor (1,&nbsp;i)/&radic;2 at rest) trembles at 2<i>mc</i>&sup2;/&#295;. Tremor fades because the finite packet width dephases its momentum components.`;
+          }
+        }
+
+        function render() {
+          drawWave();
+          drawSide();
+          updateStats();
+        }
+
+        // animation
+        let spf = 6;
+        function frame() {
+          if (playing) {
+            if (w.qmc_dc_time() >= tEnd) {
+              if ($("loop").checked) restart();
+              else {
+                playing = false;
+                $("play").textContent = "Play";
+              }
+            } else {
+              if (w.qmc_dc_step(spf) !== 0) {
+                showError("Solver step failed.");
+                playing = false;
+
+                return;
+              }
+              if (scene !== "klein") {
+                trace.push([w.qmc_dc_time(), w.qmc_dc_position()]);
               }
 
-              function render() {
-                drawWave();
-                drawSide();
-                updateStats();
-              }
+              render();
+            }
+          }
 
-              // animation
-              let spf = 6;
-              function frame() {
-                if (playing) {
-                  if (w.qmc_dc_time() >= tEnd) {
-                    if ($("loop").checked) restart();
-                    else {
-                      playing = false;
-                      $("play").textContent = "Play";
-                    }
-                  } else {
-                    if (w.qmc_dc_step(spf) !== 0) {
-                      showError("Solver step failed.");
-                      playing = false;
+          requestAnimationFrame(frame);
+        }
 
-                      return;
-                    }
-                    if (scene !== "klein") {
-                      trace.push([w.qmc_dc_time(), w.qmc_dc_position()]);
-                    }
+        // controls
+        function setPreset(p) {
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) => b.classList.toggle("on", b.dataset.p === p));
+          if (p === "z") {
+            scene = "zitter";
+            $("sliders").style.display = "none";
+          } else {
+            scene = "klein";
+            v0 = parseFloat(p);
+            $("v0").value = v0;
+            $("v0v").textContent = v0.toFixed(1);
+            $("sliders").style.display = "";
+          }
 
-                    render();
-                  }
-                }
+          restart();
+        }
 
-                requestAnimationFrame(frame);
-              }
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) =>
+            b.addEventListener("click", () => setPreset(b.dataset.p)),
+          );
+        $("v0").addEventListener("input", () => {
+          v0 = parseFloat($("v0").value);
+          $("v0v").textContent = v0.toFixed(1);
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) => b.classList.remove("on"));
+          restart();
+        });
+        $("k0").addEventListener("input", () => {
+          k0 = parseFloat($("k0").value);
+          $("k0v").textContent = k0.toFixed(2);
+          restart();
+        });
+        $("spd").addEventListener("input", () => {
+          spf = parseInt($("spd").value, 10);
+          $("spdv").textContent = String(spf);
+        });
+        $("play").addEventListener("click", () => {
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", () => {
+          if (!playing) {
+            playing = true;
+            $("play").textContent = "Pause";
+          }
+          restart();
+        });
 
-              // controls
-              function setPreset(p) {
-                document
-                  .querySelectorAll("#presets button")
-                  .forEach((b) => b.classList.toggle("on", b.dataset.p === p));
-                if (p === "z") {
-                  scene = "zitter";
-                  $("sliders").style.display = "none";
-                } else {
-                  scene = "klein";
-                  v0 = parseFloat(p);
-                  $("v0").value = v0;
-                  $("v0v").textContent = v0.toFixed(1);
-                  $("sliders").style.display = "";
-                }
+        window.addEventListener("resize", render);
 
-                restart();
-              }
-
-              document
-                .querySelectorAll("#presets button")
-                .forEach((b) =>
-                  b.addEventListener("click", () => setPreset(b.dataset.p)),
-                );
-              $("v0").addEventListener("input", () => {
-                v0 = parseFloat($("v0").value);
-                $("v0v").textContent = v0.toFixed(1);
-                document
-                  .querySelectorAll("#presets button")
-                  .forEach((b) => b.classList.remove("on"));
-                restart();
-              });
-              $("k0").addEventListener("input", () => {
-                k0 = parseFloat($("k0").value);
-                $("k0v").textContent = k0.toFixed(2);
-                restart();
-              });
-              $("spd").addEventListener("input", () => {
-                spf = parseInt($("spd").value, 10);
-                $("spdv").textContent = String(spf);
-              });
-              $("play").addEventListener("click", () => {
-                playing = !playing;
-                $("play").textContent = playing ? "Pause" : "Play";
-              });
-              $("restart").addEventListener("click", () => {
-                if (!playing) {
-                  playing = true;
-                  $("play").textContent = "Pause";
-                }
-                restart();
-              });
-
-              window.addEventListener("resize", render);
-
-              restart();
-              requestAnimationFrame(frame);
-            })();
+        restart();
+        requestAnimationFrame(frame);
+      })();
     </script>
 
     <script src="nav.js"></script>

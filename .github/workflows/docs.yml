@@ -122,7 +122,8 @@ jobs:
                    docs/src/playground/qmc_orbital.wasm \
                    docs/src/playground/qmc_qwalk.wasm \
                    docs/src/playground/qmc_lz.wasm \
-                   docs/src/playground/qmc_rotor.wasm; do
+                   docs/src/playground/qmc_rotor.wasm \
+                   docs/src/playground/qmc_ssh.wasm; do
             test -s "$f" \
               && echo " OK: $f ($(stat -c%s "$f") bytes)" \
               || (echo "ERROR: $f missing" && exit 1)
@@ -142,7 +143,8 @@ jobs:
                    qmc_anderson.wasm \
                    qmc_qwalk.wasm \
                    qmc_lz.wasm \
-                   qmc_rotor.wasm; do
+                   qmc_rotor.wasm \
+                   qmc_ssh.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -157,6 +159,7 @@ jobs:
                    docs/book/html/playground/qmc_qwalk.wasm \
                    docs/book/html/playground/qmc_lz.wasm \
                    docs/book/html/playground/qmc_rotor.wasm \
+                   docs/book/html/playground/qmc_ssh.wasm \
                    docs/book/html/playground/index.html \
                    docs/book/html/playground/anderson.html \
                    docs/book/html/playground/bloch.html \
@@ -166,6 +169,7 @@ jobs:
                    docs/book/html/playground/quantum_walk.html \
                    docs/book/html/playground/landau_zener.html \
                    docs/book/html/playground/kicked_rotor.html \
+                   docs/book/html/playground/ssh_chain.html \
                    docs/book/html/playground/wasi-shim.js \
                    docs/book/html/playground/nav.js; do
             test -s "$f" \

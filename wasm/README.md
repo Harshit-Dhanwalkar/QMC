@@ -18,6 +18,8 @@
 
 `qmc_rotor.c` wraps the kicked rotor (`physics/kicked_rotor.c`): `docs/src/playground/kicked_rotor.html` runs the quantum map next to the classical standard map and shows dynamical localisation.
 
+`qmc_ssh.c` wraps the Su-Schrieffer-Heeger chain (`physics/ssh_chain.c`): `docs/src/playground/ssh_chain.html` diagonalises a 20-cell chain while you tune the hopping and shows the topological edge states, the winding number and the Zak phase.
+
 ## Build
 
 ```sh
@@ -103,6 +105,8 @@ Quantum-walk module (`qmc_qwalk.wasm`, no imports): `qmc_qw_reset(theta, coin)` 
 Landau-Zener module (`qmc_lz.wasm`, no imports): `qmc_lz_reset(omega, rate, amp, passes)` starts a sweep of the detuning between -amp and +amp in the lower adiabatic state, `qmc_lz_step(duration)` advances it (returns 1 when finished), `qmc_lz_vec()` points at the Bloch vector, `qmc_lz_delta()` / `qmc_lz_upper()` / `qmc_lz_exact()` give the detuning, upper-level population and closed-form jump probability, and `qmc_lz_scan_rate` / `qmc_lz_scan_amp` fill `qmc_lz_scan_buffer()` with whole-sweep scans.
 
 Kicked-rotor module (`qmc_rotor.wasm`, no imports): `qmc_kr_reset(k, hbar, seed)` restarts the quantum state (momentum eigenstate m = 0 on 2048 angle points) and a classical ensemble of 3000 points, `qmc_kr_step(n)` applies `n` kicks (at most 400 in total), `qmc_kr_qbuffer()` holds the quantum momentum probabilities (index j is m = j - 1024), `qmc_kr_cbuffer()` the classical (theta, p) pairs, and `qmc_kr_qm2()` / `qmc_kr_cm2()` the two <m^2> values.
+
+SSH-chain module (`qmc_ssh.wasm`, no imports): `qmc_ssh_set(w, noise, m, seed)` builds the 20-cell chain (v = 1, inter-cell hopping w, random hopping `noise`, staggered potential m) and diagonalises it; `qmc_ssh_energies()` and `qmc_ssh_vectors()` hold the 40 eigenvalues and eigenvectors, `qmc_ssh_sweep(w0, w1, n)` fills `qmc_ssh_sweep_buffer()` with the spectrum for n values of w, and `qmc_ssh_winding()`, `qmc_ssh_zak()`, `qmc_ssh_xi()` and `qmc_ssh_gap()` give the topological invariants and length scales.
 
 Regenerate the butterfly images:
 

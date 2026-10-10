@@ -136,3 +136,16 @@ else
   echo "FAIL: kicked-rotor WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- SSH chain: edge states, winding and Zak phase, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg wasm/test/ssh_ref.c wasm/qmc_ssh.c physics/ssh_chain.c \
+  core/matrix.c core/vector.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c -lm -o "$TMP/qmc_ssh_ref"
+"$TMP/qmc_ssh_ref" > "$TMP/qmc_ssh_native.txt"
+cat "$TMP/qmc_ssh_native.txt"
+node wasm/test/ssh_check.mjs > "$TMP/qmc_ssh_wasm.txt"
+if diff -u "$TMP/qmc_ssh_native.txt" "$TMP/qmc_ssh_wasm.txt"; then
+  echo "OK: SSH-chain WASM matches native"
+else
+  echo "FAIL: SSH-chain WASM and native results differ" >&2
+  exit 1
+fi

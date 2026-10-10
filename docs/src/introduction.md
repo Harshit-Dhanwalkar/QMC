@@ -18,6 +18,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/quantum_walk.html"><img class="thumb" loading="lazy" alt="Quantum walk" src="playground/thumbs/quantum_walk.jpg"><span class="meta"><b>Quantum walk</b><small>Linear spreading instead of √t</small></span></a>
 <a class="card" href="playground/landau_zener.html"><img class="thumb" loading="lazy" alt="Landau-Zener sweep" src="playground/thumbs/landau_zener.jpg"><span class="meta"><b>Landau-Zener</b><small>Jumping across an avoided crossing</small></span></a>
 <a class="card" href="playground/kicked_rotor.html"><img class="thumb" loading="lazy" alt="Kicked rotor phase space" src="playground/thumbs/kicked_rotor.jpg"><span class="meta"><b>Kicked rotor</b><small>Quantum chaos and dynamical localisation</small></span></a>
+<a class="card" href="playground/ssh_chain.html"><img class="thumb" loading="lazy" alt="SSH chain spectrum with edge states" src="playground/thumbs/ssh_chain.jpg"><span class="meta"><b>SSH chain</b><small>Topological edge states in one dimension</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations

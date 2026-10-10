@@ -428,8 +428,10 @@
               "). If you opened this file directly " +
               "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/quantum_walk.html</code>.",
           );
+
           return;
         }
+
         const N = w.qmc_qw_n();
         const TMAX = w.qmc_qw_tmax();
         const MID = N / 2;
@@ -437,10 +439,10 @@
           new Float64Array(w.memory.buffer, w.qmc_qw_buffer(), 2 * N);
 
         let theta = 45;
-        const coin = 2;
-        const playing = true;
-        const spf = 2;
-        const hist = [];
+        let coin = 2;
+        let playing = true;
+        let spf = 2;
+        let hist = [];
 
         function reset() {
           if (w.qmc_qw_reset((theta * Math.PI) / 180, coin) !== 0) {

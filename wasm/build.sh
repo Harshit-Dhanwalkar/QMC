@@ -13,6 +13,7 @@
 #   docs/src/playground/qmc_qwalk.wasm      quantum-walk demo
 #   docs/src/playground/qmc_lz.wasm         Landau-Zener / Stueckelberg demo
 #   docs/src/playground/qmc_rotor.wasm      kicked-rotor demo
+#   docs/src/playground/qmc_ssh.wasm        SSH topological-chain demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -128,3 +129,9 @@ build_module "$OUT/qmc_rotor.wasm" \
   "qmc_kr_n qmc_kr_np qmc_kr_tmax qmc_kr_time qmc_kr_qbuffer qmc_kr_cbuffer qmc_kr_reset \
 qmc_kr_step qmc_kr_qm2 qmc_kr_cm2 qmc_kr_norm qmc_kr_diffusion qmc_kr_edge" \
   wasm/qmc_rotor.c physics/kicked_rotor.c core/vector.c core/fft/fft.c
+
+build_module "$OUT/qmc_ssh.wasm" \
+  "qmc_ssh_cells qmc_ssh_sweep_max qmc_ssh_energies qmc_ssh_vectors qmc_ssh_bonds qmc_ssh_sweep_buffer \
+qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi qmc_ssh_gap qmc_ssh_bulk qmc_ssh_edge_weight" \
+  wasm/qmc_ssh.c physics/ssh_chain.c core/matrix.c core/vector.c core/utils.c \
+  core/fft/fft.c core/linalg/*.c core/ode/*.c

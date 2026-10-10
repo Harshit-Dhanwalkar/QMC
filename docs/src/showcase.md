@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-9 interactive demos, all computed live by the same C library you can read
+10 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -16,6 +16,7 @@ what the C code returns.
 | [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
 | [Landau-Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 | [Kicked rotor](playground/kicked_rotor.html)      | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
+| [SSH chain](playground/ssh_chain.html)            | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -156,6 +157,26 @@ ballistic with the exact result ⟨m²⟩ = (nK/ℏ)²/2, which the test suite
 checks to 1e-13.
 
 [Open the demo](playground/kicked_rotor.html)
+
+## The SSH chain: a topological insulator you can build in one line
+
+[![SSH chain](playground/ssh_chain.gif)](playground/ssh_chain.html)
+
+A chain of atoms with alternating strong and weak bonds is the simplest
+topological insulator. Start with the strong bond inside each cell and the
+chain is an ordinary insulator. Strengthen the bond between cells instead
+and the bulk gap closes and reopens, but the chain has changed: the phase
+of the bulk Bloch function now winds once around the origin (winding number
+1, Zak phase π), and two states appear in the gap, one at each end, with
+energy exponentially close to zero. The page diagonalises the finite chain
+live, so you can drag the hopping through the transition and watch the pair
+peel off the band edge, then switch on random hopping and see that the edge
+states do not move: chiral symmetry protects them. Break that symmetry with
+a staggered potential and they shift to ±m. The test suite checks the edge
+energy, the decay length 1/ln(w/v), the winding number and the Zak phase
+against their closed forms.
+
+[Open the demo](playground/ssh_chain.html)
 
 ## Run it yourself
 
