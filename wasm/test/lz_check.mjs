@@ -1,14 +1,21 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_lz.wasm", import.meta.url),
 );
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(9);
-const  g = (x) => x.toFixed(6);
+const g = (x) => x.toFixed(6);
 w.qmc_lz_reset(1, 1, 12, 1);
 let rc = 0;
 while (rc === 0) rc = w.qmc_lz_step(0.5);

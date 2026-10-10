@@ -1,9 +1,16 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_anderson.wasm", import.meta.url),
 );
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
 

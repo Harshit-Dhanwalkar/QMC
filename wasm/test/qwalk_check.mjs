@@ -1,11 +1,19 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_qwalk.wasm", import.meta.url),
 );
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
+
 const f = (x) => x.toFixed(9);
 w.qmc_qw_reset(0.7853981633974483, 2);
 w.qmc_qw_step(300);

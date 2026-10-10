@@ -1,11 +1,19 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_dirac.wasm", import.meta.url),
 );
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
+
 for (const v0 of [0.0, 0.5, 4.0, 10.0]) {
   w.qmc_dc_klein(Math.sqrt(3), v0);
   w.qmc_dc_step(2500);
@@ -13,6 +21,7 @@ for (const v0 of [0.0, 0.5, 4.0, 10.0]) {
     `klein V0=${v0.toFixed(1)} norm=${w.qmc_dc_norm().toFixed(10)} T=${w.qmc_dc_right().toFixed(10)}`,
   );
 }
+
 w.qmc_dc_zitter();
 w.qmc_dc_step(39);
 console.log(`zitter x=${w.qmc_dc_position().toFixed(10)}`);

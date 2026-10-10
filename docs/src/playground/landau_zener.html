@@ -448,18 +448,19 @@
           );
           return;
         }
-        const AMP = 10,
-          NSCAN = 56;
+
+        const AMP = 10;
+        const NSCAN = 56;
         const scanBuf = () =>
           new Float64Array(w.memory.buffer, w.qmc_lz_scan_buffer(), 256);
 
-        let om = 1,
-          rate = 1,
-          passes = 1,
-          speed = 2,
-          playing = true,
-          hist = [],
-          finished = false;
+        let om = 1;
+        let rate = 1;
+        let passes = 1;
+        let speed = 2;
+        let playing = true;
+        let hist = [];
+        let finished = false;
         let scan = { rate: null, amp: null };
 
         function reset() {
