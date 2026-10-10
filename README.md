@@ -35,7 +35,10 @@
   <br>
   And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bloch.html">Bloch sphere</a>
   : Rabi oscillations, &pi; pulses, Ramsey fringes, T1 and T2, from the Lindblad solver.
-</p>
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/kicked_rotor.html">Kicked rotor</a>
+  : classical chaos spreads momentum without limit while the quantum rotor freezes (dynamical localisation).
+ </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 
@@ -230,6 +233,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_79_anderson.c</code></li>
   <li><code>eg_80_quantum_walk.c</code></li>
   <li><code>eg_81_landau_zener.c</code></li>
+  <li><code>eg_82_kicked_rotor.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -294,6 +298,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_anderson.c</code></li>
   <li><code>test_quantum_walk.c</code></li>
   <li><code>test_landau_zener.c</code></li>
+  <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>

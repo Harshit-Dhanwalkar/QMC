@@ -48,6 +48,7 @@
 #include "hydrogen.h"
 #include "identical.h"
 #include "ising_chain.h"
+#include "kicked_rotor.h"
 #include "landau_zener.h"
 #include "lattice.h"
 #include "lindblad.h"
