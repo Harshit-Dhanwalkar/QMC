@@ -1,3 +1,34 @@
+/*
+ * Implementation of Landau-Zener
+ *
+ * Bloch-vector picture. 2-level Hamiltonian
+ *     H(t) = (1/2) [ \Omega \sigma_x + \delta(t) \sigma_z ]
+ * maps onto a precession of Bloch vector about effective field
+ *     dv/dt = b x v,   b = (\Omega, 0, \delta)
+ * Adiabatic levels are ±|b|/2, diabatic levels cross at \delta = 0,
+ * and minimum gap is \Omega
+ *
+ * lz_advance - RK4 integration of precession equation with detuning
+ * swept linearly from \delta_0 at rate `rate`. step is capped at
+ *     0.03 / sqrt(\Omega^2 + \delta_{max}^2)
+ * (where \delta_{max} is largest |\delta| reached during sweep),
+ * so |v| is conserved to ~1e-9 despite RK4 not being exactly norm
+ * preserving. Total number of steps is capped at 1e8 for a hard failure
+ * mode rather than an integer overflow.
+ *
+ * lz_sweep - applies lz_advance `passes` times with detuning zigzagging
+ * between -amp and +amp. Odd passes sweep up, even passes sweep down, so
+ * two passes produce Stueckelberg interference pattern bounded by
+ * 4 P_LZ (1 - P_LZ).
+ *
+ * Closed-form helpers:
+ *   lz_probability       - \exp(-pi \Omega^2 / (2 |rate|)), Landau- Zener
+ *                          diabatic-jump probability for an infinite sweep
+ *   lz_upper_population  - (1 + v . b/|b|) / 2, projection onto upper adiabatic
+ *                          level
+ *   lz_lower_state       - -b / |b|, lower adiabatic eigenstate at a given
+ *                          field
+ */
 #include "landau_zener.h"
 #include <math.h>
 
@@ -45,9 +76,9 @@ int lz_lower_state(double v[3], double omega, double delta) {
 
 // dv/dt = b x v with b = (\omega, 0, \delta)
 static void deriv(const double v[3], double omega, double delta, double d[3]) {
-  d[0] = -delta * v[1];               /* b_y v_z - b_z v_y */
-  d[1] = delta * v[0] - omega * v[2]; /* b_z v_x - b_x v_z */
-  d[2] = omega * v[1];                /* b_x v_y - b_y v_x */
+  d[0] = -delta * v[1];               // b_y v_z - b_z v_y
+  d[1] = delta * v[0] - omega * v[2]; // b_z v_x - b_x v_z
+  d[2] = omega * v[1];                // b_x v_y - b_y v_x
 }
 
 int lz_advance(double v[3], double omega, double delta0, double rate,
@@ -61,7 +92,7 @@ int lz_advance(double v[3], double omega, double delta0, double rate,
 
   double d1 = delta0 + rate * duration;
   double dmax = fmax(fabs(delta0), fabs(d1));
-  // RK4 is not norm preserving: keep |b| h small even at the sweep ends
+  // RK4 is not norm preserving: keep |b| h small even at sweep ends
   double hmax = fmin(dt, 0.03 / sqrt(omega * omega + dmax * dmax));
   double nsteps = ceil(duration / hmax);
 

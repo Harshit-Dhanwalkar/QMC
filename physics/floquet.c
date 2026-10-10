@@ -1,3 +1,53 @@
+/*
+ * Implementation of Floquet solvers
+ *
+ * Time domain (floquet_solve_time):
+ *   U(T) is propagated by RK4 on matrix ODE dU/dt = -i H(t) U with identity
+ *   initial condition. Callback H(t) is sampled at t, t + h/2, t + h inside
+ *   every step; Hamiltonian at end of one step is reused as Hamiltonian at
+ *   start of next, so each step needs only one fresh callback (for H(t + h/2))
+ *
+ *   U(T) is unitary, hence normal, so its eigenvalues lie on unit circle and
+ *   its eigenvectors can be reached by diagonalizing Hermitian matrix
+ *
+ *       A = (U + U^\dagger)/2 + s (U - U^\dagger)/(2 i)
+ *
+ *   for a generic real shift s. Real and imaginary parts of U commute with each
+ *   other and share A's eigenvectors, so a generic s separates all n
+ *   eigenphases. Eigenvalues are recovered by Rayleigh quotient <v|U|v> on each
+ *   eigenvector; achieved residual max |U v - \lambda v| is stored as
+ *   eigen_residual and is used to select between several trial shifts s when a
+ *   near-degeneracy makes one  choice unreliable
+ *
+ *   Unitarity error max |U^\dagger U - I| is reported separately so caller can
+ *   see at a glance whether RK4 step count was enough
+ *
+ * Sambe space (floquet_solve_sambe):
+ *   H(t) = \sum_{m=-M}^{M} H_m \exp(i m \omega t) is embedded in extended
+ *   Hamiltonian on (harmonic index a, system index i) space
+ *
+ *     [H_F]_{(a i),(b j)} = (H_{a - b})_{i j}
+ *                           + a \omega \delta_{ab} \delta_{ij},
+ *
+ *   truncated to |a|, |b| <= K and diagonalized by cmatrix_eigh_complex
+ *   Exact spectrum is a periodic sequence of n quasi-energy classes (one
+ *   replica per period \omega), so any n consecutive eigenvalues contain each
+ *   class exactly once. n eigenvalues in middle of truncated spectrum (indices
+ *   K n .. K n + n - 1) are used, where truncation errors are smallest. Floquet
+ *   modes at t = 0 are sum of selected eigenvector's harmonic blocks; this is
+ *   replica-independent because m -> m + 1 only relabels blocks
+ *
+ *   truncation_weight is largest probability any selected eigenvector places on
+ *   two outermost harmonic blocks; increase K until it reaches ~0
+ *
+ * Analytic references:
+ *   floquet_circular_rabi_quasienergy - exact two-level quasi-energies for
+ *       circularly driven qubit (no RWA, valid at any drive strength)
+ *   floquet_bessel_j0                 - J_0 by trapezoid rule on smooth
+ *       periodic integral representation
+ *   floquet_cdt_splitting             - \Delta |J_0(A/\omega)|, high-
+ *       frequency coherent-destruction-of-tunneling prediction
+ */
 #include "floquet.h"
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"

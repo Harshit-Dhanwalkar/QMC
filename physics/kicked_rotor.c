@@ -1,3 +1,38 @@
+/*
+ * Implementation of quantum kicked rotor and classical standard map
+ *
+ * Quantum propagation (krotor_step):
+ *   One kick period is a split-step between two natural bases,
+ *     \psi -> \exp(-i (K/\hbar) \cos(\theta))       [ kick, diagonal in angle ]
+ *     \psi -> FFT -> \exp(-i \hbar m^2 / 2) -> IFFT [ free rotation,
+ *                                                     diagonal in momentum ]
+ *
+ *   Angle-space kick phase is applied in place; free-rotation phase is applied
+ *   between a forward FFT and its inverse. Both phase arrays are precomputed
+ *   once per call, so cost per kick is O(N log N) from FFTs and O(N) from phase
+ *   multiplications. State is copied into a scratch buffer only once, at top,
+ *   so caller's array is untouched until final state is written back after
+ *   `steps` kicks
+ *
+ * Momentum representation (krotor_momentum_distribution):
+ *   A normalized forward FFT of angle-space state gives amplitudes c_m in
+ *   momentum basis p = \hbar m, with usual FFT index convention: index j holds
+ *   m = j for j < N/2 and m = j - N otherwise
+ *   Probability array prob[m + N/2] is written in ascending m so caller's
+ *   downstream plotting code sees a contiguous "m = -N/2 .. N/2 - 1" axis
+ *
+ * Classical ensemble (krotor_classical_init / _step / _p2):
+ *   Angles uniform in [0, 2\pi) and momenta uniform in [-\hbar/2, \hbar/2)
+ *   (width of quantum m = 0 state), advanced by Chirikov standard map
+ *      p'      = p + K \sin(\theta)
+ *       \theta' = \theta + p' mod 2\pi
+ *   RNG is SplitMix64 so ensemble is bit-for-bit reproducible for a given seed
+ *   on any platform
+ *
+ * <m^2> (krotor_momentum2) is computed from momentum distribution returned
+ * above so same numbers that feed plot also feed scalar observable; two are
+ * guaranteed consistent by construction.
+ */
 #include "kicked_rotor.h"
 #include "../core/fft/fft.h"
 #include "complex.h"
@@ -13,6 +48,7 @@ static int good_length(const cvector_t *psi) {
   if (!psi || !psi->data || psi->n < 4) {
     return 0;
   }
+
   int n = psi->n;
 
   return (n & (n - 1)) == 0;
@@ -70,6 +106,7 @@ int krotor_step(cvector_t *psi, double k, double hbar, int steps) {
     }
 
     fft(work);
+
     for (int j = 0; j < n; j++) {
       work->data[j] = c_mul(work->data[j], free_phase[j]);
     }

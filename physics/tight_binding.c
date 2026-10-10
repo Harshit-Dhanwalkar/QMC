@@ -229,6 +229,7 @@ tb_status_t tb_dos(const tb_model_t *model, int n_k, double e_min, double e_max,
       for (int band = 0; band < model->n_orb; band++) {
         double lo = ceil((E[band] - window - e_min) / dE);
         double hi = floor((E[band] + window - e_min) / dE);
+
         if (lo < 0.0) {
           lo = 0.0;
         }
