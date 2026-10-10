@@ -551,12 +551,14 @@
 
           // classical histogram of p/hbar, bin width in units of m
           const bw = Math.max(1, Math.round(half / 60));
-          const nb = Math.ceil((2 * half) / bw),
+          const nb = Math.ceil((2 * half) / bw);
           const hc = new Float64Array(nb);
           for (let i = 0; i < NP; i++) {
             const m = c[2 * i + 1] / H;
             const  b = Math.floor((m + half) / bw);
-            if (b >= 0 && b < nb) { hc[b] += 1 / (NP * bw); }
+            if (b >= 0 && b < nb) {
+              hc[b] += 1 / (NP * bw);
+            }
           }
 
           let top = 1e-12;
@@ -593,35 +595,42 @@
           g.globalAlpha = 0.55;
           g.fillStyle = css("--accent2");
           for (let b = 0; b < nb; b++) {
-            if (hc[b] <= 0) continue;
-            const xa = X(-half + b * bw),
-              xb = X(-half + (b + 1) * bw),
-              yy = Y(hc[b]);
+            if (hc[b] <= 0) {
+              continue;
+            }
+
+            const xa = X(-half + b * bw);
+            const xb = X(-half + (b + 1) * bw);
+            const yy = Y(hc[b]);
             g.fillRect(xa, yy, Math.max(1, xb - xa - 0.5), y0 - yy);
           }
+
           g.globalAlpha = 1;
           g.strokeStyle = css("--accent");
           g.lineWidth = 1.6;
           g.beginPath();
           for (let m = -half; m <= half; m++) {
-            const px = X(m),
-              py = Y(q[m + N / 2]);
+            const px = X(m);
+            const py = Y(q[m + N / 2]);
             m === -half ? g.moveTo(px, py) : g.lineTo(px, py);
           }
+
           g.stroke();
         }
 
         function drawGrowth() {
           const { g, W: cw, H: ch } = fit($("gc"));
           const x0 = 40;
-          const  x1 = cw - 10;
-          const  y0 = ch - 18;
-          const  y1 = 10;
+          const x1 = cw - 10;
+          const y0 = ch - 18;
+          const y1 = 10;
           const D = w.qmc_kr_diffusion();
+
           let yMax = 10;
           for (const h of hist) {
             yMax = Math.max(yMax, h[1], h[2]);
           }
+
           yMax = Math.max(yMax, Math.min(D * TMAX, 3 * yMax)) * 1.05;
 
           const X = (t) => x0 + (t / TMAX) * (x1 - x0);
@@ -655,6 +664,7 @@
               const py = Y(h[idx]);
               i ? g.lineTo(px, py) : g.moveTo(px, py);
             });
+
             g.stroke();
           };
 
@@ -696,11 +706,13 @@
           drawGrowth();
           updateStats();
         }
+
         function restart() {
           playing = true;
           $("play").textContent = "Pause";
           reset();
         }
+
         function setParams(k, h, fromPreset) {
           K = k;
           H = h;
@@ -718,6 +730,7 @@
                   Math.abs(+b.dataset.h - h) < 0.01,
               ),
             );
+
           restart();
         }
 
@@ -759,6 +772,7 @@
           }
           requestAnimationFrame(frame);
         }
+
         reset();
         requestAnimationFrame(frame);
       })();

@@ -146,7 +146,7 @@ double krotor_momentum2(const cvector_t *psi) {
   double norm = 0.0;
 
   for (int i = 0; i < n; i++) {
-    double m = (double)(i - n / 2);
+    double m = (double)i - 0.5 * (double)n;
 
     sum += m * m * prob[i];
     norm += prob[i];

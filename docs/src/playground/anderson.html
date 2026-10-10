@@ -433,8 +433,8 @@
           );
           return;
         }
-        const N = w.qmc_an_n(),
-          DT = w.qmc_an_dt();
+        const N = w.qmc_an_n();
+        const DT = w.qmc_an_dt();
         const buf = () =>
           new Float64Array(w.memory.buffer, w.qmc_an_buffer(), 2 * N);
 
@@ -452,24 +452,26 @@
         ];
         const lut = new Uint8Array(256 * 3);
         for (let i = 0; i < 256; i++) {
-          const t = (i / 255) * (stops.length - 1),
-            k = Math.min(stops.length - 2, Math.floor(t)),
-            f = t - k;
-          for (let c = 0; c < 3; c++)
+          const t = (i / 255) * (stops.length - 1);
+          const k = Math.min(stops.length - 2, Math.floor(t));
+          const f = t - k;
+          for (let c = 0; c < 3; c++) {
             lut[i * 3 + c] = stops[k][c] + (stops[k + 1][c] - stops[k][c]) * f;
+          }
         }
+
         const off = document.createElement("canvas");
         off.width = N;
         off.height = ROWS;
         const octx = off.getContext("2d");
         const img = octx.createImageData(N, ROWS);
 
-        let W = 3,
-          seed = 2024,
-          row = 0,
-          playing = true,
-          spf = 3,
-          widths = [];
+        let W = 3;
+        let seed = 2024;
+        let row = 0;
+        let playing = true;
+        let spf = 3;
+        let widths = [];
         const FLOOR = 6; // decades shown below the row maximum
 
         function reset() {
@@ -477,10 +479,13 @@
             showError("reset rejected");
             return;
           }
+
           row = 0;
           widths = [[0, 0]];
           img.data.fill(0);
-          for (let i = 3; i < img.data.length; i += 4) img.data[i] = 255;
+          for (let i = 3; i < img.data.length; i += 4) {
+            img.data[i] = 255;
+          }
           paintRow();
           render();
         }
@@ -500,6 +505,7 @@
             img.data[p + 2] = lut[idx * 3 + 2];
             img.data[p + 3] = 255;
           }
+
           octx.putImageData(img, 0, 0);
         }
 
@@ -509,6 +515,7 @@
             $("play").textContent = "Play";
             return;
           }
+
           for (let k = 0; k < spf; k++) {
             if (row >= ROWS - 1) break;
             if (w.qmc_an_step(STEPS_PER_ROW) !== 0) {
@@ -516,6 +523,7 @@
               playing = false;
               return;
             }
+
             row++;
             paintRow();
             widths.push([w.qmc_an_time(), w.qmc_an_width()]);
@@ -523,12 +531,13 @@
         }
 
         function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect(),
-            d = window.devicePixelRatio || 1;
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
           canvas.width = Math.max(2, r.width * d);
           canvas.height = Math.max(2, r.height * d);
           const g = canvas.getContext("2d");
           g.setTransform(d, 0, 0, d, 0, 0);
+
           return { g, W: r.width, H: r.height };
         }
 
@@ -558,10 +567,16 @@
         function drawProfile() {
           const { g, W: cw, H: ch } = fit($("pc"));
           const b = buf();
-          const lo = -FLOOR - 0.0,
-            X = (j) => (j / (N - 1)) * cw;
+          const lo = -FLOOR - 0.0;
+          const X = (j) => (j / (N - 1)) * cw;
+
           let m = 0;
-          for (let j = 0; j < N; j++) if (b[j] > m) m = b[j];
+          for (let j = 0; j < N; j++) {
+            if (b[j] > m) {
+              m = b[j];
+            }
+          }
+
           const lm = Math.log10(m || 1);
           const Y = (p) =>
             ch -
@@ -574,6 +589,7 @@
                   (Math.log10(Math.max(p, 1e-300)) - lm + FLOOR) / FLOOR,
                 ),
               );
+
           g.strokeStyle = css("--line");
           g.lineWidth = 1;
           for (let k = 0; k <= FLOOR; k += 2) {
@@ -583,6 +599,7 @@
             g.lineTo(cw, y);
             g.stroke();
           }
+
           // on-site energies, scaled to W/2
           const Wt = Math.max(W, 1e-9);
           g.strokeStyle = css("--accent2");
@@ -592,6 +609,7 @@
             const y = ch / 2 - (b[N + j] / Wt) * (ch / 2 - 6);
             j ? g.lineTo(X(j), y) : g.moveTo(X(j), y);
           }
+
           g.stroke();
           g.globalAlpha = 1;
           g.strokeStyle = css("--accent");
@@ -601,6 +619,7 @@
             const y = Y(b[j]);
             j ? g.lineTo(X(j), y) : g.moveTo(X(j), y);
           }
+
           g.stroke();
           g.fillStyle = css("--muted");
           g.font = "11px ui-monospace,monospace";
@@ -616,10 +635,12 @@
         function drawWidth() {
           const { g, W: cw, H: ch } = fit($("dc"));
           const tMax = ROWS * STEPS_PER_ROW * DT;
+
           let yMax = Math.SQRT2 * tMax;
           yMax = Math.max(10, Math.min(yMax, N / 2));
-          const X = (t) => 28 + (t / tMax) * (cw - 36),
-            Y = (v) => ch - 16 - (ch - 26) * Math.min(1, v / yMax);
+          const X = (t) => 28 + (t / tMax) * (cw - 36);
+          const Y = (v) => ch - 16 - (ch - 26) * Math.min(1, v / yMax);
+
           g.strokeStyle = css("--line");
           g.lineWidth = 1;
           g.beginPath();
@@ -643,8 +664,8 @@
           g.lineWidth = 2;
           g.beginPath();
           widths.forEach((p, i) => {
-            const x = X(p[0]),
-              y = Y(p[1]);
+            const x = X(p[0]);
+            const y = Y(p[1]);
             i ? g.lineTo(x, y) : g.moveTo(x, y);
           });
           g.stroke();

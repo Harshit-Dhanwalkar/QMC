@@ -88,6 +88,7 @@
       #plot {
         position: relative;
         width: 100%;
+        aspect-ratio: 16 / 10;
         border: 1px solid var(--line);
         border-radius: 10px;
         overflow: hidden;
@@ -297,6 +298,15 @@
 
     <script src="wasi-shim.js"></script>
     <script>
+      (function () {
+        const p = document.getElementById("plot");
+        if (p && !p.style.height) {
+          const h = Math.max(300, Math.round(p.clientWidth * 0.62));
+          p.style.height = h + "px";
+        }
+      })();
+    </script>
+    <script>
       "use strict";
       (async function () {
         const $ = (id) => document.getElementById(id);
@@ -331,20 +341,30 @@
               "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/butterfly.html</code>.",
           );
           $("prog").textContent = "";
+
           return;
         }
 
-        const MAXQ = Math.min(50, w.qmc_bf_max_q());
+        const MAXQ =
+          typeof w.qmc_bf_max_q === "function"
+            ? Math.min(50, w.qmc_bf_max_q())
+            : 50;
 
         // colours: gap colour by Hall number
         function gapRGB(t) {
-          if (t === null) return [255, 255, 255];
-          if (t === 0) return [96, 110, 138];
+          if (t === null) {
+            return [255, 255, 255];
+          }
+          if (t === 0) {
+            return [96, 110, 138];
+          }
           const s = Math.min(Math.abs(t), 8) / 8;
           const a = t > 0 ? [255, 214, 120] : [130, 228, 255];
-          const  b = t > 0 ? [232, 40, 62] : [48, 84, 255];
+          const b = t > 0 ? [232, 40, 62] : [48, 84, 255];
+
           return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * s));
         }
+
         const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
         const PLAIN = "rgb(190,200,220)";
         const fmt = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(3);
@@ -360,38 +380,49 @@
         // progressive computation
         const gcd = (a, b) => (b ? gcd(b, a % b) : a);
         const list = []; // computed fluxes
-        let nextQ = 2,
-          nextP = 1,
-          qTarget = parseInt($("qmax").value, 10);
+        let nextQ = 2;
+        let nextP = 1;
+        let qTarget = parseInt($("qmax").value, 10);
         function computeOne() {
           for (;;) {
-            if (nextQ > qTarget || nextQ > MAXQ) return false;
+            if (nextQ > qTarget || nextQ > MAXQ) {
+              return false;
+            }
             if (nextP >= nextQ) {
               nextQ++;
               nextP = 1;
               continue;
             }
-            const p = nextP++,
-              q = nextQ;
-            if (gcd(p, q) !== 1) continue;
-            if (w.qmc_bf_edges(p, q) !== 0) continue;
+
+            const p = nextP++;
+            const q = nextQ;
+            if (gcd(p, q) !== 1) {
+              continue;
+            }
+            if (w.qmc_bf_edges(p, q) !== 0) {
+              continue;
+            }
+
             const edges = new Float64Array(
               wasmMemory.buffer,
               w.qmc_bf_buffer(),
               2 * q,
             ).slice();
+
             const tknn = new Array(q - 1);
             for (let r = 1; r < q; r++) {
               const t = w.qmc_bf_tknn(p, q, r);
               tknn[r - 1] = t === INT_MIN ? null : t;
             }
+
             list.push({ p, q, alpha: p / q, edges, tknn });
+
             return true;
           }
         }
 
-        let viewKey = "",
-          viewCache = [];
+        let viewKey = "";
+        let viewCache = [];
         function view(qmax) {
           const key = qmax + ":" + list.length;
           if (key !== viewKey) {
@@ -400,6 +431,7 @@
               .sort((a, b) => a.alpha - b.alpha);
             viewKey = key;
           }
+
           return viewCache;
         }
 
@@ -407,39 +439,46 @@
         function draw(ctx, W, H, o) {
           ctx.fillStyle = BG;
           ctx.fillRect(0, 0, W, H);
-          const ml = Math.round(H * 0.075),
-            mr = Math.round(H * 0.02),
-            mt = Math.round(H * (o.title ? 0.09 : 0.03)),
-            mb = Math.max(Math.round(H * 0.095), 46);
-          const pw = W - ml - mr,
-            ph = H - mt - mb;
-          const X = (a) => ml + a * pw,
-            Y = (e) => mt + ((E_MAX - e) / (2 * E_MAX)) * ph;
+
+          const ml = Math.round(H * 0.075);
+          const mr = Math.round(H * 0.02);
+          const mt = Math.round(H * (o.title ? 0.09 : 0.03));
+          const mb = Math.max(Math.round(H * 0.095), 46);
+          const pw = W - ml - mr;
+          const ph = H - mt - mb;
+          const X = (a) => ml + a * pw;
+          const Y = (e) => mt + ((E_MAX - e) / (2 * E_MAX)) * ph;
           const v = view(o.qmax);
+
           for (let i = 0; i < v.length; i++) {
             const f = v[i];
-            const left = i === 0 ? 0 : 0.5 * (v[i - 1].alpha + f.alpha),
-              right = i === v.length - 1 ? 1 : 0.5 * (f.alpha + v[i + 1].alpha);
-            const x0 = Math.floor(X(left)),
-              x1 = Math.max(x0 + 1, Math.floor(X(right))),
-              wd = x1 - x0;
+            const left = i === 0 ? 0 : 0.5 * (v[i - 1].alpha + f.alpha);
+            const right =
+              i === v.length - 1 ? 1 : 0.5 * (f.alpha + v[i + 1].alpha);
+            const x0 = Math.floor(X(left));
+            const x1 = Math.max(x0 + 1, Math.floor(X(right)));
+            const wd = x1 - x0;
+
             ctx.fillStyle = BAND;
             for (let b = 0; b < f.q; b++) {
-              const yt = Y(f.edges[2 * b + 1]),
-                yb = Y(f.edges[2 * b]);
+              const yt = Y(f.edges[2 * b + 1]);
+              const yb = Y(f.edges[2 * b]);
               ctx.fillRect(x0, yt, wd, Math.max(0.6, yb - yt));
             }
+
             for (let r = 1; r < f.q; r++) {
-              const lo = f.edges[2 * (r - 1) + 1],
-                hi = f.edges[2 * r];
+              const lo = f.edges[2 * (r - 1) + 1];
+              const hi = f.edges[2 * r];
               if (hi - lo > 1e-9) {
                 ctx.fillStyle = o.colored ? css(gapRGB(f.tknn[r - 1])) : PLAIN;
                 ctx.fillRect(x0, Y(hi), wd, Y(lo) - Y(hi));
               }
             }
           }
-          const fs = Math.max(11, Math.round(H * 0.026)),
-            fam = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+
+          const fs = Math.max(11, Math.round(H * 0.026));
+          const fam = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+
           ctx.font = fs + "px " + fam;
           ctx.fillStyle = "#8993a8";
           ctx.strokeStyle = "#8993a8";
@@ -461,6 +500,7 @@
             ctx.stroke();
             ctx.fillText(txt, X(a), Y(-E_MAX) + 8);
           }
+
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
           for (const e of [-4, -2, 0, 2, 4]) {
@@ -470,6 +510,7 @@
             ctx.stroke();
             ctx.fillText(String(e), ml - 9, Y(e));
           }
+
           ctx.fillStyle = "#d7dce5";
           ctx.textAlign = "center";
           ctx.textBaseline = "alphabetic";
@@ -502,45 +543,52 @@
               Math.round(H * 0.03),
             );
           }
+
           return { X, Y, ml, mt, pw, ph, v };
         }
 
         // canvases
-        const bf = $("bf"),
-          ov = $("ov"),
-          plot = $("plot");
+        const bf = $("bf");
+        const ov = $("ov");
+        const plot = $("plot");
         let geo = null;
         function layout() {
-          const cw = plot.clientWidth,
-            ch = Math.max(300, Math.round(cw * 0.62));
+          const cw = plot.clientWidth;
+          const ch = Math.max(300, Math.round(cw * 0.62));
           plot.style.height = ch + "px";
           const dpr = Math.min(2, window.devicePixelRatio || 1);
           for (const c of [bf, ov]) {
             c.width = Math.round(cw * dpr);
             c.height = Math.round(ch * dpr);
           }
+
           redraw();
         }
+
         function redraw() {
           geo = draw(bf.getContext("2d"), bf.width, bf.height, {
             qmax: parseInt($("qmax").value, 10),
             colored: $("colored").checked,
           });
+
           drawOverlay();
         }
 
         // inspection
-        let hover = null,
-          pinned = null; // {flux, E}
+        let hover = null;
+        let pinned = null; // {flux, E}
         function locate(ev) {
-          if (!geo) return null;
-          const r = ov.getBoundingClientRect(),
-            sx = ov.width / r.width,
-            sy = ov.height / r.height;
-          const px = (ev.clientX - r.left) * sx,
-            py = (ev.clientY - r.top) * sy;
-          const alpha = (px - geo.ml) / geo.pw,
-            E = E_MAX - ((py - geo.mt) / geo.ph) * 2 * E_MAX;
+          if (!geo) {
+            return null;
+          }
+
+          const r = ov.getBoundingClientRect();
+          const sx = ov.width / r.width;
+          const sy = ov.height / r.height;
+          const px = (ev.clientX - r.left) * sx;
+          const py = (ev.clientY - r.top) * sy;
+          const alpha = (px - geo.ml) / geo.pw;
+          const E = E_MAX - ((py - geo.mt) / geo.ph) * 2 * E_MAX;
           if (
             alpha < 0 ||
             alpha > 1 ||
@@ -568,19 +616,22 @@
           ) {
             best = lo - 1;
           }
+
           return { flux: geo.v[best], E };
         }
+
         function classify(sel) {
           // what is at energy E for this flux?
           const f = sel.flux;
           const E = sel.E;
           for (let r = 1; r < f.q; r++) {
-            const lo = f.edges[2 * (r - 1) + 1],
-              hi = f.edges[2 * r];
+            const lo = f.edges[2 * (r - 1) + 1];
+            const hi = f.edges[2 * r];
             if (E > lo && E < hi) {
               return { kind: "gap", r, lo, hi, t: f.tknn[r - 1] };
             }
           }
+
           for (let b = 0; b < f.q; b++)
             if (E >= f.edges[2 * b] && E <= f.edges[2 * b + 1])
               return {
@@ -589,13 +640,17 @@
                 lo: f.edges[2 * b],
                 hi: f.edges[2 * b + 1],
               };
+
           return { kind: "none" };
         }
 
         function drawOverlay() {
           const c = ov.getContext("2d");
           c.clearRect(0, 0, ov.width, ov.height);
-          if (!geo) return;
+          if (!geo) {
+            return;
+          }
+
           const mark = (sel, solid) => {
             if (!sel) return;
             const x = geo.X(sel.flux.alpha);
@@ -670,7 +725,9 @@
           showPinned();
           const token = sel;
           setTimeout(() => {
-            if (pinned !== token) return;
+            if (pinned !== token) {
+              return;
+            }
             let t0 = performance.now();
             let C = w.qmc_bf_chern(f.p, f.q, c.r, nk);
             let ms = performance.now() - t0;
@@ -683,13 +740,17 @@
               ms += performance.now() - t0;
               ok = Math.abs(C - c.t) < 0.05;
             }
-            if (pinned !== token) return;
+
+            if (pinned !== token) {
+              return;
+            }
             if (Number.isNaN(C)) {
               checkHTML = `<div class="warn">Library check: grid too coarse or gap too small at n<sub>k</sub> = ${nk} (the library refuses to guess).</div>`;
-            else if (ok)
+            } else if (ok) {
               checkHTML = `<div class="ok">✓ Library check: Fukui-Hatsugai-Suzuki C = ${Math.round(C)} on a ${nk}×${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
-            else
+            } else {
               checkHTML = `<div class="warn">Library check at n<sub>k</sub> = ${nk} gave C = ${C.toFixed(3)}: the grid does not resolve the Berry curvature of this gap (a Chern number from a too-coarse grid is aliased). TKNN is exact.</div>`;
+            }
             showPinned();
           }, 30);
         }
@@ -697,15 +758,21 @@
         ov.addEventListener("pointermove", (e) => {
           hover = locate(e);
           drawOverlay();
-          if (!pinned && hover) $("info").innerHTML = describe(hover);
+          if (!pinned && hover) {
+            $("info").innerHTML = describe(hover);
+          }
         });
+
         ov.addEventListener("pointerleave", () => {
           hover = null;
           drawOverlay();
         });
+
         ov.addEventListener("pointerdown", (e) => {
           const s = locate(e);
-          if (!s) return;
+          if (!s) {
+            return;
+          }
           pinned = s;
           hover = null;
           drawOverlay();
@@ -742,24 +809,30 @@
         window.addEventListener("resize", layout);
 
         // pump: compute in small slices so the butterfly visibly grows
-        let pumping = false,
-          lastDraw = 0;
+        let pumping = false;
+        let lastDraw = 0;
         function totalFor(qm) {
           let n = 0;
           for (let q = 2; q <= qm; q++) {
             for (let p = 1; p < q; p++) {
-              if (gcd(p, q) === 1) n++;
+              if (gcd(p, q) === 1) {
+                n++;
+              }
             }
           }
+
           return n;
         }
 
         function pump() {
           const t0 = performance.now();
           let did = false;
-          while (performance.now() - t0 < 14 && computeOne()) did = true;
-          const done = list.filter((f) => f.q <= qTarget).length,
-            total = totalFor(Math.min(qTarget, MAXQ));
+          while (performance.now() - t0 < 14 && computeOne()) {
+            did = true;
+          }
+
+          const done = list.filter((f) => f.q <= qTarget).length;
+          const total = totalFor(Math.min(qTarget, MAXQ));
           const finished = done >= total;
           $("prog").textContent = finished
             ? `${total} fluxes (q ≤ ${qTarget}) computed in your browser`
@@ -772,8 +845,10 @@
               /* keep hint */
             }
           }
+
           if (!finished) requestAnimationFrame(pump);
           else pumping = false;
+
           if (finished && !pinned) {
             // start with the textbook 1/3 case pinned
             const f = list.find((x) => x.p === 1 && x.q === 3);
@@ -785,6 +860,7 @@
             }
           }
         }
+
         function schedule() {
           if (!pumping) {
             pumping = true;
@@ -792,9 +868,27 @@
           }
         }
 
-        layout();
-        schedule();
-      })();
+        try {
+          layout();
+          schedule();
+        } catch (err) {
+          showError(
+            "Playground init failed: <code>" +
+              (err && err.message ? err.message : String(err)) +
+              "</code>",
+          );
+
+          throw err;
+        }
+      })().catch((err) => {
+        showError(
+          "Playground crashed: <code>" +
+            (err && err.message ? err.message : String(err)) +
+            "</code>",
+        );
+
+        console.error(err);
+      });
     </script>
 
     <script src="nav.js"></script>

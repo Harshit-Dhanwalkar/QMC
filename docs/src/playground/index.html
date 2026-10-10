@@ -498,16 +498,20 @@
           const d = new Float32Array(mem(), w.qmc_density(), N * N);
           const V = new Float64Array(mem(), w.qmc_potential(), N * N);
           let m = 0;
-          for (let i = 0; i < d.length; i++) if (d[i] > m) m = d[i];
+          for (let i = 0; i < d.length; i++) {
+            if (d[i] > m) m = d[i];
+          }
           vmax = Math.max(vmax * 0.992, m, 0.003);
-          const px = img.data,
-            inv = 1 / vmax;
+          const px = img.data;
+          const inv = 1 / vmax;
           for (let ix = 0; ix < N; ix++) {
             for (let iy = 0; iy < N; iy++) {
               const i = ix * N + iy;
               const p = (iy * N + ix) * 4;
               let idx = (Math.sqrt(d[i] * inv) * 255) | 0;
-              if (idx > 255) idx = 255;
+              if (idx > 255) {
+                idx = 255;
+              }
               let r = lut[idx * 3];
               let g = lut[idx * 3 + 1];
               let b = lut[idx * 3 + 2];
@@ -574,12 +578,14 @@
               showError("Solver returned an error.");
               return;
             }
+
             const dt = performance.now() - t0;
             msPerStep = msPerStep
               ? msPerStep * 0.9 + (dt / speed) * 0.1
               : dt / speed;
             t += speed * DT;
           }
+
           render();
 
           // fire next particle once last one has left box (or after a long time),

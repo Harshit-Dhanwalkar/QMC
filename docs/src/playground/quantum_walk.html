@@ -430,67 +430,75 @@
           );
           return;
         }
-        const N = w.qmc_qw_n(),
-          TMAX = w.qmc_qw_tmax(),
-          MID = N / 2;
+        const N = w.qmc_qw_n();
+        const TMAX = w.qmc_qw_tmax();
+        const MID = N / 2;
         const buf = () =>
           new Float64Array(w.memory.buffer, w.qmc_qw_buffer(), 2 * N);
 
-        let theta = 45,
-          coin = 2,
-          playing = true,
-          spf = 2,
-          hist = [];
+        let theta = 45;
+        const coin = 2;
+        const playing = true;
+        const spf = 2;
+        const hist = [];
 
         function reset() {
           if (w.qmc_qw_reset((theta * Math.PI) / 180, coin) !== 0) {
             showError("reset rejected");
             return;
           }
+
           hist = [[0, 0, 0]];
           render();
         }
+
         function advance() {
           if (w.qmc_qw_time() >= TMAX) {
             playing = false;
             $("play").textContent = "Play";
             return;
           }
+
           const n = Math.min(spf, TMAX - w.qmc_qw_time());
           if (w.qmc_qw_step(n) !== 0) {
             showError("step failed");
             playing = false;
             return;
           }
+
           const t = w.qmc_qw_time();
           hist.push([t, Math.sqrt(w.qmc_qw_variance()), Math.sqrt(t)]);
         }
 
         function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect(),
-            d = window.devicePixelRatio || 1;
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
           canvas.width = Math.max(2, r.width * d);
           canvas.height = Math.max(2, r.height * d);
           const g = canvas.getContext("2d");
           g.setTransform(d, 0, 0, d, 0, 0);
+
           return { g, W: r.width, H: r.height };
         }
 
         function drawPlot() {
           const { g, W: cw, H: ch } = fit($("pc"));
-          const b = buf(),
-            t = w.qmc_qw_time();
-          const half = Math.max(12, Math.ceil(t * 1.08)),
-            x0 = 14,
-            x1 = cw - 12,
-            y0 = ch - 26,
-            y1 = 18;
+          const b = buf();
+          const t = w.qmc_qw_time();
+          const half = Math.max(12, Math.ceil(t * 1.08));
+          const x0 = 14;
+          const x1 = cw - 12;
+          const y0 = ch - 26;
+          const y1 = 18;
           const X = (x) => x0 + ((x + half) / (2 * half)) * (x1 - x0);
           let m = 1e-9;
           for (let x = -half; x <= half; x++) {
             const j = MID + x;
-            if (j >= 0 && j < N) m = Math.max(m, b[j], b[N + j]);
+            if (j >= 0 && j < N) {
+              m = Math.max(m, b[j], b[N + j]);
+            }
           }
+
           m *= 1.08;
           const Y = (p) => y0 - (y0 - y1) * (p / m);
           g.strokeStyle = css("--line");
@@ -504,6 +512,7 @@
           g.fillText("\u2212" + half, x0, ch - 8);
           g.fillText("0", X(0) - 3, ch - 8);
           g.fillText("+" + half + "  (sites)", x1 - 78, ch - 8);
+
           // light cone of the quantum walk: |x| <= t cos(theta)
           const cone = t * Math.cos((theta * Math.PI) / 180);
           g.setLineDash([4, 4]);
@@ -514,21 +523,29 @@
             g.lineTo(X(s * cone), y1);
             g.stroke();
           }
+
           g.setLineDash([]);
           const series = (off, col, fill) => {
             g.beginPath();
-            let first = true,
-              lastX = X(-half);
+            let first = true;
+            let lastX = X(-half);
             for (let x = -half; x <= half; x++) {
-              if ((((x - t) % 2) + 2) % 2 !== 0) continue;
+              if ((((x - t) % 2) + 2) % 2 !== 0) {
+                continue;
+              }
+
               const j = MID + x;
-              if (j < 0 || j >= N) continue;
-              const px = X(x),
-                py = Y(b[off + j]);
+              if (j < 0 || j >= N) {
+                continue;
+              }
+
+              const px = X(x);
+              const py = Y(b[off + j]);
               first ? g.moveTo(px, py) : g.lineTo(px, py);
               first = false;
               lastX = px;
             }
+
             g.strokeStyle = col;
             g.lineWidth = 1.8;
             g.stroke();
@@ -542,6 +559,7 @@
               g.globalAlpha = 1;
             }
           };
+
           series(N, css("--accent2"), false);
           series(0, css("--accent"), true);
           g.fillStyle = css("--muted");
@@ -555,17 +573,18 @@
 
         function drawSigma() {
           const { g, W: cw, H: ch } = fit($("sc"));
-          const x0 = 34,
-            x1 = cw - 10,
-            y0 = ch - 18,
-            y1 = 8;
+          const x0 = 34;
+          const x1 = cw - 10;
+          const y0 = ch - 18;
+          const y1 = 8;
           const yMax = Math.max(
             8,
             Math.sqrt(1 - Math.sin((theta * Math.PI) / 180)) * TMAX * 1.05,
             Math.sqrt(TMAX) * 1.1,
           );
-          const X = (t) => x0 + (t / TMAX) * (x1 - x0),
-            Y = (v) => y0 - (y0 - y1) * Math.min(1, v / yMax);
+          const X = (t) => x0 + (t / TMAX) * (x1 - x0);
+          const Y = (v) => y0 - (y0 - y1) * Math.min(1, v / yMax);
+
           g.strokeStyle = css("--line");
           g.lineWidth = 1;
           g.beginPath();
@@ -578,6 +597,7 @@
           g.fillText("width (sites)", x0 + 6, 16);
           g.fillText("t = " + TMAX, x1 - 52, ch - 4);
           g.fillText("0", x0 - 3, ch - 4);
+
           const slope = Math.sqrt(1 - Math.sin((theta * Math.PI) / 180));
           g.setLineDash([5, 4]);
           g.strokeStyle = "#8993a8";
@@ -586,26 +606,29 @@
           g.lineTo(X(TMAX), Y(slope * TMAX));
           g.stroke();
           g.setLineDash([]);
+
           const line = (idx, col) => {
             g.strokeStyle = col;
             g.lineWidth = 2;
             g.beginPath();
             hist.forEach((h, i) => {
-              const px = X(h[0]),
-                py = Y(h[idx]);
+              const px = X(h[0]);
+              const py = Y(h[idx]);
               i ? g.lineTo(px, py) : g.moveTo(px, py);
             });
+
             g.stroke();
           };
+
           line(2, css("--accent2"));
           line(1, css("--accent"));
         }
 
         function updateStats() {
-          const t = w.qmc_qw_time(),
-            sq = Math.sqrt(w.qmc_qw_variance() || 0),
-            sc = Math.sqrt(t),
-            as = Math.sqrt(w.qmc_qw_asymptote());
+          const t = w.qmc_qw_time();
+          const sq = Math.sqrt(w.qmc_qw_variance() || 0);
+          const sc = Math.sqrt(t);
+          const as = Math.sqrt(w.qmc_qw_asymptote());
           $("stats").innerHTML =
             `<div class="stat"><span>Steps t</span><span>${t}</span></div>
        <div class="stat"><span>Quantum width</span><span>${sq.toFixed(2)} sites</span></div>
@@ -625,6 +648,7 @@
           drawSigma();
           updateStats();
         }
+
         function restart() {
           playing = true;
           $("play").textContent = "Pause";
@@ -640,12 +664,14 @@
             .forEach((b) => b.classList.toggle("on", +b.dataset.th === v));
           restart();
         }
+
         document
           .querySelectorAll("#presets button")
           .forEach((b) =>
             b.addEventListener("click", () => setTheta(+b.dataset.th)),
           );
         $("th").addEventListener("input", (e) => setTheta(+e.target.value));
+
         document.querySelectorAll("#starts button").forEach((b) =>
           b.addEventListener("click", () => {
             coin = +b.dataset.c;
@@ -674,8 +700,10 @@
             advance();
             render();
           }
+
           requestAnimationFrame(frame);
         }
+
         reset();
         requestAnimationFrame(frame);
       })();

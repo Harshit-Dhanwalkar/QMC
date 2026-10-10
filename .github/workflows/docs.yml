@@ -142,7 +142,7 @@ jobs:
                    qmc_anderson.wasm \
                    qmc_qwalk.wasm \
                    qmc_lz.wasm \
-                  qmc_rotor.wasm; do
+                   qmc_rotor.wasm; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
@@ -165,7 +165,9 @@ jobs:
                    docs/book/html/playground/orbitals.html \
                    docs/book/html/playground/quantum_walk.html \
                    docs/book/html/playground/landau_zener.html \
-                   docs/book/html/playground/kicked_rotor.html; do
+                   docs/book/html/playground/kicked_rotor.html \
+                   docs/book/html/playground/wasi-shim.js \
+                   docs/book/html/playground/nav.js; do
             test -s "$f" \
               && echo " OK: $f" \
               || (echo "ERROR: $f missing from book output" && exit 1)

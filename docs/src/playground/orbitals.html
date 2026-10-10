@@ -397,8 +397,8 @@
           return;
         }
 
-        const MAXN = w.qmc_orb_max_n(),
-          MAXP = w.qmc_orb_max_points();
+        const MAXN = w.qmc_orb_max_n();
+        const MAXP = w.qmc_orb_max_points();
         const LETTER = "spdfghik";
 
         // state
@@ -465,11 +465,11 @@
         // colour
         function hsl2rgb(h, s, v) {
           // h in [0,1)
-          const i = Math.floor(h * 6),
-            f = h * 6 - i,
-            p = v * (1 - s),
-            q = v * (1 - f * s),
-            t = v * (1 - (1 - f) * s);
+          const i = Math.floor(h * 6);
+          const f = h * 6 - i;
+          const p = v * (1 - s);
+          const q = v * (1 - f * s);
+          const t = v * (1 - (1 - f) * s);
           return [
             [v, t, p],
             [q, v, p],
@@ -855,10 +855,14 @@
         window.addEventListener("resize", render);
 
         function frame() {
-          if (spin && !drag) yaw += 0.006;
+          if (spin && !drag) {
+            yaw += 0.006;
+          }
           render();
+
           requestAnimationFrame(frame);
         }
+
         refreshUI();
         resample();
         requestAnimationFrame(frame);
