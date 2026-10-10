@@ -267,6 +267,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/quantum_walk.c \
                $(PHYSICS_DIR)/landau_zener.c \
                $(PHYSICS_DIR)/kicked_rotor.c \
+               $(PHYSICS_DIR)/ssh_chain.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \

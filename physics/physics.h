@@ -72,6 +72,7 @@
 #include "qubits.h"
 #include "rabi.h"
 #include "relativistic.h"
+#include "ssh_chain.h"
 #include "scattering.h"
 #include "schrodinger.h"
 #include "second_quant.h"
