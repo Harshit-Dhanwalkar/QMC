@@ -22,6 +22,8 @@
 
 `qmc_tfim.c` wraps the exact free-fermion quench of the transverse-field Ising chain (`physics/tfim_quench.c`): `docs/src/playground/ising_quench.html` shows the correlation light cone, the transverse magnetisation and the Loschmidt rate function with its dynamical-phase-transition kinks.
 
+`qmc_haldane.c` wraps the Haldane model and its ribbon solver (`physics/tight_binding.c`): `docs/src/playground/haldane.html` shows the chiral edge states, the Chern number and the phase diagram. This module imports 3 WASI calls (`fd_write`, `fd_seek`, `fd_close`) because the complex eigensolver carries stdio error paths; none of them runs on valid input and the page passes stubs.
+
 ## Build
 
 ```sh
@@ -111,6 +113,8 @@ Kicked-rotor module (`qmc_rotor.wasm`, no imports): `qmc_kr_reset(k, hbar, seed)
 SSH-chain module (`qmc_ssh.wasm`, no imports): `qmc_ssh_set(w, noise, m, seed)` builds the 20-cell chain (v = 1, inter-cell hopping w, random hopping `noise`, staggered potential m) and diagonalises it; `qmc_ssh_energies()` and `qmc_ssh_vectors()` hold the 40 eigenvalues and eigenvectors, `qmc_ssh_sweep(w0, w1, n)` fills `qmc_ssh_sweep_buffer()` with the spectrum for n values of w, and `qmc_ssh_winding()`, `qmc_ssh_zak()`, `qmc_ssh_xi()` and `qmc_ssh_gap()` give the topological invariants and length scales.
 
 Ising-quench module (`qmc_tfim.wasm`, no imports): `qmc_tq_set(h_i, h_f)` fixes the two fields (J = 1), `qmc_tq_eval(t)` fills `qmc_tq_zz_buffer()` with <sz_0 sz_r> for r = 0..40 on a 256-site ring and `qmc_tq_last_mx()` / `qmc_tq_last_rate()` with the magnetisation and Loschmidt rate, `qmc_tq_curve(t_max, n)` fills the rate and magnetisation curve buffers, and `qmc_tq_tcrit(n)` gives the critical times of the dynamical transition.
+
+Haldane module (`qmc_haldane.wasm`, imports three WASI stubs): `qmc_hd_set(t2, phi, mass)` builds the model (t1 = 1), `qmc_hd_compute(n_k)` diagonalises a 14-cell ribbon at `n_k` wave numbers into `qmc_hd_energy_buffer()` and `qmc_hd_mean_buffer()` (position of each state across the ribbon, -1 to +1), `qmc_hd_profile(ik, n_k, state)` fills `qmc_hd_prob_buffer()` with one state's weight per cell, and `qmc_hd_chern()` / `qmc_hd_limit()` give the Chern number and phase boundary.
 
 Regenerate the butterfly images:
 

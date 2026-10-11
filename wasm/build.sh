@@ -15,6 +15,7 @@
 #   docs/src/playground/qmc_rotor.wasm      kicked-rotor demo
 #   docs/src/playground/qmc_ssh.wasm        SSH topological-chain demo
 #   docs/src/playground/qmc_tfim.wasm       Ising-quench demo
+#   docs/src/playground/qmc_haldane.wasm    Haldane Chern-insulator demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -142,3 +143,9 @@ build_module "$OUT/qmc_tfim.wasm" \
 qmc_tq_density_buffer qmc_tq_set qmc_tq_eval qmc_tq_last_mx qmc_tq_last_rate qmc_tq_curve qmc_tq_tcrit \
 qmc_tq_front_speed" \
   wasm/qmc_tfim.c physics/tfim_quench.c
+
+build_module "$OUT/qmc_haldane.wasm" \
+  "qmc_hd_width qmc_hd_states qmc_hd_nk_max qmc_hd_energy_buffer qmc_hd_mean_buffer qmc_hd_prob_buffer \
+qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit qmc_hd_valley_gap qmc_hd_vmax qmc_hd_cmin" \
+  wasm/qmc_haldane.c physics/tight_binding.c core/matrix.c core/vector.c core/utils.c \
+  core/fft/fft.c core/linalg/*.c core/ode/*.c

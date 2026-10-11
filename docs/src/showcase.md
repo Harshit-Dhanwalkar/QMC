@@ -1,23 +1,24 @@
 # Showcase: quantum mechanics that runs in your browser
 
-11 interactive demos, all computed live by the same C library you can read
+12 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
 
-| Demo                                              | Physics                                               | Library routine                     | Size  |
-| ------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
-| [Double slit](playground/index.html)              | 2D wave interference                                  | `soft_evolve_2d`                    | 21 KB |
-| [Hofstadter butterfly](playground/butterfly.html) | Electrons in a magnetic field on a lattice            | Hofstadter spectrum + Chern numbers | 51 KB |
-| [Klein paradox](playground/dirac.html)            | Relativistic electron hitting a barrier               | `dirac_evolve_1d`                   | 24 KB |
-| [Hydrogen orbitals](playground/orbitals.html)     | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
-| [Bloch sphere](playground/bloch.html)             | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
-| [Anderson localisation](playground/anderson.html) | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
-| [Quantum walk](playground/quantum_walk.html)      | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
-| [Landau-Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
-| [Kicked rotor](playground/kicked_rotor.html)      | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
-| [SSH chain](playground/ssh_chain.html)            | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
-| [Ising quench](playground/ising_quench.html)      | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
+| Demo                                               | Physics                                               | Library routine                     | Size  |
+| -------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
+| [Double slit](playground/index.html)               | 2D wave interference                                  | `soft_evolve_2d`                    | 21 KB |
+| [Hofstadter butterfly](playground/butterfly.html)  | Electrons in a magnetic field on a lattice            | Hofstadter spectrum + Chern numbers | 51 KB |
+| [Klein paradox](playground/dirac.html)             | Relativistic electron hitting a barrier               | `dirac_evolve_1d`                   | 24 KB |
+| [Hydrogen orbitals](playground/orbitals.html)      | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
+| [Bloch sphere](playground/bloch.html)              | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
+| [Anderson localisation](playground/anderson.html)  | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
+| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
+| [Landau-Zener](playground/landau_zener.html)       | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
+| [Kicked rotor](playground/kicked_rotor.html)       | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
+| [SSH chain](playground/ssh_chain.html)             | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
+| [Ising quench](playground/ising_quench.html)       | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
+| [Haldane Chern insulator](playground/haldane.html) | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -199,6 +200,28 @@ suite checks the magnetisation, the echo and the correlations against exact
 diagonalisation to 1e-13, and the critical times against their closed form.
 
 [Open the demo](playground/ising_quench.html)
+
+## The Haldane model: a Chern insulator with one-way edge states
+
+[![Haldane ribbon](playground/haldane.gif)](playground/haldane.html)
+
+Graphene with a twist. Let electrons hop to their next-nearest neighbours
+with a complex amplitude $t_2 \exp^{\pm i \phi}$, a phase that mimics a
+magnetic field that points up in one half of each cell and down in the other,
+so that the net flux is zero but time-reversal symmetry is broken. Add a
+sublattice mass M and the Dirac points open into a gap, with a Chern number
+$\pm 1$ when $|M| < 3 \sqrt{3} \cdot t_2 |\sin(\phi)|$ and 0 otherwise. Cut a
+ribbon out of the lattice and the invariant becomes visible: exactly one state
+per edge crosses the gap, and the two move in opposite directions, so an
+electron on one edge cannot scatter backwards because the only state to scatter
+into is on the far side of the sample. The page draws the ribbon spectrum,
+colours each state by the edge it lives on, shows its profile across the ribbon
+and lets you click through the phase diagram. The test suite checks that the
+number of edge crossings and their direction match the Chern number for both
+signs of $\phi$, that the trivial phase has no states in the gap, and that
+graphene's zigzag ribbon has its flat band of zero modes.
+
+[Open the demo](playground/haldane.html)
 
 ## Run it yourself
 

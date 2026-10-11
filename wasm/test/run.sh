@@ -162,3 +162,16 @@ else
   echo "FAIL: Ising-quench WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Haldane ribbon: edge states and Chern number, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics -Icore/linalg wasm/test/haldane_ref.c wasm/qmc_haldane.c physics/tight_binding.c \
+  core/matrix.c core/vector.c core/utils.c core/fft/fft.c core/linalg/*.c core/ode/*.c -lm -o "$TMP/qmc_haldane_ref"
+"$TMP/qmc_haldane_ref" > "$TMP/qmc_haldane_native.txt"
+cat "$TMP/qmc_haldane_native.txt"
+node wasm/test/haldane_check.mjs > "$TMP/qmc_haldane_wasm.txt"
+if diff -u "$TMP/qmc_haldane_native.txt" "$TMP/qmc_haldane_wasm.txt"; then
+  echo "OK: Haldane WASM matches native"
+else
+  echo "FAIL: Haldane WASM and native results differ" >&2
+  exit 1
+fi

@@ -44,6 +44,9 @@
   <br>
   And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ising_quench.html">Ising quench</a>
   : flip the field of a 256-spin chain and watch correlations spread in a light cone and the return probability kink.
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/haldane.html">Haldane Chern insulator</a>
+  : click through the phase diagram and watch one-way edge states appear on a ribbon.
  </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
