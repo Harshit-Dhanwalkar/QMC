@@ -3,6 +3,7 @@
 #include "complex.h"
 #include "matrix.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -823,7 +824,7 @@ double tb_ssh_zak_phase(double v, double w) {
 }
 
 // Ribbon Hamiltonian: width cells along a2, periodic along a1
-#define TB_RIBBON_MAX_DIM (TB_MAX_ORBITALS * 8)
+#define TB_RIBBON_MAX_DIM ((long)TB_MAX_ORBITALS * 8L)
 
 static cmatrix_t *tb_ribbon_hamiltonian(const tb_model_t *m, double k1,
                                         int width) {
@@ -832,7 +833,9 @@ static cmatrix_t *tb_ribbon_hamiltonian(const tb_model_t *m, double k1,
     return NULL;
   }
 
-  int no = m->n_orb, n = width * no;
+  int no = m->n_orb;
+  int n = width * no;
+
   cmatrix_t *H = cmatrix_alloc(n, n);
   if (!H) {
     return NULL;
@@ -840,7 +843,8 @@ static cmatrix_t *tb_ribbon_hamiltonian(const tb_model_t *m, double k1,
 
   for (int r = 0; r < width; r++) {
     for (int i = 0; i < no; i++) {
-      H->data[(size_t)(r * no + i) * n + r * no + i] = c_real(m->eps[i]);
+      size_t diag = (size_t)r * (size_t)no + (size_t)i;
+      H->data[diag * (size_t)n + diag] = c_real(m->eps[i]);
     }
   }
 
@@ -854,8 +858,8 @@ static cmatrix_t *tb_ribbon_hamiltonian(const tb_model_t *m, double k1,
         continue;
       }
 
-      size_t a = (size_t)(r * no + hop->i);
-      size_t b = (size_t)(r2 * no + hop->j);
+      size_t a = (size_t)r * (size_t)no + (size_t)hop->i;
+      size_t b = (size_t)r2 * (size_t)no + (size_t)hop->j;
 
       H->data[a * n + b] = c_add(H->data[a * n + b], v);
       H->data[b * n + a] = c_add(H->data[b * n + a], c_conj(v));
@@ -886,6 +890,7 @@ tb_status_t tb_ribbon_bands(const tb_model_t *model, double k1, int width,
   int n = width * no;
 
   memcpy(energies, eig->eigenvalues, (size_t)n * sizeof *energies);
+
   if (mean_cell) {
     double half = 0.5 * (width - 1);
 
@@ -894,8 +899,9 @@ tb_status_t tb_ribbon_bands(const tb_model_t *model, double k1, int width,
 
       for (int a = 0; a < n; a++) {
         complex_t c = CMAT(eig->eigenvectors, a, s);
+        int cell = a / no;
 
-        mean += (double)(a / no) * (c.re * c.re + c.im * c.im);
+        mean += (double)cell * (c.re * c.re + c.im * c.im);
       }
 
       mean_cell[s] = half > 0.0 ? (mean - half) / half : 0.0;
