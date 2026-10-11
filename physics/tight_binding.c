@@ -10,10 +10,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Thresholds for declaring an invariant ill-defined.
+// Thresholds for declaring an invariant ill-defined
 #define TB_GAP_TOL 1e-9
 #define TB_LINK_TOL 1e-10
-// Cap on stored eigenvector data (complex numbers) for grid routines.
+// Cap on stored eigenvector data (complex numbers) for grid routines
 #define TB_MAX_STORED_ELEMENTS 8000000UL
 
 typedef struct {
@@ -142,7 +142,7 @@ cmatrix_t *tb_hamiltonian(const tb_model_t *model, double k1, double k2) {
   return H;
 }
 
-// Diagonalize H(k); eigenvalues ascending, eigenvectors as columns.
+// Diagonalize H(k); eigenvalues ascending, eigenvectors as columns
 static eigen_t *tb_eig(const tb_model_t *m, double k1, double k2) {
   cmatrix_t *H = tb_hamiltonian(m, k1, k2);
   if (!H) {
@@ -262,6 +262,7 @@ tb_status_t tb_dos(const tb_model_t *model, int n_k, double e_min, double e_max,
 // pivoting
 static complex_t tb_det(complex_t *A, int n) {
   complex_t det = c_one();
+
   for (int col = 0; col < n; col++) {
     int piv = col;
     double best = c_abs2(A[(size_t)col * n + col]);
@@ -291,6 +292,7 @@ static complex_t tb_det(complex_t *A, int n) {
 
     complex_t pv = A[(size_t)col * n + col];
     det = c_mul(det, pv);
+
     for (int r = col + 1; r < n; r++) {
       complex_t f = c_div(A[(size_t)r * n + col], pv);
 
@@ -306,8 +308,8 @@ static complex_t tb_det(complex_t *A, int n) {
 
 // Unit-modulus link variable det<ua|ub> for two n x count eigenvector blocks
 // (row-major, column c = band first + c)
-// Sets *bad when overlap determinant is too small to define a phase. `work` has
-// count * count entries
+// Sets *bad when overlap determinant is too small to define a phase
+// `work` has count * count entries
 static complex_t tb_link(int n, int count, const complex_t *ua,
                          const complex_t *ub, complex_t *work, int *bad) {
   for (int c = 0; c < count; c++) {
@@ -430,6 +432,7 @@ tb_status_t tb_berry_flux_grid(const tb_model_t *model, int first_band,
   int bad = 0;
   for (int a = 0; a < n_k; a++) {
     int a1 = (a + 1) % n_k;
+
     for (int b = 0; b < n_k; b++) {
       int b1 = (b + 1) % n_k;
 
@@ -817,6 +820,127 @@ double tb_ssh_zak_phase(double v, double w) {
   }
 
   return fabs(v) > fabs(w) ? 0.0 : M_PI;
+}
+
+// Ribbon Hamiltonian: width cells along a2, periodic along a1
+#define TB_RIBBON_MAX_DIM (TB_MAX_ORBITALS * 8)
+
+static cmatrix_t *tb_ribbon_hamiltonian(const tb_model_t *m, double k1,
+                                        int width) {
+  if (!m || m->dim != 2 || width < 1 || !isfinite(k1) ||
+      (long)width * m->n_orb > TB_RIBBON_MAX_DIM) {
+    return NULL;
+  }
+
+  int no = m->n_orb, n = width * no;
+  cmatrix_t *H = cmatrix_alloc(n, n);
+  if (!H) {
+    return NULL;
+  }
+
+  for (int r = 0; r < width; r++) {
+    for (int i = 0; i < no; i++) {
+      H->data[(size_t)(r * no + i) * n + r * no + i] = c_real(m->eps[i]);
+    }
+  }
+
+  for (size_t h = 0; h < m->n_hops; h++) {
+    const tb_hop_t *hop = &m->hops[h];
+    complex_t v = c_mul(hop->t, c_from_polar(1.0, k1 * hop->n1));
+
+    for (int r = 0; r < width; r++) {
+      int r2 = r + hop->n2;
+      if (r2 < 0 || r2 >= width) {
+        continue;
+      }
+
+      size_t a = (size_t)(r * no + hop->i);
+      size_t b = (size_t)(r2 * no + hop->j);
+
+      H->data[a * n + b] = c_add(H->data[a * n + b], v);
+      H->data[b * n + a] = c_add(H->data[b * n + a], c_conj(v));
+    }
+  }
+
+  return H;
+}
+
+tb_status_t tb_ribbon_bands(const tb_model_t *model, double k1, int width,
+                            double *energies, double *mean_cell) {
+  if (!energies) {
+    return TB_ERR_INVALID;
+  }
+
+  cmatrix_t *H = tb_ribbon_hamiltonian(model, k1, width);
+  if (!H) {
+    return TB_ERR_INVALID;
+  }
+
+  eigen_t *eig = cmatrix_eigh_complex(H);
+  cmatrix_free(H);
+  if (!eig) {
+    return TB_ERR_MEMORY;
+  }
+
+  int no = model->n_orb;
+  int n = width * no;
+
+  memcpy(energies, eig->eigenvalues, (size_t)n * sizeof *energies);
+  if (mean_cell) {
+    double half = 0.5 * (width - 1);
+
+    for (int s = 0; s < n; s++) {
+      double mean = 0.0;
+
+      for (int a = 0; a < n; a++) {
+        complex_t c = CMAT(eig->eigenvectors, a, s);
+
+        mean += (double)(a / no) * (c.re * c.re + c.im * c.im);
+      }
+
+      mean_cell[s] = half > 0.0 ? (mean - half) / half : 0.0;
+    }
+  }
+
+  eigen_free(eig);
+
+  return TB_OK;
+}
+
+tb_status_t tb_ribbon_profile(const tb_model_t *model, double k1, int width,
+                              int state, double *prob) {
+  if (!prob || !model || state < 0 || width < 1 ||
+      state >= width * model->n_orb) {
+    return TB_ERR_INVALID;
+  }
+
+  cmatrix_t *H = tb_ribbon_hamiltonian(model, k1, width);
+  if (!H) {
+    return TB_ERR_INVALID;
+  }
+
+  eigen_t *eig = cmatrix_eigh_complex(H);
+  cmatrix_free(H);
+  if (!eig) {
+    return TB_ERR_MEMORY;
+  }
+
+  int no = model->n_orb;
+  int n = width * no;
+
+  for (int r = 0; r < width; r++) {
+    prob[r] = 0.0;
+  }
+
+  for (int a = 0; a < n; a++) {
+    complex_t c = CMAT(eig->eigenvectors, a, state);
+
+    prob[a / no] += c.re * c.re + c.im * c.im;
+  }
+
+  eigen_free(eig);
+
+  return TB_OK;
 }
 
 double tb_kagome_flat_band_energy(double t) { return -2.0 * t; }

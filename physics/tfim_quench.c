@@ -1,5 +1,6 @@
 #include "tfim_quench.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdlib.h>
 
 #ifndef M_PI
@@ -57,7 +58,8 @@ int tfim_quench_modes(double J, double h_i, double h_f, double t, int n_sites,
   }
 
   for (int m = 0; m < n_sites / 2; m++) {
-    bloch_at(J, h_i, h_f, t, (2 * m + 1) * M_PI / n_sites, s + 3 * m);
+    bloch_at(J, h_i, h_f, t, (2 * m + 1) * M_PI / n_sites,
+             s + 3 * (ptrdiff_t)m);
   }
 
   return 0;
@@ -162,7 +164,9 @@ int tfim_quench_zz(double J, double h_i, double h_f, double t, int n_sites,
   int span = 2 * r_max + 3, nm = n_sites / 2;
   double *g = calloc((size_t)span, sizeof *g);
   double *x = calloc((size_t)span, sizeof *x);
-  double *rm = calloc((size_t)(4 * r_max * r_max + 1), sizeof *rm);
+
+  size_t n_rm = 4 * (size_t)r_max * (size_t)r_max + 1;
+  double *rm = calloc(n_rm, sizeof *rm);
 
   if (!g || !x || !rm) {
     free(g);
