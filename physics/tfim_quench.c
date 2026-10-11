@@ -41,8 +41,9 @@ static void bloch_at(double J, double h_i, double h_f, double t, double k,
 
   double th = 2.0 * quasi_energy(J, h_f, k) * t, co = cos(th), si = sin(th);
   double dot = nf[0] * s0[0] + nf[1] * s0[1] + nf[2] * s0[2];
-  double cr[3] = {nf[1] * s0[2] - nf[2] * s0[1], nf[2] * s0[0] - nf[0] * s0[2],
-                  nf[0] * s0[1] - nf[1] * s0[0]};
+  const double cr[3] = {nf[1] * s0[2] - nf[2] * s0[1],
+                        nf[2] * s0[0] - nf[0] * s0[2],
+                        nf[0] * s0[1] - nf[1] * s0[0]};
 
   for (int c = 0; c < 3; c++) {
     s[c] = s0[c] * co + cr[c] * si + nf[c] * dot * (1.0 - co);

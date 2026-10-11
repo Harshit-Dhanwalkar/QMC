@@ -41,6 +41,9 @@
   <br>
   And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ssh_chain.html">SSH chain</a>
   : a topological insulator in 1D: tune the hopping and watch protected edge states appear at the ends.
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ising_quench.html">Ising quench</a>
+  : flip the field of a 256-spin chain and watch correlations spread in a light cone and the return probability kink.
  </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -238,6 +241,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_81_landau_zener.c</code></li>
   <li><code>eg_82_kicked_rotor.c</code></li>
   <li><code>eg_83_ssh_chain.c</code></li>
+  <li><code>eg_84_tfim_quench.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -304,6 +308,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_landau_zener.c</code></li>
   <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_ssh_chain.c</code></li>
+  <li><code>test_tfim_quench.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>

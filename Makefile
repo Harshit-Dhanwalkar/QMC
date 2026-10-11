@@ -421,7 +421,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_80_quantum_walk \
               $(BUILD_DIR)/eg_81_landau_zener \
               $(BUILD_DIR)/eg_82_kicked_rotor \
-              $(BUILD_DIR)/eg_83_ssh_chain
+              $(BUILD_DIR)/eg_83_ssh_chain \
+              $(BUILD_DIR)/eg_84_tfim_quench
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -442,6 +443,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_landau_zener \
               $(BUILD_DIR)/test_kicked_rotor \
               $(BUILD_DIR)/test_ssh_chain \
+              $(BUILD_DIR)/test_tfim_quench \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
