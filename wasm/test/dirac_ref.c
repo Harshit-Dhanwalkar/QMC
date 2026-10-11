@@ -16,6 +16,7 @@ int main(void) {
   for (int h = 0; h < 4; h++) {
     qmc_dc_klein(sqrt(3.0), heights[h]);
     qmc_dc_step(2500);
+
     double t = qmc_dc_right();
     double ex = qmc_dc_exact(sqrt(3.0), heights[h]);
 
@@ -28,8 +29,10 @@ int main(void) {
   }
 
   qmc_dc_zitter();
-  qmc_dc_step(39); /* t = 1.56 ~ \pi/2: <x> = -(1 - \cos 2t)/2 ~ -1 */
+  qmc_dc_step(39); // t = 1.56 ~ \pi/2: <x> = -(1 - \cos 2t)/2 ~ -1
+
   double x = qmc_dc_position();
+
   printf("zitter x=%.10f\n", x);
   if (fabs(x + 0.5 * (1.0 - cos(2.0 * 1.56))) > 0.02) {
     fprintf(stderr, "FAIL zitter x=%.4f\n", x);

@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Ising quench</title>
+    <meta
+      name="description"
+      content="Switch the transverse field of an Ising chain suddenly and watch correlations spread in a light cone while the Loschmidt echo shows dynamical quantum phase transitions. An exact free-fermion solution computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Quantum quench light cone and dynamical phase transitions in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Suddenly change the field of a 256-spin Ising chain: correlations spread at a finite speed and the return probability has kinks. Exact solution, live in your browser."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/ising_quench.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #lc {
+        aspect-ratio: 16 / 9.5;
+      }
+      #rt {
+        aspect-ratio: 16 / 5.2;
+        margin-top: 14px;
+      }
+      #mg {
+        aspect-ratio: 16 / 4.4;
+        margin-top: 14px;
+      }
+      #dn {
+        aspect-ratio: 16 / 7;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; Ising quench</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        Prepare 256 spins in the ground state of a transverse-field Ising chain,
+        then <b>suddenly change the field</b> from h<sub>i</sub> to
+        h<sub>f</sub>. Correlations between distant spins spread through the
+        chain inside a <b>light cone</b>. When the quench crosses the critical
+        point h&nbsp;=&nbsp;J, the probability to return to the initial state
+        (the Loschmidt echo) vanishes at isolated times and its rate function
+        has <b>kinks</b>: dynamical quantum phase transitions. The chain is
+        solved exactly with free fermions by the QMC library
+        (<code>tfim_quench_zz</code>), so every number below is exact, with no
+        truncation.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="lc">
+            <canvas id="lcc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="cv" id="rt"><canvas id="rtc"></canvas></div>
+          <div class="cv" id="mg"><canvas id="mgc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i style="background: var(--accent2)"></i>&lang;&sigma;<sup
+                >z</sup
+              ><sub>0</sub>&sigma;<sup>z</sup><sub>r</sub>&rang; &gt; 0</span
+            >
+            <span
+              ><i style="background: var(--blue)"></i>&lang;&sigma;<sup>z</sup
+              ><sub>0</sub>&sigma;<sup>z</sup><sub>r</sub>&rang; &lt; 0</span
+            >
+            <span
+              ><i style="background: var(--accent)"></i>rate function &minus;ln
+              L(t)/N</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>light-cone front, critical
+              times</span
+            >
+          </div>
+        </div>
+
+        <div>
+          <div class="cv" id="dn"><canvas id="dnc"></canvas></div>
+          <div class="panel" style="margin-top: 14px">
+            <h2>Quench</h2>
+            <div class="row" id="presets">
+              <button data-i="3" data-f="0.5" class="on">Light cone</button>
+              <button data-i="0.3" data-f="2">Order melts</button>
+              <button data-i="0.3" data-f="0.7">Stays ordered</button>
+              <button data-i="0.5" data-f="0">Field off</button>
+            </div>
+            <div class="row">
+              <label
+                ><span>Initial h<sub>i</sub></span
+                ><input
+                  id="hi"
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="0.05"
+                  value="3"
+                /><b id="hiv">3.00</b></label
+              >
+            </div>
+            <div class="row">
+              <label
+                ><span>Final h<sub>f</sub></span
+                ><input
+                  id="hf"
+                  type="range"
+                  min="0"
+                  max="3"
+                  step="0.05"
+                  value="0.5"
+                /><b id="hfv">0.50</b></label
+              >
+            </div>
+            <div class="row">
+              <button id="play" class="primary">Pause</button>
+              <button id="restart">Restart</button>
+              <label style="width: auto"
+                ><span style="min-width: 0">Speed</span
+                ><input
+                  id="spd"
+                  type="range"
+                  min="1"
+                  max="4"
+                  step="1"
+                  value="2"
+                  style="width: 90px; flex: none"
+              /></label>
+            </div>
+            <div id="note"></div>
+          </div>
+
+          <div class="panel">
+            <h2>State</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        H = &minus;J&Sigma; &sigma;<sup>z</sup><sub>j</sub>&sigma;<sup>z</sup
+        ><sub>j+1</sub> &minus; h&Sigma; &sigma;<sup>x</sup><sub>j</sub>,
+        J&nbsp;=&nbsp;1. Each momentum pair (k, &minus;k) is a spin-1/2 that
+        precesses about the post-quench field; correlations are Pfaffians of
+        Fourier sums of those spins, the echo is the product of the pair
+        overlaps, L(t)&nbsp;=&nbsp;&Pi;<sub>k</sub>[1 &minus; sin&sup2;&phi;<sub
+          >k</sub
+        >
+        sin&sup2;(&epsilon;<sub>k</sub>t)]. The right plot shows the
+        quasiparticle density created in each mode; a quench across
+        h&nbsp;=&nbsp;J puts exactly one half in the critical mode k*, which
+        gives the kinks at
+        t*<sub>n</sub>&nbsp;=&nbsp;&pi;(n+&frac12;)/&epsilon;<sub>k*</sub>. The
+        front of the cone moves at 4&nbsp;min(J,&nbsp;h<sub>f</sub>). Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/tfim_quench.c"
+          ><code>physics/tfim_quench.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_tfim.c"
+          ><code>wasm/qmc_tfim.c</code></a
+        >; magnetisation, echo and correlations are checked against exact
+        diagonalisation in <code>tests/test_tfim_quench.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_tfim.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_tfim.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/ising_quench.html</code>.",
+          );
+          return;
+        }
+
+        const R = w.qmc_tq_rmax();
+        const NM = w.qmc_tq_modes();
+        const NT = 220;
+        const TMAX = 10;
+        const NC = 240;
+        const zzb = () =>
+          new Float64Array(w.memory.buffer, w.qmc_tq_zz_buffer(), R + 1);
+        const rate = () =>
+          new Float64Array(w.memory.buffer, w.qmc_tq_rate_buffer(), NC);
+        const mxc = () =>
+          new Float64Array(w.memory.buffer, w.qmc_tq_mx_buffer(), NC);
+        const dens = () =>
+          new Float64Array(w.memory.buffer, w.qmc_tq_density_buffer(), NM);
+
+        let HI = 3;
+        let HF = 0.5;
+        let spf = 2;
+        let playing = true;
+        let col = 0;
+        let field = null;
+        let curveRate = null;
+        let curveMx = null;
+        let rmax = 1;
+        const off = document.createElement("canvas");
+        off.width = R + 1;
+        off.height = NT;
+        const og = off.getContext("2d");
+        let img = og.createImageData(R + 1, NT);
+
+        function colour(v) {
+          // diverging, with a square-root stretch so small values show
+          const a = Math.min(1, Math.pow(Math.min(1, Math.abs(v)), 0.45));
+          const base = [11, 14, 20];
+          const pos = [245, 165, 36];
+          const neg = [90, 169, 255];
+          const c = v >= 0 ? pos : neg;
+
+          return [
+            base[0] + (c[0] - base[0]) * a,
+            base[1] + (c[1] - base[1]) * a,
+            base[2] + (c[2] - base[2]) * a,
+          ];
+        }
+
+        function setPixelRow(row, z) {
+          for (let r = 0; r <= R; r++) {
+            const c = colour(z[r]);
+            const i = 4 * (row * (R + 1) + r);
+
+            img.data[i] = c[0];
+            img.data[i + 1] = c[1];
+            img.data[i + 2] = c[2];
+            img.data[i + 3] = 255;
+          }
+        }
+
+        function reset() {
+          if (w.qmc_tq_set(HI, HF) !== 0) {
+            showError("fields rejected");
+            return;
+          }
+          if (w.qmc_tq_curve(TMAX, NC) !== 0) {
+            showError("curve failed");
+            return;
+          }
+
+          curveRate = Float64Array.from(rate());
+          curveMx = Float64Array.from(mxc());
+          img = og.createImageData(R + 1, NT);
+          col = 0;
+          rmax = Math.max(0.05, ...curveRate.slice(0, NC));
+          computeColumn();
+          render();
+        }
+
+        function computeColumn() {
+          if (col >= NT) {
+            return false;
+          }
+
+          const t = (col / (NT - 1)) * TMAX;
+          if (w.qmc_tq_eval(t) !== 0) {
+            showError("evaluation failed");
+            playing = false;
+            return false;
+          }
+
+          setPixelRow(col, zzb());
+          col++;
+          return true;
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        const tNow = () => ((Math.max(col, 1) - 1) / (NT - 1)) * TMAX;
+
+        function drawCone() {
+          const { g, W: cw, H: ch } = fit($("lcc"));
+          const x0 = 44;
+          const x1 = cw - 10;
+          const y0 = 14;
+          const y1 = ch - 22;
+          og.putImageData(img, 0, 0);
+          g.imageSmoothingEnabled = true;
+          g.drawImage(
+            off,
+            0,
+            0,
+            R + 1,
+            Math.max(1, col),
+            x0,
+            y0,
+            x1 - x0,
+            (y1 - y0) * (Math.max(col, 1) / NT),
+          );
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y0, x1 - x0, y1 - y0);
+          // front
+          const v = w.qmc_tq_front_speed();
+          g.strokeStyle = "#e6e9f0";
+          g.setLineDash([5, 4]);
+          g.beginPath();
+          const tEnd = Math.min(TMAX, R / Math.max(v, 1e-9));
+          g.moveTo(x0, y0);
+          g.lineTo(
+            x0 + ((v * tEnd) / R) * (x1 - x0),
+            y0 + (tEnd / TMAX) * (y1 - y0),
+          );
+          g.stroke();
+          g.setLineDash([]);
+          // critical times
+          g.strokeStyle = css("--accent");
+          g.globalAlpha = 0.5;
+          for (let n = 0; n < 12; n++) {
+            const tc = w.qmc_tq_tcrit(n);
+            if (!(tc < TMAX)) {
+              break;
+            }
+            const y = y0 + (tc / TMAX) * (y1 - y0);
+            g.beginPath();
+            g.moveTo(x0 - 6, y);
+            g.lineTo(x0, y);
+            g.stroke();
+          }
+
+          g.globalAlpha = 1;
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("0", x0, ch - 6);
+          g.fillText("distance r (sites)", (x0 + x1) / 2 - 50, ch - 6);
+          g.fillText(String(R), x1 - 16, ch - 6);
+          g.save();
+          g.translate(14, y0 + 90);
+          g.rotate(-Math.PI / 2);
+          g.fillText("time t (0 to " + TMAX + ")", 0, 0);
+          g.restore();
+          $("readout").innerHTML = "t = " + tNow().toFixed(2);
+        }
+
+        function drawRate() {
+          const { g, W: cw, H: ch } = fit($("rtc"));
+          const x0 = 44;
+          const x1 = cw - 10;
+          const y0 = ch - 20;
+          const y1 = 10;
+          const ym = rmax * 1.1;
+          const X = (t) => x0 + (t / TMAX) * (x1 - x0);
+          const Y = (v) => y0 - (v / ym) * (y0 - y1);
+
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          g.strokeStyle = "#8993a8";
+          g.globalAlpha = 0.6;
+          g.setLineDash([4, 4]);
+
+          for (let n = 0; n < 12; n++) {
+            const tc = w.qmc_tq_tcrit(n);
+            if (!(tc < TMAX)) {
+              break;
+            }
+            g.beginPath();
+            g.moveTo(X(tc), y1);
+            g.lineTo(X(tc), y0);
+            g.stroke();
+          }
+
+          g.setLineDash([]);
+          g.globalAlpha = 1;
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < NC; i++) {
+            const px = X((i / (NC - 1)) * TMAX);
+            const py = Y(curveRate[i]);
+            i ? g.lineTo(px, py) : g.moveTo(px, py);
+          }
+
+          g.stroke();
+          const t = tNow();
+          const i = Math.round((t / TMAX) * (NC - 1));
+          g.fillStyle = "#ffffff";
+          g.beginPath();
+          g.arc(X(t), Y(curveRate[i]), 4.5, 0, 7);
+          g.fill();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("rate function \u2212ln L(t) / N", x0 + 6, y1 + 13);
+          g.fillText("t", x1 - 10, ch - 5);
+          g.fillText(ym.toFixed(2), 4, y1 + 10);
+          g.fillText("0", 30, y0);
+        }
+
+        function drawMag() {
+          const { g, W: cw, H: ch } = fit($("mgc"));
+          const x0 = 44;
+          const x1 = cw - 10;
+          const y0 = ch - 18;
+          const y1 = 10;
+          const X = (t) => x0 + (t / TMAX) * (x1 - x0);
+          const Y = (v) => y0 - ((v + 0.0) / 1.0) * (y0 - y1);
+
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          g.strokeStyle = css("--accent2");
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < NC; i++) {
+            const px = X((i / (NC - 1)) * TMAX);
+            const py = Y(Math.max(0, Math.min(1, curveMx[i])));
+            i ? g.lineTo(px, py) : g.moveTo(px, py);
+          }
+
+          g.stroke();
+          const t = tNow();
+          const i = Math.round((t / TMAX) * (NC - 1));
+          g.fillStyle = "#ffffff";
+          g.beginPath();
+          g.arc(X(t), Y(Math.max(0, Math.min(1, curveMx[i]))), 4.5, 0, 7);
+          g.fill();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText(
+            "transverse magnetisation \u27e8\u03c3\u02e3\u27e9(t)",
+            x0 + 6,
+            y1 + 13,
+          );
+          g.fillText("1", 30, y1 + 8);
+          g.fillText("0", 30, y0);
+        }
+
+        function drawDensity() {
+          const { g, W: cw, H: ch } = fit($("dnc"));
+          const d = dens();
+          const x0 = 34;
+          const x1 = cw - 10;
+          const y0 = ch - 22;
+          const y1 = 14;
+
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          const X = (m) => x0 + ((m + 0.5) / NM) * (x1 - x0);
+
+          const Y = (v) => y0 - v * (y0 - y1);
+          g.strokeStyle = "#8993a8";
+          g.setLineDash([4, 4]);
+          g.beginPath();
+          g.moveTo(x0, Y(0.5));
+          g.lineTo(x1, Y(0.5));
+          g.stroke();
+          g.setLineDash([]);
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let m = 0; m < NM; m++) {
+            m ? g.lineTo(X(m), Y(d[m])) : g.moveTo(X(m), Y(d[m]));
+          }
+
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("quasiparticles created per mode", x0 + 6, y1 + 12);
+          g.fillText("k: 0 \u2192 \u03c0", x1 - 62, ch - 6);
+          g.fillText("\u00bd", 14, Y(0.5) + 4);
+        }
+
+        function updateStats() {
+          const t = tNow();
+          w.qmc_tq_eval(t);
+          const tc = w.qmc_tq_tcrit(0);
+          const cross = !Number.isNaN(tc);
+          const z = zzb();
+
+          $("stats").innerHTML =
+            `<div class="stat"><span>Time t</span><span>${t.toFixed(2)}</span></div>
+       <div class="stat"><span>Magnetisation \u27e8\u03c3\u02e3\u27e9</span><span>${w.qmc_tq_last_mx().toFixed(4)}</span></div>
+       <div class="stat"><span>Rate function</span><span>${w.qmc_tq_last_rate().toFixed(4)}</span></div>
+       <div class="stat"><span>\u27e8\u03c3\u1dbb\u2080\u03c3\u1dbb\u2081\u27e9 / \u27e8\u03c3\u1dbb\u2080\u03c3\u1dbb\u2083\u27e9</span><span>${z[1].toFixed(3)} / ${z[3].toFixed(3)}</span></div>
+       <div class="stat"><span>Front speed</span><span>${w.qmc_tq_front_speed().toFixed(2)} sites per unit time</span></div>
+       <div class="stat"><span>First critical time t*\u2080</span><span>${cross ? tc.toFixed(3) : "none"}</span></div>`;
+          $("note").textContent =
+            HI < 1
+              ? "Starting in the ordered phase the long-range order decays everywhere at once, so there is no sharp cone; the dynamical transitions in the echo are still there."
+              : cross
+                ? "The quench crosses h = J: the critical mode is left in an exactly equal superposition, the echo touches zero and the rate function has a kink at each dashed line."
+                : "The quench stays on one side of h = J: the rate function is smooth, with no dynamical phase transition.";
+        }
+
+        function render() {
+          drawCone();
+          drawRate();
+          drawMag();
+          drawDensity();
+          updateStats();
+        }
+
+        function setFields(i, f, fromPreset) {
+          HI = i;
+          HF = f;
+          $("hi").value = i;
+          $("hf").value = f;
+          $("hiv").textContent = i.toFixed(2);
+          $("hfv").textContent = f.toFixed(2);
+          document
+            .querySelectorAll("#presets button")
+            .forEach((b) =>
+              b.classList.toggle(
+                "on",
+                fromPreset &&
+                  Math.abs(+b.dataset.i - i) < 1e-9 &&
+                  Math.abs(+b.dataset.f - f) < 1e-9,
+              ),
+            );
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        }
+
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) =>
+            b.addEventListener("click", () =>
+              setFields(+b.dataset.i, +b.dataset.f, true),
+            ),
+          );
+        $("hi").addEventListener("input", (e) =>
+          setFields(+e.target.value, HF, false),
+        );
+        $("hf").addEventListener("input", (e) =>
+          setFields(HI, +e.target.value, false),
+        );
+        $("play").addEventListener("click", () => {
+          if (col >= NT) {
+            playing = true;
+            $("play").textContent = "Pause";
+            reset();
+            return;
+          }
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        });
+        $("restart").addEventListener("click", () => {
+          playing = true;
+          $("play").textContent = "Pause";
+          reset();
+        });
+        $("spd").addEventListener("input", (e) => {
+          spf = +e.target.value;
+        });
+        window.addEventListener("resize", render);
+
+        function frame() {
+          if (playing) {
+            let moved = false;
+            for (let i = 0; i < spf; i++) moved = computeColumn() || moved;
+            if (moved) render();
+            else {
+              playing = false;
+              $("play").textContent = "Replay";
+            }
+          }
+
+          requestAnimationFrame(frame);
+        }
+
+        reset();
+        requestAnimationFrame(frame);
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

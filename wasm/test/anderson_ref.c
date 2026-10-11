@@ -15,11 +15,13 @@ int main(void) {
   // clean chain: <x^2> = 2 t^2 \tau^2, so width = \sqrt(2) * \tau
   qmc_an_reset(0.0, 1);
   qmc_an_step(1000);
+
   printf("clean t=%.2f width=%.9f exact=%.9f norm=%.9f\n", qmc_an_time(),
          qmc_an_width(), sqrt(2.0) * qmc_an_time(), qmc_an_norm());
 
   qmc_an_reset(6.0, 2024);
   qmc_an_step(3000);
+
   const double *b = qmc_an_buffer();
   printf("disordered t=%.2f width=%.9f ipr=%.9f energy=%.9f norm=%.9f\n",
          qmc_an_time(), qmc_an_width(), qmc_an_ipr(), qmc_an_energy(),

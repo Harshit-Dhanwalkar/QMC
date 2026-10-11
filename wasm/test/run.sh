@@ -149,3 +149,16 @@ else
   echo "FAIL: SSH-chain WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Ising quench: free-fermion correlations and Loschmidt rate, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/tfim_ref.c wasm/qmc_tfim.c physics/tfim_quench.c \
+  -lm -o "$TMP/qmc_tfim_ref"
+"$TMP/qmc_tfim_ref" > "$TMP/qmc_tfim_native.txt"
+cat "$TMP/qmc_tfim_native.txt"
+node wasm/test/tfim_check.mjs > "$TMP/qmc_tfim_wasm.txt"
+if diff -u "$TMP/qmc_tfim_native.txt" "$TMP/qmc_tfim_wasm.txt"; then
+  echo "OK: Ising-quench WASM matches native"
+else
+  echo "FAIL: Ising-quench WASM and native results differ" >&2
+  exit 1
+fi

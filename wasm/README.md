@@ -20,6 +20,8 @@
 
 `qmc_ssh.c` wraps the Su-Schrieffer-Heeger chain (`physics/ssh_chain.c`): `docs/src/playground/ssh_chain.html` diagonalises a 20-cell chain while you tune the hopping and shows the topological edge states, the winding number and the Zak phase.
 
+`qmc_tfim.c` wraps the exact free-fermion quench of the transverse-field Ising chain (`physics/tfim_quench.c`): `docs/src/playground/ising_quench.html` shows the correlation light cone, the transverse magnetisation and the Loschmidt rate function with its dynamical-phase-transition kinks.
+
 ## Build
 
 ```sh
@@ -107,6 +109,8 @@ Landau-Zener module (`qmc_lz.wasm`, no imports): `qmc_lz_reset(omega, rate, amp,
 Kicked-rotor module (`qmc_rotor.wasm`, no imports): `qmc_kr_reset(k, hbar, seed)` restarts the quantum state (momentum eigenstate m = 0 on 2048 angle points) and a classical ensemble of 3000 points, `qmc_kr_step(n)` applies `n` kicks (at most 400 in total), `qmc_kr_qbuffer()` holds the quantum momentum probabilities (index j is m = j - 1024), `qmc_kr_cbuffer()` the classical (theta, p) pairs, and `qmc_kr_qm2()` / `qmc_kr_cm2()` the two <m^2> values.
 
 SSH-chain module (`qmc_ssh.wasm`, no imports): `qmc_ssh_set(w, noise, m, seed)` builds the 20-cell chain (v = 1, inter-cell hopping w, random hopping `noise`, staggered potential m) and diagonalises it; `qmc_ssh_energies()` and `qmc_ssh_vectors()` hold the 40 eigenvalues and eigenvectors, `qmc_ssh_sweep(w0, w1, n)` fills `qmc_ssh_sweep_buffer()` with the spectrum for n values of w, and `qmc_ssh_winding()`, `qmc_ssh_zak()`, `qmc_ssh_xi()` and `qmc_ssh_gap()` give the topological invariants and length scales.
+
+Ising-quench module (`qmc_tfim.wasm`, no imports): `qmc_tq_set(h_i, h_f)` fixes the two fields (J = 1), `qmc_tq_eval(t)` fills `qmc_tq_zz_buffer()` with <sz_0 sz_r> for r = 0..40 on a 256-site ring and `qmc_tq_last_mx()` / `qmc_tq_last_rate()` with the magnetisation and Loschmidt rate, `qmc_tq_curve(t_max, n)` fills the rate and magnetisation curve buffers, and `qmc_tq_tcrit(n)` gives the critical times of the dynamical transition.
 
 Regenerate the butterfly images:
 

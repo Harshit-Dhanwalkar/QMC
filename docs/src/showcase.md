@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-10 interactive demos, all computed live by the same C library you can read
+11 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -17,6 +17,7 @@ what the C code returns.
 | [Landau-Zener](playground/landau_zener.html)      | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 | [Kicked rotor](playground/kicked_rotor.html)      | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
 | [SSH chain](playground/ssh_chain.html)            | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
+| [Ising quench](playground/ising_quench.html)      | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -177,6 +178,27 @@ energy, the decay length 1/ln(w/v), the winding number and the Zak phase
 against their closed forms.
 
 [Open the demo](playground/ssh_chain.html)
+
+## The Ising quench: a light cone and a return probability that vanishes
+
+[![Ising quench](playground/ising_quench.gif)](playground/ising_quench.html)
+
+Take 256 spins in the ground state of a transverse-field Ising chain and
+change the field suddenly. Correlations between distant spins do not
+respond at once: they spread outwards at a finite speed, $4\cdot \min(J, h)$,
+and the region the news has not reached stays exactly as it was. That is a
+light cone, and it appears here as a picture of $\langle \sigma^z_0 \sigma^z_r
+\rangle$ against distance and time. If the quench crosses the critical point,
+the probability to find the chain back in its initial state passes through
+zero at isolated times, and the rate function $−\ln L(t)/N$ has kinks there:
+dynamical quantum phase transitions. The solution is exact, with no truncation,
+because the chain maps to free fermions: each pair of momenta is a spin that
+precesses about the new field, correlations are Pfaffians of the resulting
+Fourier sums and the return probability is a product over modes. The test
+suite checks the magnetisation, the echo and the correlations against exact
+diagonalisation to 1e-13, and the critical times against their closed form.
+
+[Open the demo](playground/ising_quench.html)
 
 ## Run it yourself
 

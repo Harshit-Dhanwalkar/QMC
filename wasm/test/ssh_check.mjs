@@ -1,16 +1,23 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_ssh.wasm", import.meta.url),
 );
-const { instance } = await WebAssembly.instantiate(bytes, {});
+
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
 
 const f6 = (x) => x.toFixed(6);
 const f9 = (x) => x.toFixed(9);
 
-// memory can grow, so make the views after the calls that touch it
+// memory can grow, so make views after calls that touch it
 const E = () => new Float64Array(w.memory.buffer, w.qmc_ssh_energies(), 40);
 w.qmc_ssh_set(2, 0, 0, 1);
 let e = E();

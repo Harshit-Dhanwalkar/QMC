@@ -33,7 +33,7 @@ for (let q = 2; q <= 24; q++)
   }
 console.log(`digest edges=${sum.toFixed(9)} tknn=${tsum}`);
 
-// live spot checks (same calls the page makes on click)
+// live spot checks (same calls page makes on click)
 const c = w.qmc_bf_chern(1, 3, 1, 16);
 console.error(
   `spot check 1/3, gap 1: numeric C = ${c.toFixed(3)}, TKNN = ${w.qmc_bf_tknn(1, 3, 1)}`,

@@ -14,6 +14,7 @@
 #   docs/src/playground/qmc_lz.wasm         Landau-Zener / Stueckelberg demo
 #   docs/src/playground/qmc_rotor.wasm      kicked-rotor demo
 #   docs/src/playground/qmc_ssh.wasm        SSH topological-chain demo
+#   docs/src/playground/qmc_tfim.wasm       Ising-quench demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -135,3 +136,9 @@ build_module "$OUT/qmc_ssh.wasm" \
 qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi qmc_ssh_gap qmc_ssh_bulk qmc_ssh_edge_weight" \
   wasm/qmc_ssh.c physics/ssh_chain.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
+
+build_module "$OUT/qmc_tfim.wasm" \
+  "qmc_tq_rmax qmc_tq_curve_max qmc_tq_modes qmc_tq_zz_buffer qmc_tq_rate_buffer qmc_tq_mx_buffer \
+qmc_tq_density_buffer qmc_tq_set qmc_tq_eval qmc_tq_last_mx qmc_tq_last_rate qmc_tq_curve qmc_tq_tcrit \
+qmc_tq_front_speed" \
+  wasm/qmc_tfim.c physics/tfim_quench.c
