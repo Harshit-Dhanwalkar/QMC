@@ -177,7 +177,7 @@ jobs:
                    docs/book/html/playground/kicked_rotor.html \
                    docs/book/html/playground/ssh_chain.html \
                    docs/book/html/playground/ising_quench.html \
-                   docs/book/html/playground/haldane.html; do
+                   docs/book/html/playground/haldane.html \
                    docs/book/html/playground/wasi-shim.js \
                    docs/book/html/playground/nav.js; do
             test -s "$f" \

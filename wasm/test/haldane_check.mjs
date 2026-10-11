@@ -1,14 +1,16 @@
 import fs from "node:fs";
+import { makeWasiImports } from "../wasi-shim.mjs";
 
 const bytes = fs.readFileSync(
   new URL("../../docs/src/playground/qmc_haldane.wasm", import.meta.url),
 );
 
-// complex eigensolver carries stdio error paths, so module imports three WASI calls; none runs on valid input.
-const wasi = { fd_write: () => 8, fd_seek: () => 8, fd_close: () => 8 };
-const { instance } = await WebAssembly.instantiate(bytes, {
-  wasi_snapshot_preview1: wasi,
-});
+let memory = null;
+const { instance } = await WebAssembly.instantiate(
+  bytes,
+  makeWasiImports(() => memory),
+);
+memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
 
