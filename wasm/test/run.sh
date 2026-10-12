@@ -175,3 +175,16 @@ else
   echo "FAIL: Haldane WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Wigner function: Kerr cat states in phase space, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/wigner_ref.c wasm/qmc_wigner.c physics/phase_space.c \
+  -lm -o "$TMP/qmc_wigner_ref"
+"$TMP/qmc_wigner_ref" > "$TMP/qmc_wigner_native.txt"
+cat "$TMP/qmc_wigner_native.txt"
+node wasm/test/wigner_check.mjs > "$TMP/qmc_wigner_wasm.txt"
+if diff -u "$TMP/qmc_wigner_native.txt" "$TMP/qmc_wigner_wasm.txt"; then
+  echo "OK: Wigner WASM matches native"
+else
+  echo "FAIL: Wigner WASM and native results differ" >&2
+  exit 1
+fi

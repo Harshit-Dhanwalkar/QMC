@@ -2,8 +2,8 @@
  * qmc_wasm.c - thin WebAssembly front end for QMC's 2D split-operator solver
  *
  * Units: hbar = m = 1
- * Grid layout: psi[ix * N + iy], so ix is x coordinate and iy the y
- * coordinate. The same layout is used for potential and density buffers
+ * Grid layout: psi[ix * N + iy], so ix is x coordinate and iy the y coordinate
+ * Same layout is used for potential and density buffers
  */
 
 #include "../core/complex.h"
@@ -45,8 +45,8 @@ static void free_state(void) {
   g_n = 0;
 }
 
-/* Edge damping so packet leaves box instead of wrapping around (FFT grid is
- * periodic). Applied once per step after soft_evolve_2d() */
+// Edge damping so packet leaves box instead of wrapping around (FFT grid is
+// periodic). Applied once per step after soft_evolve_2d()
 static void build_mask(int edge_cells, double strength) {
   for (int ix = 0; ix < g_n; ix++) {
     for (int iy = 0; iy < g_n; iy++) {
@@ -64,10 +64,10 @@ static void build_mask(int edge_cells, double strength) {
   }
 }
 
-/* n must be a power of two (library FFT is radix-2), 8 <= n <= 256.
+/* n must be a power of two (library FFT is radix-2), 8 <= n <= 256
  * box is side length of simulation square, dt time step
  *
- * Returns 0 on success, -1 on bad arguments or out of memory. */
+ * Returns 0 on success, -1 on bad arguments or out of memory */
 QMC_EXPORT(qmc_init)
 int qmc_init(int n, double box, double dt) {
   if (n < 8 || n > QMC_MAX_N || (n & (n - 1)) != 0 || box <= 0.0 || dt <= 0.0) {
@@ -160,6 +160,7 @@ void qmc_build_slits(double wall_x, double thickness, int slits, double sep,
     for (int iy = 0; iy < g_n; iy++) {
       double y = coord(iy);
       int open = 0;
+
       if (slits == 1) {
         open = fabs(y) <= 0.5 * slit_w;
       } else {
@@ -184,6 +185,7 @@ int qmc_wavepacket(double x0, double y0, double kx, double ky, double sigma) {
       double y = coord(iy) - y0;
       double env = exp(-(x * x + y * y) / (4.0 * sigma * sigma));
       double phase = kx * x + ky * y;
+
       g_psi->data[ix * g_n + iy] = c_new(env * cos(phase), env * sin(phase));
     }
   }
@@ -225,8 +227,8 @@ int qmc_step(int steps) {
   return 0;
 }
 
-/* Total probability inside box (starts at 1, drops as the packet is absorbed at
- * the edges) */
+// Total probability inside box (starts at 1, drops as packet is absorbed at
+// edges)
 QMC_EXPORT(qmc_norm)
 double qmc_norm(void) { return g_psi ? grid_norm(g_psi, g_dx * g_dx) : 0.0; }
 

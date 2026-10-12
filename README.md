@@ -47,6 +47,9 @@
   <br>
   And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/haldane.html">Haldane Chern insulator</a>
   : click through the phase diagram and watch one-way edge states appear on a ribbon.
+  <br>
+  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/wigner.html">Kerr cat states</a>
+  : watch a coherent state in phase space smear into a Schr&ouml;dinger cat whose Wigner function goes negative.
  </p>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).

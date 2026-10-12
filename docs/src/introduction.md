@@ -21,6 +21,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/ssh_chain.html"><img class="thumb" loading="lazy" alt="SSH chain spectrum with edge states" src="playground/thumbs/ssh_chain.jpg"><span class="meta"><b>SSH chain</b><small>Topological edge states in one dimension</small></span></a>
 <a class="card" href="playground/ising_quench.html"><img class="thumb" loading="lazy" alt="Ising quench light cone" src="playground/thumbs/ising_quench.jpg"><span class="meta"><b>Ising quench</b><small>Light cone and dynamical phase transitions</small></span></a>
 <a class="card" href="playground/haldane.html"><img class="thumb" loading="lazy" alt="Haldane ribbon edge states" src="playground/thumbs/haldane.jpg"><span class="meta"><b>Haldane Chern insulator</b><small>One-way edge states and the phase diagram</small></span></a>
+<a class="card" href="playground/wigner.html"><img class="thumb" loading="lazy" alt="Wigner function of a Kerr cat state" src="playground/thumbs/wigner.jpg"><span class="meta"><b>Kerr cat states</b><small>A Wigner function that goes negative</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations

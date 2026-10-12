@@ -16,6 +16,7 @@
 #   docs/src/playground/qmc_ssh.wasm        SSH topological-chain demo
 #   docs/src/playground/qmc_tfim.wasm       Ising-quench demo
 #   docs/src/playground/qmc_haldane.wasm    Haldane Chern-insulator demo
+#   docs/src/playground/qmc_wigner.wasm     Wigner-function / Kerr cat-state demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -149,3 +150,8 @@ build_module "$OUT/qmc_haldane.wasm" \
 qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit qmc_hd_valley_gap qmc_hd_vmax qmc_hd_cmin" \
   wasm/qmc_haldane.c physics/tight_binding.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
+
+build_module "$OUT/qmc_wigner.wasm" \
+  "qmc_wg_n qmc_wg_nmax qmc_wg_extent qmc_wg_w_buffer qmc_wg_x_buffer qmc_wg_p_buffer qmc_wg_pn_buffer \
+qmc_wg_nbar qmc_wg_negativity qmc_wg_wmin qmc_wg_wmax qmc_wg_state" \
+  wasm/qmc_wigner.c physics/phase_space.c

@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-12 interactive demos, all computed live by the same C library you can read
+13 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -19,6 +19,7 @@ what the C code returns.
 | [SSH chain](playground/ssh_chain.html)             | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
 | [Ising quench](playground/ising_quench.html)       | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
 | [Haldane Chern insulator](playground/haldane.html) | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
+| [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -222,6 +223,28 @@ signs of $\phi$, that the trivial phase has no states in the gap, and that
 graphene's zigzag ribbon has its flat band of zero modes.
 
 [Open the demo](playground/haldane.html)
+
+## Kerr cat states: a quantum state you can see go negative
+
+[![Wigner function of a Kerr cat](playground/wigner.gif)](playground/wigner.html)
+
+A classical state of light is a point in phase space; a quantum state is a
+quasi-probability cloud, the Wigner function $W(x, p)$, whose marginals are
+true position and momentum distributions but which is allowed to go
+negative. Start with a coherent state, a Gaussian blob. A Kerr medium adds a
+phase that grows as $n(n−1)$ with the photon number, so the blob smears
+around its ring; at a quarter of the revival time, $χt = \pi/2$, it has split
+into the Schrödinger cat
+$(\exp^{−i \pi /4}|i\alpha \rangle + \xpe^{i \pi / 4}|−i\alpha \rangle)/\sqrt{2}:
+two blobs and a fringe pattern between them that dips below zero. The page
+lets you pick a coherent, Fock, cat or squeezed state, drag the Kerr time and
+read off the negative volume, which is zero for a Gaussian and grows with how
+non-classical the state is. The test suite checks the Wigner function against
+the closed form for coherent and cat states, the marginals against $|\phi(x)|^2$,
+$W(0,0) = (−1)^n/\pi$ for Fock states, the squeezed variances, and the Kerr cat
+identity and the full revival at $χt = \pi$ to machine precision.
+
+[Open the demo](playground/wigner.html)
 
 ## Run it yourself
 

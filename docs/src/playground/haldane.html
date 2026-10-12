@@ -439,22 +439,16 @@
         try {
           const res = await fetch("qmc_haldane.wasm");
           if (!res.ok) throw new Error("HTTP " + res.status);
-          // complex eigensolver carries stdio error paths, so the module imports three WASI calls that never run on valid input
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const wasi = {
-            fd_write: () => 8,
-            fd_seek: () => 8,
-            fd_close: () => 8,
-          };
           const { instance } = await WebAssembly.instantiate(
             await res.arrayBuffer(),
-            { wasi_snapshot_preview1: wasi },
+            makeWasiImports(() => wasmMemory),
           );
           w = instance.exports;
+          wasmMemory = w.memory;
           if (w._initialize) w._initialize();
         } catch (err) {
           showError(
-            "Could not load <code>qmc_ssh.wasm</code> (" +
+            "Could not load <code>qmc_haldane.wasm</code> (" +
               err.message +
               "). If you opened this file directly " +
               "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/haldane.html</code>.",
