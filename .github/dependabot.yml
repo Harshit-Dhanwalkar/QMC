@@ -1,6 +1,6 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
+  - package-ecosystem: "github-actions "
     directory: "/"
     schedule:
       interval: "weekly"
@@ -16,6 +16,13 @@ updates:
           - "*"
     commit-message:
       prefix: "ci"
-      include: "scope"
-    allow:
-      - dependency-type: "all"
+
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # - package-ecosystem: "npm"
+  #   directory: "/"
+  #   schedule:
+  #     interval: weekly

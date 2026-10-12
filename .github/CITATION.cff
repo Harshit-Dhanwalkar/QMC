@@ -1,4 +1,4 @@
-cff-version: 0.1.0
+cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "QMC: Quantum Mechanics in C"
 abstract: "Pure-C library and simulation engine for numerical and semi-analytic quantum mechanics."

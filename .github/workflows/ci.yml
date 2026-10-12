@@ -340,3 +340,34 @@ jobs:
         run: |
           chmod +x wasm/test/run.sh
           ./wasm/test/run.sh
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install tooling
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Build with coverage
+        run: |
+          make clean
+          make CFLAGS="-O0 -g --coverage" SANITIZE=0 all
+
+      - name: Run tests
+        run: make run-tests
+
+      - name: Generate lcov report
+        run: |
+          lcov --capture --directory . --output-file coverage.info \
+            --ignore-errors mismatch,gcov,source
+          lcov --remove coverage.info '/usr/*' '*/third_party/*' '*/tests/*' \
+            --output-file coverage.info --ignore-errors unused
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.info
+          fail_ci_if_error: false
