@@ -37,19 +37,24 @@ jobs:
         with:
           submodules: recursive
 
+      - name: APT timeouts
+        run: |
+          echo 'Acquire::http::Timeout "30";'  | sudo tee /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
+
       - name: Install Dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
-            build-essential cmake gnuplot clang libomp-dev
-            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev
-            libqhull-dev zlib1g-dev
-            libx11-dev libxt-dev libxrender-dev libxext-dev
-            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev
-            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
-            liblapacke-dev liblapack-dev libblas-dev liblapack-test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake gnuplot clang libomp-dev \
+            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+            libqhull-dev zlib1g-dev \
+            libx11-dev libxt-dev libxrender-dev libxext-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+            liblapacke-dev liblapack-dev libblas-dev liblapack-test \
             libhdf5-dev libnetcdf-dev
-          version: 1.0
 
       - name: Get GR submodule commit
         id: gr-sha
@@ -126,20 +131,25 @@ jobs:
         with:
           submodules: recursive
 
+      - name: APT timeouts
+        run: |
+          echo 'Acquire::http::Timeout "30";'  | sudo tee /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
+
       - name: Install Analysis Tools
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
-            cppcheck clang-tidy
-            build-essential cmake gnuplot libomp-dev
-            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev
-            libqhull-dev zlib1g-dev
-            libx11-dev libxt-dev libxrender-dev libxext-dev
-            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev
-            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
-            liblapacke-dev liblapack-dev libblas-dev liblapack-test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cppcheck clang-tidy \
+            build-essential cmake gnuplot libomp-dev \
+            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+            libqhull-dev zlib1g-dev \
+            libx11-dev libxt-dev libxrender-dev libxext-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+            liblapacke-dev liblapack-dev libblas-dev liblapack-test \
             libhdf5-dev libnetcdf-dev
-          version: 1.0
 
       - name: Get GR submodule commit
         id: gr-sha
@@ -225,12 +235,16 @@ jobs:
         with:
           submodules: recursive
 
+      - name: APT timeouts
+        run: |
+          echo 'Acquire::http::Timeout "30";'  | sudo tee /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
+
       - name: Install Dependencies & Valgrind
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
             build-essential valgrind gnuplot libomp-dev
-          version: 1.0
 
       - name: Run Tests under Valgrind
         run: |
@@ -263,17 +277,16 @@ jobs:
           echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
 
       - name: Install Dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
-            build-essential cmake gnuplot clang libomp-dev
-            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev
-            libqhull-dev zlib1g-dev
-            libx11-dev libxt-dev libxrender-dev libxext-dev
-            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev
-            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake gnuplot clang libomp-dev \
+            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+            libqhull-dev zlib1g-dev \
+            libx11-dev libxt-dev libxrender-dev libxext-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
             libhdf5-dev libnetcdf-dev
-          version: 1.0
 
       - name: Get GR submodule commit
         id: gr-sha
@@ -361,24 +374,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-and-test
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
+      - name: APT timeouts
+        run: |
+          echo 'Acquire::http::Timeout "30";'  | sudo tee /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
+          echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
+
       - name: Install dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
-            build-essential cmake gnuplot libomp-dev lcov
-            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev
-            libqhull-dev zlib1g-dev
-            libx11-dev libxt-dev libxrender-dev libxext-dev
-            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev
-            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
-            liblapacke-dev liblapack-dev libblas-dev liblapack-test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake gnuplot libomp-dev lcov \
+            libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+            libqhull-dev zlib1g-dev \
+            libx11-dev libxt-dev libxrender-dev libxext-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+            libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+            liblapacke-dev liblapack-dev libblas-dev liblapack-test \
             libhdf5-dev libnetcdf-dev
-          version: 1.0
 
       - name: Get GR submodule commit
         id: gr-sha
