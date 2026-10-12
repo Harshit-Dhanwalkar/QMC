@@ -16,41 +16,124 @@
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="OS Linux">
 </p>
 
-<p align="center">
-  <a href="https://harshit-dhanwalkar.github.io/QMC/playground/index.html">
-    <img src="docs/src/playground/preview.gif" alt="Quantum double-slit simulation computed by QMC's split-operator solver, with interference fringes building up on a detector screen" width="640">
-  </a>
-  <br>
-  <b><a href="https://harshit-dhanwalkar.github.io/QMC/playground/index.html">Try it live in your browser</a></b>
-  : the same <code>soft_evolve_2d</code> C solver, compiled to a 21&nbsp;KB WebAssembly module. Draw walls, fire wavepackets, watch interference build up.
-  <br>
-  Also: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.html">Hofstadter butterfly explorer</a>
-  : every gap labelled by its Chern number, computed live from the tight-binding module.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/dirac.html">Dirac Klein-paradox demo</a>
-  : a step taller than the electron's energy still transmits, through negative-energy states; plus Zitterbewegung.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/orbitals.html">Hydrogen orbital viewer</a>
-  : rotatable 3D point clouds sampled from |&psi;<sub>nlm</sub>|&sup2; for any n &le; 8, real or complex.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bloch.html">Bloch sphere</a>
-  : Rabi oscillations, &pi; pulses, Ramsey fringes, T1 and T2, from the Lindblad solver.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/kicked_rotor.html">Kicked rotor</a>
-  : classical chaos spreads momentum without limit while the quantum rotor freezes (dynamical localisation).
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ssh_chain.html">SSH chain</a>
-  : a topological insulator in 1D: tune the hopping and watch protected edge states appear at the ends.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ising_quench.html">Ising quench</a>
-  : flip the field of a 256-spin chain and watch correlations spread in a light cone and the return probability kink.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/haldane.html">Haldane Chern insulator</a>
-  : click through the phase diagram and watch one-way edge states appear on a ribbon.
-  <br>
-  And: <a href="https://harshit-dhanwalkar.github.io/QMC/playground/wigner.html">Kerr cat states</a>
-  : watch a coherent state in phase space smear into a Schr&ouml;dinger cat whose Wigner function goes negative.
- </p>
+<table align="center">
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.html">
+        <img src="docs/src/playground/butterfly_grow.gif" alt="Hofstadter butterfly spectrum computed live" width="260" height="260">
+      </a>
+      <br>
+      <b>Hofstadter butterfly</b>
+      <br>
+      <sub>Spectrum of electrons on a lattice in a magnetic field, every gap labelled by its Chern number</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/dirac.html">
+        <img src="docs/src/playground/dirac.gif" alt="Dirac wavepacket on a potential step" width="260" height="260">
+      </a>
+      <br>
+      <b>Klein paradox</b>
+      <br>
+      <sub>Relativistic wavepacket hitting a barrier taller than its energy, plus Zitterbewegung</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/orbitals.html">
+        <img src="docs/src/playground/orbitals.gif" alt="Hydrogen orbital point cloud" width="260" height="260">
+      </a>
+      <br>
+      <b>Hydrogen orbitals</b>
+      <br>
+      <sub>Rotatable 3D point clouds sampled from |&psi;<sub>nlm</sub>|&sup2; for any n, l, m</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bloch.html">
+        <img src="docs/src/playground/bloch.gif" alt="Driven damped qubit on the Bloch sphere" width="260" height="260">
+      </a>
+      <br>
+      <b>Bloch sphere</b>
+      <br>
+      <sub>A driven, damped qubit: Rabi oscillations, &pi; pulses, Ramsey fringes, T1 and T2</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/anderson.html">
+        <img src="docs/src/playground/anderson.gif" alt="Anderson localisation waterfall" width="260" height="260">
+      </a>
+      <br>
+      <b>Anderson localisation</b>
+      <br>
+      <sub>Why disorder stops a wave: the cloud spreads, then freezes with an exponential tail</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/quantum_walk.html">
+        <img src="docs/src/playground/quantum_walk.gif" alt="Quantum walk vs classical random walk" width="260" height="260">
+      </a>
+      <br>
+      <b>Quantum walk</b>
+      <br>
+      <sub>Linear spreading instead of &radic;t, with the classical walk drawn alongside</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/landau_zener.html">
+        <img src="docs/src/playground/landau_zener.gif" alt="Landau-Zener sweep and Stueckelberg fringes" width="260" height="260">
+      </a>
+      <br>
+      <b>Landau&ndash;Zener</b>
+      <br>
+      <sub>Jumping across an avoided crossing, with St&uuml;ckelberg interference on the return trip</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/kicked_rotor.html">
+        <img src="docs/src/playground/kicked_rotor.gif" alt="Kicked rotor phase space and dynamical localisation" width="260" height="260">
+      </a>
+      <br>
+      <b>Kicked rotor</b>
+      <br>
+      <sub>Classical chaos spreads momentum without limit; the quantum rotor freezes</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ssh_chain.html">
+        <img src="docs/src/playground/ssh_chain.gif" alt="SSH chain spectrum with edge states" width="260" height="260">
+      </a>
+      <br>
+      <b>SSH chain</b>
+      <br>
+      <sub>A topological insulator in 1D: tune the hopping, watch protected edge states appear</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ising_quench.html">
+        <img src="docs/src/playground/ising_quench.gif" alt="Ising quench light cone and Loschmidt rate" width="260" height="260">
+      </a>
+      <br>
+      <b>Ising quench</b>
+      <br>
+      <sub>Flip the field of a 256-spin chain: correlations spread in a light cone, the echo kinks</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/haldane.html">
+        <img src="docs/src/playground/haldane.gif" alt="Haldane Chern insulator ribbon and phase diagram" width="260" height="260">
+      </a>
+      <br>
+      <b>Haldane Chern insulator</b>
+      <br>
+      <sub>Click through the phase diagram: one-way edge states on a graphene ribbon</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/wigner.html">
+        <img src="docs/src/playground/wigner.gif" alt="Kerr cat state Wigner function going negative" width="260" height="260">
+      </a>
+      <br>
+      <b>Kerr cat states</b>
+      <br>
+      <sub>A coherent state smears into a Schr&ouml;dinger cat whose Wigner function goes negative</sub>
+    </td>
+  </tr>
+</table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
 

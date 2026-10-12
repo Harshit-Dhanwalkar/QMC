@@ -110,6 +110,7 @@ int ps_coherent_state(complex_t *c, int n_max, double alpha_re,
   return 0;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 int ps_cat_state(complex_t *c, int n_max, double alpha_re, double alpha_im,
                  int parity) {
   if (parity != 1 && parity != -1) {
@@ -148,6 +149,7 @@ int ps_squeezed_vacuum(complex_t *c, int n_max, double r, double theta) {
     c[(ptrdiff_t)2 * m] =
         c_scale(c_mul(c[2 * m - 2], f), sqrt((2.0 * m - 1.0) / (2.0 * m)));
   }
+
   normalise(c, n_max);
 
   return 0;
@@ -229,9 +231,12 @@ int ps_wigner(const complex_t *psi, int nx, double dx, const double *p, int np,
   }
 
   int half = nx / 2 + 1;
-  size_t table_len = (size_t)np * (size_t)half * 2;
-  double *cs = malloc(table_len * sizeof *cs);
+  if (half < 1) {
+    half = 1;
+  }
 
+  size_t table_len = (size_t)np * (size_t)half * 2;
+  double *cs = calloc(table_len, sizeof *cs);
   if (!cs) {
     return -1;
   }
@@ -247,7 +252,6 @@ int ps_wigner(const complex_t *psi, int nx, double dx, const double *p, int np,
 
   for (int j = 0; j < nx; j++) {
     int kmax = j < nx - 1 - j ? j : nx - 1 - j;
-
     if (kmax >= half) {
       kmax = half - 1;
     }
@@ -258,7 +262,7 @@ int ps_wigner(const complex_t *psi, int nx, double dx, const double *p, int np,
       double sum = d0;
       const double *t = cs + (size_t)l * half * 2;
 
-      for (int k = 1; k <= kmax; k++) {
+      for (int k = 1; k <= kmax && k < half; k++) {
         complex_t a = c_mul(c_conj(psi[j + k]), psi[j - k]);
 
         sum += 2.0 * (a.re * t[(ptrdiff_t)2 * k] - a.im * t[2 * k + 1]);

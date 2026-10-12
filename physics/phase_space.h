@@ -17,18 +17,20 @@
  * evolution is exact: c_n -> c_n \exp(-i \chi t n (n - 1)). It twists phase
  * space by an amount that grows with n, so a coherent state first smears into a
  * banana, at \chi t = \pi / 2 splits into a Schroedinger-cat superposition of
- * |i \alpha> and |-i \alpha> (exactly, with relative phase e^{-i \pi / 2}) and
+ * |i \alpha> and |-i \alpha> (exactly, with relative phase \exp(-i \pi / 2) and
  * at \chi t = \pi returns to itself (full revival)
  *
  * Wigner function is evaluated from position wave function
  *   W(x, p) = (1 / \pi) \int \psi*(x + y) \psi(x - y) \exp(2 i p y) dy
- * on a uniform x grid, with integral done as a sum over grid offsets. It is
- * negative wherever state has non-classical interference: Fock states n >= 1,
- * cat states, squeezed states (no negativity but sub-vacuum variance)
+ * on a uniform x grid, with integral done as a sum over grid offsets
+ * It is negative wherever state has non-classical interference:
+ * Fock states n >= 1, cat states, squeezed states (no negativity but sub-vacuum
+ * variance)
  */
 
-/* Fock state |n>. Returns 0, or -1 for NULL c, n_max < 0 or n outside
- * [0, n_max] */
+/* Fock state |n>
+ *
+ * Returns 0, or -1 for NULL c, n_max < 0 or n outside [0, n_max] */
 int ps_fock_state(complex_t *c, int n_max, int n);
 
 /* Coherent state |\alpha>, normalised on truncated space
@@ -40,6 +42,7 @@ int ps_coherent_state(complex_t *c, int n_max, double alpha_re,
 
 /* Cat state (|\alpha> + parity |-\alpha>) / norm with parity = +1 (even) or -1
  * (odd). Same limits as ps_coherent_state; -1 also for parity not +-1 */
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 int ps_cat_state(complex_t *c, int n_max, double alpha_re, double alpha_im,
                  int parity);
 
