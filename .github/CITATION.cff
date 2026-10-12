@@ -1,0 +1,19 @@
+cff-version: 0.1.0
+message: "If you use this software, please cite it as below."
+title: "QMC: Quantum Mechanics in C"
+abstract: "Pure-C library and simulation engine for numerical and semi-analytic quantum mechanics."
+authors:
+  - family-names: Dhanwalkar
+    given-names: Harshit
+    email: harshitpd1729@gmail.com
+type: software
+license: PolyForm-Noncommercial-1.0.0
+repository-code: "https://github.com/Harshit-Dhanwalkar/QMC"
+url: "https://harshit-dhanwalkar.github.io/QMC/"
+keywords:
+  - quantum mechanics
+  - numerical physics
+  - computational physics
+  - computational chemistry
+  - physics
+  - quantum Monte Carlo
