@@ -182,18 +182,12 @@ int main(void) {
     wigner_of(c);
     for (int l = 0; l < NP; l++) {
       for (int j = 0; j < NX; j++) {
-        double ex =
-            (gauss(xs[j], ps[l], x0, 0.0) + gauss(xs[j], ps[l], -x0, 0.0) +
-             parity * 2.0 * gauss(xs[j], ps[l], 0.0, 0.0) *
-                 cos(2.0 * x0 * ps[l])) *
-            2.0 / norm * 0.5 * 2.0 / 2.0;
-
         // W = [W_a + W_-a + parity 2 G \cos(2 x0 p)] /
         //          (2 (1 + parity \exp(-2 a^2)))
-        ex = (gauss(xs[j], ps[l], x0, 0.0) + gauss(xs[j], ps[l], -x0, 0.0) +
+        double ex = (gauss(xs[j], ps[l], x0, 0.0) + gauss(xs[j], ps[l], -x0, 0.0) +
               parity * 2.0 * gauss(xs[j], ps[l], 0.0, 0.0) *
-                  cos(2.0 * x0 * ps[l])) /
-             (2.0 * (1.0 + parity * exp(-2.0 * alpha * alpha)));
+                  cos(2.0 * x0 * ps[l])) / norm;
+
         worst = fmax(worst, fabs(W[l * NX + j] - ex));
       }
     }
@@ -289,9 +283,9 @@ int main(void) {
   printf("  --- invalid input ---\n");
   {
     complex_t t[4];
-    double pp[2] = {0.0, 1.0};
+    const double pp[2] = {0.0, 1.0};
     double ww[4];
-    double xx[2] = {0.0, 1.0};
+    const double xx[2] = {0.0, 1.0};
 
     check_true(ps_coherent_state(NULL, 3, 0.1, 0.0) == -1,
                "NULL state rejected");
