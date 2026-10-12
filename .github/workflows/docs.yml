@@ -6,15 +6,9 @@ on:
     paths:
       - "docs/**"
       - "wasm/**"
-      - "physics/bloch.c"
-      - "physics/bloch.h"
-      - "physics/lindblad.c"
-      - "physics/lindblad.h"
-      - "physics/rabi.c"
-      - "physics/rabi.h"
-      - "physics/soft.c"
-      - "physics/soft.h"
+      - "physics/**"
       - "core/**"
+      - "tests/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -35,6 +29,16 @@ jobs:
       MDBOOK_KATEX_VERSION: "0.10.0"
       MDBOOK_LINKCHECK2_VERSION: "0.12.2"
       ZIG_VERSION: "0.13.0"
+      WASM_MODULES: >-
+        qmc.wasm
+        qmc_anderson.wasm qmc_bloch.wasm qmc_butterfly.wasm qmc_dirac.wasm
+        qmc_orbital.wasm qmc_qwalk.wasm qmc_lz.wasm qmc_rotor.wasm
+        qmc_ssh.wasm qmc_tfim.wasm qmc_haldane.wasm qmc_wigner.wasm
+      PLAYGROUND_HTML: >-
+        index.html anderson.html bloch.html butterfly.html dirac.html
+        orbitals.html quantum_walk.html landau_zener.html kicked_rotor.html
+        ssh_chain.html ising_quench.html haldane.html wigner.html
+        wasi-shim.js nav.js
 
     steps:
       - name: Checkout Repository
@@ -69,10 +73,18 @@ jobs:
           key: mdbook-katex-v${{ env.MDBOOK_KATEX_VERSION }}-${{ runner.os }}
 
       - name: Install mdbook-katex
+      #   if: steps.cache-katex.outputs.cache-hit != 'true'
+      #   run: |
+      #     mkdir -p bin
+      #     cargo install mdbook-katex --version "${MDBOOK_KATEX_VERSION}" --root .
         if: steps.cache-katex.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
-          cargo install mdbook-katex --version "${MDBOOK_KATEX_VERSION}" --root .
+          curl -sSL -o bin/katex.tar.gz \
+            "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf bin/katex.tar.gz -C bin
+          chmod +x bin/mdbook-katex
+          rm bin/katex.tar.gz
 
       # Cache mdbook-linkcheck2
       - name: Cache mdbook-linkcheck2
@@ -114,23 +126,17 @@ jobs:
 
       - name: Verify WASM artifacts landed in docs tree
         run: |
-          for f in docs/src/playground/qmc.wasm \
-                   docs/src/playground/qmc_anderson.wasm \
-                   docs/src/playground/qmc_bloch.wasm \
-                   docs/src/playground/qmc_butterfly.wasm \
-                   docs/src/playground/qmc_dirac.wasm \
-                   docs/src/playground/qmc_orbital.wasm \
-                   docs/src/playground/qmc_qwalk.wasm \
-                   docs/src/playground/qmc_lz.wasm \
-                   docs/src/playground/qmc_rotor.wasm \
-                   docs/src/playground/qmc_ssh.wasm \
-                   docs/src/playground/qmc_tfim.wasm \
-                   docs/src/playground/qmc_haldane.wasm \
-                   docs/src/playground/qmc_wigner.wasm; do
-            test -s "$f" \
-              && echo " OK: $f ($(stat -c%s "$f") bytes)" \
-              || (echo "ERROR: $f missing" && exit 1)
+          fail=0
+          for f in ${{ env.WASM_MODULES }}; do
+            p="docs/src/playground/$f"
+            if [ -s "$p" ]; then
+              echo " OK: $p ($(stat -c%s "$p") bytes)"
+            else
+              echo " ERROR: $p missing or empty"
+              fail=1
+            fi
           done
+          exit $fail
 
       # ------------------- Build & deploy --------------------------
       # Build, Validate links and Deploy Docs
@@ -139,55 +145,23 @@ jobs:
 
       - name: Copy WASM into book output
         run: |
-          for f in qmc.wasm qmc_butterfly.wasm \
-                   qmc_dirac.wasm \
-                   qmc_orbital.wasm \
-                   qmc_bloch.wasm \
-                   qmc_anderson.wasm \
-                   qmc_qwalk.wasm \
-                   qmc_lz.wasm \
-                   qmc_rotor.wasm \
-                   qmc_ssh.wasm \
-                   qmc_tfim.wasm \
-                   qmc_haldane.wasm \
-                   qmc_wigner.wasm; do
+          for f in ${{ env.WASM_MODULES }}; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
       - name: Confirm playground survived mdBook's asset copy
         run: |
-          for f in docs/book/html/playground/qmc.wasm \
-                   docs/book/html/playground/qmc_anderson.wasm \
-                   docs/book/html/playground/qmc_bloch.wasm \
-                   docs/book/html/playground/qmc_butterfly.wasm \
-                   docs/book/html/playground/qmc_dirac.wasm \
-                   docs/book/html/playground/qmc_orbital.wasm \
-                   docs/book/html/playground/qmc_qwalk.wasm \
-                   docs/book/html/playground/qmc_lz.wasm \
-                   docs/book/html/playground/qmc_rotor.wasm \
-                   docs/book/html/playground/qmc_ssh.wasm \
-                   docs/book/html/playground/qmc_tfim.wasm \
-                   docs/book/html/playground/qmc_haldane.wasm \
-                   docs/book/html/playground/qmc_wigner.wasm \
-                   docs/book/html/playground/index.html \
-                   docs/book/html/playground/anderson.html \
-                   docs/book/html/playground/bloch.html \
-                   docs/book/html/playground/butterfly.html \
-                   docs/book/html/playground/dirac.html \
-                   docs/book/html/playground/orbitals.html \
-                   docs/book/html/playground/quantum_walk.html \
-                   docs/book/html/playground/landau_zener.html \
-                   docs/book/html/playground/kicked_rotor.html \
-                   docs/book/html/playground/ssh_chain.html \
-                   docs/book/html/playground/ising_quench.html \
-                   docs/book/html/playground/haldane.html \
-                   docs/book/html/playground/wigner.html \
-                   docs/book/html/playground/wasi-shim.js \
-                   docs/book/html/playground/nav.js; do
-            test -s "$f" \
-              && echo " OK: $f" \
-              || (echo "ERROR: $f missing from book output" && exit 1)
+          fail=0
+          for f in ${{ env.WASM_MODULES }} ${{ env.PLAYGROUND_HTML }}; do
+            p="docs/book/html/playground/$f"
+            if [ -s "$p" ]; then
+              echo " OK: $p"
+            else
+              echo " ERROR: $p missing from book output"
+              fail=1
+            fi
           done
+          exit $fail
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
