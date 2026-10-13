@@ -131,7 +131,7 @@ int main(void) {
                 "sampled S within 5 \\sigma of -2 \\sqrt{2}");
 
     for (int c = 0; c < 4; c++) {
-      double ang[4][2] = {{A, B}, {A, B2}, {A2, B}, {A2, B2}};
+      const double ang[4][2] = {{A, B}, {A, B2}, {A2, B}, {A2, B2}};
 
       check_close(sums[c] / n, bell_correlation(1.0, ang[c][0], ang[c][1]),
                   5.0 / sqrt(n), "  sampled E near exact");

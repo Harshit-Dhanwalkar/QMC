@@ -443,7 +443,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -555,6 +555,7 @@
 
           setPixelRow(col, zzb());
           col++;
+
           return true;
         }
 
@@ -853,9 +854,12 @@
         function frame() {
           if (playing) {
             let moved = false;
-            for (let i = 0; i < spf; i++) moved = computeColumn() || moved;
-            if (moved) render();
-            else {
+            for (let i = 0; i < spf; i++) {
+              moved = computeColumn() || moved;
+            }
+            if (moved) {
+              render();
+            } else {
               playing = false;
               $("play").textContent = "Replay";
             }

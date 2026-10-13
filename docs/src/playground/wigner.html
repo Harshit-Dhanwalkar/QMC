@@ -449,7 +449,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -469,6 +469,7 @@
               "). If you opened this file directly " +
               "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/wigner.html</code>.",
           );
+
           return;
         }
 
@@ -694,7 +695,9 @@
               "<br>W = " +
               (v >= 0 ? " " : "") +
               v.toFixed(4);
-          } else $("readout").innerHTML = "hover for W(x, p)";
+          } else {
+            $("readout").innerHTML = "hover for W(x, p)";
+          }
         }
 
         function drawPn() {
@@ -842,12 +845,14 @@
           if (!last) {
             last = t;
           }
+
           kt += ((t - last) / 1000) * 0.12;
           last = t;
           if (kt > 1) {
             kt -= 1;
           }
           $("kt").value = kt;
+
           render();
           raf = requestAnimationFrame(tick);
         }
@@ -860,6 +865,7 @@
 
           $("play").textContent = "Pause";
           last = 0;
+
           raf = requestAnimationFrame(tick);
         });
 

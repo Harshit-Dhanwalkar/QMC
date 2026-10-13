@@ -462,6 +462,7 @@
           );
           return;
         }
+
         const DT = w.qmc_bl_dt();
         const vec = () => new Float64Array(w.memory.buffer, w.qmc_bl_vec(), 3);
 
@@ -512,6 +513,7 @@
           if (!windows) {
             return om;
           }
+
           const t = w.qmc_bl_time();
 
           return windows.some(([a, b]) => t >= a && t < b) ? om : 0;
@@ -556,8 +558,10 @@
             windows = null;
             start = [0, 0, 1];
             tMax = 14;
+
             return "Resonant drive: the arrow circles the y-z plane, P_e = sin²(Ωt/2).";
           },
+
           pi: () => {
             om = 2;
             de = 0;
@@ -566,8 +570,10 @@
             windows = [[0, Math.PI / 2]];
             start = [0, 0, 1];
             tMax = 8;
+
             return "A pulse of area Ωt = π flips |g⟩ to |e⟩, then the drive switches off.";
           },
+
           detuned: () => {
             om = 1;
             de = 1.5;
@@ -576,8 +582,10 @@
             windows = null;
             start = [0, 0, 1];
             tMax = 14;
+
             return "Off resonance the arrow circles the tilted axis b: faster, but P_e only reaches Ω²/(Ω²+Δ²).";
           },
+
           ramsey: () => {
             om = 4;
             de = 0.8;
@@ -590,8 +598,10 @@
             ];
             start = [0, 0, 1];
             tMax = 10;
+
             return "Two π/2 pulses separated by free precession at the detuning Δ: the second pulse turns the accumulated phase into population.";
           },
+
           t1: () => {
             om = 0;
             de = 0;
@@ -600,8 +610,10 @@
             windows = null;
             start = [0, 0, -1];
             tMax = 14;
+
             return "No drive: |e⟩ relaxes to |g⟩, z = 1 − 2e^{−γ₁t}. Transverse parts would decay at γ₁/2.";
           },
+
           t2: () => {
             om = 0;
             de = 0;
@@ -610,8 +622,10 @@
             windows = null;
             start = [1, 0, 0];
             tMax = 14;
+
             return "Pure dephasing: the arrow shrinks toward the z axis, the populations never change.";
           },
+
           steady: () => {
             om = 1.5;
             de = 0.5;
@@ -620,9 +634,11 @@
             windows = null;
             start = [0, 0, 1];
             tMax = 25;
+
             return "Drive against decay: the arrow spirals to a steady state inside the sphere, P_e = (Ω²/4)/(Δ²+γ²/4+Ω²/2).";
           },
         };
+
         function syncSliders() {
           $("om").value = om;
           $("de").value = de;
@@ -633,6 +649,7 @@
           $("g1v").textContent = g1.toFixed(2);
           $("gpv").textContent = gp.toFixed(2);
         }
+
         function applyPreset(name) {
           preset = name;
           $("note").textContent = P[name]();
@@ -650,12 +667,14 @@
           .forEach((b) =>
             b.addEventListener("click", () => applyPreset(b.dataset.p)),
           );
+
         const STARTS = {
           g: [0, 0, 1],
           e: [0, 0, -1],
           "+": [1, 0, 0],
           i: [0, 1, 0],
         };
+
         document.querySelectorAll("[data-s]").forEach((b) =>
           b.addEventListener("click", () => {
             start = STARTS[b.dataset.s].slice();
@@ -671,11 +690,13 @@
             windowsFree();
             updateIdeal();
           });
+
         function windowsFree() {
           document
             .querySelectorAll("#presets button")
             .forEach((b) => b.classList.remove("on"));
         }
+
         bind("om", "omv", (x) => {
           om = x;
         });
@@ -785,6 +806,7 @@
               prev = q;
             }
           };
+
           g.lineWidth = 1;
           ring((t) => [Math.cos(t), Math.sin(t), 0]);
           ring((t) => [Math.cos(t), 0, Math.sin(t)]);
@@ -879,6 +901,7 @@
           g.setLineDash([2, 3]); // drop line to the equatorial plane
 
           const foot = P3([v[0], v[1], 0]);
+
           g.beginPath();
           g.moveTo(tip[0], tip[1]);
           g.lineTo(foot[0], foot[1]);
@@ -935,6 +958,7 @@
               const t = (i / 300) * tMax;
               const px = X(t);
               const py = Y(w.qmc_bl_rabi(t, om, de));
+
               i ? g.lineTo(px, py) : g.moveTo(px, py);
             }
 
@@ -946,6 +970,7 @@
             g.strokeStyle = col;
             g.lineWidth = 2;
             g.beginPath();
+
             hist.forEach((h, i) => {
               const px = X(h[0]);
               const py = Y(h[idx]);
@@ -982,10 +1007,12 @@
         // interaction
         const stage = $("sphere");
         let drag = null;
+
         stage.addEventListener("pointerdown", (e) => {
           drag = { x: e.clientX, y: e.clientY };
           stage.setPointerCapture(e.pointerId);
         });
+
         stage.addEventListener("pointermove", (e) => {
           if (!drag) return;
           yaw += (e.clientX - drag.x) * 0.008;
@@ -993,12 +1020,16 @@
             -1.5,
             Math.min(1.5, pitch + (e.clientY - drag.y) * 0.008),
           );
+
           drag = { x: e.clientX, y: e.clientY };
+
           render();
         });
+
         const end = () => {
           drag = null;
         };
+
         stage.addEventListener("pointerup", end);
         stage.addEventListener("pointercancel", end);
         window.addEventListener("resize", render);
@@ -1011,6 +1042,7 @@
 
           requestAnimationFrame(frame);
         }
+
         applyPreset("rabi");
         requestAnimationFrame(frame);
       })();

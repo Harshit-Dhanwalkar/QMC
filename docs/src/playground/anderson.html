@@ -433,6 +433,7 @@
           );
           return;
         }
+
         const N = w.qmc_an_n();
         const DT = w.qmc_an_dt();
         const buf = () =>
@@ -493,13 +494,22 @@
         function paintRow() {
           const b = buf();
           let m = 0;
-          for (let j = 0; j < N; j++) if (b[j] > m) m = b[j];
-          if (!(m > 0) || row >= ROWS) return;
+          for (let j = 0; j < N; j++) {
+            if (b[j] > m) {
+              m = b[j];
+            }
+          }
+
+          if (!(m > 0) || row >= ROWS) {
+            return;
+          }
+
           const lm = Math.log10(m);
           for (let j = 0; j < N; j++) {
             const v = (Math.log10(Math.max(b[j], 1e-300)) - lm + FLOOR) / FLOOR;
             const idx = Math.max(0, Math.min(255, (v * 255) | 0));
             const p = (row * N + j) * 4;
+
             img.data[p] = lut[idx * 3];
             img.data[p + 1] = lut[idx * 3 + 1];
             img.data[p + 2] = lut[idx * 3 + 2];
@@ -517,7 +527,9 @@
           }
 
           for (let k = 0; k < spf; k++) {
-            if (row >= ROWS - 1) break;
+            if (row >= ROWS - 1) {
+              break;
+            }
             if (w.qmc_an_step(STEPS_PER_ROW) !== 0) {
               showError("step failed");
               playing = false;
@@ -548,6 +560,7 @@
           g.strokeStyle = "rgba(255,255,255,.35)";
           g.setLineDash([4, 4]);
           g.lineWidth = 1;
+
           // clean-chain light cone x = +/- 2 t tau
           const tauMax = ROWS * STEPS_PER_ROW * DT;
           g.beginPath();
@@ -707,13 +720,16 @@
             .forEach((b) =>
               b.classList.toggle("on", preset && +b.dataset.w === v),
             );
+
           reset();
         }
+
         document
           .querySelectorAll("#presets button")
           .forEach((b) =>
             b.addEventListener("click", () => setW(+b.dataset.w, true)),
           );
+
         $("w").addEventListener("input", (e) => setW(+e.target.value, true));
         $("play").addEventListener("click", () => {
           if (row >= ROWS - 1) reset();
@@ -734,6 +750,7 @@
         $("spd").addEventListener("input", (e) => {
           spf = +e.target.value;
         });
+
         window.addEventListener("resize", render);
 
         function frame() {
@@ -741,8 +758,10 @@
             advance();
             render();
           }
+
           requestAnimationFrame(frame);
         }
+
         setW(3, true);
         requestAnimationFrame(frame);
       })();

@@ -471,7 +471,8 @@
           );
           return;
         }
-        // views are created after the calls that touch memory (memory can grow)
+
+        // views are created after calls that touch memory (memory can grow)
         const NC = w.qmc_bl_curve_max();
         const QB = () =>
           new Float64Array(w.memory.buffer, w.qmc_bl_quantum_buffer(), NC);

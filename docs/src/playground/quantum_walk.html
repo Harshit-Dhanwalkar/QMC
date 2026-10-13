@@ -408,7 +408,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -683,6 +683,7 @@
             restart();
           }),
         );
+
         $("play").addEventListener("click", () => {
           if (w.qmc_qw_time() >= TMAX) {
             restart();

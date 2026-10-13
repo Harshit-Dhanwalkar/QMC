@@ -386,7 +386,7 @@
           e.innerHTML = m;
         };
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -743,6 +743,7 @@
                <div class="stat"><span>Reflected (x &lt; 0)</span><span>${pct(left)}</span></div>
                <div class="stat"><span>Closed form T</span><span>${Number.isNaN(exact) ? "n/a" : pct(exact)}</span></div>
                <div class="stat"><span>Total probability</span><span>${norm.toFixed(9)}</span></div>`;
+
             const E = energy();
             const ep = E - v0;
             const settled = t > 50 / vg() + 45;

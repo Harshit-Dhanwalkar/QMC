@@ -343,7 +343,7 @@
           e.innerHTML = msg;
         }
 
-        // load WebAssembly module (qmc.wasm is built with wasm32-wasi;
+        // Load WebAssembly module (qmc.wasm is built with wasm32-wasi;
         // wasi-shim.js provides the browser-safe WASI no-ops it imports)
         let w;
         let wasmMemory = null;
@@ -449,7 +449,7 @@
             let ix = Math.max(0, Math.floor(gx - rad - 1));
             ix <= Math.min(N - 1, Math.ceil(gx + rad + 1));
             ix++
-          )
+          ) {
             for (
               let iy = Math.max(0, Math.floor(gy - rad - 1));
               iy <= Math.min(N - 1, Math.ceil(gy + rad + 1));
@@ -458,6 +458,7 @@
               if ((ix + 0.5 - gx) ** 2 + (iy + 0.5 - gy) ** 2 <= rad * rad) {
                 V[ix * N + iy] = v;
               }
+          }
         }
 
         function paintAt(ev) {
@@ -469,13 +470,16 @@
             1,
             Math.ceil(Math.hypot(gx - from[0], gy - from[1])),
           );
+
           for (let s = 1; s <= steps; s++)
             stamp(
               from[0] + ((gx - from[0]) * s) / steps,
               from[1] + ((gy - from[1]) * s) / steps,
             );
+
           lastG = [gx, gy];
         }
+
         sim.addEventListener("contextmenu", (e) => e.preventDefault());
         sim.addEventListener("pointerdown", (e) => {
           painting = true;
@@ -485,7 +489,9 @@
           paintAt(e);
         });
         sim.addEventListener("pointermove", (e) => {
-          if (painting) paintAt(e);
+          if (painting) {
+            paintAt(e);
+          }
         });
         const stop = () => {
           painting = false;
@@ -499,7 +505,9 @@
           const V = new Float64Array(mem(), w.qmc_potential(), N * N);
           let m = 0;
           for (let i = 0; i < d.length; i++) {
-            if (d[i] > m) m = d[i];
+            if (d[i] > m) {
+              m = d[i];
+            }
           }
           vmax = Math.max(vmax * 0.992, m, 0.003);
           const px = img.data;
@@ -549,16 +557,19 @@
           for (let iy = 0; iy < N; iy++) {
             acc[iy] += d[SX * N + iy];
           }
+
           let am = 1e-12;
           for (let iy = 0; iy < N; iy++) {
             if (acc[iy] > am) {
               am = acc[iy];
             }
           }
+
           rctx.fillStyle = "#05070b";
           rctx.fillRect(0, 0, scr.width, scr.height);
           const bh = scr.height / N;
           rctx.fillStyle = "#3ddc97";
+
           for (let iy = 0; iy < N; iy++) {
             const wd = (acc[iy] / am) * (scr.width - 6);
             rctx.fillRect(0, iy * bh, wd, Math.max(1, bh - 0.5));
@@ -593,6 +604,7 @@
           if (playing && $("auto").checked && (w.qmc_norm() < 0.02 || t > 40)) {
             launch();
           }
+
           last = now;
           requestAnimationFrame(frame);
         }
@@ -610,13 +622,16 @@
           });
           upd();
         }
+
         bindSlider("sep", () => {
           if (preset === "double") {
             buildPreset("double");
           }
         });
         bindSlider("sw", () => {
-          if (preset === "double" || preset === "single") buildPreset(preset);
+          if (preset === "double" || preset === "single") {
+            buildPreset(preset);
+          }
         });
         bindSlider("k", null);
         bindSlider("speed", () => {
@@ -645,6 +660,7 @@
           $("erase").classList.add("on");
           $("draw").classList.remove("on");
         });
+
         window.addEventListener("keydown", (e) => {
           if (e.code === "Space" && e.target === document.body) {
             e.preventDefault();
@@ -657,10 +673,12 @@
           const avail = $("stage").parentElement.clientWidth;
           const side = avail < 560 ? 70 : 120;
           const size = Math.max(220, Math.min(640, avail - side - 14));
+
           sim.style.width = size + "px";
           sim.style.height = size + "px";
           scr.style.width = side + "px";
           scr.style.height = size + "px";
+
           // internal resolution: crisp on hi-dpi, cheap enough to draw
           const dpr = Math.min(2, window.devicePixelRatio || 1);
           sim.width = Math.round(size * dpr);
@@ -668,6 +686,7 @@
           scr.width = Math.round(side * dpr);
           scr.height = Math.round(size * dpr);
         }
+
         window.addEventListener("resize", layout);
         layout();
 
