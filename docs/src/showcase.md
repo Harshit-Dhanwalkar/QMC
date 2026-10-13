@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-13 interactive demos, all computed live by the same C library you can read
+14 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -21,6 +21,8 @@ what the C code returns.
 | [Haldane Chern insulator](playground/haldane.html) | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
 | [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
 
+| [Grover search](playground/grover.html) | Amplitude amplification, and overshooting it | `grover_multi_step` | 20 KB |
+
 ## The double slit, solved rather than drawn
 
 [![Double-slit wavepacket](playground/preview.gif)](playground/index.html)
@@ -28,11 +30,11 @@ what the C code returns.
 Fire a wavepacket at a wall with two openings and an interference pattern
 builds up on the detector screen, one arrival at a time. This is not a
 cartoon of the pattern: every frame is a step of the time-dependent
-Schrödinger equation, advanced with the split-operator method. The
-potential acts in position space, the kinetic term acts in momentum space,
-and a fast Fourier transform moves between the two. You can draw your own
-walls, change the slits, or switch to a tunnelling barrier and watch part
-of the packet leak through a region it classically cannot enter.
+Schrödinger equation, advanced with the split-operator method. The potential
+acts in position space, the kinetic term acts in momentum space, and a fast
+Fourier transform moves between the two. You can draw your own walls, change
+the slits, or switch to a tunnelling barrier and watch part of the packet
+leak through a region it classically cannot enter.
 
 [Open the demo](playground/index.html) ·
 [Background: step potentials and tunnelling](physics/tunneling.md)
@@ -235,7 +237,7 @@ negative. Start with a coherent state, a Gaussian blob. A Kerr medium adds a
 phase that grows as $n(n−1)$ with the photon number, so the blob smears
 around its ring; at a quarter of the revival time, $χt = \pi/2$, it has split
 into the Schrödinger cat
-$(\exp^{−i \pi /4}|i\alpha \rangle + \xpe^{i \pi / 4}|−i\alpha \rangle)/\sqrt{2}:
+$(\exp^{−i \pi /4}|i\alpha \rangle + \exp^{i \pi / 4}|−i\alpha \rangle)/\sqrt{2}:
 two blobs and a fringe pattern between them that dips below zero. The page
 lets you pick a coherent, Fock, cat or squeezed state, drag the Kerr time and
 read off the negative volume, which is zero for a Gaussian and grows with how
@@ -245,6 +247,26 @@ $W(0,0) = (−1)^n/\pi$ for Fock states, the squeezed variances, and the Kerr ca
 identity and the full revival at $χt = \pi$ to machine precision.
 
 [Open the demo](playground/wigner.html)
+
+## Grover search: amplitude amplification, and what happens when you overshoot
+
+[![Grover search](playground/grover.gif)](playground/grover.html)
+
+Find the marked items in an unsorted database of N entries. Classically you
+need about N/M looks; Grover's algorithm needs about $(\pi/4)\sqrt{(N/M)}$.
+The trick is geometric: the oracle flips the sign of the marked amplitudes, the
+diffusion step inverts everything about the mean, and together they rotate the
+state by $2\theta$ in the plane spanned by "marked" and "unmarked", with
+$\sin(\theta) = \sqrt{(M/N)}. After k iterations the success probability is
+$\sin^2((2k+1)\theta)$, so it rises, peaks and falls again: keep iterating past
+the optimum and you un-find the answer. The page shows all 1024 amplitudes as a
+grid you can click to mark items, steps the algorithm, and plots the success
+curve against the closed form. The test suite checks the full state-vector
+simulation against the formula for several $(N, M)$, norm conservation, the
+$M = N/4$ case that succeeds in one step, the $M = N/2$ case that cannot move at
+all, and agreement with the library's single-target search.
+
+[Open the demo](playground/grover.html)
 
 ## Run it yourself
 

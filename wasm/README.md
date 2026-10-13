@@ -26,6 +26,8 @@
 
 `qmc_wigner.c` wraps the Fock-basis states, the Kerr evolution and the Wigner function (`physics/phase_space.c`): `docs/src/playground/wigner.html` shows a coherent, Fock, cat or squeezed state in phase space and lets you apply the Kerr phase.
 
+`qmc_grover.c` wraps the multi-target Grover search (`physics/grover_multi.c`): `docs/src/playground/grover.html` lets you mark items in a database of up to 1024 and step the amplitude amplification.
+
 ## Build
 
 ```sh
@@ -119,6 +121,8 @@ Ising-quench module (`qmc_tfim.wasm`, no imports): `qmc_tq_set(h_i, h_f)` fixes 
 Haldane module (`qmc_haldane.wasm`, imports three WASI stubs): `qmc_hd_set(t2, phi, mass)` builds the model (t1 = 1), `qmc_hd_compute(n_k)` diagonalises a 14-cell ribbon at `n_k` wave numbers into `qmc_hd_energy_buffer()` and `qmc_hd_mean_buffer()` (position of each state across the ribbon, -1 to +1), `qmc_hd_profile(ik, n_k, state)` fills `qmc_hd_prob_buffer()` with one state's weight per cell, and `qmc_hd_chern()` / `qmc_hd_limit()` give the Chern number and phase boundary.
 
 Wigner module (`qmc_wigner.wasm`, no imports): `qmc_wg_state(kind, amp, param, chi_t)` builds a state (0 coherent, 1 Fock, 2 even cat, 3 odd cat, 4 squeezed), applies the Kerr phase `exp(-i chi_t n(n-1))` and fills `qmc_wg_w_buffer()` (128 x 128, row = p, column = x, window +-`qmc_wg_extent()`), the marginals `qmc_wg_x_buffer()` / `qmc_wg_p_buffer()` and the photon-number distribution `qmc_wg_pn_buffer()`. `qmc_wg_nbar()`, `qmc_wg_negativity()`, `qmc_wg_wmin()` and `qmc_wg_wmax()` are the readouts.
+
+Grover module (`qmc_grover.wasm`, no imports): `qmc_gv_set_n(n)` picks 2^n items (n up to 10), `qmc_gv_mark(i, flag)` marks or unmarks one (fewer than N/2 in total), `qmc_gv_step()` / `qmc_gv_goto(k)` apply Grover iterations to `qmc_gv_amp_buffer()`, and `qmc_gv_curve(count)` fills the simulated and closed-form success curves. `qmc_gv_success()`, `qmc_gv_theta()` and `qmc_gv_kopt()` are the readouts.
 
 Regenerate the butterfly images:
 

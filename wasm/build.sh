@@ -17,6 +17,7 @@
 #   docs/src/playground/qmc_tfim.wasm       Ising-quench demo
 #   docs/src/playground/qmc_haldane.wasm    Haldane Chern-insulator demo
 #   docs/src/playground/qmc_wigner.wasm     Wigner-function / Kerr cat-state demo
+#   docs/src/playground/qmc_grover.wasm     Grover-search demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -155,3 +156,9 @@ build_module "$OUT/qmc_wigner.wasm" \
   "qmc_wg_n qmc_wg_nmax qmc_wg_extent qmc_wg_w_buffer qmc_wg_x_buffer qmc_wg_p_buffer qmc_wg_pn_buffer \
 qmc_wg_nbar qmc_wg_negativity qmc_wg_wmin qmc_wg_wmax qmc_wg_state" \
   wasm/qmc_wigner.c physics/phase_space.c
+
+build_module "$OUT/qmc_grover.wasm" \
+  "qmc_gv_max_n qmc_gv_curve_max qmc_gv_amp_buffer qmc_gv_marked_buffer qmc_gv_curve_buffer qmc_gv_exact_buffer \
+qmc_gv_n qmc_gv_iter qmc_gv_marks qmc_gv_set_n qmc_gv_mark qmc_gv_reset qmc_gv_step qmc_gv_goto qmc_gv_success \
+qmc_gv_theta qmc_gv_kopt qmc_gv_exact qmc_gv_curve" \
+  wasm/qmc_grover.c physics/grover_multi.c

@@ -133,6 +133,19 @@
       <sub>A coherent state smears into a Schr&ouml;dinger cat whose Wigner function goes negative</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/grover.html">
+        <img src="docs/src/playground/grover.gif" alt="Grover search amplitude amplification on a grid of items" width="260" height="260">
+      </a>
+      <br>
+      <b>Grover search</b>
+      <br>
+      <sub>Mark items, step the oracle and diffusion, watch amplitude amplification peak and overshoot</sub>
+    </td>
+    <td align="center" width="33%"></td>
+  </tr>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -239,6 +252,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
 - Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
+- Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
   - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
