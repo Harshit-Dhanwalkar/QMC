@@ -20,8 +20,8 @@ what the C code returns.
 | [Ising quench](playground/ising_quench.html)       | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
 | [Haldane Chern insulator](playground/haldane.html) | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
 | [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
-
-| [Grover search](playground/grover.html) | Amplitude amplification, and overshooting it | `grover_multi_step` | 20 KB |
+| [Grover search](playground/grover.html)            | Amplitude amplification, and overshooting it          | `grover_multi_step`                 | 20 KB |
+| [Bell test](playground/bell.html)                  | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -267,6 +267,28 @@ $M = N/4$ case that succeeds in one step, the $M = N/2$ case that cannot move at
 all, and agreement with the library's single-target search.
 
 [Open the demo](playground/grover.html)
+
+## The Bell test: correlations no local theory can reproduce
+
+[![CHSH Bell test](playground/bell.gif)](playground/bell.html)
+
+Two detectors far apart each measure a spin along an angle they choose.
+Suppose the outcomes are fixed in advance by some hidden variable the
+particles carry; then the combination $S = E(a,b) − E(a,b′) + E(a′,b) +
+E(a′,b′)$ of four correlations can never exceed 2 in magnitude. Quantum
+mechanics disagrees: for the singlet the correlation is $−\cos(a−b)$, a
+smooth cosine instead of the best local model's straight-line sawtooth, and
+at the right four angles $S = 2\sqrt{2} \aprrox 2.83$ (Tsirelson's bound).
+Mix in white noise of visibility V and S shrinks to 2√2·V, so the violation
+survives only for $V > 1/\sqrt{2}. The page lets you move the four detector
+angles and the noise, compares the cosine with the local sawtooth, and
+simulates pairs of measurements so you can watch the statistical error bar
+shrink as $1/\sqrt{n}. The test suite computes the correlation from the
+density matrix rather than the closed form, finds the Tsirelson maximum by
+grid search, checks that the deterministic strategies and the hidden-angle
+model stop at exactly 2, and tests the sampler against the exact correlations.
+
+[Open the demo](playground/bell.html)
 
 ## Run it yourself
 

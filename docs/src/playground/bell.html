@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Bell test</title>
+    <meta
+      name="description"
+      content="Set four detector angles and the noise on an entangled pair and watch the CHSH quantity S beat the local-hidden-variable bound of 2, up to Tsirelson's 2\u221a2. Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="A Bell test you can drag: quantum correlations vs the classical bound, in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Move the detectors, add noise, and sample measurements: the entangled pair violates the CHSH inequality, a local model cannot."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/bell.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #cc {
+        aspect-ratio: 4 / 3.4;
+        cursor: crosshair;
+      }
+      #dl {
+        aspect-ratio: 1 / 1;
+        max-width: 230px;
+        margin: 0 auto 10px;
+      }
+      #sg {
+        height: 54px;
+        margin: 10px 0 4px;
+      }
+      .legend i.sw {
+        height: 12px;
+        width: 12px;
+      }
+      .sw {
+        display: inline-block;
+        border-radius: 3px;
+        vertical-align: -1px;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Bell test</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        Alice and Bob each measure one spin of an entangled pair along an angle
+        they choose. If the outcomes were fixed in advance by a hidden variable,
+        the CHSH combination
+        S&nbsp;=&nbsp;E(a,b)&nbsp;&minus;&nbsp;E(a,b&prime;)&nbsp;+&nbsp;E(a&prime;,b)&nbsp;+&nbsp;E(a&prime;,b&prime;)
+        could never exceed <b>2</b>. For a singlet the correlation is
+        E&nbsp;=&nbsp;&minus;V cos(a&minus;b) and S reaches
+        <b>2&radic;2&nbsp;&asymp;&nbsp;2.83</b>. Drag the four angles and the
+        noise: the correlations come from the two-qubit density matrix
+        (<code>bell_correlation</code>), and the grey curve is the best local
+        model I could write down, a hidden angle with each side outputting the
+        sign of the projection.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="cc"><canvas id="ccc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i style="background: var(--accent)"></i>quantum, E(&Delta;) =
+              &minus;V cos&thinsp;&Delta;</span
+            >
+            <span
+              ><i style="background: #8993a8"></i>local hidden-angle model</span
+            >
+            <span>dots: the four setting pairs</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Detectors</h2>
+            <div class="cv" id="dl"><canvas id="dlc"></canvas></div>
+            <div class="row" id="presets">
+              <button data-p="best" class="on">Optimal</button>
+              <button data-p="aligned">Aligned</button>
+              <button data-p="noisy">Noisy</button>
+            </div>
+            <div class="row">
+              <label
+                ><span>Alice a</span
+                ><input
+                  id="a"
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value="0" /><b id="av"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Alice a&prime;</span
+                ><input
+                  id="a2"
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value="90" /><b id="a2v"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Bob b</span
+                ><input
+                  id="b"
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value="45" /><b id="bv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Bob b&prime;</span
+                ><input
+                  id="b2"
+                  type="range"
+                  min="0"
+                  max="360"
+                  step="1"
+                  value="135" /><b id="b2v"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Visibility V</span
+                ><input
+                  id="vv"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value="1" /><b id="vvv"></b
+              ></label>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>CHSH value (local bound 2, quantum bound 2&radic;2)</h2>
+            <div class="cv" id="sg"><canvas id="sgc"></canvas></div>
+            <div id="stats"></div>
+            <div class="row" style="margin-top: 8px">
+              <button id="samp" class="primary">
+                Simulate 10 000 pairs per setting
+              </button>
+            </div>
+            <div id="note"></div>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        State:
+        &rho;&nbsp;=&nbsp;V|&psi;<sup>&minus;</sup>&rang;&lang;&psi;<sup>&minus;</sup>|
+        + (1&minus;V) I/4, detectors
+        A(&theta;)&nbsp;=&nbsp;cos&theta;&thinsp;&sigma;<sub>z</sub> +
+        sin&theta;&thinsp;&sigma;<sub>x</sub>. The violation needs
+        V&nbsp;&gt;&nbsp;1/&radic;2&nbsp;&asymp;&nbsp;0.707. The local model
+        here reaches exactly 2 at the best settings, and no deterministic
+        strategy can do better (the code enumerates all 16). Simulated runs draw
+        random outcome pairs with the exact quantum probabilities, so the
+        estimate scatters around the true S with an error that shrinks as
+        1/&radic;n. Real experiments also have to close detection and locality
+        loopholes, which this toy does not model. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/bell_chsh.c"
+          ><code>physics/bell_chsh.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_bell.c"
+          ><code>wasm/qmc_bell.c</code></a
+        >; the Tsirelson bound, local bound and sampler are checked in
+        <code>tests/test_bell_chsh.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_bell.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_bell.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/bell.html</code>.",
+          );
+          return;
+        }
+        // views are created after the calls that touch memory (memory can grow)
+        const NC = w.qmc_bl_curve_max();
+        const QB = () =>
+          new Float64Array(w.memory.buffer, w.qmc_bl_quantum_buffer(), NC);
+        const LB = () =>
+          new Float64Array(w.memory.buffer, w.qmc_bl_local_buffer(), NC);
+        const D = Math.PI / 180,
+          ids = ["a", "a2", "b", "b2"];
+        let sampled = null,
+          seed = 1;
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        const vals = () => ids.map((i) => +$(i).value);
+        const wrap = (d) => ((d % 360) + 360) % 360;
+
+        function drawCurve() {
+          const { g, W: cw, H: ch } = fit($("ccc"));
+          const x0 = 38;
+          const x1 = cw - 12;
+          const y0 = ch - 24;
+          const y1 = 14;
+          const X = (deg) => x0 + (deg / 360) * (x1 - x0);
+          const Y = (e) => (y0 + y1) / 2 - ((e * (y0 - y1)) / 2) * 0.94;
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          g.beginPath();
+          g.moveTo(x0, Y(0));
+          g.lineTo(x1, Y(0));
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          for (const e of [-1, 0, 1]) {
+            g.fillText(String(e), x0 - 16, Y(e) + 4);
+          }
+          for (const t of [0, 90, 180, 270, 360]) {
+            g.fillText(t + "\u00b0", X(t) - 8, ch - 7);
+          }
+          g.fillText("angle difference \u0394 = a \u2212 b", x0 + 8, y1 + 14);
+          const q = QB();
+          const l = LB();
+          const n = 361;
+          g.strokeStyle = "#8993a8";
+          g.lineWidth = 2;
+          g.setLineDash([5, 4]);
+          g.beginPath();
+          for (let i = 0; i < n; i++) {
+            i ? g.lineTo(X(i), Y(l[i])) : g.moveTo(X(i), Y(l[i]));
+          }
+
+          g.stroke();
+          g.setLineDash([]);
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2.5;
+          g.beginPath();
+          for (let i = 0; i < n; i++) {
+            i ? g.lineTo(X(i), Y(q[i])) : g.moveTo(X(i), Y(q[i]));
+          }
+
+          g.stroke();
+          const [a, a2, b, b2] = vals();
+          const pairs = [
+              [a, b],
+              [a, b2],
+              [a2, b],
+              [a2, b2],
+            ],
+            cols = ["#ffb454", "#4fb8ff", "#ff6b81", "#c792ea"],
+            names = [
+              "E(a,b)",
+              "E(a,b\u2032)",
+              "E(a\u2032,b)",
+              "E(a\u2032,b\u2032)",
+            ];
+          pairs.forEach(([p, r], i) => {
+            const d = wrap(p - r);
+            g.fillStyle = cols[i];
+            g.beginPath();
+            g.arc(X(d), Y(w.qmc_bl_e(i)), 6, 0, 7);
+            g.fill();
+            g.strokeStyle = cols[i];
+            g.lineWidth = 1.5;
+            g.beginPath();
+            g.arc(X(d), Y(w.qmc_bl_e_local(i)), 4, 0, 7);
+            g.stroke();
+            if (sampled) {
+              g.fillStyle = cols[i];
+              g.globalAlpha = 0.9;
+              g.fillRect(X(d) - 5, Y(sampled.e[i]) - 1.5, 10, 3);
+              g.globalAlpha = 1;
+            }
+
+            g.fillStyle = cols[i];
+            g.fillText(
+              names[i],
+              Math.min(X(d) + 9, x1 - 70),
+              Y(w.qmc_bl_e(i)) - 9 + (i === 3 ? 26 : 0),
+            );
+          });
+        }
+
+        function drawDial() {
+          const { g, W: cw, H: ch } = fit($("dlc"));
+          const cx = cw / 2;
+          const cy = ch / 2;
+          const r = Math.min(cw, ch) / 2 - 14;
+
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.beginPath();
+          g.arc(cx, cy, r, 0, 7);
+          g.stroke();
+          g.beginPath();
+          g.moveTo(cx - r, cy);
+          g.lineTo(cx + r, cy);
+          g.moveTo(cx, cy - r);
+          g.lineTo(cx, cy + r);
+          g.stroke();
+
+          const v = vals();
+          const cols = ["#ffb454", "#ffb454", "#4fb8ff", "#4fb8ff"];
+          const lab = ["a", "a\u2032", "b", "b\u2032"];
+          v.forEach((deg, i) => {
+            const t = deg * D;
+            const ex = cx + r * Math.sin(t);
+            const ey = cy - r * Math.cos(t); // angle from the z axis (up)
+
+            g.strokeStyle = cols[i];
+            g.lineWidth = i % 2 ? 2 : 3.5;
+            g.beginPath();
+            g.moveTo(cx - 0.35 * r * Math.sin(t), cy + 0.35 * r * Math.cos(t));
+            g.lineTo(ex, ey);
+            g.stroke();
+            g.fillStyle = cols[i];
+            g.font = "12px ui-monospace,monospace";
+            g.fillText(
+              lab[i],
+              cx + (r + 8) * Math.sin(t) - 5,
+              cy - (r + 8) * Math.cos(t) + 4,
+            );
+          });
+
+          g.fillStyle = css("--muted");
+          g.font = "10px ui-monospace,monospace";
+          g.fillText("z", cx + 4, cy - r - 2);
+          g.fillStyle = "#ffb454";
+          g.fillText("Alice", 6, 12);
+          g.fillStyle = "#4fb8ff";
+          g.fillText("Bob", 6, 24);
+        }
+
+        function drawGauge(s) {
+          const { g, W: cw, H: ch } = fit($("sgc"));
+          const x0 = 10;
+          const x1 = cw - 10;
+          const max = 3;
+          const X = (v) => x0 + (v / max) * (x1 - x0);
+          const y = 16;
+          const h = 16;
+
+          g.fillStyle = "#1b2234";
+          g.fillRect(x0, y, x1 - x0, h);
+          g.fillStyle = s > 2 ? css("--accent") : "#8993a8";
+          g.fillRect(x0, y, X(Math.min(max, s)) - x0, h);
+          g.font = "11px ui-monospace,monospace";
+
+          for (const [v, t, c, dx] of [
+            [2, "2", "#ff6b81", -14],
+            [2 * Math.SQRT2, "2\u221a2", "#ffb454", 6],
+          ]) {
+            g.strokeStyle = c;
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(X(v), y - 5);
+            g.lineTo(X(v), y + h + 5);
+            g.stroke();
+            g.fillStyle = c;
+            g.fillText(t, X(v) + dx, y + h + 18);
+          }
+        }
+
+        function render() {
+          const [a, a2, b, b2] = vals();
+          const V = +$("vv").value;
+          ["a", "a2", "b", "b2"].forEach((id, i) => {
+            $(id + "v").innerHTML = Math.round(vals()[i]) + "&deg;";
+          });
+
+          $("vvv").textContent = V.toFixed(2);
+          if (w.qmc_bl_set(a * D, a2 * D, b * D, b2 * D, V) !== 0) {
+            showError("parameters rejected");
+            return;
+          }
+
+          $("err").style.display = "none";
+          w.qmc_bl_curve(361);
+
+          const s = Math.abs(w.qmc_bl_chsh());
+          const sl = Math.abs(w.qmc_bl_local_chsh());
+          const mx = w.qmc_bl_max();
+
+          drawCurve();
+          drawDial();
+          drawGauge(s);
+
+          $("stats").innerHTML =
+            '<div class="stat"><span>|S| quantum at these settings</span><span>' +
+            s.toFixed(3) +
+            "</span></div>" +
+            '<div class="stat"><span>|S| local model, same settings</span><span>' +
+            sl.toFixed(3) +
+            "</span></div>" +
+            '<div class="stat"><span>best possible at this V (2\u221a2\u00b7V)</span><span>' +
+            mx.toFixed(3) +
+            "</span></div>" +
+            (sampled
+              ? '<div class="stat"><span>simulated S (' +
+                sampled.n +
+                " pairs)</span><span>" +
+                Math.abs(sampled.s).toFixed(3) +
+                " \u00b1 " +
+                sampled.sig.toFixed(3) +
+                "</span></div>"
+              : "");
+          $("note").textContent =
+            s > 2.0005
+              ? "Violation: no local hidden-variable theory can give |S| above 2 for any settings."
+              : V < 1 / Math.SQRT2
+                ? "Too much noise: V is below 1/\u221a2, so even the best settings cannot violate the bound."
+                : "Not violating at these settings: try the Optimal preset.";
+        }
+
+        const preset = {
+          best: [0, 90, 45, 135, 1],
+          aligned: [0, 0, 0, 0, 1],
+          noisy: [0, 90, 45, 135, 0.6],
+        };
+
+        document.querySelectorAll("#presets button").forEach((bt) =>
+          bt.addEventListener("click", () => {
+            document
+              .querySelectorAll("#presets button")
+              .forEach((x) => x.classList.remove("on"));
+            bt.classList.add("on");
+            const p = preset[bt.dataset.p];
+            ids.forEach((id, i) => {
+              $(id).value = p[i];
+            });
+
+            $("vv").value = p[4];
+            sampled = null;
+            render();
+          }),
+        );
+
+        [...ids, "vv"].forEach((id) =>
+          $(id).addEventListener("input", () => {
+            sampled = null;
+            document
+              .querySelectorAll("#presets button")
+              .forEach((x) => x.classList.remove("on"));
+            render();
+          }),
+        );
+
+        $("samp").addEventListener("click", () => {
+          const n = 10000;
+          const s = w.qmc_bl_sample(n, ++seed * 7919);
+          if (Number.isNaN(s)) {
+            return;
+          }
+          sampled = {
+            n,
+            s,
+            sig: w.qmc_bl_sigma(),
+            e: [0, 1, 2, 3].map((i) => w.qmc_bl_est(i)),
+          };
+
+          render();
+        });
+
+        window.addEventListener("resize", render);
+
+        render();
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

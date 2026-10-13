@@ -77,7 +77,7 @@
 // Real two-qubit density matrix of Werner state, basis |00>,|01>,|10>,|11>
 static void werner(double v, double rho[4][4]) {
   // singlet (|01> - |10>) / \sqrt{2}
-  double psi[4] = {0.0, 1.0 / M_SQRT2, -1.0 / M_SQRT2, 0.0};
+  const double psi[4] = {0.0, 1.0 / M_SQRT2, -1.0 / M_SQRT2, 0.0};
 
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -200,7 +200,7 @@ double bell_sample(double visibility, double a, double a2, double b, double b2,
     return NAN;
   }
 
-  double ang[4][2] = {{a, b}, {a, b2}, {a2, b}, {a2, b2}};
+  const double ang[4][2] = {{a, b}, {a, b2}, {a2, b}, {a2, b2}};
   unsigned s = seed ? seed : 0x9e3779b9u;
 
   for (int c = 0; c < 4; c++) {
