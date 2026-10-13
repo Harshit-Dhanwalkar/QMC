@@ -134,7 +134,6 @@
     </td>
   </tr>
   <tr>
-    <td align="center" width="33%"></td>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/grover.html">
         <img src="docs/src/playground/grover.gif" alt="Grover search amplitude amplification on a grid of items" width="260" height="260">
@@ -144,7 +143,15 @@
       <br>
       <sub>Mark items, step the oracle and diffusion, watch amplitude amplification peak and overshoot</sub>
     </td>
-    <td align="center" width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bell.html">
+        <img src="docs/src/playground/bell.gif" alt="CHSH Bell test on a Werner state" width="260" height="260">
+      </a>
+      <br>
+      <b>CHSH Bell test</b>
+      <br>
+      <sub>Entanglement vs the classical bound: correlations of a Werner state, checked against the local hidden-variable model</sub>
+    </td>
   </tr>
 </table>
 
@@ -251,7 +258,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
 - Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
-- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
+- Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
   - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
@@ -348,6 +355,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_85_haldane_ribbon.c</code></li>
   <li><code>eg_86_phase_space.c</code></li>
   <li><code>eg_87_grover_multi.c</code></li>
+  <li><code>eg_88_bell_chsh.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -418,6 +426,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_tb_ribbon.c</code></li>
   <li><code>test_phase_space.c</code></li>
   <li><code>test_grover_multi.c</code></li>
+  <li><code>test_bell_chsh.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>

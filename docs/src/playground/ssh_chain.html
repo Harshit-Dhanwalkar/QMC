@@ -445,7 +445,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -708,6 +708,7 @@
           }
 
           g.stroke();
+
           // moving point
           const k = tphase;
           g.fillStyle = css("--accent");

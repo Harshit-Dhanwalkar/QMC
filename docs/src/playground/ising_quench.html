@@ -443,7 +443,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -555,6 +555,7 @@
 
           setPixelRow(col, zzb());
           col++;
+
           return true;
         }
 
@@ -739,9 +740,10 @@
           g.strokeStyle = css("--line");
           g.lineWidth = 1;
           g.strokeRect(x0, y1, x1 - x0, y0 - y1);
-          const X = (m) => x0 + ((m + 0.5) / NM) * (x1 - x0);
 
+          const X = (m) => x0 + ((m + 0.5) / NM) * (x1 - x0);
           const Y = (v) => y0 - v * (y0 - y1);
+
           g.strokeStyle = "#8993a8";
           g.setLineDash([4, 4]);
           g.beginPath();
@@ -852,9 +854,12 @@
         function frame() {
           if (playing) {
             let moved = false;
-            for (let i = 0; i < spf; i++) moved = computeColumn() || moved;
-            if (moved) render();
-            else {
+            for (let i = 0; i < spf; i++) {
+              moved = computeColumn() || moved;
+            }
+            if (moved) {
+              render();
+            } else {
               playing = false;
               $("play").textContent = "Replay";
             }

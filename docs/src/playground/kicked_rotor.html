@@ -424,7 +424,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -469,6 +469,7 @@
             showError("reset rejected");
             return;
           }
+
           hist = [[0, 0, 0]];
           finished = false;
           render();
@@ -501,6 +502,7 @@
           canvas.height = Math.max(2, r.height * d);
           const g = canvas.getContext("2d");
           g.setTransform(d, 0, 0, d, 0, 0);
+
           return { g, W: r.width, H: r.height };
         }
 
@@ -770,6 +772,7 @@
             advance();
             render();
           }
+
           requestAnimationFrame(frame);
         }
 

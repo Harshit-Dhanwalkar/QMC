@@ -433,7 +433,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -518,6 +518,7 @@
 
           const g = canvas.getContext("2d");
           g.setTransform(d, 0, 0, d, 0, 0);
+
           return { g, W: r.width, H: r.height };
         }
 
@@ -595,6 +596,7 @@
               g.lineTo(KX(ik), EY(e[ik * S + s]));
               g.stroke();
             }
+
           // in-gap edge points that exist only at one k (rendered as dots) so short branches still show
           for (let s = 0; s < S; s++)
             for (let ik = 0; ik < nk; ik++) {
@@ -658,7 +660,10 @@
           const e = EB()[sel.ik * S + sel.s];
           const mc = MB()[sel.ik * S + sel.s];
           let top = 1e-9;
-          for (const v of prof) top = Math.max(top, v);
+          for (const v of prof) {
+            top = Math.max(top, v);
+          }
+
           g.fillStyle =
             mc < -0.35
               ? css("--blue")
@@ -765,6 +770,7 @@
                   cur = en;
                 }
               }
+
               if (!Number.isNaN(prev) && !Number.isNaN(cur)) {
                 if (prev < ef && cur >= ef) {
                   net++;
@@ -861,6 +867,7 @@
               ),
             ),
           );
+
         $("t2").addEventListener("input", (e) =>
           setParams(+e.target.value, PHI, MASS, false, true),
         );
@@ -894,7 +901,9 @@
           phasePointer(e);
         });
         $("pdc").addEventListener("pointermove", (e) => {
-          if (dragging) phasePointer(e);
+          if (dragging) {
+            phasePointer(e);
+          }
         });
         $("pdc").addEventListener("pointerup", () => {
           dragging = false;

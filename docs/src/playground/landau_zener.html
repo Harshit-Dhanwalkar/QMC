@@ -426,7 +426,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -478,6 +478,7 @@
             $("play").textContent = "Replay";
             return;
           }
+
           const total = w.qmc_lz_total_time();
           const rc = w.qmc_lz_step((total / 400) * speed);
           if (rc < 0) {
@@ -485,8 +486,11 @@
             playing = false;
             return;
           }
+
           hist.push([w.qmc_lz_time(), w.qmc_lz_upper()]);
-          if (rc === 1) finished = true;
+          if (rc === 1) {
+            finished = true;
+          }
         }
 
         function computeScan() {
@@ -556,8 +560,10 @@
               const e = s * 0.5 * Math.hypot(om, d);
               i ? g.lineTo(X(d), Y(e)) : g.moveTo(X(d), Y(e));
             }
+
             g.stroke();
           }
+
           // state: two dots on the adiabatic levels, area ~ population
           const d = w.qmc_lz_delta();
           const pu = w.qmc_lz_upper();
@@ -573,6 +579,7 @@
             g.fill();
             g.globalAlpha = 1;
           };
+
           dot(-eb, 1 - pu, css("--blue"));
           dot(eb, pu, css("--accent"));
           g.fillStyle = css("--muted");
@@ -620,6 +627,7 @@
             const py = Y(h[1]);
             i ? g.lineTo(px, py) : g.moveTo(px, py);
           });
+
           g.stroke();
         }
 
@@ -661,6 +669,7 @@
               const p = Math.exp((-Math.PI * om * om) / (2 * r));
               i ? g.lineTo(X(r), Y(p)) : g.moveTo(X(r), Y(p));
             }
+
             g.stroke();
 
             if (scan.rate) {

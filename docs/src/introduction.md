@@ -23,6 +23,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/haldane.html"><img class="thumb" loading="lazy" alt="Haldane ribbon edge states" src="playground/thumbs/haldane.jpg"><span class="meta"><b>Haldane Chern insulator</b><small>One-way edge states and the phase diagram</small></span></a>
 <a class="card" href="playground/wigner.html"><img class="thumb" loading="lazy" alt="Wigner function of a Kerr cat state" src="playground/thumbs/wigner.jpg"><span class="meta"><b>Kerr cat states</b><small>A Wigner function that goes negative</small></span></a>
 <a class="card" href="playground/grover.html"><img class="thumb" loading="lazy" alt="Grover search amplitudes" src="playground/thumbs/grover.jpg"><span class="meta"><b>Grover search</b><small>Amplitude amplification, and overshooting it</small></span></a>
+<a class="card" href="playground/bell.html"><img class="thumb" loading="lazy" alt="CHSH Bell test correlation curves" src="playground/thumbs/bell.jpg"><span class="meta"><b>Bell test</b><small>Quantum correlations beating the classical bound</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations

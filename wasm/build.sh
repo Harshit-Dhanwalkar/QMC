@@ -18,6 +18,7 @@
 #   docs/src/playground/qmc_haldane.wasm    Haldane Chern-insulator demo
 #   docs/src/playground/qmc_wigner.wasm     Wigner-function / Kerr cat-state demo
 #   docs/src/playground/qmc_grover.wasm     Grover-search demo
+#   docs/src/playground/qmc_bell.wasm       CHSH Bell-test on a Werner state demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -162,3 +163,8 @@ build_module "$OUT/qmc_grover.wasm" \
 qmc_gv_n qmc_gv_iter qmc_gv_marks qmc_gv_set_n qmc_gv_mark qmc_gv_reset qmc_gv_step qmc_gv_goto qmc_gv_success \
 qmc_gv_theta qmc_gv_kopt qmc_gv_exact qmc_gv_curve" \
   wasm/qmc_grover.c physics/grover_multi.c
+
+build_module "$OUT/qmc_bell.wasm" \
+  "qmc_bl_curve_max qmc_bl_quantum_buffer qmc_bl_local_buffer qmc_bl_set qmc_bl_chsh qmc_bl_local_chsh  \ 
+  qmc_bl_max qmc_bl_e qmc_bl_e_local qmc_bl_curve qmc_bl_sample qmc_bl_est qmc_bl_sigma" \
+  wasm/qmc_bell.c physics/bell_chsh.c

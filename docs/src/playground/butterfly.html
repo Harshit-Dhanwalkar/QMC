@@ -320,7 +320,7 @@
           e.innerHTML = m;
         };
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -358,6 +358,7 @@
           if (t === 0) {
             return [96, 110, 138];
           }
+
           const s = Math.min(Math.abs(t), 8) / 8;
           const a = t > 0 ? [255, 214, 120] : [130, 228, 255];
           const b = t > 0 ? [232, 40, 62] : [48, 84, 255];
@@ -388,6 +389,7 @@
             if (nextQ > qTarget || nextQ > MAXQ) {
               return false;
             }
+
             if (nextP >= nextQ) {
               nextQ++;
               nextP = 1;
@@ -595,8 +597,10 @@
             E < -E_MAX ||
             E > E_MAX ||
             !geo.v.length
-          )
+          ) {
             return null;
+          }
+
           let lo = 0;
           let hi = geo.v.length - 1; // nearest flux by binary search
           while (lo < hi) {
@@ -652,7 +656,10 @@
           }
 
           const mark = (sel, solid) => {
-            if (!sel) return;
+            if (!sel) {
+              return;
+            }
+
             const x = geo.X(sel.flux.alpha);
             const y = geo.Y(sel.E);
             c.strokeStyle = solid
@@ -728,6 +735,7 @@
             if (pinned !== token) {
               return;
             }
+
             let t0 = performance.now();
             let C = w.qmc_bf_chern(f.p, f.q, c.r, nk);
             let ms = performance.now() - t0;
@@ -773,6 +781,7 @@
           if (!s) {
             return;
           }
+
           pinned = s;
           hover = null;
           drawOverlay();

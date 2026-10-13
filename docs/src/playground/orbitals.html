@@ -373,7 +373,7 @@
           e.innerHTML = m;
         };
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -394,6 +394,7 @@
               "). If you opened this file directly " +
               "from disk, serve folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/orbitals.html</code>.",
           );
+
           return;
         }
 
@@ -419,7 +420,10 @@
         // real-orbital names
         function realName(l, m) {
           const L = LETTER[l];
-          if (l === 0) return n + "s";
+          if (l === 0) {
+            return n + "s";
+          }
+
           const tag = {
             1: {
               0: "z",
@@ -562,7 +566,9 @@
             items.forEach((v) => {
               const b = document.createElement("button");
               b.textContent = label ? label(v) : String(v);
-              if (v === cur) b.classList.add("on");
+              if (v === cur) {
+                b.classList.add("on");
+              }
               b.addEventListener("click", () => fn(v));
               el.appendChild(b);
             });
@@ -574,12 +580,18 @@
             n,
             (v) => {
               n = v;
-              if (l >= n) l = n - 1;
-              if (Math.abs(m) > l) m = 0;
+              if (l >= n) {
+                l = n - 1;
+              }
+              if (Math.abs(m) > l) {
+                m = 0;
+              }
+
               refreshUI();
               resample();
             },
           );
+
           mk(
             "lsel",
             Array.from({ length: n }, (_, i) => i),
@@ -592,6 +604,7 @@
             },
             (v) => LETTER[v] + " (" + v + ")",
           );
+
           mk(
             "msel",
             Array.from({ length: 2 * l + 1 }, (_, i) => i - l),
@@ -611,6 +624,7 @@
             "<small>" +
             (real ? "real orbital" : "complex orbital") +
             "</small>";
+
           drawWheel();
         }
 
@@ -621,6 +635,7 @@
           for (let i = 0; i < sortedR.length; i++) {
             s += sortedR[i];
           }
+
           $("stats").innerHTML =
             `<div class="stat"><span>Energy</span><span>${E.toFixed(3)} eV</span></div>
        <div class="stat"><span>Radial nodes (n &minus; l &minus; 1)</span><span>${n - l - 1}</span></div>
@@ -685,7 +700,9 @@
 
         function render() {
           fitCanvas();
-          if (!X) return;
+          if (!X) {
+            return;
+          }
           acc.fill(0);
           const ca = Math.cos(yaw);
           const sa = Math.sin(yaw);
@@ -712,7 +729,9 @@
             const f = gain * (0.65 - 0.3 * Math.max(-1, Math.min(1, depth)));
             const ix = sx | 0;
             const iy = sy | 0;
-            if (ix < 1 || iy < 1 || ix >= W - 1 || iy >= H - 1) continue;
+            if (ix < 1 || iy < 1 || ix >= W - 1 || iy >= H - 1) {
+              continue;
+            }
             const k = (iy * W + ix) * 3;
             const r = R[i] * f;
             const g = G[i] * f;
@@ -774,7 +793,9 @@
           stage.setPointerCapture(e.pointerId);
         });
         stage.addEventListener("pointermove", (e) => {
-          if (!drag) return;
+          if (!drag) {
+            return;
+          }
           yaw += (e.clientX - drag.x) * 0.008;
           pitch = Math.max(
             -1.5,
@@ -782,9 +803,11 @@
           );
           drag = { x: e.clientX, y: e.clientY };
         });
+
         const end = () => {
           drag = null;
         };
+
         stage.addEventListener("pointerup", end);
         stage.addEventListener("pointercancel", end);
         stage.addEventListener(
@@ -795,6 +818,7 @@
           },
           { passive: false },
         );
+
         function setZoom(z) {
           zoom = Math.max(0.5, Math.min(2.5, z));
           $("zoom").value = zoom;
@@ -852,12 +876,14 @@
             setTimeout(() => URL.revokeObjectURL(a.href), 2000);
           });
         });
+
         window.addEventListener("resize", render);
 
         function frame() {
           if (spin && !drag) {
             yaw += 0.006;
           }
+
           render();
 
           requestAnimationFrame(frame);

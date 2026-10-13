@@ -201,3 +201,16 @@ else
   echo "FAIL: Grover WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- CHSH Bell test: Werner-state correlations and sampling, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/bell_ref.c wasm/qmc_bell.c physics/bell_chsh.c \
+  -lm -o "$TMP/qmc_bell_ref"
+"$TMP/qmc_bell_ref" > "$TMP/qmc_bell_native.txt"
+cat "$TMP/qmc_bell_native.txt"
+node wasm/test/bell_check.mjs > "$TMP/qmc_bell_wasm.txt"
+if diff -u "$TMP/qmc_bell_native.txt" "$TMP/qmc_bell_wasm.txt"; then
+  echo "OK: Bell WASM matches native"
+else
+  echo "FAIL: Bell WASM and native results differ" >&2
+  exit 1
+fi

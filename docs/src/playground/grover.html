@@ -308,7 +308,7 @@
   <body>
     <div class="wrap">
       <header>
-        <h1><span>QMC</span> Playground &mdash; Grover search</h1>
+        <h1><span>QMC</span> Playground - Grover search</h1>
         <div class="links"></div>
       </header>
       <p class="sub">
@@ -430,7 +430,7 @@
         const css = (v) =>
           getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 
-        // load WebAssembly
+        // Load WebAssembly
         let w;
         let wasmMemory = null;
         try {
@@ -804,7 +804,10 @@
           refresh();
         });
         $("gdc").addEventListener("pointermove", (ev) => {
-          if (paint === null) return;
+          if (paint === null) {
+            return;
+          }
+
           const i = pick(ev);
           if (i >= 0 && MB()[i] !== paint) {
             w.qmc_gv_mark(i, paint);
