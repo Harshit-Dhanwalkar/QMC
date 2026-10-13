@@ -10,12 +10,16 @@ on:
       - "core/**"
       - "tests/**"
       - ".github/workflows/docs.yml"
+  workflow_run:
+    workflows: ["Coverage"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
 concurrency:
   group: pages
@@ -23,6 +27,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
       MDBOOK_VERSION: "0.5.4"
@@ -150,6 +155,15 @@ jobs:
           for f in ${{ env.WASM_MODULES }}; do
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
+
+      - name: Fetch coverage report from Coverage run
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-html
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: docs/book/html/coverage
 
       - name: Confirm playground survived mdBook's asset copy
         run: |

@@ -10,6 +10,9 @@
   <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build_and_tests" alt="CI Status">
   </a>
+  <a href="https://codecov.io/gh/Harshit-Dhanwalkar/QMC">
+    <img src="https://codecov.io/gh/Harshit-Dhanwalkar/QMC/branch/main/graph/badge.svg" alt="Coverage">
+  </a>
   <img src="https://img.shields.io/badge/c-C99-blue.svg" alt="C Standard">
   <img src="https://img.shields.io/badge/parallel-OpenMP-informational.svg" alt="OpenMP">
   <img src="https://img.shields.io/badge/sanitizers-ASan%20%7C%20UBSan-green.svg" alt="Sanitizers">

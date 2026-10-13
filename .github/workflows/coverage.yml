@@ -81,6 +81,23 @@ jobs:
             '/usr/*' '*/third_party/*' '*/tests/*' '*/export/*' '*/benchmarks/*' \
             --output-file coverage.info --ignore-errors unused,negative
 
+      - name: Generate HTML report
+        run: |
+          genhtml coverage.info \
+            --output-directory coverage-html \
+            --title "QMC coverage report" \
+            --legend \
+            --highlight \
+            --prefix "$PWD"
+
+      - name: Upload coverage HTML as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage-html/
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Upload to Codecov
         uses: codecov/codecov-action@v7
         with:
