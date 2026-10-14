@@ -19,6 +19,7 @@
 #   docs/src/playground/qmc_wigner.wasm     Wigner-function / Kerr cat-state demo
 #   docs/src/playground/qmc_grover.wasm     Grover-search demo
 #   docs/src/playground/qmc_bell.wasm       CHSH Bell-test on a Werner state demo
+#   docs/src/playground/qmc_carpet.wasm     quantum-carpet / revival demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -165,6 +166,11 @@ qmc_gv_theta qmc_gv_kopt qmc_gv_exact qmc_gv_curve" \
   wasm/qmc_grover.c physics/grover_multi.c
 
 build_module "$OUT/qmc_bell.wasm" \
-  "qmc_bl_curve_max qmc_bl_quantum_buffer qmc_bl_local_buffer qmc_bl_set qmc_bl_chsh qmc_bl_local_chsh  \ 
+  "qmc_bl_curve_max qmc_bl_quantum_buffer qmc_bl_local_buffer qmc_bl_set qmc_bl_chsh qmc_bl_local_chsh \
   qmc_bl_max qmc_bl_e qmc_bl_e_local qmc_bl_curve qmc_bl_sample qmc_bl_est qmc_bl_sigma" \
   wasm/qmc_bell.c physics/bell_chsh.c
+
+build_module "$OUT/qmc_carpet.wasm" \
+  "qmc_qc_nx qmc_qc_nt qmc_qc_curve_len qmc_qc_carpet_buffer qmc_qc_slice_buffer qmc_qc_curve_buffer \
+qmc_qc_weight qmc_qc_energy qmc_qc_set qmc_qc_slice" \
+  wasm/qmc_carpet.c physics/box_revival.c

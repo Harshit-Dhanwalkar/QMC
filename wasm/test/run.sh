@@ -214,3 +214,16 @@ else
   echo "FAIL: Bell WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Quantum carpet: revivals of a packet in a box, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/carpet_ref.c wasm/qmc_carpet.c physics/box_revival.c \
+  -lm -o "$TMP/qmc_carpet_ref"
+"$TMP/qmc_carpet_ref" > "$TMP/qmc_carpet_native.txt"
+cat "$TMP/qmc_carpet_native.txt"
+node wasm/test/carpet_check.mjs > "$TMP/qmc_carpet_wasm.txt"
+if diff -u "$TMP/qmc_carpet_native.txt" "$TMP/qmc_carpet_wasm.txt"; then
+  echo "OK: carpet WASM matches native"
+else
+  echo "FAIL: carpet WASM and native results differ" >&2
+  exit 1
+fi
