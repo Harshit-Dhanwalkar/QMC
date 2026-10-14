@@ -1,5 +1,5 @@
 /*
- * Test: finite-system DMRG sweeps for the open-boundary spin-1/2 XXZ chain
+ * Test: finite-system DMRG sweeps for open-boundary spin-1/2 XXZ chain
  *
  * NOTE: Validates against an independent brute-force exact diagonalization,
  * checks that repeated sweeps never make reported central-bond energy worse
@@ -45,7 +45,7 @@ static void check(int cond, const char *label) {
 }
 
 /* Brute-force OBC XXZ ground energy, independent of both dmrg.c and
- * finite_dmrg.c. Only tractable for small N; used here for N<=12. */
+ * finite_dmrg.c. Only tractable for small N; used here for N<=12 */
 static double brute_force_ed(int N, double Jz, double Jxy) {
   cmatrix_t *Sz = cmatrix_alloc(2, 2);
   CMAT(Sz, 0, 0) = c_real(0.5);
@@ -126,19 +126,20 @@ static double brute_force_ed(int N, double Jz, double Jxy) {
  * reach near machine precision once m is no longer restrictive
  */
 static void test_vs_brute_force_ed(void) {
-  printf("  === Finite DMRG vs brute-force exact diagonalization (N=8) ===\n");
+  printf("  === Test: Finite DMRG vs brute-force exact diagonalization (N=8) "
+         "===\n");
   double Jz = 1.0, Jxy = 1.0;
   int N = 8;
   double E_exact = brute_force_ed(N, Jz, Jxy);
 
   /* NOTE: m=8's tolerance is looser than test_dmrg.c's equivalent case: for
-   * N=8 the exact central-cut bond dimension is 2^(N/2)=16, so m=8 still
-   * discards real information here and cannot be lossless the way
-   * dmrg_run(8, ..., 8) incidentally is (that function returns its
-   * superblock energy one step before ever applying an m=8 truncation, so
-   * it never actually pays the cost its own requested m implies for this
-   * particular N; finite_dmrg_run intentionally truncates every block,
-   * including the last, so it does pay that cost here). */
+   * N=8 exact central-cut bond dimension is 2^(N/2)=16, so m=8 still discards
+   * real information here and cannot be lossless way dmrg_run(8, ..., 8)
+   * incidentally is (that function returns its superblock energy one step
+   * before ever applying an m=8 truncation, so it never actually pays cost its
+   * own requested m implies for this particular N; finite_dmrg_run
+   * intentionally truncates every block, including last, so it does pay that
+   * cost here) */
   struct {
     int m;
     double tol;
@@ -168,13 +169,12 @@ static void test_vs_brute_force_ed(void) {
   }
 }
 
-/*
- * Reference values independently cross-checked (same values test_dmrg.c
- * uses for infinite algorithm): finite sweeps at generous m must reach same
- * lossless answer
- */
+// Reference values independently cross-checked (same values test_dmrg.c uses
+// for infinite algorithm): finite sweeps at generous m must reach same lossless
+// answer
 static void test_reference_values(void) {
-  printf("  === Finite DMRG vs validated reference energies (N=10,12) ===\n");
+  printf("  === Test: Finite DMRG vs validated reference energies (N=10,12) "
+         "===\n");
   double Jz = 1.0;
   double Jxy = 1.0;
 
@@ -205,14 +205,13 @@ static void test_reference_values(void) {
   }
 }
 
-/*
- * Every sweep step is an exact ground-state diagonalization of current
- * superblock, so the central-bond checkpoint energy recorded after each
- * successive sweep must never increase (up to solver round-off)
- */
+// Every sweep step is an exact ground-state diagonalization of current
+// superblock, so central-bond checkpoint energy recorded after each successive
+// sweep must never increase (up to solver round-off)
 static void test_sweep_energy_monotonic(void) {
-  printf("  === Central-bond energy is non-increasing across sweeps (N=14) "
-         "===\n");
+  printf(
+      "  === Test: Central-bond energy is non-increasing across sweeps (N=14) "
+      "===\n");
   double Jz = 1.0, Jxy = 1.0;
   int N = 14;
   int m = RUNNING_ON_VALGRIND ? 4 : 6;
@@ -242,16 +241,15 @@ static void test_sweep_energy_monotonic(void) {
   finite_dmrg_result_free(r);
 }
 
-/*
- * At small, truncation-limited m, finite sweeping should match or improve on
- * infinite algorithm's result for same N and m: sweeping only ever re-optimizes
- * previously-built blocks using better information, whereas infinite algorithm
- * builds every block once and never revisits it. Uses a modest tolerance since
- * the two algorithms' final steps are not directly nested subspaces
- */
+// At small, truncation-limited m, finite sweeping should match or improve on
+// infinite algorithm's result for same N and m: sweeping only ever re-optimizes
+// previously-built blocks using better information, whereas infinite algorithm
+// builds every block once and never revisits it. Uses a modest tolerance since
+// two algorithms' final steps are not directly nested subspaces
 static void test_matches_or_improves_infinite(void) {
-  printf("  === Finite sweeps match/improve on infinite algorithm (small m) "
-         "===\n");
+  printf(
+      "  === Test: Finite sweeps match/improve on infinite algorithm (small m) "
+      "===\n");
   double Jz = 1.0, Jxy = 1.0;
   int N = 16;
   int m = 6;
@@ -272,7 +270,8 @@ static void test_matches_or_improves_infinite(void) {
 }
 
 static void test_invalid_input(void) {
-  printf(" === Invalid input handling ===\n");
+  printf("  === Test: Invalid input handling ===\n");
+
   check(finite_dmrg_run(2, 1.0, 1.0, 8, 2) == NULL, "N_target < 4 rejected");
   check(finite_dmrg_run(8, 1.0, 1.0, 0, 2) == NULL, "m_max < 1 rejected");
   check(finite_dmrg_run(8, 1.0, 1.0, 8, 0) == NULL, "n_sweeps < 1 rejected");
@@ -282,7 +281,7 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
-  printf(" > Finite-system DMRG: XXZ open chain sweep tests\n");
+  printf(" > Finite-system DMRG: XXZ open chain sweep tests:\n");
 
   test_vs_brute_force_ed();
   test_reference_values();

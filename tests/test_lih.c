@@ -1,20 +1,19 @@
 /*
- * Test: LiH/STO-3G : first real molecule/basis using p-orbitals and a
- * heteronuclear pair, plus the frozen-core reduction needed to make its
- * 12-qubit second-quantized Hamiltonian's exact diagonalization tractable.
+ * Test: LiH/STO-3G: real molecule/basis using p-orbitals and a heteronuclear
+ * pair, plus frozen-core reduction needed to make its 12-qubit second-quantized
+ * Hamiltonian's exact diagonalization tractable
  *
  * 1. Li basis (molint_basis_sto3g_li): normalization and p-orbital
- *    orthogonality (<2px|2py>=0 etc, exact by symmetry) : first real exercise
- *    of the general GTO engine on l+m+n>0 angular momentum, everything through
- *    H2/H4 only ever used s functions.
+ *    orthogonality (<2px|2py>=0 etc, exact by symmetry): first real exercise of
+ *    general GTO engine on l+m+n>0 angular momentum, everything through H2/H4
+ *    only ever used s functions
  * 2. LiH RHF: -7.862009272 Hartree at R=3.015 bohr (~1.596 Angstrom, close to
  *    LiH's experimental equilibrium bond length)
  * 3. Frozen-core Hamiltonian construction
  *    (second_quant_build_molecular_hamiltonian_frozen_core): a check that
- *    n_frozen=0 reduces Exactly to the unfrozen builder's own result, then real
- *    validation : freezing Li's 1s core (standard choice in the LiH VQE
- *    literature) gives a 10-qubit (1024-dim) FCI ground state (-7.882167498
- *    Hartree.
+ *    n_frozen=0 reduces Exactly to unfrozen builder's own result, real
+ *    validation: freezing Li's 1s core (standard choice in LiH VQE literature)
+ *    gives a 10-qubit (1024-dim) FCI ground state (-7.882167498 Hartree
  *
  * // WARN: VQE on this 10-qubit system is intentionally NOT exercised in this
  * automated test (both slow, like H4's 8-qubit case)
@@ -54,7 +53,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_li_basis_normalization_and_p_orbitals(void) {
-  printf("test_li_basis_normalization_and_p_orbitals:\n");
+  printf("  === Test Li basis normalization and p orbitals ===\n");
 
   double center[3] = {0, 0, 0};
   basis_function_t *li[5];
@@ -85,7 +84,7 @@ static void test_li_basis_normalization_and_p_orbitals(void) {
 }
 
 static void test_lih_rhf_and_frozen_core_fci(void) {
-  printf("test_lih_rhf_and_frozen_core_fci:\n");
+  printf("  === Test: LiH RHF and frozen core FCI ===\n");
 
   double R = 3.015; // ~1.596 Angstrom, near LiH's experimental equilibrium
   double li_center[3] = {0, 0, 0};
@@ -111,9 +110,11 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
 
     return;
   }
+
   printf("  LiH RHF: %.6f Hartree (iters=%d)\n", hf->total_energy,
          hf->iterations);
   check_true(hf->converged, "LiH RHF converges");
+
   check_close(hf->total_energy, -7.862009272, 1e-6,
               "LiH RHF matches cross-validation");
 
@@ -138,12 +139,14 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
       max_diff = d;
     }
   }
+
   check_true(max_diff < 1e-12,
-             "n_frozen=0 is bit-identical to the unfrozen Hamiltonian builder");
+             "n_frozen=0 is bit-identical to unfrozen Hamiltonian builder");
+
   cmatrix_free(H_full);
   cmatrix_free(H_zero_frozen);
 
-  // The real case: freeze Li's 1s core
+  // real case: freeze Li's 1s core
   cmatrix_t *H_frozen = second_quant_build_molecular_hamiltonian_frozen_core(
       6, 1, h_mo, eri_mo, nuclear_repulsion);
   check_true(H_frozen != NULL, "frozen-core Hamiltonian allocates");
@@ -153,7 +156,7 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
 
 #ifdef USE_LAPACK
   /* NOTE: Exact diagonalization of a 1024x1024 complex Hermitian matrix is only
-   * exercised when built with USE_LAPACK: with the default hand-rolled
+   * exercised when built with USE_LAPACK: with default hand-rolled
    * real-embedding solver (effectively a 2048x2048 real-symmetric QR solve for
    * this case)
    */
@@ -182,10 +185,10 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
     cmatrix_free(H_copy);
   }
 #else
-  printf("  (skipping exact diagonalization of the 1024x1024 frozen-core "
+  printf("  (skipping exact diagonalization of 1024x1024 frozen-core "
          "Hamiltonian : default build has no LAPACK; rebuild with USE_LAPACK=1 "
-         "to also validate the FCI energy here. RHF and the Hamiltonian "
-         "construction itself are still fully validated above.)\n");
+         "to also validate FCI energy here. RHF and Hamiltonian construction "
+         "itself are still fully validated above.)\n");
 #endif
 
   cmatrix_free(H_frozen);
@@ -202,6 +205,8 @@ static void test_lih_rhf_and_frozen_core_fci(void) {
 }
 
 int main(void) {
+  printf(" > LiH/STO-3G real molecule/basis using p-orbitals tests:\n");
+
   test_li_basis_normalization_and_p_orbitals();
   test_lih_rhf_and_frozen_core_fci();
 

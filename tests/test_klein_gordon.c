@@ -1,14 +1,14 @@
 /*
- * Test: klein_gordon_1d_self_consistent (physics/relativistic.c)
+ * Test: klein_gordon_1d_self_consistent
  *
  * 1. Constant V(x): self-consistent single-level solver must agree with fast
  *    klein_gordon_1d (V_avg) solver's corresponding level, since for constant V
- *    both are solving identical linear problem.
+ *    both are solving identical linear problem
  * 2. Spatially-varying V(x): verify converged (E,psi) satisfies discretized
  *    nonlinear Klein-Gordon operator equation,
  *      -\hbar^2 * c^2 (\psi'' / dx^2) + [m^2 * c^4 + 2 * E * V(x) - V(x)^2]
  *      \psi = E^2 \psi
- *    directly, via residual norm (independent of how the solver got there).
+ *    directly, via residual norm (independent of how the solver got there)
  */
 
 #include "../core/complex.h"
@@ -33,6 +33,9 @@ static int check_close(double got, double expected, double tol,
 }
 
 static int test_constant_V_matches_fast_solver(void) {
+  printf("  === Test: Constant V(x): self-consistent solver matches fast "
+         "solver ===\n");
+
   int N = RUNNING_ON_VALGRIND ? 50 : 200;
   double x_min = -5.0, x_max = 5.0;
   double dx = (x_max - x_min) / (N - 1);
@@ -80,6 +83,9 @@ static int test_constant_V_matches_fast_solver(void) {
 }
 
 static int test_spatially_varying_residual(void) {
+  printf("  === Test: Spatially-varying V(x): operator-equation residual check "
+         "===\n");
+
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double x_min = RUNNING_ON_VALGRIND ? -6.0 : -10.0;
   double x_max = RUNNING_ON_VALGRIND ? 6.0 : 10.0;
@@ -140,11 +146,11 @@ static int test_spatially_varying_residual(void) {
   return fail;
 }
 
-/*
- * klein_gordon_1d assigns each level n its <V>_n = <n|V|n> expectation value
- * (instead of single uniform V_avg shift applied to every level)
- */
+// klein_gordon_1d assigns each level n its <V>_n = <n|V|n> expectation value
+// (instead of single uniform V_avg shift applied to every level)
 static int test_level_dependent_vs_uniform_shift(void) {
+  printf("  === Test: Level-dependent shift vs uniform V_avg shift ===\n");
+
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double x_min = RUNNING_ON_VALGRIND ? -6.0 : -10.0;
   double x_max = RUNNING_ON_VALGRIND ? 6.0 : 10.0;
@@ -204,7 +210,7 @@ static int test_level_dependent_vs_uniform_shift(void) {
   }
 
   // Check: klein_gordon_1d's returned energies match manual recomputation of
-  // <V>_n formula.
+  // <V>_n formula
   for (int n = 0; n < 3 && n < new_eig->n; n++) {
     double V_expect = 0.0;
 
@@ -222,7 +228,7 @@ static int test_level_dependent_vs_uniform_shift(void) {
   }
 
   // Level 2: well-separated state - level-dependent shift should be more
-  // accurate.
+  // accurate
   {
     int level = 2;
     double E_old = V_avg + sqrt(free_eig->eigenvalues[level]);
@@ -238,7 +244,7 @@ static int test_level_dependent_vs_uniform_shift(void) {
              E_old, E_new, sc->energy, err_old, err_new);
 
       // NOTE: Under Valgrind, coarser grid may make the two errors comparable;
-      // skip strict inequality test when running under Valgrind.
+      // skip strict inequality test when running under Valgrind
       if (!RUNNING_ON_VALGRIND) {
         fail |= !(err_new < err_old);
       }
@@ -285,13 +291,8 @@ static int test_level_dependent_vs_uniform_shift(void) {
 int main(void) {
   int failed = 0;
 
-  printf("Constant V(x): self-consistent solver matches fast solver:\n");
   failed += test_constant_V_matches_fast_solver();
-
-  printf("Spatially-varying V(x): operator-equation residual check:\n");
   failed += test_spatially_varying_residual();
-
-  printf("Level-dependent shift vs uniform V_avg shift:\n");
   failed += test_level_dependent_vs_uniform_shift();
 
   if (failed) {

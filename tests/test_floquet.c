@@ -63,7 +63,7 @@ static double circ_dist(double a, double b, double omega) {
   return fmin(d, omega - d);
 }
 
-// max |V^dagger V - I| for an n x n column-orthonormality check
+// max |V^\dagger V - I| for an n x n column-orthonormality check
 static double orthonormality_error(const cmatrix_t *V) {
   int n = V->nrows;
   double err = 0.0;
@@ -85,7 +85,7 @@ static double orthonormality_error(const cmatrix_t *V) {
   return err;
 }
 
-/* Hamiltonians (callbacks) */
+// Hamiltonians (callbacks)
 typedef struct {
   double w0, Om, om;
 } circ_params_t;
@@ -99,7 +99,7 @@ static void circular_H(double t, void *p, cmatrix_t *H) {
   put(H, 1, 0, 0.5 * q->Om * cos(q->om * t), 0.5 * q->Om * sin(q->om * t));
 }
 
-// Sambe harmonics (m = -1, 0, +1) of circular drive; caller frees
+// Sambe harmonics (m = -1, 0, +1) of circular drive
 static void circular_harmonics(const circ_params_t *q, cmatrix_t *h[3]) {
   for (int i = 0; i < 3; i++) {
     h[i] = cmatrix_alloc(2, 2);
@@ -108,9 +108,9 @@ static void circular_harmonics(const circ_params_t *q, cmatrix_t *h[3]) {
   put(h[1], 0, 0, 0.5 * q->w0, 0.0);
   put(h[1], 1, 1, -0.5 * q->w0, 0.0);
   put(h[2], 1, 0, 0.5 * q->Om,
-      0.0); // \exp^{+i w t} coefficient: (Om/2) \sigma_-
+      0.0); // \exp(+i w t) coefficient: (Om/2) \sigma_-
   put(h[0], 0, 1, 0.5 * q->Om,
-      0.0); // \exp^{-i w t} coefficient: (Om/2) \sigma_+
+      0.0); // \exp(-i w t) coefficient: (Om/2) \sigma_+
 }
 
 static void free_harmonics(cmatrix_t **h, int count) {
@@ -197,9 +197,9 @@ static void zero_H(double t, void *p, cmatrix_t *H) {
   (void)H; // leaves H identically zero
 }
 
-/* Tests */
+// Tests
 static void test_bessel(void) {
-  printf("  === J0 helper ===\n");
+  printf("  === Test: J0 helper ===\n");
 
   check_close(floquet_bessel_j0(0.0), 1.0, 1e-15, "J0(0)");
   check_close(floquet_bessel_j0(1.0), 0.7651976865579666, 1e-14, "J0(1)");
@@ -213,7 +213,7 @@ static void test_bessel(void) {
 }
 
 static void test_circular_rabi(void) {
-  printf("  === Circular-drive Rabi problem (exact, no RWA) ===\n");
+  printf("  === Test: Circular-drive Rabi problem (exact, no RWA) ===\n");
 
   circ_params_t p = {1.0, 0.3, 0.85};
   floquet_result_t *rt = floquet_solve_time(2, circular_H, &p, p.om, 2000);
@@ -267,7 +267,7 @@ static void test_circular_rabi(void) {
 }
 
 static void test_rk4_order(void) {
-  printf("  === RK4 convergence order ===\n");
+  printf("  === Test: RK4 convergence order ===\n");
 
   circ_params_t p = {1.0, 0.3, 0.85};
   double exact_hi = floquet_circular_rabi_quasienergy(p.w0, p.Om, p.om, +1);
@@ -294,7 +294,7 @@ static void test_rk4_order(void) {
 }
 
 static void test_cdt(void) {
-  printf("  === Coherent destruction of tunneling ===\n");
+  printf("  === Test: Coherent destruction of tunneling ===\n");
 
   double Delta = 0.1;
   double om = 4.0;
@@ -366,7 +366,7 @@ static double bs_gap(double om, void *pp) {
 }
 
 static void test_bloch_siegert(void) {
-  printf(" === Bloch-Siegert shift ===\n");
+  printf(" === Test: Bloch-Siegert shift ===\n");
 
   const double Om_list[2] = {0.05, 0.1};
   for (int k = 0; k < 2; k++) {
@@ -453,7 +453,7 @@ static void direct_evolve(int n, floquet_hamiltonian_fn Hfn, void *params,
 }
 
 static void test_spin1(void) {
-  printf("  === Spin-1: bare spectrum wider than \\omega ===\n");
+  printf("  === Test: Spin-1: bare spectrum wider than \\omega ===\n");
 
   spin1_params_t p = {2.3, 0.4, 1.1};
   floquet_result_t *rt = floquet_solve_time(3, spin1_H, &p, p.om, 4000);
@@ -554,7 +554,7 @@ static void test_spin1(void) {
 }
 
 static void test_static_and_degenerate(void) {
-  printf("  === Static and degenerate limits ===\n");
+  printf("  === Test: Static and degenerate limits ===\n");
 
   static_params_t sp = {0.9, -0.2};
   floquet_result_t *r = floquet_solve_time(2, static_H, &sp, 1.0, 2000);
@@ -605,7 +605,7 @@ static void test_static_and_degenerate(void) {
 }
 
 static void test_invalid(void) {
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
 
   circ_params_t p = {1.0, 0.3, 0.85};
   check_true(floquet_solve_time(0, circular_H, &p, 1.0, 100) == NULL, "n = 0");
@@ -667,6 +667,8 @@ static void test_invalid(void) {
 }
 
 int main(void) {
+  printf(" > Floquet Solver tests:\n");
+
   test_bessel();
   test_circular_rabi();
   test_rk4_order();

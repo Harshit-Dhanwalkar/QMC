@@ -1,14 +1,14 @@
 /*
  * Test: Grover search with several marked items
  *
- * 1. The state-vector evolution matches sin^2((2k+1) theta) for several (n, M)
- * 2. The norm is conserved
- * 3. The optimal iteration count reaches success >= 1 - M/N-ish; overshooting
- *    reduces the success (it is periodic with period pi / theta in 2k+1)
+ * 1. State-vector evolution matches \sin^2((2k+1) \theta) for several (n, M)
+ * 2. Norm is conserved
+ * 3. Optimal iteration count reaches success >= 1 - M/N-ish; overshooting
+ *    reduces the success (it is periodic with period \pi / \theta in 2k+1)
  * 4. M = N/4 succeeds with certainty after one iteration
- * 5. M = N/2 never changes (theta = pi/4: the state is an eigenstate)
+ * 5. M = N/2 never changes (\theta = \pi/4: state is an eigenstate)
  * 6. Marked items remain equally likely to each other
- * 7. Agreement with the library's single-target grover_search
+ * 7. Agreement with library's single-target grover_search
  * 8. Invalid input
  */
 

@@ -123,7 +123,8 @@ static double brute_force_ed(int N, double Jz, double Jxy) {
 }
 
 static void test_block_init(void) {
-  printf(" === dmrg_block_init: single-site block ===\n");
+  printf("  === Test: DMRG block init: single-site block ===\n");
+
   dmrg_block_t *b = dmrg_block_init();
   check(b != NULL, "dmrg_block_init succeeds");
   if (!b) {
@@ -142,12 +143,11 @@ static void test_block_init(void) {
   dmrg_block_free(b);
 }
 
-/*
- * Cross-check against a from-scratch brute-force ED for small N (N=8, dim=256,
- * tractable for dense diagonalization), isotropic Heisenberg AFM (Jz=Jxy=1).
- */
+// Cross-check against a from-scratch brute-force ED for small N (N=8, dim=256,
+// tractable for dense diagonalization), isotropic Heisenberg AFM (Jz=Jxy=1)
 static void test_vs_brute_force_ed(void) {
-  printf(" === DMRG vs brute-force exact diagonalization (N=8) ===\n");
+  printf("  === Test: DMRG vs brute-force exact diagonalization (N=8) ===\n");
+
   double Jz = 1.0, Jxy = 1.0;
   int N = 8;
   double E_exact = brute_force_ed(N, Jz, Jxy);
@@ -184,13 +184,12 @@ static void test_vs_brute_force_ed(void) {
   }
 }
 
-/*
- * Reference values independently cross-checked: infinite-system DMRG vs
- * brute-force ED, isotropic Heisenberg AFM chain (Jz=Jxy=1), open boundary
- * conditions
- */
+// Reference values independently cross-checked: infinite-system DMRG vs
+// brute-force ED, isotropic Heisenberg AFM chain (Jz=Jxy=1), open boundary
+// conditions
 static void test_reference_values(void) {
-  printf("  === DMRG vs validated reference energies (N=10,12) ===\n");
+  printf("  === Test: DMRG vs validated reference energies (N=10,12) ===\n");
+
   double Jz = 1.0;
   double Jxy = 1.0;
 
@@ -204,7 +203,7 @@ static void test_reference_values(void) {
 
   for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
     int N = cases[c].N;
-    /* m=24 empirically verified near-machine-precision here (trunc_err
+    /* NOTE: m=24 empirically verified near-machine-precision here (trunc_err
      * ~1e-11 at N=12) without the cost of chasing a literal 2^(N/2) bound */
     int m = 24;
     dmrg_result_t *r = dmrg_run(N, Jz, Jxy, m);
@@ -223,14 +222,14 @@ static void test_reference_values(void) {
   }
 }
 
-/*
- * Truncation error must shrink monotonically as m increases (defining signature
- * of correct density-matrix truncation), for a chain long enough that
- * truncation is actually needed (N=16, so intermediate blocks exceed dim 8
- * before the smallest m values here catch up)
- */
+// Truncation error must shrink monotonically as m increases (defining signature
+// of correct density-matrix truncation), for a chain long enough that
+// truncation is actually needed (N=16, so intermediate blocks exceed dim 8
+// before the smallest m values here catch up)
 static void test_truncation_error_monotonic(void) {
-  printf("  === Truncation error shrinks monotonically with m (N=16) ===\n");
+  printf(
+      "  === Test: Truncation error shrinks monotonically with m (N=16) ===\n");
+
   double Jz = 1.0;
   double Jxy = 1.0;
   int N = 16;
@@ -261,13 +260,12 @@ static void test_truncation_error_monotonic(void) {
   }
 }
 
-/*
- * Per-site ground energy should approach the exact Bethe-ansatz
- * thermodynamic-limit value E0/N -> 1/4 - ln(2) as N grows, for isotropic
- * (critical) Heisenberg chain
- */
+// Per-site ground energy should approach the exact Bethe-ansatz
+// thermodynamic-limit value E0/N -> 1/4 - ln(2) as N grows, for isotropic
+// (critical) Heisenberg chain
 static void test_thermodynamic_limit_trend(void) {
-  printf(" === Per-site energy trend toward Bethe-ansatz limit ===\n");
+  printf("  === Test: Per-site energy trend toward Bethe-ansatz limit ===\n");
+
   double Jz = 1.0;
   double Jxy = 1.0;
   double bethe_limit = 0.25 - log(2.0);
@@ -299,7 +297,8 @@ static void test_thermodynamic_limit_trend(void) {
 }
 
 static void test_invalid_input(void) {
-  printf(" === Invalid input handling ===\n");
+  printf("  === Test: Invalid input handling ===\n");
+
   check(dmrg_run(1, 1.0, 1.0, 8) == NULL, "N_target < 2 rejected");
   check(dmrg_run(8, 1.0, 1.0, 0) == NULL, "m_max < 1 rejected");
   check(dmrg_run(8, NAN, 1.0, 8) == NULL, "non-finite Jz rejected");
@@ -307,7 +306,7 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
-  printf(" > Infinite-system DMRG: XXZ open chain tests\n");
+  printf(" > Infinite-system DMRG: XXZ open chain tests:\n");
 
   test_block_init();
   test_vs_brute_force_ed();

@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 int main() {
-  printf(" > Testing matrix operations...\n");
+  printf(" > Testing matrix operations:\n");
 
   // Allocate a 2x3 matrix
   cmatrix_t *A = cmatrix_alloc(2, 3);

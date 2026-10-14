@@ -2,18 +2,18 @@
  * Test: analytic RHF nuclear gradient (Pulay 1969)
  *
  * 1. Gradient integral primitives (gto_*_grad_a, gto_nuclear_attraction_grad_C)
- *    vs finite difference, isolated from the SCF/Pulay-formula machinery:
- *    validates McMurchie-Davidson "increment/decrement" identity (Reference:
- *    Helgaker, Jorgensen & Olsen eq. 9.3.8) gradient code is built on,
- *    independent of any density-matrix or energy-weighted-density.
- * 2. molecular_rhf_gradient vs finite difference of the total SCF energy:
- *    H2/STO-3G at several bond lengths (translational invariance - sum of
- *    forces on both atoms is exactly zero), and LiH/STO-3G (multi-atom,
- *    multiple basis functions sharing a center, including p-orbitals)
- * 3. H2 equilibrium bond length via bisection on the analytic gradient,
+ *    vs finite difference, isolated from SCF/Pulay-formula machinery: validates
+ *    McMurchie-Davidson "increment/decrement" identity (Reference: Helgaker,
+ *    Jorgensen & Olsen eq. 9.3.8) gradient code is built on, independent of any
+ *    density-matrix or energy-weighted-density
+ * 2. molecular_rhf_gradient vs finite difference of total SCF energy: H2/STO-3G
+ *    at several bond lengths (translational invariance - sum of forces on both
+ *    atoms is exactly zero), and LiH/STO-3G (multi-atom, multiple basis
+ *    functions sharing a center, including p-orbitals)
+ * 3. H2 equilibrium bond length via bisection on analytic gradient,
  *    cross-checked against literature (STO-3G/RHF H2 equilibrium ~1.34-1.40
  *    bohr) as an end-to-end sanity check that gradient actually locates a real
- *    energy minimum, not just any zero-crossing.
+ *    energy minimum, not just any zero-crossing
  */
 
 #include "../physics/molecular_hf.h"
@@ -47,7 +47,8 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_boys_large_x_regression(void) {
-  printf("test_boys_large_x_regression:\n");
+  printf(" === Test: Boys large x regression ===\n");
+
   struct {
     int n;
     double x;
@@ -74,7 +75,8 @@ static void test_boys_large_x_regression(void) {
 }
 
 static void test_gradient_integral_primitives(void) {
-  printf("test_gradient_integral_primitives:\n");
+  printf("  === Test: Gradient integral primitives ===\n");
+
   double centerA[3] = {0.3, -0.2, 0.55};
   double centerB[3] = {-0.4, 0.1, 0.9};
   double centerC[3] = {0.05, 0.6, -0.3};
@@ -193,7 +195,8 @@ static double h2_gradient_atom1_z(double R) {
 }
 
 static void test_h2_gradient_vs_finite_difference(void) {
-  printf("test_h2_gradient_vs_finite_difference:\n");
+  printf("  === Test: H2 gradient vs finite difference ===\n");
+
   double Rs[] = {1.0, 1.4, 2.0, 3.0};
   double h = 1e-4;
   for (size_t i = 0; i < sizeof(Rs) / sizeof(Rs[0]); i++) {
@@ -266,7 +269,7 @@ static void lih_energy_and_grad(double *E_out, double R, double grad_out[6]) {
 }
 
 static void test_lih_gradient_vs_finite_difference(void) {
-  printf("test_lih_gradient_vs_finite_difference:\n");
+  printf("  === Test: LiH gradient vs finite difference ===\n");
   double Rs[] = {2.0, 3.0, 3.5, 4.0};
   double h = 1e-4;
 
@@ -295,8 +298,9 @@ static void test_lih_gradient_vs_finite_difference(void) {
 }
 
 static void test_h2_equilibrium_bond_length(void) {
-  printf("test_h2_equilibrium_bond_length:\n");
-  double lo = 1.0, hi = 2.0;
+  printf("  === Test H2 equilibrium bond length ===\n");
+  double lo = 1.0;
+  double hi = 2.0;
 
   for (int i = 0; i < 40; i++) {
     double mid = 0.5 * (lo + hi);
@@ -356,7 +360,8 @@ static void lih_cation_energy_and_grad(double *E_out, double R,
 }
 
 static void test_uhf_gradient_vs_finite_difference(void) {
-  printf("test_uhf_gradient_vs_finite_difference:\n");
+  printf("  === Test: UHF gradient vs finite difference ===\n");
+
   double Rs[] = {2.5, 3.015, 3.5, 4.0};
   double h = 1e-4;
 
@@ -434,6 +439,8 @@ static void test_uhf_gradient_vs_finite_difference(void) {
 }
 
 int main(void) {
+  printf(" > Analytic RHF nuclear gradient (Pulay 1969) tests:\n");
+
   test_boys_large_x_regression();
   test_gradient_integral_primitives();
   test_h2_gradient_vs_finite_difference();

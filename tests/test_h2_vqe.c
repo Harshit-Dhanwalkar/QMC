@@ -2,7 +2,7 @@
  * Test: full H2/STO-3G VQE pipeline, end to end :
  * AO integrals (molecular_integrals.c) -> RHF -> AO-to-MO transform ->
  * second-quantized Jordan-Wigner Hamiltonian (second_quant.c) -> exact
- * diagonalization (FCI) -> VQE (vqe.c).
+ * diagonalization (FCI) -> VQE (vqe.c)
  */
 
 #include "../core/complex.h"
@@ -37,7 +37,7 @@ static void check_true(int cond, const char *label) {
 }
 
 // Same RHF as test_molecular_integrals.c, but also returns converged MO
-// coefficient matrix C, needed for AO->MO integral transform below.
+// coefficient matrix C, needed for AO->MO integral transform below
 static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
                                   cmatrix_t *Hcore, const double *eri,
                                   double C_out[2][2]) {
@@ -146,8 +146,8 @@ static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
   return E_elec;
 }
 
-/* AO (2x2 / 2x2x2x2) -> MO transform via the RHF coefficient matrix C, chemist
- * notation preserved throughout. */
+// AO (2x2 / 2x2x2x2) -> MO transform via RHF coefficient matrix C, chemist
+// notation preserved throughout
 static void ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
                      double C[2][2], double h_mo[4], double *eri_mo) {
   for (int i = 0; i < 2; i++) {
@@ -189,7 +189,7 @@ static void ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
 }
 
 static void test_h2_fci_and_vqe(void) {
-  printf("test_h2_fci_and_vqe:\n");
+  printf("  === Test: H2 FCI and VQE ===\n");
 
   double R_bond = 1.4;
   double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
@@ -235,9 +235,8 @@ static void test_h2_fci_and_vqe(void) {
   check_close(E_fci, -1.137276, 1e-4,
               "FCI matches cross-validation (-1.137276 Hartree, also "
               "well-known literature FCI/STO-3G H2 value)");
-  check_true(E_fci < E_rhf - 1e-6,
-             "FCI is below RHF (captures correlation energy, as it must "
-             "variationally)");
+  check_true(E_fci < E_rhf - 1e-6, "FCI is below RHF (captures correlation "
+                                   "energy, as it must variationally)");
 
   // NOTE: Ground-state particle number: sum over computational-basis states of
   // |amplitude|^2 * popcount(state), should be exactly 2 (global
@@ -259,8 +258,8 @@ static void test_h2_fci_and_vqe(void) {
   cmatrix_free(H_copy);
 
   // NOTE: VQE: unconstrained hardware-efficient ansatz on same full Hamiltonian
-  // (no particle-number restriction/penalty). Should converge close to the FCI
-  // value.
+  // (no particle-number restriction/penalty). Should converge close to FCI
+  // value
   vqe_result_t vqe_res = vqe_run(4, 3, H_molecular, 6, 0.6, 20260810ULL);
   printf("  VQE (4 qubits, 3 layers): E = %.6f Hartree (FCI = %.6f)\n",
          vqe_res.energy, E_fci);
@@ -282,6 +281,8 @@ static void test_h2_fci_and_vqe(void) {
 }
 
 int main(void) {
+  printf(" > H2 VQE tests:\n");
+
   test_h2_fci_and_vqe();
 
   if (failures == 0) {

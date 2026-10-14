@@ -302,7 +302,8 @@ static void test_dirac_hydrogen_sommerfeld(void) {
 // 2s_1/2 and 2p_1/2 should be exactly degenerate in point-charge Dirac spectrum
 // (both have n=2, |\kappa|=1)
 static void test_dirac_j_degeneracy(void) {
-  printf("  === Test: 2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1) ===\n");
+  printf("  === Test: 2s_1/2 / 2p_1/2 exact j-degeneracy (n=2, |\\kappa|=1) "
+         "===\n");
 
   double Z_charge = 1.0; // nuclear charge
   double E_2s = dirac_hydrogen_energy_level(2, -1, Z_charge, HBAR, M_ELECTRON,
@@ -318,7 +319,7 @@ static void test_dirac_j_degeneracy(void) {
 }
 
 int main(void) {
-  printf(" > Dirac 1d complex-Hermitian eigensolver tests\n");
+  printf(" > Dirac 1d complex-Hermitian eigensolver tests:\n");
 
   test_hermiticity_of_construction();
   test_free_particle_branches();

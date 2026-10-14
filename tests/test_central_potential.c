@@ -40,9 +40,8 @@
 //   }
 // }
 
-
 static int test_harmonic_3d(void) {
-  printf("  === Test 3D harmonic oscillator (l=0) ===\n");
+  printf("  === Test: 3D harmonic oscillator (l=0) ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 80 : 300;
   double r_max = RUNNING_ON_VALGRIND ? 8.0 : 15.0;
@@ -90,7 +89,7 @@ static int test_harmonic_3d(void) {
 }
 
 static int test_hydrogen_regression(void) {
-  printf("  === Test Hydrogen regression (refactored solver) ===\n");
+  printf("  === Test: Hydrogen regression (refactored solver) ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 100 : 500;
   double r_max = RUNNING_ON_VALGRIND ? 20.0 * AU_LENGTH : 60.0 * AU_LENGTH;

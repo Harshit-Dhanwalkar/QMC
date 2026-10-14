@@ -53,7 +53,7 @@ static int check_close(double got, double expected, double tol,
 
 // Test 1: 3D isotropic harmonic oscillator, l=0,1,2, lowest 3 states each
 static int test_3d_harmonic_oscillator(void) {
-  printf("  === 3D isotropic harmonic oscillator, E(n,l)=2n+l+3/2 "
+  printf("  === Test: 3D isotropic harmonic oscillator, E(n,l)=2n+l+3/2 "
          "(\\hbar=m=\\omega=1) ===\n");
 
   int N = 200;
@@ -136,7 +136,8 @@ static int find_well_bound_states(double V0, double a, double m, double hbar,
 
 // Test 2: 3D finite spherical well, l=0 bound states
 static int test_finite_spherical_well(void) {
-  printf("  === 3D finite spherical well (l=0), vs independent transcendental "
+  printf("  === Test: 3D finite spherical well (l=0), vs independent "
+         "transcendental "
          "root-find ===\n");
 
   double a = 3.0;

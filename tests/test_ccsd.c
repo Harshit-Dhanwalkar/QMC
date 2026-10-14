@@ -10,7 +10,7 @@
  *    spatial symmetry): a real >2-electron correlation test where CCSD is not
  *    exact.
  * 3. LiH/STO-3G, both with and without a frozen core: a real degenerate-orbital
- *    system (2px/2py exactly degenerate by symmetry).
+ *    system (2px/2py exactly degenerate by symmetry)
  */
 
 #include "../core/linalg/complex_eigh.h"
@@ -44,7 +44,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_h2_ccsd_matches_fci(void) {
-  printf("  === Test H2 CCSD matches FCI ===\n");
+  printf("  === Test: H2 CCSD matches FCI ===\n");
 
   double c0[3] = {0, 0, 0};
   double c1[3] = {0, 0, 1.4};
@@ -105,7 +105,7 @@ static void test_h2_ccsd_matches_fci(void) {
 }
 
 static void test_h4_asymmetric_ccsd_vs_reference(void) {
-  printf("  === Test H4 asymmetric CCSD vs refrence ===\n");
+  printf("  === Test: H4 asymmetric CCSD vs refrence ===\n");
 
   // Arbitrary non-collinear, no-symmetry geometry
   double c0[3] = {0, 0, 0};
@@ -166,7 +166,7 @@ static void test_h4_asymmetric_ccsd_vs_reference(void) {
 }
 
 static void test_lih_ccsd_vs_reference(void) {
-  printf("  === Test LiH CCSD vs reference ===\n");
+  printf("  === Test: LiH CCSD vs reference ===\n");
 
   /* LiH/STO-3G, R=3.015 bohr: a real degenerate-orbital system (2px/2py exactly
    * degenerate by symmetry) */

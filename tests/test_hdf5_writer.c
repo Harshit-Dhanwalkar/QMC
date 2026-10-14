@@ -117,7 +117,7 @@ static void test_groups_and_generic_types(void) {
   }
 
   // Dataset paths with '/' should auto-create missing intermediate groups, no
-  // explicit hdf5_create_group() call needed */
+  // explicit hdf5_create_group() call needed
   const double energy[3] = {-2.90, -2.91, -2.93};
   hdf5_status_t rc = hdf5_writer_write_1d(w, "simulation/energy", energy, 3);
   check_true(rc == HDF5_OK,
@@ -184,6 +184,7 @@ static void test_groups_and_generic_types(void) {
     H5Dread(dset, H5T_NATIVE_INT64, H5S_ALL, H5S_ALL, H5P_DEFAULT, readback);
     check_true(readback[0] == seeds_i64[0] && readback[1] == seeds_i64[1],
                "i64 dataset reads back bit-for-bit identical");
+
     H5Dclose(dset);
   }
 
@@ -244,6 +245,7 @@ static void test_attributes(void) {
       if (sz < sizeof buf) {
         H5Aread(attr, atype, buf);
       }
+
       check_true(strcmp(buf, "eV") == 0,
                  "'units' attribute reflects the overwritten value 'eV'");
 
@@ -374,6 +376,7 @@ static void test_appendable_datasets(void) {
   for (int i = 0; i < 13; i++) {
     expect[i] = -2.9 + 0.001 * i;
   }
+
   check_true(hdf5_dataset_append(e, expect, 5) == HDF5_OK, "append 5 rows");
   check_true(hdf5_dataset_append(e, expect + 5, 1) == HDF5_OK, "append 1 row");
   check_true(hdf5_dataset_append(e, NULL, 0) == HDF5_OK,
@@ -398,6 +401,7 @@ static void test_appendable_datasets(void) {
   for (int i = 0; i < 24; i++) {
     rows_i32[i] = i * 7 - 40;
   }
+
   if (m) {
     check_true(hdf5_dataset_append(m, rows_i32, 4) == HDF5_OK &&
                    hdf5_dataset_append(m, rows_i32 + 12, 4) == HDF5_OK,
@@ -425,6 +429,7 @@ static void test_appendable_datasets(void) {
     check_true(hdf5_dataset_append(d, big, 3) == HDF5_OK, "append i64 rows");
     check_true(hdf5_dataset_close(d) == HDF5_OK, "close i64 dataset");
   }
+
   check_true(hdf5_dataset_close(e) == HDF5_OK, "close 1D dataset");
   check_true(hdf5_close(w) == HDF5_OK, "hdf5_close succeeds");
 
@@ -541,6 +546,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
 
     H5Aclose(a);
   }
+
   check_true(ver == QMC_EXPORT_SCHEMA_VERSION, "root schema_version == 1");
 
   char buf[64] = {0};
@@ -552,6 +558,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
     H5Tclose(at);
     H5Aclose(a);
   }
+
   check_true(strcmp(buf, QMC_LIBRARY_NAME) == 0, "root library attribute");
 
   memset(buf, 0, sizeof buf);
@@ -563,10 +570,12 @@ static void test_strings_int_attrs_and_schema_header(void) {
     H5Tclose(at);
     H5Aclose(a);
   }
+
   check_true(strcmp(buf, QMC_LIBRARY_VERSION) == 0,
              "root library_version attribute");
   check_true(H5Aexists(root, "created") == 0,
              "no created attribute when timestamp disabled");
+
   H5Gclose(root);
 
   hid_t ds = H5Dopen2(file, "metadata/method", H5P_DEFAULT);
@@ -578,6 +587,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
     H5Tclose(t);
     H5Dclose(ds);
   }
+
   check_true(strcmp(buf, "VMC longer name") == 0,
              "string dataset holds the replacement value");
 
@@ -589,6 +599,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
 
     H5Aclose(a);
   }
+
   check_true(nw == 400, "int attribute holds the replacement value");
 
   H5Gclose(g);
@@ -613,6 +624,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
     H5Tclose(at);
     H5Aclose(a);
   }
+
   check_true(strlen(buf) == 20 && buf[4] == '-' && buf[10] == 'T' &&
                  buf[19] == 'Z',
              "created is ISO 8601 UTC");
@@ -628,8 +640,8 @@ static void test_strings_int_attrs_and_schema_header(void) {
 #else // !USE_HDF5
 
 static void test_apis_stub_without_crashing(void) {
-  printf("  === Test apis stub without crashing (default build, no "
-         "USE_HDF5) ===\n");
+  printf("  === Test: apis stub without crashing (default build, no USE_HDF5) "
+         "===\n");
 
   hdf5_writer_t *w = hdf5_open("unused.h5");
   check_true(w == NULL, "hdf5_open stub returns NULL");
@@ -673,7 +685,7 @@ static void test_apis_stub_without_crashing(void) {
 }
 
 static void test_stub_returns_failure_without_crashing(void) {
-  printf("  === Test stub returns failure without_crashing (default build, no "
+  printf("  === Test: stub returns failure without_crashing (default build, no "
          "USE_HDF5) ===\n");
 
   const double data[3] = {1.0, 2.0, 3.0};

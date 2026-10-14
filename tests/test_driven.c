@@ -1,6 +1,6 @@
 /*
  * Test + demonstration: driven two-level systems (general time-dependent H(t),
- * Landau-Zener sweeps, and lab-frame driving beyond RWA).
+ * Landau-Zener sweeps, and lab-frame driving beyond RWA)
  *
  * 1. Constant \Delta, \Omega cross-check: driven_two_level_evolve with
  *    time_fn_constant for both must reproduce rabi_evolve_exact()'s closed-form
@@ -44,7 +44,7 @@ static void check_close(double got, double expected, double tol,
 
 // Test 1: constant Delta/Omega must match rabi_evolve_exact
 static void test_constant_matches_rabi_exact(void) {
-  printf("  === Constant Delta/Omega matches rabi_evolve_exact ===\n");
+  printf("  === Test: Constant Delta/Omega matches rabi_evolve_exact ===\n");
 
   double Omega = 2.0;
   double Delta = 1.0;
@@ -85,7 +85,8 @@ static void test_constant_matches_rabi_exact(void) {
 // finite T is a physical effect (Stuckelberg oscillations : finite-time
 // interference b/w diabatic and adiabatic paths)
 static void test_landau_zener(void) {
-  printf("  === Landau-Zener sweep (fast=diabatic, slow=adiabatic) ===\n");
+  printf(
+      "  === Test: Landau-Zener sweep (fast=diabatic, slow=adiabatic) ===\n");
 
   double Omega = 1.0;
 
@@ -131,7 +132,8 @@ static void test_landau_zener(void) {
 
 // Test 3: weak-driving lab-frame simulation vs RWA prediction
 static void test_lab_frame_weak_driving_matches_rwa(void) {
-  printf("  === Lab-frame (beyond RWA) vs RWA prediction, weak driving ===\n");
+  printf("  === Test: Lab-frame (beyond RWA) vs RWA prediction, weak driving "
+         "===\n");
 
   double omega0 = 50.0;
   double Omega0 = 1.0;
@@ -160,7 +162,7 @@ static void test_lab_frame_weak_driving_matches_rwa(void) {
 }
 
 int main(void) {
-  printf(" > Driven two-level system tests\n\n");
+  printf(" > Driven two-level system tests:\n");
 
   test_constant_matches_rabi_exact();
   test_landau_zener();

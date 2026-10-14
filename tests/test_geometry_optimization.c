@@ -37,7 +37,7 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-/* geom_energy_grad_fn for H2/STO-3G: coords is {x0,y0,z0, x1,y1,z1}. */
+// geom_energy_grad_fn for H2/STO-3G: coords is {x0,y0,z0, x1,y1,z1}
 static int h2_energy_grad(const double *coords, int n_atoms, void *user_data,
                           double *energy_out, double *grad_out) {
   (void)user_data;
@@ -185,6 +185,8 @@ static void test_h2_optimization_independent_of_atom_split(void) {
 }
 
 int main(void) {
+  printf(" > Geometry Optimization tests:\n");
+
   test_null_and_invalid_input();
   test_h2_optimization_from_collinear_guess();
   test_h2_optimization_independent_of_atom_split();

@@ -1,5 +1,5 @@
 /*
- * Test: CCSD(T) perturbative triples correction, physics/ccsd_t.c.
+ * Test: CCSD(T) perturbative triples correction
  *
  * Reuses the exact same geometries as test_ccsd.c so RHF/CCSD reference values
  *
@@ -8,13 +8,13 @@
  *    indices (i,j,k), but H2/STO-3G has only 2 occupied spin orbitals, so the
  *    triples excitation space is empty and every t3c/t3d term vanishes
  *    identically. This is a exact check on P(i/jk)P(a/bc) triple-occupied-index
- *    loop  bounds, not just a "close to zero" numerical check.
+ *    loop  bounds, not just a "close to zero" numerical check
  * 2. Asymmetric H4 (same non-collinear, no-symmetry geometry as test_ccsd.c):
  *    (T) = -1.3256211e-05, a real nonzero correction with 4 occupied spin
- *    orbitals : exercises the full P(i/jk)P(a/bc) 9-term antisymmetrizer for
- *    both t3c and t3d.
+ *    orbitals: exercises the full P(i/jk)P(a/bc) 9-term antisymmetrizer for
+ *    both t3c and t3d
  * 3. LiH/STO-3G (R=3.015 bohr, same as test_ccsd.c and test_lih.c): (T) =
- *    -8.393447e-06.
+ *    -8.393447e-06
  */
 
 #include "../core/matrix.h"

@@ -1,25 +1,25 @@
 /*
- * Test: transverse-field and longitudinal-field 1D Ising model tests.
- * Exact diagonalization of the transverse-field Ising model (TFIM) on a
- * periodic ring, cross-checked against its exact Jordan-Wigner + Bogoliubov
- * ground-state energy.
+ * Test: transverse-field and longitudinal-field 1D Ising model tests
+ *
+ * Exact diagonalization of transverse-field Ising model (TFIM) on a periodic
+ * ring, cross-checked against its exact Jordan-Wigner + Bogoliubov ground-state
+ * energy
  *
  * Unlike physics/spin_chain.c's XXZ Heisenberg chain, TFIM has a closed-form
  * solution for any N, making it possible to validate against an independent
- * analytic reference rather than another numerical method.
+ * analytic reference rather than anonther umerical method
  * ising_exact_ground_energy_per_site() is a from-scratch implementation of that
- * formula.
+ * formula
  *
  * This test checks it against ising_hamiltonian()'s Lanczos ground energy for a
- * spread of N (even And odd, since the antiperiodic-fermion-BC sector exact
- * formula uses turns out to hold for both parities of N) and h/J (including
- * h=0, the classical Ising limit; J=0, decoupled transverse fields; negative h;
- * and h=J, the critical point).
+ * spread of N (even And odd, since antiperiodic-fermion-BC sector exact formula
+ * uses turns out to hold for both parities of N) and h/J (including h=0,
+ * classical Ising limit; J=0, decoupled transverse fields; negative h; and h=J,
+ * critical point)
  *
- * Also checks the Z2 (global spin-flip) parity reduction: lower of the +1/-1
- * sector ground energies must match both unreduced Hamiltonian's ground energy
- * AND the exact formula, and the ground state must always sit in the +1 sector
- * for h,J >= 0.
+ * Also checks Z2 (global spin-flip) parity reduction: lower of +1/-1 sector
+ * ground energies must match both unreduced Hamiltonian's ground energy AND
+ * exact formula, and ground state must always sit in +1 sector for h,J >= 0
  */
 
 #include "../core/complex.h"
@@ -58,11 +58,12 @@ static void check(int cond, const char *label) {
   }
 }
 
-/* Full (unreduced) Hamiltonian's Lanczos ground energy vs exact
- * Jordan-Wigner/Bogoliubov formula, across N=3..10 (even and odd) and a spread
- * of h/J including the critical point, h=0, J=0, and negative h. */
+// Full (unreduced) Hamiltonian's Lanczos ground energy vs exact
+// Jordan-Wigner/Bogoliubov formula, across N=3..10 (even and odd) and a spread
+// of h/J including critical point, h=0, J=0, and negative h
 static void test_exact_vs_full_ed(void) {
-  printf("-- Full ED vs exact Jordan-Wigner/Bogoliubov ground energy --\n");
+  printf("  === Test: Full ED vs exact Jordan-Wigner/Bogoliubov ground energy "
+         "===\n");
 
   struct {
     int N;
@@ -104,11 +105,11 @@ static void test_exact_vs_full_ed(void) {
   }
 }
 
-/* Hermiticity of both the full and Z2-parity-reduced Hamiltonians, checked
- * by converting to dense and comparing to its own conjugate transpose.
- * Independent of any of physics, a pure algebraic sanity check. */
+// Hermiticity of both full and Z2-parity-reduced Hamiltonians, checked by
+// converting to dense and comparing to its own conjugate transpose Independent
+// of any of physics, a pure algebraic sanity check
 static void test_hermiticity(void) {
-  printf("\n-- Hermiticity of full and Z2-reduced Hamiltonians --\n");
+  printf("  === Test: Hermiticity of full and Z2-reduced Hamiltonians ===\n");
 
   int N = 6;
   double J = 1.0;
@@ -176,12 +177,12 @@ static void test_hermiticity(void) {
   sparse_free(Hp);
 }
 
-/* The Z2-reduced +1/-1 sectors' ground energies, merged by taking lower one,
- * must match both the full (unreduced) Hamiltonian's ground energy and the
- * exact formula and ground state must actually sit in the +1 sector, for h,J >=
- * 0. */
+// Z2-reduced +1/-1 sectors' ground energies, merged by taking lower one, must
+// match both full (unreduced) Hamiltonian's ground energy and exact formula and
+// ground state must actually sit in +1 sector, for h,J >= 0
 static void test_z2_parity_reduction(void) {
-  printf("\n-- Z2 parity reduction matches full ED and the exact formula --\n");
+  printf("  === Test: Z2 parity reduction matches full ED and exact formula "
+         "===\n");
 
   for (int N = 4; N <= 9; N++) {
     double J = 1.0;
@@ -232,9 +233,9 @@ static void test_z2_parity_reduction(void) {
   }
 }
 
-/* Basic input-validation guards. */
+// Basic input-validation guards
 static void test_invalid_input(void) {
-  printf("\n-- Invalid input handling --\n");
+  printf("  === Test: Invalid input handling ===\n");
 
   check(ising_hamiltonian(0, 1.0, 1.0, 1) == NULL,
         "ising_hamiltonian rejects N=0");
@@ -250,10 +251,11 @@ static void test_invalid_input(void) {
 /* Entanglement entropy: exact identities that must hold for ANY valid pure
  * state, independent of the physics (S(L_A)=S(N-L_A), and S=0 for a trivial
  * subsystem), plus physically expected trend of decreasing mid-chain
- * entanglement as h moves deep into the paramagnetic phase away from the
- * critical point h=J. */
+ * entanglement as h moves deep into the paramagnetic phase away from critical
+ * point h=J */
 static void test_entanglement_entropy(void) {
-  printf("\n-- Entanglement entropy: exact identities + physical trend --\n");
+  printf("  === Test: Entanglement entropy: exact identities + physical trend "
+         "==\n");
 
   int N = 8;
   double J = 1.0;
@@ -319,7 +321,7 @@ static void test_entanglement_entropy(void) {
  * comparison tolerance (t=1e-4, 1e-3), and not at larger t where that
  * correction becomes visible */
 static void test_quench_dynamics(void) {
-  printf("\n-- Quench dynamics: Loschmidt echo exact identities --\n");
+  printf("  === Test: Quench dynamics: Loschmidt echo exact identities ===\n");
 
   int N = 8;
   double J = 1.0, h_i = 0.5, h_f = 2.0;
@@ -346,9 +348,9 @@ static void test_quench_dynamics(void) {
     double L0 = ising_loschmidt_echo(eig_f, psi_i, 0.0);
     check_close(L0, 1.0, 1e-9, "L(0) = 1 exactly");
 
-    /* Var(H_f) in the pre-quench state, computed independently of
-     * ising_loschmidt_echo via direct matrix-vector products, for short-time
-     * Taylor cross-check. */
+    // Var(H_f) in pre-quench state, computed independently of
+    // ising_loschmidt_echo via direct matrix-vector products, for short-time
+    // Taylor cross-check
     cmatrix_t *Hpsi = cmatrix_alloc(dim, 1);
     for (int i = 0; i < dim; i++) {
       complex_t s = c_zero();
@@ -386,9 +388,9 @@ static void test_quench_dynamics(void) {
       check_close(L_t, L_taylor, 1e-8, label);
     }
 
-    /* No-quench identity: if \psi_i is (numerically) an eigenvector of H_f
-     * itself, L(t)=1 for all t. Use h_f == h_i here so \psi_i is an eigenstate
-     * of this H_f, not h_f=2.0 one above. */
+    // No-quench identity: if \psi_i is (numerically) an eigenvector of H_f
+    // itself, L(t)=1 for all t. Use h_f == h_i here so \psi_i is an eigenstate
+    // of this H_f, not h_f=2.0 one above
     cmatrix_t *Hsame_dense = ising_hamiltonian_dense(N, J, h_i, 1);
     eigen_t *eig_same = cmatrix_eigh_complex(Hsame_dense);
     if (eig_same) {
@@ -416,7 +418,7 @@ static void test_quench_dynamics(void) {
 }
 
 int main(void) {
-  printf(" > Transverse-Field Ising Model: ED + exact solution tests\n");
+  printf(" > Transverse-Field Ising Model: ED + exact solution tests:\n");
 
   test_exact_vs_full_ed();
   test_hermiticity();

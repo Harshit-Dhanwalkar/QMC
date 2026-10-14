@@ -1,21 +1,21 @@
 /*
- * Test: General Gaussian-type-orbital molecular integrals (McMurchie-Davidson).
+ * Test: General Gaussian-type-orbital molecular integrals (McMurchie-Davidson)
  *
  * 1. Boys function: F_0(0)=1 exact identity, plus a couple of known values
- *    cross-checked against closed-form :
+ *    cross-checked against closed-form:
  *      F_0(x) = \sqrt(\pi / (4 * x)) erf(\sqrt(x))
  * 2. s-s overlap and s-s nuclear attraction against their closed-form
  *    Gaussian-product-theorem formulas (independent of general
- *    McMurchie-Davidson code path being tested).
+ *    McMurchie-Davidson code path being tested)
  * 3. molint_normalize_contraction: a normalized basis function's self-overlap
- *    must be exactly 1.
+ *    must be exactly 1
  * 4. ERI 8-fold permutational symmetry: (ij|kl) must equal every one of its 7
- *    index-permutation equivalents.
- * 5. The end-to-end validation: full restricted-HF SCF on H2/STO-3G at R=1.4
- *    bohr must reproduce the theoretical Szabo & Ostlund result (-1.1167
+ *    index-permutation equivalents
+ * 5. End-to-end validation: full restricted-HF SCF on H2/STO-3G at R=1.4
+ *    bohr must reproduce theoretical Szabo & Ostlund result (-1.1167
  *    Hartree) using only this integrals engine + a RHF loop written in this
  *    test (not reusing hartree_fock.c, which is a radial-grid solver for atoms,
- *    not an LCAO-Gaussian-basis solver for molecules).
+ *    not an LCAO-Gaussian-basis solver for molecules)
  */
 
 #include "../core/complex.h"
@@ -49,7 +49,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_boys_function(void) {
-  printf("test_boys_function:\n");
+  printf("  === Test: Boys function ===\n");
 
   check_close(boys_function(0, 0.0), 1.0, 1e-14, "F_0(0) = 1 exactly");
 
@@ -70,10 +70,12 @@ static void test_boys_function(void) {
 }
 
 static void test_ss_overlap_and_nuclear_closed_form(void) {
-  printf("test_ss_overlap_and_nuclear_closed_form:\n");
+  printf("   === Test: ss overlap and nuclear closed form ===\n");
 
-  double a = 1.2, b = 0.8;
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
+  double a = 1.2;
+  double b = 0.8;
+  double A[3] = {0, 0, 0};
+  double B[3] = {0, 0, 1.4};
   const double alphas_a[1] = {a};
   const double alphas_b[1] = {b};
   const double coeff[1] = {1.0};
@@ -93,6 +95,7 @@ static void test_ss_overlap_and_nuclear_closed_form(void) {
                 (P[2] - C[2]) * (P[2] - C[2]);
   double V_closed =
       2.0 * M_PI / p * exp(-a * b / p * R2) * boys_function(0, p * RPC2);
+
   check_close(V, V_closed, 1e-12, "s-s nuclear attraction matches closed form");
 
   basis_function_free(fa);
@@ -100,19 +103,21 @@ static void test_ss_overlap_and_nuclear_closed_form(void) {
 }
 
 static void test_normalization(void) {
-  printf("test_normalization:\n");
+  printf("  === Test: Normalization ===\n");
 
   const double center[3] = {0, 0, 0};
   basis_function_t *bf = molint_basis_sto3g_h(center);
   check_true(bf != NULL, "molint_basis_sto3g_h allocates");
+
   double self_overlap = gto_overlap(bf, bf);
   check_close(self_overlap, 1.0, 1e-12,
               "normalized STO-3G H 1s has self-overlap = 1");
+
   basis_function_free(bf);
 }
 
 static void test_eri_permutational_symmetry(void) {
-  printf("test_eri_permutational_symmetry:\n");
+  printf("  === Test: eri permutational symmetry ===\n");
 
   const double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
   basis_function_t *fa = molint_basis_sto3g_h(A);
@@ -132,7 +137,7 @@ static void test_eri_permutational_symmetry(void) {
 }
 
 static void test_molecular_eri_tensor_symmetry(void) {
-  printf("test_molecular_eri_tensor_symmetry:\n");
+  printf("  === Test: molecular eri tensor symmetry ===\n");
 
   const double A[3] = {0, 0, 0}, B[3] = {0, 0, 1.4};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
@@ -154,7 +159,7 @@ static void test_molecular_eri_tensor_symmetry(void) {
   basis_function_free(funcs[1]);
 }
 
-/* Minimal RHF SCF for a 2-basis-function closed-shell (2 electron) molecule */
+// Minimal RHF SCF for a 2-basis-function closed-shell (2 electron) molecule
 static double h2_sto3g_rhf_energy(double R_bond) {
   const double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
@@ -168,7 +173,7 @@ static double h2_sto3g_rhf_energy(double R_bond) {
   cmatrix_t *Hcore = molecular_core_hamiltonian(funcs, 2, mol);
   double *eri = molecular_eri_tensor(funcs, 2);
 
-  /* S^{-1/2} via S's own eigendecomposition. */
+  // S^{-1/2} via S's own eigendecomposition
   eigen_t *eig_S = cmatrix_eigh_complex(S);
   cmatrix_t *Shalf = cmatrix_alloc(2, 2);
   for (int i = 0; i < 2; i++) {
@@ -188,7 +193,8 @@ static double h2_sto3g_rhf_energy(double R_bond) {
   }
 
   double D[2][2] = {{0, 0}, {0, 0}};
-  double E_elec = 0.0, E_elec_old = 0.0;
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
 
   for (int it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
@@ -284,13 +290,13 @@ static double h2_sto3g_rhf_energy(double R_bond) {
 }
 
 static void test_h2_sto3g_rhf_benchmark(void) {
-  printf("test_h2_sto3g_rhf_benchmark:\n");
+  printf("  === Test: H2 sto3g RHF benchmark ===\n");
 
   double E = h2_sto3g_rhf_energy(1.4);
   printf("  H2/STO-3G RHF @ R=1.4 bohr: E = %.6f Hartree\n", E);
 
-  /* Reference: Szabo & Ostlund, "Modern Quantum Chemistry", the STO-3G H2
-   * benchmark at this exact geometry: -1.1167 Hartree. */
+  // NOTE:  Reference: Szabo & Ostlund, "Modern Quantum Chemistry", STO-3G H2
+  // benchmark at this exact geometry: -1.1167 Hartree
   check_close(E, -1.116714, 1e-5,
               "H2/STO-3G RHF matches validation (-1.116714 Hartree)");
   check_close(E, -1.1167, 2e-4,
@@ -298,6 +304,9 @@ static void test_h2_sto3g_rhf_benchmark(void) {
 }
 
 int main(void) {
+  printf(" > General Gaussian-type-orbital molecular integrals "
+         "(McMurchie-Davidson) tests\n");
+
   test_boys_function();
   test_ss_overlap_and_nuclear_closed_form();
   test_normalization();

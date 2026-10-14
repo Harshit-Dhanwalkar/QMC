@@ -47,7 +47,7 @@ static void start_on_site(cvector_t *psi, int site) {
 }
 
 int main(void) {
-  printf(" > 1D Anderson localisation\n\n");
+  printf(" > 1D Anderson localisation:\n");
   cvector_t *psi = cvector_alloc(N);
 
   if (!psi) {
@@ -139,8 +139,7 @@ int main(void) {
   anderson_disorder(g_big, BIG, 0.0, 1);
   check_close(anderson_lyapunov(g_big, BIG, 1.0, 1.0), 0.0, 1e-3,
               "clean chain: no growth inside band");
-  check_true(isnan(anderson_lyapunov_weak(1.0, 1.0, 2.5)),
-             "outside band: NaN");
+  check_true(isnan(anderson_lyapunov_weak(1.0, 1.0, 2.5)), "outside band: NaN");
 
   printf("  === Invalid input ===\n");
   check_true(anderson_disorder(NULL, 4, 1.0, 1) == -1, "NULL eps");

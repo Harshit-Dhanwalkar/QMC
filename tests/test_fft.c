@@ -16,8 +16,8 @@ static void check(int cond, const char *msg) {
 }
 
 static int test_fft_power_of_two_peak(void) {
-  printf("Test: fft() of a pure exp(i*t) tone peaks at bin 1 (power-of-two "
-         "radix-2 path)\n");
+  printf("  === Test: fft() of a pure exp(i*t) tone peaks at bin 1 "
+         "(power-of-two radix-2 path) ===\n");
 
   int N = 16;
   cvector_t *x = cvector_alloc(N);
@@ -48,8 +48,8 @@ static int test_fft_power_of_two_peak(void) {
 }
 
 static void test_naive_dft_matches_reference(void) {
-  printf("Test: fft() on a non-power-of-two length matches an independent "
-         "reference DFT computed directly");
+  printf("  === Test: fft() on a non-power-of-two length matches an "
+         "independent reference DFT computed directly ===\n");
 
   int n = 17; // not a power of two
   cvector_t *x = cvector_alloc(n);
@@ -81,13 +81,13 @@ static void test_naive_dft_matches_reference(void) {
 }
 
 static void test_naive_dft_not_a_noop(void) {
-  printf("Test: fft() on a non-power-of-two length actually changes the "
-         "data");
+  printf("  === Test: fft() on a non-power-of-two length actually changes data "
+         "===\n");
 
   int n = 11;
   cvector_t *x = cvector_alloc(n);
   for (int i = 0; i < n; i++) {
-    x->data[i] = c_new(1.0 + i, 0.0); /* not already its own DFT */
+    x->data[i] = c_new(1.0 + i, 0.0); // not already its own DFT
   }
 
   cvector_t *before = cvector_copy(x);
@@ -111,8 +111,8 @@ static void test_naive_dft_not_a_noop(void) {
 }
 
 static void test_fft_shift_matches_numpy_convention(void) {
-  printf("Test: fft_shift matches numpy.fft.fftshift's roll(x, n/2) "
-         "convention for both even and odd n");
+  printf("  === Test: fft_shift matches numpy.fft.fftshift's roll(x, n/2) "
+         "convention for both even and odd n ===\n");
 
   // Even n=6: fftshift([0,1,2,3,4,5]) = [3,4,5,0,1,2]
   {
@@ -152,7 +152,7 @@ static void test_fft_shift_matches_numpy_convention(void) {
 }
 
 int main(void) {
-  printf(" > Testing FFT...\n\n");
+  printf(" > FFT tests:\n");
 
   int peak_failed = test_fft_power_of_two_peak();
 

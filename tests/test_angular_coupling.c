@@ -53,6 +53,7 @@ static int test_two_spin_half(void) {
 
   fail |= check_close(v->data[1].re, inv_sqrt2, tol, "triplet M=0, |down up>");
   fail |= check_close(v->data[2].re, inv_sqrt2, tol, "triplet M=0, |up down>");
+
   cvector_free(v);
 
   // Singlet M=0: (|up down> - |down up>)/sqrt2
@@ -65,6 +66,7 @@ static int test_two_spin_half(void) {
 
   fail |= check_close(v->data[1].re, -inv_sqrt2, tol, "singlet, |down up>");
   fail |= check_close(v->data[2].re, inv_sqrt2, tol, "singlet, |up down>");
+
   cvector_free(v);
 
   // Triplet M=-1: |down down> = 1
@@ -76,6 +78,7 @@ static int test_two_spin_half(void) {
   }
 
   fail |= check_close(v->data[0].re, 1.0, tol, "triplet M=-1, |down down>");
+
   cvector_free(v);
 
   return fail;
@@ -118,6 +121,7 @@ static int test_l1_s_half(void) {
     for (int i = 0; i < v->n; i++) {
       norm_sq += v->data[i].re * v->data[i].re;
     }
+
     fail |= check_close(norm_sq, 1.0, tol, "normalization");
 
     cvector_free(v);
@@ -136,6 +140,7 @@ static int test_l1_s_half(void) {
   } else {
     fail = 1;
   }
+
   cvector_free(v1);
   cvector_free(v2);
 
@@ -171,8 +176,8 @@ static complex_t triple_harmonic_integral_numeric(spherical_mode_t y1,
       complex_t Ylm_conj = c_conj(spherical_harmonic(y1.l, y1.m, theta, phi));
       complex_t Ykq = spherical_harmonic(y2.l, y2.m, theta, phi);
       complex_t Ylpmp = spherical_harmonic(y3.l, y3.m, theta, phi);
-
       complex_t prod = c_mul(c_mul(Ylm_conj, Ykq), Ylpmp);
+
       sum = c_add(sum, c_scale(prod, sin_theta * dtheta * dphi));
     }
   }
@@ -200,6 +205,7 @@ static int test_gaunt_coefficient(void) {
 
     double c_analytic = gaunt_coefficient(l, m, k, lp, mp);
 
+    // quantum numbers into structs: y1=(l,m), y2=(k,q), y3=(lp,mp)
     spherical_mode_t y1 = {.l = l, .m = m};
     spherical_mode_t y2 = {.l = k, .m = q};
     spherical_mode_t y3 = {.l = lp, .m = mp};

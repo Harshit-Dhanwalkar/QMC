@@ -344,7 +344,7 @@ static void test_stationary_state_probability_invariant(void) {
 }
 
 int main(void) {
-  printf(" > Testing Crank-Nicolson time evolution\n");
+  printf(" > Crank-Nicolson time evolution tests:\n");
 
   test_time_independent_limit();
   test_norm_conserved_no_cap();

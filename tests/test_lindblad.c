@@ -1,25 +1,25 @@
 /*
- * Test + demonstration: Lindblad equation (open quantum systems).
+ * Test: Lindblad equation (open quantum systems)
  *
  * 1. Amplitude damping (T1) of a single excited qubit, H=0: population
  *    \rho11(t) decays as \exp(-\gamma * t) with no unitary drive - exact
  *    closed-form solution of d(\rho11)/dt = -\gamma * \rho11, lindblad_evolve's
- *    RK4 integration.
+ *    RK4 integration
  * 2. Pure dephasing (T2) of a |+> superposition, H=0: coherence \rho01(t)
  *    decays as \rho01(0) * exp(-\gamma * t) while populations stay fixed at 0.5
- *    each (derived analytically from the Lindblad dissipator for L =
+ *    each (derived analytically from Lindblad dissipator for L =
  *    \sqrt(\gamma/2) * \sigma_z)
  * 3. Closed-system cross-check (n_ops=0): density-matrix evolution under
  *    Rabi H must reproduce rabi_excited_probability()'s exact analytic
  *    result - validates -i[H,\rho] commutator term and RK4 integration
- *    independent of dissipative machinery.
+ *    independent of dissipative machinery
  * 4. Trace preservation: Tr(\rho) stays 1 under RK4 evolution for both damping
- *    and dephasing.
+ *    and dephasing
  * 5. Von Neumann entropy of general density matrices via cmatrix_eigh, cross-
  *    checked against closed-form 2x2 formula for pure state and maximally mixed
- *    state.
+ *    state
  * 6. Measurement collapse: deterministic outcome selection from known diagonal
- *    distribution, and collapse to the correct basis projector.
+ *    distribution, and collapse to correct basis projector
  */
 
 #include "../core/complex.h"
@@ -50,8 +50,10 @@ static double density_trace(const cmatrix_t *rho) {
   return tr;
 }
 
-// Test 1: amplitude damping, H=0, exact rho11(t) = \exp(-\gamma * t)
 static int test_amplitude_damping(void) {
+  printf("  === Test: Amplitude damping (T1): \\rho11(t) = \\exp(-\\gamma*t), "
+         "H=0 ===\n");
+
   int n_qubits = 1;
   double gamma = 1.0;
   double dt = 1e-3;
@@ -82,8 +84,10 @@ static int test_amplitude_damping(void) {
   return fail;
 }
 
-// Test 2: pure dephasing, H=0, exact \rho01(t) = \rho01(0) * \exp(-\gamma * t)
 static int test_dephasing(void) {
+  printf("  === Test: Pure dephasing (T2): \\rho01(t) = \\rho01(0) * "
+         "\\exp(-\\gamma*t), H=0 ===\n");
+
   int n_qubits = 1;
   double gamma = 1.0;
   double dt = 1e-3;
@@ -118,9 +122,12 @@ static int test_dephasing(void) {
   return fail;
 }
 
-// Test 3: closed-system (n_ops=0)
 static int test_closed_system_matches_rabi(void) {
-  double Omega = 2.0, Delta = 1.0;
+  printf("  === Test: Closed system (n_ops=0) cross-check vs "
+         "rabi_excited_probability ===\n");
+
+  double Omega = 2.0;
+  double Delta = 1.0;
   double dt = 1e-4;
   int steps = 5000;
   double T = dt * steps;
@@ -149,8 +156,10 @@ static int test_closed_system_matches_rabi(void) {
   return fail;
 }
 
-// Test 4: von Neumann entropy on general (eigensolver-based) density matrices
 static int test_von_neumann_entropy(void) {
+  printf("  === Test: Von Neumann entropy (general eigensolver-based desity "
+         "matrices, cross-check vs qubits.c) ===\n");
+
   int fail = 0;
 
   // Pure state |0>: entropy should be 0
@@ -190,8 +199,10 @@ static int test_von_neumann_entropy(void) {
   return fail;
 }
 
-// Test 5: measurement collapse against known diagonal distribution
 static int test_measurement_collapse(void) {
+  printf("  === Test: Measurement collapse against known diagonal distribution "
+         "(computational basis) ===\n");
+
   int fail = 0;
 
   cmatrix_t *rho = cmatrix_alloc(2, 2);
@@ -229,23 +240,14 @@ static int test_measurement_collapse(void) {
 }
 
 int main(void) {
+  printf(" > Lindblad equation (open quantum systems) tests:\n");
+
   int failed = 0;
 
-  printf("Amplitude damping (T1): \\rho11(t) = \\exp(-\\gamma*t), H=0:\n");
   failed += test_amplitude_damping();
-
-  printf("Pure dephasing (T2): \\rho01(t) = \\rho01(0) * \\exp(-\\gamma*t), "
-         "H=0:\n");
   failed += test_dephasing();
-
-  printf("Closed system (n_ops=0) cross-check vs rabi_excited_probability:\n");
   failed += test_closed_system_matches_rabi();
-
-  printf("Von Neumann entropy (general eigensolver-based, cross-check vs "
-         "qubits.c):\n");
   failed += test_von_neumann_entropy();
-
-  printf("Measurement collapse (computational basis):\n");
   failed += test_measurement_collapse();
 
   if (failed) {

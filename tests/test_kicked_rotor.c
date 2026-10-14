@@ -45,14 +45,15 @@ static double g_theta[NP];
 static double g_p[NP];
 
 int main(void) {
-  printf(" > Kicked rotor\n\n");
+  printf(" > Kicked rotor tests:\n");
+
   cvector_t *psi = cvector_alloc(N);
 
   if (!psi) {
     return 1;
   }
 
-  printf("  === Quantum resonance (\\hbar = 4 \\pi) ===\n");
+  printf("  === Test: Quantum resonance (\\hbar = 4 \\pi) ===\n");
   const double hres = 4.0 * M_PI;
 
   krotor_init(psi);
@@ -72,7 +73,7 @@ int main(void) {
 
   check_true(done == 20, "20 kicks applied");
 
-  printf("  === Unitarity and the free rotor ===\n");
+  printf("  === Test: Unitarity and free rotor ===\n");
   krotor_init(psi);
   krotor_step(psi, 7.0, 1.3, 400);
   check_close(krotor_norm(psi), 1.0, 1e-9, "norm after 400 kicks");
@@ -80,7 +81,7 @@ int main(void) {
   krotor_step(psi, 0.0, 1.0, 50);
   check_close(krotor_momentum2(psi), 0.0, 1e-20, "K = 0 stays in m = 0");
 
-  printf("  === Dynamical localisation (K = 5, \\hbar = 1) ===\n");
+  printf("  === Test: Dynamical localisation (K = 5, \\hbar = 1) ===\n");
   krotor_init(psi);
   const int ns[] = {200, 400, 800};
   double q[3];
@@ -110,7 +111,7 @@ int main(void) {
   check_close(cl / 400.0, 12.5, 1.25, "classical D within 10% of K^2/2");
   check_true(cl > 20.0 * q[1], "classical spread >> quantum at n = 400");
 
-  printf("  === Correspondence at small \\hbar ===\n");
+  printf("  === Test: Correspondence at small \\hbar ===\n");
   const double hb = 0.05;
 
   krotor_init(psi);
@@ -126,13 +127,13 @@ int main(void) {
   printf("  <p^2> quantum %.3f, classical %.3f\n", qp2, cp2);
   check_close(qp2 / cp2, 1.0, 0.15, "quantum / classical <p^2>");
 
-  printf("  === Regular classical motion (K = 0.5) ===\n");
+  printf("  === Test: Regular classical motion (K = 0.5) ===\n");
   krotor_classical_init(g_theta, g_p, NP, 1.0, 3);
   krotor_classical_step(g_theta, g_p, NP, 0.5, 2000);
 
   check_true(sqrt(krotor_classical_p2(g_p, NP)) < 2.0, "rms p bounded");
 
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
   cvector_t *bad = cvector_alloc(100);
 
   check_true(krotor_init(NULL) == -1, "NULL");
@@ -140,7 +141,8 @@ int main(void) {
   check_true(krotor_step(psi, 1.0, 0.0, 1) == -1, "\\hbar = 0");
   check_true(krotor_step(psi, NAN, 1.0, 1) == -1, "NaN K");
   check_true(krotor_step(psi, 1.0, 1.0, 0) == -1, "steps = 0");
-  check_true(krotor_classical_step(NULL, g_p, NP, 1.0, 1) == -1, "NULL \\theta");
+  check_true(krotor_classical_step(NULL, g_p, NP, 1.0, 1) == -1,
+             "NULL \\theta");
   check_true(isnan(krotor_classical_p2(NULL, 3)), "p2 NULL");
 
   cvector_free(bad);

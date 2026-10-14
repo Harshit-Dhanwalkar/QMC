@@ -2,12 +2,12 @@
  * Test: Landau-Zener sweeps (landau_zener.h)
  *
  * 1. Closed form P_LZ = exp(-pi Omega^2 / (2 rate)) against RK4 integration for
- *    nine (\Omega, rate) pairs, starting in lower adiabatic state
+ *    9 (\Omega, rate) pairs, starting in lower adiabatic state
  * 2. Limits: adiabatic (slow) sweep -> 0, sudden (fast) sweep -> 1, no
  *    coupling -> exactly 1, |v| conserved
  * 3. Direction: reversing sweep gives same probability
  * 4. Stueckelberg interference: two passes oscillate between ~0 and 4 P (1 - P)
- *    as sweep amplitude (hence phase) is changed 
+ *    as sweep amplitude (hence phase) is changed
  * 5. Step-by-step lz_advance agrees with one lz_sweep
  * 6. Invalid input
  */
@@ -53,9 +53,9 @@ static double run(double omega, double rate, double amp, int passes) {
 }
 
 int main(void) {
-  printf(" > Landau-Zener sweeps\n\n");
+  printf(" > Landau-Zener sweeps tests:\n");
 
-  printf("  === Closed form vs integration ===\n");
+  printf("  === Test: Closed form vs integration ===\n");
   const double omegas[] = {0.5, 1.0, 1.5};
   const double rates[] = {0.2, 1.0, 3.0};
 
@@ -68,7 +68,7 @@ int main(void) {
       lz_sweep(v, omegas[a], rates[b], amp, 0.01, 1);
       char label[64];
 
-      snprintf(label, sizeof label, "Omega=%.1f rate=%.1f", omegas[a],
+      snprintf(label, sizeof label, "\\Omega=%.1f rate=%.1f", omegas[a],
                rates[b]);
       check_close(lz_upper_population(v, omegas[a], amp),
                   lz_probability(omegas[a], rates[b]), 2e-4, label);
@@ -76,17 +76,15 @@ int main(void) {
     }
   }
 
-  printf("  === Limits ===\n");
-  check_true(run(1.0, 0.02, 30.0, 1) < 1e-6,
-             "adiabatic: stays on lower level");
-  check_true(run(0.1, 20.0, 30.0, 1) > 0.999,
-             "sudden: jumps to upper level");
-  check_close(run(0.0, 1.0, 20.0, 1), 1.0, 1e-9, "Omega = 0: exactly 1");
+  printf("  === Test: Limits ===\n");
+  check_true(run(1.0, 0.02, 30.0, 1) < 1e-6, "adiabatic: stays on lower level");
+  check_true(run(0.1, 20.0, 30.0, 1) > 0.999, "sudden: jumps to upper level");
+  check_close(run(0.0, 1.0, 20.0, 1), 1.0, 1e-9, "\\Omega = 0: exactly 1");
 
-  printf("  === Sweep direction ===\n");
+  printf("  === Test: Sweep direction ===\n");
   double up = run(1.0, 1.0, 40.0, 1);
-  /* lz_sweep always ramps up first; reverse experiment is run with
-   * lz_advance and a negative rate */
+  // lz_sweep always ramps up first; reverse experiment is run with lz_advance
+  // and a negative rate
   double v2[3];
 
   lz_lower_state(v2, 1.0, -40.0);
@@ -100,7 +98,7 @@ int main(void) {
   check_close(p_forward, up, 1e-9, "forward matches lz_sweep");
   check_close(p_backward, p_forward, 2e-4, "backward = forward");
 
-  printf("  === Stueckelberg interference (two passes) ===\n");
+  printf("  === Test: Stueckelberg interference (two passes) ===\n");
   double pl = lz_probability(1.0, 1.0);
   double hi = 0.0;
   double lo = 1.0;
@@ -117,7 +115,7 @@ int main(void) {
   check_close(hi, 4.0 * pl * (1.0 - pl), 5e-3, "reaches envelope");
   check_true(lo < 2e-3, "reaches zero (destructive)");
 
-  printf("  === Stepwise advance equals one sweep ===\n");
+  printf("  === Test: Stepwise advance equals one sweep ===\n");
   double a1[3];
   double a2[3];
 
@@ -133,7 +131,7 @@ int main(void) {
   check_close(a1[0], a2[0], 1e-6, "x");
   check_close(a1[2], a2[2], 1e-6, "z");
 
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
   double bad[3] = {2.0, 0.0, 0.0};
 
   check_true(lz_sweep(NULL, 1.0, 1.0, 5.0, 0.01, 1) == -1, "NULL v");

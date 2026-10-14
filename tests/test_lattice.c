@@ -53,6 +53,7 @@ static void check_true(int cond, const char *label) {
 static double *diagonalize_sorted(const cmatrix_t *H, int n) {
   cmatrix_t *copy = cmatrix_copy(H);
   eigen_t *eig = cmatrix_eigh_complex(copy);
+
   cmatrix_free(copy);
 
   double *E = malloc((size_t)n * sizeof *E);
@@ -66,7 +67,7 @@ static double *diagonalize_sorted(const cmatrix_t *H, int n) {
 }
 
 static void test_1d_chain_vs_analytic(void) {
-  printf("  == Test 1D chain vs analytic ===\n");
+  printf("  === Test: 1D chain vs analytic ===\n");
 
   int n_sites = 10;
   double eps0 = 0.5, t = 1.2;
@@ -92,7 +93,7 @@ static void test_1d_chain_vs_analytic(void) {
 }
 
 static void test_2d_square_vs_analytic(void) {
-  printf("  === Test 2D square vs analytic ===\n");
+  printf("  === Test: 2D square vs analytic ===\n");
 
   int nx = 4, ny = 5;
   double eps0 = 0.3, t = 1.1;
@@ -127,7 +128,7 @@ static void test_2d_square_vs_analytic(void) {
 }
 
 static void test_ipr_deterministic(void) {
-  printf("  === Test IPR deterministic ===\n");
+  printf("  === Test: IPR deterministic ===\n");
 
   int n = 8;
   cvector_t *delta = cvector_alloc(n);
@@ -138,21 +139,24 @@ static void test_ipr_deterministic(void) {
   delta->data[3] = c_real(1.0);
   check_close(lattice_ipr(delta), 1.0, 1e-12,
               "delta function: IPR = 1 (maximally localized)");
+
   cvector_free(delta);
 
   cvector_t *uniform = cvector_alloc(n);
   for (int i = 0; i < n; i++) {
     uniform->data[i] = c_real(1.0); // lattice_ipr normalizes internally
   }
+
   check_close(lattice_ipr(uniform), 1.0 / n, 1e-12,
               "uniform superposition: IPR = 1/n (maximally delocalized)");
+
   cvector_free(uniform);
 
   check_close(lattice_ipr(NULL), 0.0, 0.0, "NULL psi returns 0.0 guard");
 }
 
 static void test_anderson_clean_limit(void) {
-  printf(" === Test anderson clean limit ===\n");
+  printf(" === Test: anderson clean limit ===\n");
 
   int n_sites = 12;
   double t = 1.0;
@@ -181,7 +185,7 @@ static void test_anderson_clean_limit(void) {
 }
 
 static void test_anderson_localization_trend(void) {
-  printf("  === Test_anderson_localization_trend ===\n");
+  printf("  === Test: Anderson localization trend ===\n");
 
   int n_sites = 60;
   double t = 1.0;
@@ -198,6 +202,7 @@ static void test_anderson_localization_trend(void) {
                                                1000ULL + (uint64_t)real);
       cmatrix_t *copy = cmatrix_copy(H);
       eigen_t *eig = cmatrix_eigh_complex(copy);
+
       cmatrix_free(copy);
 
       // Using ground state (lowest-energy eigenvector) as localization
@@ -206,6 +211,7 @@ static void test_anderson_localization_trend(void) {
       for (int i = 0; i < n_sites; i++) {
         psi->data[i] = CMAT(eig->eigenvectors, i, 0);
       }
+
       sum_ipr += lattice_ipr(psi);
 
       cvector_free(psi);
@@ -221,13 +227,14 @@ static void test_anderson_localization_trend(void) {
   printf("  strong disorder (W=%.1f): avg. ground-state IPR = %.5f\n",
          W_values[1], avg_ipr[1]);
 
-  check_true(avg_ipr[1] > avg_ipr[0],
-             "strong disorder localizes the ground state more than weak "
-             "disorder (Anderson localization)");
+  check_true(
+      avg_ipr[1] > avg_ipr[0],
+      "strong disorder localizes the ground state more than weak disorder "
+      "(Anderson localization)");
 }
 
 static void test_ssh_topological_edge_states(void) {
-  printf("  === Test SSH topological edge states ===\n");
+  printf("  === Test: SSH topological edge states ===\n");
 
   int n_cells = 15; // 30 sites
   int N = 2 * n_cells;
@@ -298,7 +305,7 @@ static void test_ssh_topological_edge_states(void) {
 }
 
 static void test_landau_zero_field_matches_plain_square(void) {
-  printf("  === Test Landau zero field matches plain square ===\n");
+  printf("  === Test: Landau zero field matches plain square ===\n");
 
   int nx = 6;
   int ny = 6;
@@ -328,6 +335,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
       }
     }
   }
+
   check_close(max_entry_err, 0.0, 1e-12,
               "\\alpha=0 magnetic-lattice matrix == plain square-lattice "
               "matrix, entrywise");
@@ -344,6 +352,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
       max_eig_err = err;
     }
   }
+
   check_close(max_eig_err, 0.0, 1e-8,
               "\\alpha=0 eigenvalues match plain-square analytic dispersion");
 
@@ -354,7 +363,7 @@ static void test_landau_zero_field_matches_plain_square(void) {
 }
 
 static void test_landau_hermiticity(void) {
-  printf("  === Test landau hermiticity ===\n");
+  printf("  === Test: landau hermiticity ===\n");
 
   int nx = 10, ny = 10, N = nx * ny;
   cmatrix_t *H = lattice_build_2d_square_magnetic(nx, ny, 0.0, 1.0, 0.037,
@@ -371,13 +380,14 @@ static void test_landau_hermiticity(void) {
       }
     }
   }
-  check_close(max_err, 0.0, 1e-12, "H == H^dagger entrywise (alpha != 0)");
+
+  check_close(max_err, 0.0, 1e-12, "H == H^\\dagger entrywise (\\alpha != 0)");
 
   cmatrix_free(H);
 }
 
 static void test_landau_continuum_limit(void) {
-  printf("  === Test Landau continuum limit ===\n");
+  printf("  === Test: Landau continuum limit ===\n");
 
   // NOTE: Weak-field limit: ground Landau level should sit close to
   // continuum-limit prediction on a lattice much larger than magnetic length ~
@@ -403,6 +413,8 @@ static void test_landau_continuum_limit(void) {
 }
 
 int main(void) {
+  printf(" > Tight-binding lattice models tests:\n");
+
   test_1d_chain_vs_analytic();
   test_2d_square_vs_analytic();
   test_ipr_deterministic();

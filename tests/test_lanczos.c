@@ -47,7 +47,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_diagonal_matrix(void) {
-  printf("  === Test Diagonal matrix ===\n");
+  printf("  === Test: Diagonal matrix ===\n");
 
   int n = 8;
   const double diag_vals[8] = {5.0, 1.0, 8.0, 0.5, 3.0, 9.0, 2.0, 6.0};
@@ -108,7 +108,7 @@ static cmatrix_t *random_hermitian(int n, uint64_t seed) {
 }
 
 static void test_random_hermitian_vs_dense(void) {
-  printf("  === Test Random Hermitian vs Dense ===\n");
+  printf("  === Test: Random Hermitian vs Dense ===\n");
 
   int n = 12;
   cmatrix_t *dense = random_hermitian(n, 20260802ULL);
@@ -198,7 +198,7 @@ static void test_random_hermitian_vs_dense(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("  === Test Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
 
   cmatrix_t *dense = cmatrix_alloc(3, 3);
   for (int i = 0; i < 3; i++) {
@@ -224,7 +224,7 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
-  printf(" > Testing Lanczos iteration:\n");
+  printf(" > Lanczos iteration tests:\n");
 
   test_diagonal_matrix();
   test_random_hermitian_vs_dense();

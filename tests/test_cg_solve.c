@@ -43,7 +43,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_discrete_laplacian(void) {
-  printf("  === Test discrete laplacian ===\n");
+  printf("  === Test: Discrete laplacian ===\n");
 
   int n = 10;
   cmatrix_t *dense = cmatrix_alloc(n, n);
@@ -95,7 +95,7 @@ static void test_discrete_laplacian(void) {
 }
 
 static void test_random_hermitian_pd_vs_lu(void) {
-  printf("  === Test Random hermitian PD vs LU ===\n");
+  printf("  === Test: Random hermitian PD vs LU ===\n");
 
   int n = 12;
   rng_state_t rng;
@@ -171,7 +171,7 @@ static void test_random_hermitian_pd_vs_lu(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("  === Test invalid input ===\n");
+  printf("  === Test: invalid input ===\n");
 
   cmatrix_t *dense = cmatrix_alloc(3, 3);
   for (int i = 0; i < 3; i++) {

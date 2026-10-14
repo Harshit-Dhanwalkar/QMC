@@ -256,7 +256,7 @@ static double klein_run(double v0, double *norm_out) {
 }
 
 static void test_klein_step(void) {
-  printf("  === Klein step (E = 2 m c^2, k0 = sqrt 3) ===\n");
+  printf("  === Klein step (E = 2 m c^2, k0 = \\sqrt{3}) ===\n");
 
   const double e0 = 2.0;
   const double heights[] = {0.0, 0.5, 4.0, 6.0, 10.0};
@@ -283,7 +283,7 @@ static void test_klein_step(void) {
 }
 
 int main(void) {
-  printf(" > Dirac time evolution tests\n");
+  printf(" > Dirac time evolution tests:\n");
 
   test_invalid();
   test_free_motion();

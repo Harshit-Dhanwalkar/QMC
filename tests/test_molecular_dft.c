@@ -1,22 +1,22 @@
 /*
- * Test: molecular (multi-atom) Kohn-Sham LDA DFT via Becke fuzzy-cell grids.
+ * Test: molecular (multi-atom) Kohn-Sham LDA DFT via Becke fuzzy-cell grids
  *
  *   1. Overlap-matrix reproduction: integrate S numerically on Becke grid
  *      (\sum_g weight_g * \phi_p(r_g) * \phi_q(r_g)) and compare against exact
- *      analytic overlap matrix from molecular_integrals.c. This isolates the
- *      grid construction (Becke weights, radial/angular quadrature) from SCF
- *      machinery entirely.
+ *      analytic overlap matrix from molecular_integrals.c. This isolates grid
+ *      construction (Becke weights, radial/angular quadrature) from SCF
+ *      machinery entirely
  *   2. Electron-count integration: sum_g weight_g * n(r_g) at a known density
- *      matrix must equal the exact electron count.
+ *      matrix must equal exact electron count
  *   3. End-to-end total energy on H2/STO-3G and LiH/STO-3G, cross-validated
  *      (Reference: Perdew-Zunger 1981 correlation), lda_xc_energy_density /
  *      lda_xc_potential in dft.c):
- *      H2/STO-3G @ R=1.4 bohr   : -1.12132825509958  Hartree
- *      LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree
+ *      - H2/STO-3G @ R=1.4 bohr   : -1.12132825509958  Hartree
+ *      - LiH/STO-3G @ R=3.015 bohr: -7.79120636378942 Hartree
  *   4. Same end-to-end total-energy cross-validation for PBE GGA functional,
  *      dft.RKS(xc='pbe') (grids.level=6):
- *      H2/STO-3G @ R=1.4 bohr   :  -1.1520643731282254 Hartree
- *      LiH/STO-3G @ R=3.015 bohr: -7.9206827623358045 Hartree
+ *      - H2/STO-3G @ R=1.4 bohr   :  -1.1520643731282254 Hartree
+ *      - LiH/STO-3G @ R=3.015 bohr: -7.9206827623358045 Hartree
  */
 
 #include "../core/matrix.h"
@@ -50,8 +50,8 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_grid_reproduces_overlap_matrix(void) {
-  printf("Test: Becke grid numerically reproduces the exact analytic "
-         "overlap matrix (H2/STO-3G)\n");
+  printf("  === Test: Becke grid numerically reproduces exact analytic overlap "
+         "matrix (H2/STO-3G) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0};
@@ -102,8 +102,8 @@ static void test_grid_reproduces_overlap_matrix(void) {
 }
 
 static void test_grid_integrates_electron_count(void) {
-  printf("Test: Becke grid correctly integrates a known density to the exact "
-         "electron count (LiH/STO-3G, RHF density matrix)\n");
+  printf("  === Test: Becke grid correctly integrates a known density to exact "
+         "electron count (LiH/STO-3G, RHF density matrix) ===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -122,7 +122,7 @@ static void test_grid_integrates_electron_count(void) {
   double tol = RUNNING_ON_VALGRIND ? 1e-5 : 1e-10;
   molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, tol, max_iter);
   check(hf != NULL && hf->converged,
-        "RHF should converge for the density matrix construction");
+        "RHF should converge for density matrix construction");
 
   int n_radial = RUNNING_ON_VALGRIND ? 20 : 60;
   int n_polar = RUNNING_ON_VALGRIND ? 10 : 20;
@@ -132,7 +132,7 @@ static void test_grid_integrates_electron_count(void) {
   check(grid != NULL, "grid should build successfully");
 
   if (hf && grid) {
-    // Build the RHF density matrix from occupied MOs
+    // Build RHF density matrix from occupied MOs
     double D[6][6];
 
     for (int p = 0; p < 6; p++) {
@@ -184,8 +184,8 @@ static void test_grid_integrates_electron_count(void) {
 }
 
 static void test_h2_ks_lda_matches_reference(void) {
-  printf("Test: H2/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
-         "reference (-1.12132825509958 Hartree)\n");
+  printf("  === Test: H2/STO-3G KS-LDA total energy matches "
+         "dft.RKS(xc='lda,pz') reference (-1.12132825509958 Hartree) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0};
@@ -221,9 +221,9 @@ static void test_h2_ks_lda_matches_reference(void) {
 }
 
 static void test_lih_ks_lda_matches_reference(void) {
-  printf("Test: LiH/STO-3G KS-LDA total energy matches dft.RKS(xc='lda,pz') "
-         "reference (-7.79120636378942 Hartree), "
-         "requires density-mixing convergence\n");
+  printf("  === Test: LiH/STO-3G KS-LDA total energy matches "
+         "dft.RKS(xc='lda,pz') reference (-7.79120636378942 Hartree), requires "
+         "density-mixing convergence ===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -254,7 +254,7 @@ static void test_lih_ks_lda_matches_reference(void) {
 
       check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
                   dft->total_energy, 1e-4,
-                  "reported energy components sum to the total energy");
+                  "reported energy components sum to total energy");
 
       molecular_dft_result_free(dft);
     }
@@ -269,8 +269,8 @@ static void test_lih_ks_lda_matches_reference(void) {
 }
 
 static void test_h2_ks_pbe_matches_reference(void) {
-  printf("Test: H2/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
-         "reference (-1.1520643731282254 Hartree)\n");
+  printf("  === Test: H2/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
+         "reference (-1.1520643731282254 Hartree) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0};
@@ -306,9 +306,9 @@ static void test_h2_ks_pbe_matches_reference(void) {
 }
 
 static void test_lih_ks_pbe_matches_reference(void) {
-  printf("Test: LiH/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
+  printf("  === Test: LiH/STO-3G KS-PBE total energy matches dft.RKS(xc='pbe') "
          "reference (-7.9206827623358045 Hartree), requires density-mixing "
-         "convergence\n");
+         "convergence ===\n");
 
   double R = 3.015;
   basis_function_t *li_orbs[5];
@@ -340,7 +340,7 @@ static void test_lih_ks_pbe_matches_reference(void) {
 
       check_close(dft->e_core + dft->e_coulomb + dft->e_xc + dft->e_nuclear,
                   dft->total_energy, 1e-4,
-                  "reported energy components sum to the total energy");
+                  "reported energy components sum to total energy");
 
       molecular_dft_result_free(dft);
     }
@@ -355,7 +355,7 @@ static void test_lih_ks_pbe_matches_reference(void) {
 }
 
 static void test_pbe_invalid_inputs_rejected(void) {
-  printf("Test: molecular_ks_pbe rejects invalid inputs cleanly\n");
+  printf("  === Test: molecular_ks_pbe rejects invalid inputs cleanly ===\n");
 
   double c0[3] = {0, 0, 0};
   const double charges[1] = {1.0};
@@ -380,7 +380,8 @@ static void test_pbe_invalid_inputs_rejected(void) {
 }
 
 static void test_invalid_inputs_rejected(void) {
-  printf("Test: invalid inputs are rejected cleanly (NULL, not crashes)\n");
+  printf("  === Test: invalid inputs are rejected cleanly (NULL, not crashes) "
+         "===\n");
 
   check(molecular_grid_build(NULL, 10, 10, 10, 1.0) == NULL,
         "NULL molecule should be rejected");

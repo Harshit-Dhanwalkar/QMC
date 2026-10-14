@@ -61,8 +61,8 @@ static int binomial(int n, int k) {
 }
 
 static void test_h2_cisd_equals_fci(void) {
-  printf("Test: H2/STO-3G CISD exactly equals FCI (2 electrons -> every "
-         "excitation is at most double)\n");
+  printf("  === Test: H2/STO-3G CISD exactly equals FCI (2 electrons -> every "
+         "excitation is at most double) ===\n");
 
   double R = 1.4;
   double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
@@ -156,8 +156,8 @@ static void test_lih_setup(basis_function_t **basis_out, molecule_t **mol_out,
 }
 
 static void test_lih_frozen_core_cisd_equals_frozen_core_fci(void) {
-  printf("Test: LiH/STO-3G frozen-core CISD (2 active electrons) exactly "
-         "equals frozen-core FCI\n");
+  printf("  === Test: LiH/STO-3G frozen-core CISD (2 active electrons) exactly "
+         "equals frozen-core FCI ===\n");
 
   basis_function_t *basis[6];
   molecule_t *mol;
@@ -199,8 +199,9 @@ static void test_lih_frozen_core_cisd_equals_frozen_core_fci(void) {
 }
 
 static void test_lih_all_electron_cisd_variational_ordering(void) {
-  printf("Test: LiH/STO-3G all-electron (4-electron) CISD matches reference "
-         "and lies strictly between RHF and FCI\n");
+  printf(
+      " === Test: LiH/STO-3G all-electron (4-electron) CISD matches reference "
+      "and lies strictly between RHF and FCI ===\n");
 
   basis_function_t *basis[6];
   molecule_t *mol;
@@ -250,7 +251,7 @@ static void test_lih_all_electron_cisd_variational_ordering(void) {
 }
 
 static void test_invalid_inputs_rejected(void) {
-  printf("Test: invalid inputs are rejected cleanly\n");
+  printf("  === Test: invalid inputs are rejected cleanly ===\n");
 
   const double h_mo[4] = {0};
   const double eri_mo[16] = {0};

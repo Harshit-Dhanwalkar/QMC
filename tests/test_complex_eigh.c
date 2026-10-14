@@ -37,7 +37,7 @@ static void check_close(double got, double expected, double tol,
 }
 
 static void test_sigma_y(void) {
-  printf("  === Test: Pauli sigma_y (known eigenvalues +-1) ===\n");
+  printf("  === Test: Pauli \\sigma_y (known eigenvalues +-1) ===\n");
 
   cmatrix_t *H = cmatrix_alloc(2, 2);
   for (int i = 0; i < 2; i++) {
@@ -48,6 +48,7 @@ static void test_sigma_y(void) {
 
   eigen_t *eig = cmatrix_eigh_complex(H);
   cmatrix_free(H);
+
   if (!eig) {
     check(0, "cmatrix_eigh_complex returned NULL");
     return;
@@ -60,9 +61,9 @@ static void test_sigma_y(void) {
     check_close(eig->eigenvalues[k], expected[k], 1e-8, label);
   }
 
-  // Eigenvector check up to phase: |v . conj(v_expected)| should be ~1.
+  // Eigenvector check up to phase: |v . conj(v_expected)| should be ~1
   // v_expected for \lambda=-1 is (1,-i)/\sqrt(2), for \lambda=+1 is (1,i) /
-  // \sqrt(2)
+  // \sqrt{2}
   double inv_sqrt2 = 1.0 / sqrt(2.0);
   complex_t v_exp[2][2] = {{c_real(inv_sqrt2), c_imag(-inv_sqrt2)},
                            {c_real(inv_sqrt2), c_imag(inv_sqrt2)}};
@@ -166,8 +167,8 @@ static void test_random_hermitian(void) {
   cmatrix_free(H);
 }
 
-/* An 8-fold degenerate eigenvalue (+1) and a 2-fold one (-1) in a random
- * unitary basis */
+// An 8-fold degenerate eigenvalue (+1) and a 2-fold one (-1) in a random
+// unitary basis
 static void test_large_degeneracy(void) {
   printf("  === Test: 8-fold degenerate 10x10 Hermitian (residual + "
          "orthonormality) ===\n");
@@ -183,8 +184,8 @@ static void test_large_degeneracy(void) {
     CMAT(D, i, i) = c_real(eigvals_true[i]);
   }
 
-  // NOTE: Random unitary-ish basis change via Gram-Schmidt on a random
-  // complex matrix, to avoid testing only the trivial already-diagonal case
+  // NOTE: Random unitary-ish basis change via Gram-Schmidt on a random complex
+  // matrix, to avoid testing only the trivial already-diagonal case
   cmatrix_t *Q = cmatrix_alloc(n, n);
   unsigned int seed = 42;
 

@@ -1,8 +1,8 @@
 /*
- * Gaussian-elimination determinant, Ryser's formula permanent
+ * Test: Gaussian-elimination determinant, Ryser's formula permanent
  *
  * 1. Random complex NxN matrices, N=2..6: determinant/permanent must
- *    match reference to numerical precision.
+ *    match reference to numerical precision
  */
 
 #include "../core/complex.h"
@@ -154,8 +154,8 @@ static int test_diagonal_case(void) {
   complex_t perm = bosonic_permanent_value(orbitals, N, indices);
   free_orbitals(orbitals, N);
 
-  // Diagonal entries are 2,3,4,5 -> product = 120. Both det and perm of
-  // diagonal matrix equal product of diagonal.
+  // Diagonal entries are 2,3,4,5 -> product = 120
+  // Both det and perm of diagonal matrix equal product of diagonal
   double product = 2.0 * 3.0 * 4.0 * 5.0;
   double inv_sqrt_nfact = 1.0 / sqrt(factorial_local(N));
   complex_t expected = c_real(product * inv_sqrt_nfact);
@@ -167,6 +167,9 @@ static int test_diagonal_case(void) {
 }
 
 int main(void) {
+  printf(
+      " > Gaussian-elimination determinant, Ryser's formula permanent tests\n");
+
   int failed = 0;
 
   printf("Random matrices vs. O(N!) reference implementation:\n");

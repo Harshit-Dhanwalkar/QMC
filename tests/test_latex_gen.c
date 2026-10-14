@@ -1,16 +1,16 @@
 /*
- * Test: latex/latex_gen.c.
+ * Test: LaTeX Generation
  *
  *  1. Pure string-generation functions (latex_inline_math, latex_display_math,
  *     latex_matrix, and generate-article/table and write-figure file writers)
  *     need no external LaTeX toolchain and always run
  *  2. Functions that actually invoke pdflatex/pdftoppm
  *     (latex_render_to_png/pdf, latex_compile) only run if
- *     latex_tools_available() reports tools are present : this project
- *     builds and runs its full test suite fine on systems with no LaTeX
- *     distribution installed (latex_gen.c has no LaTeX-time dependency, only a
- *     run-time one), so unconditionally requiring pdflatex here would make test
- *     suite non-portable for no reason
+ *     latex_tools_available() reports tools are present: this project builds
+ *     and runs its full test suite fine on systems with no LaTeX distribution
+ *     installed (latex_gen.c has no LaTeX-time dependency, only a run-time
+ *     one), so unconditionally requiring pdflatex here would make test suite
+ *     non-portable for no reason
  */
 
 #include "../latex/latex_gen.h"
@@ -44,7 +44,7 @@ static long file_size(const char *path) {
 }
 
 static void test_inline_display_math(void) {
-  printf("   === Test latex_inline_math / latex_display_math ===\n");
+  printf("   === Test: latex_inline_math / latex_display_math ===\n");
 
   char *inline_res = latex_inline_math("x^2+1");
   check(inline_res != NULL, "latex_inline_math allocates a result");
@@ -140,8 +140,8 @@ static void test_generate_table(void) {
 }
 
 static void test_generate_article(void) {
-  printf(
-      "  === Test latex_generate_article writes a well-formed .tex file ===\n");
+  printf("  === Test: latex_generate_article writes a well-formed .tex file "
+         "===\n");
 
   const char *sections[] = {"\\section{Intro}\nHello.", NULL};
   const char *path = "/tmp/qmc_test_article.tex";
@@ -167,7 +167,7 @@ static void test_generate_article(void) {
 }
 
 static void test_escaping(void) {
-  printf("  === Test latex_escape_text / latex_write_escaped_text / "
+  printf("  === Test: latex_escape_text / latex_write_escaped_text / "
          "latex_validate_label ===\n");
 
   char *e = latex_escape_text("100% & $5 for #1_thing {x} ~y ^z \\slash");
@@ -231,7 +231,7 @@ static void test_escaping(void) {
 }
 
 static void test_string_builder(void) {
-  printf("  === Test latex_string_t dynamic string builder ===\n");
+  printf("  === Test: latex_string_t dynamic string builder ===\n");
 
   latex_string_t s;
   latex_string_init(&s);
@@ -287,8 +287,8 @@ static void test_string_builder(void) {
 }
 
 static void test_matrix_type_validation(void) {
-  printf(
-      "  === Test latex_matrix rejects an unrecognized environment name ===\n");
+  printf("  === Test: latex_matrix rejects an unrecognized environment name "
+         "===\n");
 
   const char *row0[1] = {"1"};
   const char *const *data[1] = {row0};
@@ -304,7 +304,7 @@ static void test_matrix_type_validation(void) {
 }
 
 static void test_render_options(void) {
-  printf("  === Test latex_render_options_t / latex_render_to_png_ex / "
+  printf("  === Test: latex_render_options_t / latex_render_to_png_ex / "
          "latex_render_to_pdf_ex ===\n");
 
   latex_render_options_t opts = latex_render_options_default();
@@ -373,7 +373,7 @@ static void test_render_options(void) {
 }
 
 static void test_table_builder(void) {
-  printf("  === Test latex_table_t builder (classic and booktabs) ===\n");
+  printf("  === Test: latex_table_t builder (classic and booktabs) ===\n");
 
   latex_table_t *t = latex_table_create(2, 3);
   check(t != NULL, "latex_table_create succeeds");
@@ -473,7 +473,7 @@ static void test_table_builder(void) {
 }
 
 static void test_document_builder(void) {
-  printf("  === Test latex_document_t builder ===\n");
+  printf("  === Test: latex_document_t builder ===\n");
 
   latex_document_t *doc = latex_document_create("Results & Discussion");
   check(doc != NULL, "latex_document_create succeeds");
@@ -603,7 +603,7 @@ static void test_document_builder(void) {
 }
 
 static void test_document_compiles_for_real(void) {
-  printf("  === Test a document assembled with the new builders actually "
+  printf("  === Test: a document assembled with the new builders actually "
          "compiles with pdflatex ===\n");
 
   if (!latex_tools_available()) {
@@ -647,8 +647,9 @@ static void test_document_compiles_for_real(void) {
 }
 
 static void test_write_figure(void) {
-  printf("  === Test Function latex_write_figure writes a well-formed .tex "
-         "file, even with NULL optional fields\n");
+  printf(
+      "  === Test: Function latex_write_figure writes a well-formed .tex file, "
+      "even with NULL optional fields\n");
 
   const char *path = "/tmp/qmc_test_figure.tex";
   int rc = latex_write_figure(path, "plot.pdf", "A caption", "E = mc^2");
@@ -670,8 +671,8 @@ static void test_write_figure(void) {
 }
 
 static void test_unsafe_paths_rejected(void) {
-  printf(
-      "  === Test Shell-metacharacter-containing arguments are rejected ===\n");
+  printf("  === Test: Shell-metacharacter-containing arguments are rejected "
+         "===\n");
 
   if (!latex_tools_available()) {
     printf("  (skipped: pdflatex/pdftoppm not available in this environment");
@@ -687,8 +688,8 @@ static void test_unsafe_paths_rejected(void) {
 }
 
 static void test_actual_rendering(void) {
-  printf("Test: latex_render_to_pdf / latex_compile actually invoke "
-         "pdflatex and produce real output\n");
+  printf("  === Test: latex_render_to_pdf / latex_compile actually invoke "
+         "pdflatex and produce real output ===\n");
 
   if (!latex_tools_available()) {
     printf(
@@ -731,7 +732,7 @@ static void test_actual_rendering(void) {
 }
 
 int main(void) {
-  printf(" > Testing LaTeX Generation:\n");
+  printf(" > LaTeX Generation tests:\n");
 
   test_inline_display_math();
   test_matrix_generation();

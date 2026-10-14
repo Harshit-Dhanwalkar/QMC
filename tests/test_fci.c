@@ -249,6 +249,8 @@ static void test_invalid_inputs_rejected(void) {
 }
 
 int main(void) {
+  printf(" > Full Configuration Interaction (FCI) tests:\n");
+
   test_h2_fci_matches_reference();
   test_lih_fci_matches_reference_and_full_fock_space();
   test_lih_frozen_core_fci();

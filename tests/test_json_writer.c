@@ -1,5 +1,5 @@
 /*
- * Test: JSON metadata writer (export/json_writer.c)
+ * Test: JSON metadata writer
  *
  * 1. Exact-output checks for each field type (string, int, double, double
  *    array), including string-escaping edge cases and NaN/Inf -> null
@@ -55,7 +55,7 @@ static char *slurp(const char *path) {
 }
 
 static void test_field_types_and_escaping(void) {
-  printf("  === Test field_types_and_escaping ===\n");
+  printf("  === Test: field_types_and_escaping ===\n");
 
   const double energies[3] = {-2.9037, 0.0, 1.5};
 
@@ -105,7 +105,7 @@ static void test_field_types_and_escaping(void) {
 }
 
 static void test_empty_and_invalid_input(void) {
-  printf("  === Test empty_and_invalid_input ===\n");
+  printf("  === Test: empty_and_invalid_input ===\n");
 
   int rc = json_write_metadata("test_json_writer_empty.json", NULL, 0);
   check_true(rc == 0, "0 fields still succeeds");
@@ -132,7 +132,7 @@ static void test_empty_and_invalid_input(void) {
 }
 
 static void test_nested_objects(void) {
-  printf("  === Test nested_objects ===\n");
+  printf("  === Test: nested_objects ===\n");
 
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR,
@@ -181,7 +181,7 @@ static void test_nested_objects(void) {
 }
 
 static void test_arrays_of_objects(void) {
-  printf("  === Test arrays_of_objects ===\n");
+  printf("  === Test: arrays_of_objects ===\n");
 
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR,
@@ -236,7 +236,7 @@ static void test_arrays_of_objects(void) {
 }
 
 static void test_string_array(void) {
-  printf("  === Test string_array ===\n");
+  printf("  === Test: string_array ===\n");
 
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR,
@@ -259,7 +259,7 @@ static void test_string_array(void) {
 }
 
 static void test_quantity(void) {
-  printf("  === Test quantity (value/unit/description) ===\n");
+  printf("  === Test: quantity (value/unit/description) ===\n");
 
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR,
@@ -294,7 +294,7 @@ static void test_quantity(void) {
 }
 
 static void test_nonfinite_policy(void) {
-  printf("  === Test nonfinite_policy ===\n");
+  printf("  === Test: nonfinite_policy ===\n");
 
   // Default (JSON_NONFINITE_NULL): unchanged historical behavior
   {
@@ -350,7 +350,7 @@ static void test_nonfinite_policy(void) {
 }
 
 static void test_schema_header_and_columns(void) {
-  printf("  === Test schema header + column descriptors ===\n");
+  printf("  === Test: schema header + column descriptors ===\n");
 
   (void)mkdir(QMC_OUTPUT_DIR, 0755);
   const char *path = QMC_OUTPUT_DIR "/test_json_schema.json";

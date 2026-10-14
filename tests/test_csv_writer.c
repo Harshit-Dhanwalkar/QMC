@@ -411,12 +411,13 @@ static void test_bit_exact_round_trip(void) {
   }
 
   fclose(f);
-  check_true(all_match,
-             "every value (incl. -0.0, subnormal, DBL_MAX) reads back "
-             "bit-for-bit identical");
+  check_true(all_match, "every value (incl. -0.0, subnormal, DBL_MAX) reads "
+                        "back bit-for-bit identical");
 }
 
 int main(void) {
+  printf(" > CSV Writer tests:\n");
+
   (void)mkdir(QMC_OUTPUT_DIR, 0755);
 
   test_streaming_basic();
@@ -428,7 +429,6 @@ int main(void) {
   test_legacy_write_1d_and_matrix();
   test_column_descriptors_and_table();
   test_bit_exact_round_trip();
-
 
   if (failures == 0) {
     printf("\nAll test_csv_writer checks passed.\n");

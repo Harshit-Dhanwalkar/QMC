@@ -1,11 +1,11 @@
 /*
  * Test: closed-shell Kohn-Sham LDA DFT (Slater exchange + PZ81 correlation) for
- * s-orbitals-only atoms/ions.
+ * s-orbitals-only atoms/ions
  *
  * Same grid-resolution as test_hartree_fock.c:
  * finite-difference/dense-diagonalization solve on a finite radial grid, not a
  * converged calculation, so tolerances are meaningful but grid-tolerant, not
- * tight to several decimal places.
+ * tight to several decimal places
  *
  * Cross-checked against References: RHF limit, Szabo & Ostlund, Pekeris (1959),
  * Hartree and arXiv:2202.00647, Table II
@@ -52,9 +52,8 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-/* Both V_x and V_c_pz81 must equal thermodynamic relation:
- * V_xc = d(n * eps_xc) / dn, checked via central finite difference
- */
+// Both V_x and V_c_pz81 must equal thermodynamic relation:
+// V_xc = d(n * eps_xc) / dn, checked via central finite difference
 static void test_xc_potential_matches_finite_difference(void) {
   printf("test_xc_potential_matches_finite_difference:\n");
 
@@ -98,7 +97,7 @@ static void test_xc_sign_and_limits(void) {
 }
 
 static void test_helium_ks_lda(void) {
-  printf("test_helium_ks_lda:\n");
+  printf("  === Test Helium KS LDA ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 40 : 160;
   double r_min = 1e-4;
@@ -148,7 +147,7 @@ static void test_helium_ks_lda(void) {
 }
 
 static void test_invalid_input_rejected(void) {
-  printf("test_invalid_input_rejected:\n");
+  printf("  === Test: Invalid input rejected ===\n");
 
   double r[20];
   for (int i = 0; i < 20; i++) {
@@ -168,6 +167,8 @@ static void test_invalid_input_rejected(void) {
 }
 
 int main(void) {
+  printf(" > DFT tests:\n");
+
   test_xc_potential_matches_finite_difference();
   test_xc_sign_and_limits();
   test_invalid_input_rejected();
