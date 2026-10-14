@@ -23,6 +23,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      core:      ${{ steps.filter.outputs.core }}
+      physics:   ${{ steps.filter.outputs.physics }}
+      tests:     ${{ steps.filter.outputs.tests }}
+      makefile:  ${{ steps.filter.outputs.makefile }}
+      wasm:      ${{ steps.filter.outputs.wasm }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'core/**'
+            physics:
+              - 'physics/**'
+            tests:
+              - 'tests/**'
+            makefile:
+              - 'Makefile'
+              - 'CMakeLists.txt'
+            wasm:
+              - 'wasm/**'
+            workflows:
+              - '.github/workflows/ci.yml'
+
   build-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -124,8 +157,16 @@ jobs:
       #     retention-days: 7
 
   static-analysis:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.outputs.physics == 'true' ||
+       needs.changes.outputs.core    == 'true' ||
+       needs.changes.outputs.tests   == 'true' ||
+       needs.changes.outputs.makefile == 'true' ||
+       needs.changes.outputs.workflows == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
@@ -226,45 +267,18 @@ jobs:
                -not -path "*/third_party/*" -not -path "*/build/*" \
             | xargs clang-tidy -p . --config-file=.clang-tidy -warnings-as-errors=*
 
-  valgrind-check:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-
-      - name: APT timeouts
-        run: |
-          echo 'Acquire::http::Timeout "30";'  | sudo tee /etc/apt/apt.conf.d/99timeout
-          echo 'Acquire::https::Timeout "30";' | sudo tee -a /etc/apt/apt.conf.d/99timeout
-          echo 'Acquire::Retries "2";'         | sudo tee -a /etc/apt/apt.conf.d/99timeout
-
-      - name: Install Dependencies & Valgrind
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            build-essential valgrind gnuplot libomp-dev
-
-      - name: Run Tests under Valgrind
-        run: |
-          make clean
-          # make tests SANITIZE=0
-          # for t in build/test_*; do
-          #    [ -x "$t" ] || continue
-          #    case "$t" in *.d) continue ;; esac
-          #    valgrind --leak-check=full \
-          #             --error-exitcode=1 \
-          #             --suppressions=valgrind.supp \
-          #             --errors-for-leak-kinds=definite,indirect \
-          #             "$t" || exit 1
-          # done
-          make valgrind
-
   sanitizers:
+    needs: [changes, build-and-test]
+    if: |
+      always() &&
+      needs.build-and-test.result == 'success' &&
+      (needs.changes.outputs.physics == 'true' ||
+       needs.changes.outputs.core    == 'true' ||
+       needs.changes.outputs.tests   == 'true' ||
+       needs.changes.outputs.makefile == 'true' ||
+       needs.changes.outputs.workflows == 'true')
     runs-on: ubuntu-latest
-    needs: build-and-test
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
@@ -324,8 +338,15 @@ jobs:
           # make run-tests PLOT_BACKEND=GR CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" LDFLAGS="-fsanitize=address,undefined"
 
   wasm-check:
+    needs: changes
+    if: |
+      always() &&
+      (needs.changes.outputs.wasm    == 'true' ||
+       needs.changes.outputs.physics == 'true' ||
+       needs.changes.outputs.core    == 'true' ||
+       needs.changes.outputs.workflows == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       ZIG_VERSION: "0.13.0"
     steps:

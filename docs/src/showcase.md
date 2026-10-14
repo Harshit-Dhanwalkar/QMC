@@ -13,7 +13,7 @@ what the C code returns.
 | [Hydrogen orbitals](playground/orbitals.html)      | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
 | [Bloch sphere](playground/bloch.html)              | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
 | [Anderson localisation](playground/anderson.html)  | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
-| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of √t                        | `qwalk_step`                        | 16 KB |
+| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of $\sqrt{t}$                        | `qwalk_step`                        | 16 KB |
 | [Landau-Zener](playground/landau_zener.html)       | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 | [Kicked rotor](playground/kicked_rotor.html)       | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
 | [SSH chain](playground/ssh_chain.html)             | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
@@ -45,13 +45,12 @@ leak through a region it classically cannot enter.
 [![Hofstadter butterfly](playground/butterfly.png)](playground/butterfly.html)
 
 Put an electron on a square lattice and thread a magnetic field through it.
-When the flux per plaquette is a rational number p/q, the single band
-splits into q sub-bands. Plot every allowed energy against the flux and a
-self-similar fractal appears: Douglas Hofstadter's butterfly. Each gap in
-the spectrum carries an integer, the Chern number, which counts the
-quantised Hall conductance when the Fermi level sits in that gap. The
-explorer labels every gap, so you can see the topology and not only the
-picture.
+When the flux per plaquette is a rational number p/q, the single band splits
+into q sub-bands. Plot every allowed energy against the flux and a self-similar
+fractal appears: Douglas Hofstadter's butterfly. Each gap in the spectrum
+carries an integer, the Chern number, which counts the quantised Hall
+conductance when the Fermi level sits in that gap. The explorer labels every
+gap, so you can see the topology and not only the picture.
 
 [Open the demo](playground/butterfly.html)
 
@@ -65,9 +64,9 @@ equation behaves differently: once the step exceeds the energy gap, the
 particle can transmit through negative-energy states. This demo evolves a
 relativistic wavepacket into a sharp step with an exact split-operator
 propagator and compares the transmitted weight with the closed-form
-plane-wave result. A second scene shows Zitterbewegung, the rapid
-trembling of a free electron that comes from interference between its
-positive- and negative-energy components.
+plane-wave result. A second scene shows Zitterbewegung, the rapid trembling
+of a free electron that comes from interference between its positive- and
+negative-energy components.
 
 [Open the demo](playground/dirac.html) ·
 [Background: relativistic QM](physics/relativistic.md)
@@ -92,10 +91,10 @@ and `f` shapes directly.
 
 A two-level system is a point on a sphere. Drive it and the point rotates
 (Rabi oscillations); let it decay and the point spirals inward. The demo
-integrates the Lindblad master equation with amplitude damping and
-dephasing, and converts the 2×2 density matrix into a Bloch vector at each
-step. Detuning, drive strength and both decay rates are adjustable, and the
-steady state matches the analytic result for a driven, damped qubit.
+integrates the Lindblad master equation with amplitude damping and dephasing
+and converts the 2×2 density matrix into a Bloch vector at each step.
+Detuning, drive strength and both decay rates are adjustable, and the steady
+state matches the analytic result for a driven, damped qubit.
 
 [Open the demo](playground/bloch.html)
 
@@ -105,12 +104,12 @@ steady state matches the analytic result for a driven, damped qubit.
 
 On a perfect chain a particle started on one site spreads at a fixed speed,
 so the cloud grows in proportion to time. Give every site a random energy
-and, in one dimension, it stops: the wavefunction freezes with an
-exponential tail, however weak the disorder. This is Anderson localisation,
-the reason a disordered wire is an insulator. The demo draws |ψ|² against
-time as a waterfall, so the light cone of the clean chain and the frozen
-column of the disordered one sit side by side. The clean-chain width matches
-the exact result $\sqrt{2} \cdot t \cdot \tau$, and the weak-disorder localisation length is
+and, in one dimension, it stops: the wavefunction freezes with an exponential
+tail, however weak the disorder. This is Anderson localisation, the reason a
+disordered wire is an insulator. The demo draws $|\Phi|^2$ against time as a
+waterfall, so the light cone of the clean chain and the frozen column of the
+disordered one sit side by side. The clean-chain width matches the exact result
+$\sqrt{2} \cdot t \cdot \tau$, and the weak-disorder localisation length is
 checked against a transfer-matrix calculation in the test suite.
 
 [Open the demo](playground/anderson.html)
@@ -120,13 +119,13 @@ checked against a transfer-matrix calculation in the test suite.
 [![Quantum walk against a classical random walk](playground/quantum_walk.gif)](playground/quantum_walk.html)
 
 Flip a coin, then step left or right. A classical walker ends up within about
-√t steps of the start after t steps. A quantum walker uses a quantum coin and
-keeps both outcomes in superposition, so its amplitudes interfere: the cloud
-spreads in proportion to t, and the probability piles up near the edges of
-the light cone instead of the middle. The demo draws both walks together and
-lets you change the coin angle, for which the spreading rate has the exact
-form $\sqrt{1 − \sin(\theta) \cdot t}$. This is the same mechanism behind
-quantum-walk search algorithms.
+$\sqrt{t}$ steps of the start after `t` steps. A quantum walker uses a quantum
+coin and keeps both outcomes in superposition, so its amplitudes interfere:
+the cloud spreads in proportion to `t`, and the probability piles up near the
+edges of the light cone instead of the middle. The demo draws both walks
+together and lets you change the coin angle, for which the spreading rate has
+the exact form $\sqrt{1 - \sin(\theta)} \cdot t$. This is the same mechanism
+behind quantum-walk search algorithms.
 
 [Open the demo](playground/quantum_walk.html)
 
@@ -137,11 +136,11 @@ quantum-walk search algorithms.
 Two energy levels that would cross are pushed apart by a coupling into an
 avoided crossing. Sweep the control parameter through it slowly and the
 system follows its level; sweep it quickly and it jumps across the gap, with
-the probability $\exp(−\pi\Omega^2/2v)$ found independently by Landau, Zener,
+the probability $\exp(-\pi\Omega^2/2v)$ found independently by Landau, Zener,
 Stückelberg and Majorana in 1932. The demo integrates a qubit through the crossing
 and overlays the closed form on a scan of the sweep rate, then sweeps out and
 back so the two paths interfere: the fringes stay inside the envelope
-4P(1−P). This is how qubits are initialised, read out and probed in many
+4P(1-P). This is how qubits are initialised, read out and probed in many
 superconducting and spin-qubit experiments.
 
 [Open the demo](playground/landau_zener.html)
@@ -195,7 +194,7 @@ and the region the news has not reached stays exactly as it was. That is a
 light cone, and it appears here as a picture of $\langle \sigma^z_0 \sigma^z_r
 \rangle$ against distance and time. If the quench crosses the critical point,
 the probability to find the chain back in its initial state passes through
-zero at isolated times, and the rate function $−\ln L(t)/N$ has kinks there:
+zero at isolated times, and the rate function $-\ln L(t)/N$ has kinks there:
 dynamical quantum phase transitions. The solution is exact, with no truncation,
 because the chain maps to free fermions: each pair of momenta is a spin that
 precesses about the new field, correlations are Pfaffians of the resulting
@@ -210,7 +209,7 @@ diagonalisation to 1e-13, and the critical times against their closed form.
 [![Haldane ribbon](playground/haldane.gif)](playground/haldane.html)
 
 Graphene with a twist. Let electrons hop to their next-nearest neighbours
-with a complex amplitude $t_2 \exp^{\pm i \phi}$, a phase that mimics a
+with a complex amplitude $t_2 \exp(\pm i \phi)$, a phase that mimics a
 magnetic field that points up in one half of each cell and down in the other,
 so that the net flux is zero but time-reversal symmetry is broken. Add a
 sublattice mass M and the Dirac points open into a gap, with a Chern number
@@ -235,17 +234,17 @@ A classical state of light is a point in phase space; a quantum state is a
 quasi-probability cloud, the Wigner function $W(x, p)$, whose marginals are
 true position and momentum distributions but which is allowed to go
 negative. Start with a coherent state, a Gaussian blob. A Kerr medium adds a
-phase that grows as $n(n−1)$ with the photon number, so the blob smears
-around its ring; at a quarter of the revival time, $χt = \pi/2$, it has split
+phase that grows as $n(n-1)$ with the photon number, so the blob smears
+around its ring; at a quarter of the revival time, $\chi t = \pi/2$, it has split
 into the Schrödinger cat
-$(\exp^{−i \pi /4}|i\alpha \rangle + \exp^{i \pi / 4}|−i\alpha \rangle)/\sqrt{2}:
+$(\exp(-i \pi /4)|i\alpha \rangle + \exp(i \pi / 4)|-i\alpha \rangle)/\sqrt{2}$:
 two blobs and a fringe pattern between them that dips below zero. The page
 lets you pick a coherent, Fock, cat or squeezed state, drag the Kerr time and
 read off the negative volume, which is zero for a Gaussian and grows with how
 non-classical the state is. The test suite checks the Wigner function against
 the closed form for coherent and cat states, the marginals against $|\phi(x)|^2$,
-$W(0,0) = (−1)^n/\pi$ for Fock states, the squeezed variances, and the Kerr cat
-identity and the full revival at $χt = \pi$ to machine precision.
+$W(0,0) = (-1)^n/\pi$ for Fock states, the squeezed variances, and the Kerr cat
+identity and the full revival at $\chi t = \pi$ to machine precision.
 
 [Open the demo](playground/wigner.html)
 
@@ -254,11 +253,11 @@ identity and the full revival at $χt = \pi$ to machine precision.
 [![Grover search](playground/grover.gif)](playground/grover.html)
 
 Find the marked items in an unsorted database of N entries. Classically you
-need about N/M looks; Grover's algorithm needs about $(\pi/4)\sqrt{(N/M)}$.
+need about $N/M$ looks; Grover's algorithm needs about $(\pi/4) \sqrt{(N/M)}$.
 The trick is geometric: the oracle flips the sign of the marked amplitudes, the
 diffusion step inverts everything about the mean, and together they rotate the
 state by $2\theta$ in the plane spanned by "marked" and "unmarked", with
-$\sin(\theta) = \sqrt{(M/N)}. After k iterations the success probability is
+$\sin(\theta) = \sqrt{(M/N)}$. After k iterations the success probability is
 $\sin^2((2k+1)\theta)$, so it rises, peaks and falls again: keep iterating past
 the optimum and you un-find the answer. The page shows all 1024 amplitudes as a
 grid you can click to mark items, steps the algorithm, and plots the success
@@ -275,19 +274,20 @@ all, and agreement with the library's single-target search.
 
 Two detectors far apart each measure a spin along an angle they choose.
 Suppose the outcomes are fixed in advance by some hidden variable the
-particles carry; then the combination $S = E(a,b) − E(a,b′) + E(a′,b) +
-E(a′,b′)$ of four correlations can never exceed 2 in magnitude. Quantum
-mechanics disagrees: for the singlet the correlation is $−\cos(a−b)$, a
+particles carry; then the combination $S = E(a,b) - E(a,b') + E(a',b) +
+E(a',b')$ of four correlations can never exceed 2 in magnitude. Quantum
+mechanics disagrees: for the singlet the correlation is $-\cos(a-b)$, a
 smooth cosine instead of the best local model's straight-line sawtooth, and
-at the right four angles $S = 2\sqrt{2} \aprrox 2.83$ (Tsirelson's bound).
-Mix in white noise of visibility V and S shrinks to 2√2·V, so the violation
-survives only for $V > 1/\sqrt{2}. The page lets you move the four detector
-angles and the noise, compares the cosine with the local sawtooth, and
-simulates pairs of measurements so you can watch the statistical error bar
-shrink as $1/\sqrt{n}. The test suite computes the correlation from the
-density matrix rather than the closed form, finds the Tsirelson maximum by
-grid search, checks that the deterministic strategies and the hidden-angle
-model stop at exactly 2, and tests the sampler against the exact correlations.
+at the right four angles $S = 2\sqrt{2} \approx 2.83$ (Tsirelson's bound).
+Mix in white noise of visibility V and S shrinks to $2\sqrt{2}\cdot V$, so
+the violation survives only for $V > 1/\sqrt{2}$. The page lets you move
+the 4 detector angles and the noise, compares the cosine with the local
+sawtooth, and simulates pairs of measurements so you can watch the
+statistical error bar shrink as $1/\sqrt{n}$. The test suite computes the
+correlation from the density matrix rather than the closed form, finds the
+Tsirelson maximum by grid search, checks that the deterministic strategies
+and the hidden-angle model stop at exactly `2`, and tests the sampler against
+the exact correlations.
 
 [Open the demo](playground/bell.html)
 
