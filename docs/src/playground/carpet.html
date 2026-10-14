@@ -278,6 +278,9 @@
         cursor: ns-resize;
         touch-action: none;
       }
+      #cpc-ov.panning {
+        cursor: grabbing;
+      }
       #sl {
         aspect-ratio: 16 / 7;
       }
@@ -331,16 +334,19 @@
           <div class="panel">
             <h2>Cursor</h2>
             <div class="row" id="jumps">
-              <button data-f="0">0</button><button data-f="0.125">T/8</button
-              ><button data-f="0.25">T/4</button
-              ><button data-f="0.5">T/2</button
-              ><button data-f="0.75">3T/4</button><button data-f="1">T</button>
+              <button data-f="0">0</button>
+              <button data-f="0.125">T/8</button>
+              <button data-f="0.25">T/4</button>
+              <button data-f="0.5">T/2</button>
+              <button data-f="0.75">3T/4</button>
+              <button data-f="1">T</button>
               <button id="play" class="primary">Play</button>
+              <button id="reset">⟲ Reset view</button>
             </div>
             <div class="row">
               <label
-                ><span>time t/T</span
-                ><input
+                ><span>time t/T</span>
+                <input
                   id="tt"
                   type="range"
                   min="0"
@@ -354,8 +360,8 @@
             <h2>Packet</h2>
             <div class="row">
               <label
-                ><span>centre x<sub>0</sub></span
-                ><input
+                ><span>centre x<sub>0</sub></span>
+                <input
                   id="x0"
                   type="range"
                   min="0.1"
@@ -378,8 +384,8 @@
             </div>
             <div class="row">
               <label
-                ><span>mode n<sub>0</sub></span
-                ><input
+                ><span>mode n<sub>0</sub></span>
+                <input
                   id="n0"
                   type="range"
                   min="-40"
@@ -430,6 +436,7 @@
     <script type="module">
       import { createGL, compileProgram } from "./webgl/context.mjs";
       import { Image2D, IMAGE_VS, IMAGE_FS } from "./webgl/texture.mjs";
+      import { OrthoCamera } from "./webgl/camera.mjs";
       import { Overlay2D } from "./webgl/overlay.mjs";
 
       const $ = (id) => document.getElementById(id);
@@ -476,7 +483,7 @@
       const CVB = () =>
         new Float64Array(w.memory.buffer, w.qmc_qc_curve_buffer(), NC);
 
-      // WebGL for main carpet
+      // WebGL
       let gl;
       try {
         gl = createGL($("cpc-gl"));
@@ -494,6 +501,16 @@
       const img = new Image2D(gl);
       const ov = new Overlay2D($("cpc-ov"));
 
+      // Camera over data coordinates.
+      // x in [0, 1] : position in the well
+      // y in [0, 1] : 1 - t/T, so y=1 at top (t=0), y=0 at bottom (t=T)
+      const FULL_VIEW = { x0: 0, y0: 0, x1: 1, y1: 1 };
+      const camera = new OrthoCamera(
+        FULL_VIEW,
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+
       // magma-like colormap
       const stops = [
         [0, [4, 4, 14]],
@@ -502,7 +519,6 @@
         [0.75, [250, 140, 60]],
         [1, [252, 245, 190]],
       ];
-
       function ramp(t) {
         t = Math.max(0, Math.min(1, t));
         for (let i = 1; i < stops.length; i++) {
@@ -551,6 +567,8 @@
           el.height = H;
         }
         ov.setSize(W, H);
+        camera.setCanvas({ W, H });
+        camera.setPlotRect({ ml: 0, mt: 0, pw: W, ph: H });
       }
 
       // Draw
@@ -560,6 +578,10 @@
       let last = 0;
       let ret = 1;
 
+      // Convert t/T fraction to data-space y, and back
+      const tToY = (t) => 1 - t;
+      const yToT = (y) => 1 - y;
+
       function drawCarpet() {
         const W = $("cpc-gl").width;
         const H = $("cpc-gl").height;
@@ -568,40 +590,84 @@
         gl.clear(gl.COLOR_BUFFER_BIT);
 
         img.flush(gl, imgProgram, {
-          u_view: [0, 0, 1, 1],
+          u_view: [
+            camera.view.x0,
+            camera.view.y0,
+            camera.view.x1,
+            camera.view.y1,
+          ],
           u_data: [0, 0, 1, 1],
-          u_plot: [0, 0, W, H],
+          u_plot: [
+            camera.plotRect.ml,
+            camera.plotRect.mt,
+            camera.plotRect.pw,
+            camera.plotRect.ph,
+          ],
           u_canvas: [W, H],
         });
 
-        // Overlay: dashed guide lines, labels, cursor
+        // Overlay: guide lines, labels, cursor
         const ctx = ov.ctx;
         ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = camera.plotRect;
         const fs = Math.max(11, Math.round(H * 0.028));
+        const v = camera.view;
+
+        // Vertical dashed lines at fractional revivals
         ctx.strokeStyle = "rgba(255,255,255,0.18)";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 4]);
-        for (const f of [0.25, 0.5, 0.75]) {
+        for (const [t, label] of [
+          [0.25, "T/4"],
+          [0.5, "T/2"],
+          [0.75, "3T/4"],
+        ]) {
+          const yData = tToY(t);
+          if (yData < v.y0 || yData > v.y1) continue;
+          const [, py] = camera.dataToPix(0, yData);
           ctx.beginPath();
-          ctx.moveTo(0, f * H);
-          ctx.lineTo(W, f * H);
+          ctx.moveTo(ml, py);
+          ctx.lineTo(ml + pw, py);
           ctx.stroke();
+          ctx.fillStyle = "rgba(255,255,255,0.7)";
+          ctx.font = fs + "px ui-monospace,monospace";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(label, ml + pw - fs * 0.6, py - fs * 0.3);
         }
         ctx.setLineDash([]);
-        ctx.fillStyle = "rgba(255,255,255,0.7)";
-        ctx.font = fs + "px ui-monospace,monospace";
-        ctx.fillText("T/4", W - fs * 3, 0.25 * H - fs * 0.4);
-        ctx.fillText("T/2", W - fs * 3, 0.5 * H - fs * 0.4);
-        ctx.fillText("3T/4", W - fs * 3.6, 0.75 * H - fs * 0.4);
-        ctx.fillText("x \u2192", W - fs * 3, fs * 1.2);
-        ctx.fillText("t \u2193", fs * 0.7, H - fs * 0.7);
 
-        ctx.strokeStyle = css("--accent");
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, frac * H);
-        ctx.lineTo(W, frac * H);
-        ctx.stroke();
+        // Corner hints
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.font = fs + "px ui-monospace,monospace";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText("x →", ml + pw - fs * 0.6, mt + fs * 0.4);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("t ↓", ml + fs * 0.6, mt + ph - fs * 0.4);
+
+        // Cursor line
+        const yCur = tToY(frac);
+        if (yCur >= v.y0 && yCur <= v.y1) {
+          const [, py] = camera.dataToPix(0, yCur);
+          ctx.strokeStyle = css("--accent");
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(ml, py);
+          ctx.lineTo(ml + pw, py);
+          ctx.stroke();
+        }
+
+        // Zoom factor indicator
+        const zoom = 1 / (v.x1 - v.x0);
+        if (zoom > 1.001) {
+          ctx.fillStyle = "rgba(255,255,255,0.55)";
+          ctx.font = fs + "px ui-monospace,monospace";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          ctx.fillText(zoom.toFixed(1) + "×", ml + fs * 0.6, mt + fs * 0.4);
+        }
 
         $("readout").innerHTML =
           "t = " +
@@ -611,7 +677,7 @@
           "%";
       }
 
-      // Sub-panels
+      // Sub-panels (unchanged)
       function fit(canvas) {
         const r = canvas.parentElement.getBoundingClientRect();
         const d = window.devicePixelRatio || 1;
@@ -827,27 +893,117 @@
         raf = requestAnimationFrame(tick);
       });
 
-      // Time-cursor drag on carpet canvas
-      function drag(ev) {
+      // Reset view button
+      $("reset").addEventListener("click", () => {
+        camera.reset();
+        drawCarpet();
+      });
+
+      // Pointer / wheel on carpet canvas
+      //   drag              -> scrub time
+      //   shift + drag      -> pan
+      //   wheel             -> zoom (anchored at cursor)
+      //   double click      -> reset view
+      const drag = {
+        active: false,
+        panning: false,
+        lx: 0,
+        ly: 0,
+        moved: 0,
+      };
+
+      function pixelFromEvent(ev) {
         const r = $("cpc-ov").getBoundingClientRect();
-        frac = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
+        const sx = $("cpc-ov").width / r.width;
+        const sy = $("cpc-ov").height / r.height;
+
+        return [(ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy];
+      }
+
+      $("cpc-ov").addEventListener("pointerdown", (e) => {
+        stop();
+        drag.active = true;
+        drag.panning = e.shiftKey;
+        drag.lx = e.clientX;
+        drag.ly = e.clientY;
+        drag.moved = 0;
+        $("cpc-ov").setPointerCapture(e.pointerId);
+        if (drag.panning) {
+          $("cpc-ov").classList.add("panning");
+        } else {
+          // immediately scrub on pointer-down for direct feel
+          scrubFromEvent(e);
+        }
+      });
+
+      $("cpc-ov").addEventListener("pointermove", (e) => {
+        if (!drag.active) return;
+        const [px, py] = pixelFromEvent(e);
+        if (drag.panning) {
+          const [pdx, pdy] = pixelFromEvent({
+            clientX: drag.lx,
+            clientY: drag.ly,
+          });
+          const ddx = px - pdx;
+          const ddy = py - pdy;
+          drag.moved += Math.abs(ddx) + Math.abs(ddy);
+          camera.pan(ddx, ddy);
+          clampCamera();
+          drag.lx = e.clientX;
+          drag.ly = e.clientY;
+          drawCarpet();
+        } else {
+          drag.moved += 1;
+          scrubFromEvent(e);
+        }
+      });
+
+      $("cpc-ov").addEventListener("pointerup", (e) => {
+        drag.active = false;
+        if (drag.panning) {
+          $("cpc-ov").classList.remove("panning");
+        }
+        try {
+          $("cpc-ov").releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        // double-click reset (tracked via detail)
+        if (e.detail === 2 && !drag.panning && drag.moved < 4) {
+          camera.reset();
+          drawCarpet();
+        }
+      });
+
+      $("cpc-ov").addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const [px, py] = pixelFromEvent(e);
+          camera.zoomAt(px, py, Math.exp(e.deltaY * 0.0015));
+          clampCamera();
+          drawCarpet();
+        },
+        { passive: false },
+      );
+
+      function clampCamera() {
+        camera.clamp({
+          minW: 0.02,
+          maxW: 1,
+          minH: 0.02,
+          maxH: 1,
+          bounds: { x0: 0, y0: 0, x1: 1, y1: 1 },
+        });
+      }
+
+      function scrubFromEvent(ev) {
+        const [px, py] = pixelFromEvent(ev);
+        const [, yData] = camera.pixToData(px, py);
+        const t = yToT(yData);
+        if (t < 0 || t > 1) return;
+        frac = t;
         $("tt").value = frac;
         refreshSlice();
       }
-
-      let down = false;
-      $("cpc-ov").addEventListener("pointerdown", (e) => {
-        stop();
-        down = true;
-        $("cpc-ov").setPointerCapture(e.pointerId);
-        drag(e);
-      });
-      $("cpc-ov").addEventListener("pointermove", (e) => {
-        if (down) drag(e);
-      });
-      $("cpc-ov").addEventListener("pointerup", () => {
-        down = false;
-      });
 
       window.addEventListener("resize", () => {
         layoutCarpet();
