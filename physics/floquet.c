@@ -1,5 +1,5 @@
 /*
- * Implementation of Floquet solvers
+ * Floquet solvers
  *
  * Time domain (floquet_solve_time):
  *   U(T) is propagated by RK4 on matrix ODE dU/dt = -i H(t) U with identity
