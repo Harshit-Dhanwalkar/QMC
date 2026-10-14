@@ -91,7 +91,7 @@ double box_gaussian_coefficients(complex_t *c, int n_modes, double x0,
   }
 
   // composite Simpson on [0, 1]; integrand oscillates at most n_modes + n0
-  // half-waves 
+  // half-waves
   // Round subinterval count up to an even number so
   // Simpson's rule is exact for odd/even weighting pattern
   int steps = 8 * (n_modes + (int)fabs(n0) + 16);
@@ -101,8 +101,6 @@ double box_gaussian_coefficients(complex_t *c, int n_modes, double x0,
   double k0 = M_PI * n0;
   double norm = 0.0;
 
-  steps += steps % 2;
-  h = 1.0 / steps;
   for (int n = 1; n <= n_modes; n++) {
     double re = 0.0;
     double im = 0.0;

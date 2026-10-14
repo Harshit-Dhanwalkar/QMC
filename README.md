@@ -359,6 +359,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_86_phase_space.c</code></li>
   <li><code>eg_87_grover_multi.c</code></li>
   <li><code>eg_88_bell_chsh.c</code></li>
+  <li><code>eg_89_box_revival.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -430,6 +431,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_phase_space.c</code></li>
   <li><code>test_grover_multi.c</code></li>
   <li><code>test_bell_chsh.c</code></li>
+  <li><code>test_box_revival.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>
