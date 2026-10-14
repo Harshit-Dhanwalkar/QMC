@@ -297,7 +297,7 @@
   <body>
     <div class="wrap">
       <header>
-        <h1><span>QMC</span> Playground &mdash; Ising quench</h1>
+        <h1><span>QMC</span> Playground - Ising quench</h1>
         <div class="links"></div>
       </header>
       <p class="sub">
@@ -591,9 +591,11 @@
             x1 - x0,
             (y1 - y0) * (Math.max(col, 1) / NT),
           );
+
           g.strokeStyle = css("--line");
           g.lineWidth = 1;
           g.strokeRect(x0, y0, x1 - x0, y1 - y0);
+
           // front
           const v = w.qmc_tq_front_speed();
           g.strokeStyle = "#e6e9f0";
@@ -605,8 +607,10 @@
             x0 + ((v * tEnd) / R) * (x1 - x0),
             y0 + (tEnd / TMAX) * (y1 - y0),
           );
+
           g.stroke();
           g.setLineDash([]);
+
           // critical times
           g.strokeStyle = css("--accent");
           g.globalAlpha = 0.5;
@@ -615,6 +619,7 @@
             if (!(tc < TMAX)) {
               break;
             }
+
             const y = y0 + (tc / TMAX) * (y1 - y0);
             g.beginPath();
             g.moveTo(x0 - 6, y);
