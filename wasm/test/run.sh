@@ -227,3 +227,16 @@ else
   echo "FAIL: carpet WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Quantum Zeno effect: pulsed and continuous measurement, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/zeno_ref.c wasm/qmc_zeno.c physics/zeno.c \
+  -lm -o "$TMP/qmc_zeno_ref"
+"$TMP/qmc_zeno_ref" > "$TMP/qmc_zeno_native.txt"
+cat "$TMP/qmc_zeno_native.txt"
+node wasm/test/zeno_check.mjs > "$TMP/qmc_zeno_wasm.txt"
+if diff -u "$TMP/qmc_zeno_native.txt" "$TMP/qmc_zeno_wasm.txt"; then
+  echo "OK: Zeno WASM matches native"
+else
+  echo "FAIL: Zeno WASM and native results differ" >&2
+  exit 1
+fi

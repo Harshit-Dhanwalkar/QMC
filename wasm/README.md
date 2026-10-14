@@ -30,6 +30,8 @@
 
 `qmc_bell.c` wraps the CHSH Bell test (`physics/bell_chsh.c`): `docs/src/playground/bell.html` compares a noisy singlet with a local-hidden-variable model.
 
+`qmc_zeno.c` wraps the quantum Zeno effect (`physics/zeno.c`): `docs/src/playground/zeno.html` compares pulsed and continuous measurement of a driven qubit.
+
 ## Build
 
 ```sh
@@ -124,9 +126,11 @@ Haldane module (`qmc_haldane.wasm`, imports three WASI stubs): `qmc_hd_set(t2, p
 
 Wigner module (`qmc_wigner.wasm`, no imports): `qmc_wg_state(kind, amp, param, chi_t)` builds a state (0 coherent, 1 Fock, 2 even cat, 3 odd cat, 4 squeezed), applies the Kerr phase `exp(-i chi_t n(n-1))` and fills `qmc_wg_w_buffer()` (128 x 128, row = p, column = x, window +-`qmc_wg_extent()`), the marginals `qmc_wg_x_buffer()` / `qmc_wg_p_buffer()` and the photon-number distribution `qmc_wg_pn_buffer()`. `qmc_wg_nbar()`, `qmc_wg_negativity()`, `qmc_wg_wmin()` and `qmc_wg_wmax()` are the readouts.
 
-Grover module (`qmc_grover.wasm`, no imports): `qmc_gv_set_n(n)` picks 2^n items (n up to 10), `qmc_gv_mark(i, flag)` marks or unmarks one (fewer than N/2 in total), `qmc_gv_step()` / `qmc_gv_goto(k)` apply Grover iterations to `qmc_gv_amp_buffer()`, and `qmc_gv_curve(count)` fills the simulated and closed-form success curves. `qmc_gv_success()`, `qmc_gv_theta()` and `qmc_gv_kopt()` are the readouts.
+Grover module (`qmc_grover.wasm`, no imports): `qmc_gv_set_n(n)` picks $2^n$ items (n up to 10), `qmc_gv_mark(i, flag)` marks or unmarks one (fewer than $N/2$ in total), `qmc_gv_step()` / `qmc_gv_goto(k)` apply Grover iterations to `qmc_gv_amp_buffer()`, and `qmc_gv_curve(count)` fills the simulated and closed-form success curves. `qmc_gv_success()`, `qmc_gv_theta()` and `qmc_gv_kopt()` are the readouts.
 
-Bell module (`qmc_bell.wasm`, no imports): `qmc_bl_set(a, a2, b, b2, V)` fixes the four detector angles (radians) and the Werner-state visibility, `qmc_bl_chsh()` / `qmc_bl_local_chsh()` give S for the quantum state and for the hidden-angle local model, `qmc_bl_max()` the best S over a pi/4 grid, `qmc_bl_curve(n)` fills the correlation-versus-angle buffers and `qmc_bl_sample(n, seed)` simulates n pairs per setting (`qmc_bl_est(i)`, `qmc_bl_sigma()`).
+Bell module (`qmc_bell.wasm`, no imports): `qmc_bl_set(a, a2, b, b2, V)` fixes the four detector angles (radians) and the Werner-state visibility, `qmc_bl_chsh()` / `qmc_bl_local_chsh()` give S for the quantum state and for the hidden-angle local model, `qmc_bl_max()` the best S over a $\pi/4$ grid, `qmc_bl_curve(n)` fills the correlation-versus-angle buffers and `qmc_bl_sample(n, seed)` simulates n pairs per setting (`qmc_bl_est(i)`, `qmc_bl_sigma()`).
+
+Zeno module (`qmc_zeno.wasm`, no imports): the drive is $\Omega = 1$ and the run lasts $T = \pi$. `qmc_zn_pulsed_curves(n)` fills the survival-versus-time curve for `n` projective measurements and the survival-versus-N curve, `qmc_zn_continuous(gamma)` the survival curve under continuous dephasing, `qmc_zn_rates(gmax)` the decay rate versus dephasing, and `qmc_zn_sample(n, n_traj, seed)` simulates trajectories (`qmc_zn_alive_buffer()`).
 
 Regenerate the butterfly images:
 

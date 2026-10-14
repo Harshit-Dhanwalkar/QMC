@@ -20,6 +20,7 @@
 #   docs/src/playground/qmc_grover.wasm     Grover-search demo
 #   docs/src/playground/qmc_bell.wasm       CHSH Bell-test on a Werner state demo
 #   docs/src/playground/qmc_carpet.wasm     quantum-carpet / revival demo
+#   docs/src/playground/qmc_zeno.wasm       quantum-Zeno demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -138,7 +139,8 @@ qmc_kr_step qmc_kr_qm2 qmc_kr_cm2 qmc_kr_norm qmc_kr_diffusion qmc_kr_edge" \
 
 build_module "$OUT/qmc_ssh.wasm" \
   "qmc_ssh_cells qmc_ssh_sweep_max qmc_ssh_energies qmc_ssh_vectors qmc_ssh_bonds qmc_ssh_sweep_buffer \
-qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi qmc_ssh_gap qmc_ssh_bulk qmc_ssh_edge_weight" \
+qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi qmc_ssh_gap qmc_ssh_bulk \
+qmc_ssh_edge_weight" \
   wasm/qmc_ssh.c physics/ssh_chain.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
 
@@ -150,7 +152,8 @@ qmc_tq_front_speed" \
 
 build_module "$OUT/qmc_haldane.wasm" \
   "qmc_hd_width qmc_hd_states qmc_hd_nk_max qmc_hd_energy_buffer qmc_hd_mean_buffer qmc_hd_prob_buffer \
-qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit qmc_hd_valley_gap qmc_hd_vmax qmc_hd_cmin" \
+qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit qmc_hd_valley_gap qmc_hd_vmax \
+qmc_hd_cmin" \
   wasm/qmc_haldane.c physics/tight_binding.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
 
@@ -160,9 +163,9 @@ qmc_wg_nbar qmc_wg_negativity qmc_wg_wmin qmc_wg_wmax qmc_wg_state" \
   wasm/qmc_wigner.c physics/phase_space.c
 
 build_module "$OUT/qmc_grover.wasm" \
-  "qmc_gv_max_n qmc_gv_curve_max qmc_gv_amp_buffer qmc_gv_marked_buffer qmc_gv_curve_buffer qmc_gv_exact_buffer \
-qmc_gv_n qmc_gv_iter qmc_gv_marks qmc_gv_set_n qmc_gv_mark qmc_gv_reset qmc_gv_step qmc_gv_goto qmc_gv_success \
-qmc_gv_theta qmc_gv_kopt qmc_gv_exact qmc_gv_curve" \
+  "qmc_gv_max_n qmc_gv_curve_max qmc_gv_amp_buffer qmc_gv_marked_buffer qmc_gv_curve_buffer \
+  qmc_gv_exact_buffer qmc_gv_n qmc_gv_iter qmc_gv_marks qmc_gv_set_n qmc_gv_mark qmc_gv_reset \
+  qmc_gv_step qmc_gv_goto qmc_gv_success qmc_gv_theta qmc_gv_kopt qmc_gv_exact qmc_gv_curve" \
   wasm/qmc_grover.c physics/grover_multi.c
 
 build_module "$OUT/qmc_bell.wasm" \
@@ -174,3 +177,9 @@ build_module "$OUT/qmc_carpet.wasm" \
   "qmc_qc_nx qmc_qc_nt qmc_qc_curve_len qmc_qc_carpet_buffer qmc_qc_slice_buffer qmc_qc_curve_buffer \
 qmc_qc_weight qmc_qc_energy qmc_qc_set qmc_qc_slice" \
   wasm/qmc_carpet.c physics/box_revival.c
+
+build_module "$OUT/qmc_zeno.wasm" \
+  "qmc_zn_curve_len qmc_zn_max_n qmc_zn_time_buffer qmc_zn_n_buffer qmc_zn_rate_buffer \
+qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \ 
+qmc_zn_continuous qmc_zn_rates qmc_zn_rate qmc_zn_sample" \
+  wasm/qmc_zeno.c physics/zeno.c

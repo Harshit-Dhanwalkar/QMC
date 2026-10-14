@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-16 interactive demos, all computed live by the same C library you can read
+17 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -13,7 +13,7 @@ what the C code returns.
 | [Hydrogen orbitals](playground/orbitals.html)      | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
 | [Bloch sphere](playground/bloch.html)              | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
 | [Anderson localisation](playground/anderson.html)  | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
-| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of $\sqrt{t}$                        | `qwalk_step`                        | 16 KB |
+| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of $\sqrt{t}$                | `qwalk_step`                        | 16 KB |
 | [Landau-Zener](playground/landau_zener.html)       | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
 | [Kicked rotor](playground/kicked_rotor.html)       | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
 | [SSH chain](playground/ssh_chain.html)             | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
@@ -22,7 +22,8 @@ what the C code returns.
 | [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
 | [Grover search](playground/grover.html)            | Amplitude amplification, and overshooting it          | `grover_multi_step`                 | 20 KB |
 | [Bell test](playground/bell.html)                  | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
-| [Quantum carpet](playground/carpet.html) | A packet in a box that reassembles itself | `box_wavefunction` | 17 KB |
+| [Quantum carpet](playground/carpet.html)           | A packet in a box that reassembles itself             | `box_wavefunction`                  | 17 KB |
+| [Quantum Zeno effect](playground/zeno.html)        | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -310,6 +311,27 @@ norm, the mean position and energy, and the return probabilities.
 
 [Open the demo](playground/carpet.html)
 
+## The quantum Zeno effect: a watched qubit never flips
+
+[![Quantum Zeno effect](playground/zeno.gif)](playground/zeno.html)
+
+A resonant drive rotates a qubit from $|0\rangle$ to $|1\rangle$ in time
+$\pi/\Omega$. Now interrupt it N times with a measurement of "is it still
+in $|0\rangle$?". Each short interval leaves a flip probability of only
+$(\Omega \tau/2)^2$ and every measurement resets the clock, so the chance
+of surviving the whole run is $cos^{2N}(\Omega T/2N)$, which tends to 1 as
+N grows: frequent observation freezes the evolution. The continuous version
+replaces projective measurements by dephasing at rate $\Gamma$. The Bloch
+equations then give a decay rate that rises as $\Gamma/2$, peaks at exactly
+$\Omega$ when $\Gamma = 2\Omega$ and falls as $\Omega^2/\Gamma$ beyond it:
+the harder you look, the slower it moves. The page shows survival through
+time for any $N$ and $\Gamma$, Monte-Carlo trajectories that jump out one
+by one, the survival at the end against N and the decay-rate curve. The test
+suite checks the closed forms, the large-N exponential law, the Bloch equations
+against $\cos^2(\Omega t/2)$ and the analytic rate for both regimes and the
+trajectory statistics.
+
+[Open the demo](playground/zeno.html)
 
 ## Run it yourself
 
