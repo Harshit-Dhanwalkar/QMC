@@ -272,6 +272,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/phase_space.c \
                $(PHYSICS_DIR)/grover_multi.c \
                $(PHYSICS_DIR)/bell_chsh.c \
+               $(PHYSICS_DIR)/box_revival.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
