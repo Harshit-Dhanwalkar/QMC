@@ -6,21 +6,8 @@
     <title>QMC Playground: Hofstadter butterfly</title>
     <meta
       name="description"
-      content="Interactive Hofstadter butterfly computed live in your browser by the QMC C library (WebAssembly). Gaps are coloured by their Chern number; click any gap to verify it numerically."
+      content="Interactive Hofstadter butterfly computed live in your browser by the QMC C library (WebAssembly), rendered with WebGL. Gaps coloured by Chern number."
     />
-    <meta
-      property="og:title"
-      content="Hofstadter butterfly in pure C + WebAssembly"
-    />
-    <meta
-      property="og:description"
-      content="Electrons on a lattice in a magnetic field: fractal spectrum, with every gap labelled by its Chern number. Computed live in your browser."
-    />
-    <meta
-      property="og:image"
-      content="https://harshit-dhanwalkar.github.io/QMC/playground/butterfly.png"
-    />
-    <meta name="twitter:card" content="summary_large_image" />
     <style>
       :root {
         --bg: #0b0e14;
@@ -102,10 +89,16 @@
         width: 100%;
         height: 100%;
       }
+      #gl {
+        cursor: grab;
+        touch-action: none;
+      }
+      #gl.dragging {
+        cursor: grabbing;
+      }
       #ov {
-        cursor: crosshair;
-        touch-action: pan-y;
-      } /* taps and horizontal drags inspect; vertical swipes still scroll page */
+        pointer-events: none;
+      } /* overlay is display only; #gl handles input */
       .legend {
         display: flex;
         flex-wrap: wrap;
@@ -244,10 +237,13 @@
         line is one diagonalisation by the QMC tight-binding module
         (<code>tb_model_hofstadter</code>); the colour of every gap is its Chern
         number (quantised Hall conductance). Hover or tap to inspect, click a
-        gap to check it numerically.
+        gap to check it numerically, scroll to zoom, drag to pan.
       </p>
 
-      <div id="plot"><canvas id="bf"></canvas><canvas id="ov"></canvas></div>
+      <div id="plot">
+        <canvas id="gl"></canvas>
+        <canvas id="ov"></canvas>
+      </div>
       <div id="prog">loading&hellip;</div>
       <div class="legend" id="legend">
         <span>Hall number &sigma;<sub>xy</sub>:</span>
@@ -268,12 +264,14 @@
               max="50"
               step="1"
               value="36"
-            /><b id="qmaxv">36</b></label
+            />
+            <b id="qmaxv">36</b></label
           >
           <label
             ><input type="checkbox" id="colored" checked /> Colour gaps by Chern
             number</label
           >
+          <button id="reset">Reset view</button>
           <button id="png" class="primary">Download PNG</button>
         </div>
       </div>
@@ -288,7 +286,7 @@
           >butterfly_check.c</a
         >); gap labels come from the TKNN Diophantine equation, and clicking a
         gap recomputes the Chern number with the library's Fukui-Hatsugai-Suzuki
-        routine. The sign convention is the library's. Source:
+        routine. Source:
         <a
           href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_butterfly.c"
           >wasm/qmc_butterfly.c</a
@@ -298,134 +296,254 @@
 
     <script src="wasi-shim.js"></script>
     <script>
-      (function () {
-        const p = document.getElementById("plot");
-        if (p && !p.style.height) {
-          const h = Math.max(300, Math.round(p.clientWidth * 0.62));
-          p.style.height = h + "px";
-        }
-      })();
-    </script>
-    <script>
       "use strict";
       (async function () {
         const $ = (id) => document.getElementById(id);
-        const BG = "#0b0e14";
-        const BAND = "#161c2a";
-        const E_MAX = 4.15;
-        const INT_MIN = -2147483648;
         const showError = (m) => {
           const e = $("err");
           e.style.display = "block";
           e.innerHTML = m;
         };
 
-        // Load WebAssembly
-        let w;
-        let wasmMemory = null;
-        try {
-          const res = await fetch("qmc_butterfly.wasm");
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const { instance } = await WebAssembly.instantiate(
-            await res.arrayBuffer(),
-            makeWasiImports(() => wasmMemory),
-          );
-          w = instance.exports;
-          wasmMemory = w.memory;
-          if (w._initialize) w._initialize();
-        } catch (err) {
+        // ----------------------------------------------------------------
+        // Constants
+        // ----------------------------------------------------------------
+        const BG = [11 / 255, 14 / 255, 20 / 255, 1.0];
+        const BAND = [22 / 255, 28 / 255, 42 / 255, 1.0];
+        const E_MAX = 4.15;
+        const INT_MIN = -2147483648;
+
+        // ----------------------------------------------------------------
+        // Colour map: Chern number -> RGB
+        //
+        //   t = 0    -> slate (neutral)
+        //   t > 0    -> amber -> orange -> crimson   (positive Hall)
+        //   t < 0    -> pale cyan -> blue -> violet  (negative Hall)
+        //
+        // |t| is clamped at 8, matching the legend swatches. Interpolation is
+        // piecewise linear through two midpoints, which avoids the muddiness
+        // of a straight two-endpoint lerp at mid-range.
+        // ----------------------------------------------------------------
+        function mix(a, b, u) {
+          return [
+            a[0] + (b[0] - a[0]) * u,
+            a[1] + (b[1] - a[1]) * u,
+            a[2] + (b[2] - a[2]) * u,
+          ];
+        }
+
+        const POS_A = [255, 220, 140];
+        const POS_B = [255, 140, 80];
+        const POS_C = [230, 30, 70];
+        const NEG_A = [150, 230, 255];
+        const NEG_B = [60, 150, 255];
+        const NEG_C = [120, 40, 220];
+        const ZERO = [96, 110, 138];
+
+        function chernRGB(t) {
+          if (t === null) {
+            return [255, 255, 255];
+          }
+          if (t === 0) {
+            return ZERO.slice();
+          }
+          const s = Math.min(Math.abs(t), 8) / 8;
+          const stops = t > 0 ? [POS_A, POS_B, POS_C] : [NEG_A, NEG_B, NEG_C];
+          if (s < 0.5) {
+            return mix(stops[0], stops[1], s * 2);
+          }
+
+          return mix(stops[1], stops[2], (s - 0.5) * 2);
+        }
+
+        const rgb255 = (c) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+        const PLAIN = "rgb(190,200,220)";
+        const fmt = (x) => (x < 0 ? "\u2212" : "") + Math.abs(x).toFixed(3);
+
+        // WebGL setup
+        //
+        // One instance per coloured rectangle. Instance attributes:
+        //   a_rect  : vec4 (alpha0, E0, alpha1, E1)  - data coords
+        //   a_color : vec4 RGBA
+        // The vertex shader maps data coords through u_view (current
+        // zoom/pan window) into the plot rectangle, then to NDC
+        const VS_SRC = `#version 300 es
+in vec2 a_quad;
+in vec4 a_rect;
+in vec4 a_color;
+uniform vec4 u_view;    // alpha0, E0, alpha1, E1
+uniform vec4 u_plot;    // ml, mt, pw, ph  (device pixels)
+uniform vec2 u_canvas;  // W, H            (device pixels)
+out vec4 v_color;
+void main() {
+  float alpha = mix(a_rect.x, a_rect.z, a_quad.x);
+  float E     = mix(a_rect.y, a_rect.w, a_quad.y);
+  float u = (alpha - u_view.x) / (u_view.z - u_view.x);
+  float v = (E     - u_view.y) / (u_view.w - u_view.y);
+  float px = u_plot.x + u * u_plot.z;
+  float py = u_plot.y + (1.0 - v) * u_plot.w;
+  vec2 ndc = vec2(px / u_canvas.x, 1.0 - py / u_canvas.y) * 2.0 - 1.0;
+  gl_Position = vec4(ndc, 0.0, 1.0);
+  v_color = a_color;
+}`;
+
+        const FS_SRC = `#version 300 es
+precision highp float;
+in vec4 v_color;
+out vec4 outColor;
+void main() {
+  outColor = v_color;
+}`;
+
+        function compileShader(gl, type, src) {
+          const sh = gl.createShader(type);
+          gl.shaderSource(sh, src);
+          gl.compileShader(sh);
+          if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            throw new Error("shader: " + gl.getShaderInfoLog(sh));
+          }
+
+          return sh;
+        }
+
+        function makeProgram(gl, vs, fs) {
+          const prog = gl.createProgram();
+          gl.attachShader(prog, compileShader(gl, gl.VERTEX_SHADER, vs));
+          gl.attachShader(prog, compileShader(gl, gl.FRAGMENT_SHADER, fs));
+          gl.linkProgram(prog);
+          if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+            throw new Error("link: " + gl.getProgramInfoLog(prog));
+          }
+
+          return prog;
+        }
+
+        // Renderer state
+        const glCanvas = $("gl");
+        const ovCanvas = $("ov");
+        const plot = $("plot");
+
+        const gl = glCanvas.getContext("webgl2", {
+          antialias: true,
+          alpha: false,
+          depth: false,
+          stencil: false,
+          premultipliedAlpha: false,
+          preserveDrawingBuffer: true, // needed for PNG export via toBlob()
+        });
+
+        if (!gl) {
           showError(
-            "Could not load <code>qmc_butterfly.wasm</code> (" +
-              err.message +
-              "). If you opened this file directly " +
-              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/butterfly.html</code>.",
+            "WebGL2 is not available in this browser. " +
+              "Try a recent Chrome, Firefox, Edge, or Safari.",
           );
           $("prog").textContent = "";
 
           return;
         }
 
-        const MAXQ =
-          typeof w.qmc_bf_max_q === "function"
-            ? Math.min(50, w.qmc_bf_max_q())
-            : 50;
+        // 4x MSAA where the driver supports it
+        gl.getExtension("EXT_color_buffer_float");
 
-        // colours: gap colour by Hall number
-        function gapRGB(t) {
-          if (t === null) {
-            return [255, 255, 255];
-          }
-          if (t === 0) {
-            return [96, 110, 138];
-          }
+        let program;
+        let aQuadLoc;
+        let aRectLoc;
+        let aColorLoc;
+        let uViewLoc;
+        let uPlotLoc;
+        let uCanvasLoc;
+        let quadBuf;
+        let instBuf;
 
-          const s = Math.min(Math.abs(t), 8) / 8;
-          const a = t > 0 ? [255, 214, 120] : [130, 228, 255];
-          const b = t > 0 ? [232, 40, 62] : [48, 84, 255];
-
-          return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * s));
+        try {
+          program = makeProgram(gl, VS_SRC, FS_SRC);
+        } catch (err) {
+          showError("Shader compile failed: <code>" + err.message + "</code>");
+          return;
         }
 
-        const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
-        const PLAIN = "rgb(190,200,220)";
-        const fmt = (x) => (x < 0 ? "−" : "") + Math.abs(x).toFixed(3);
+        aQuadLoc = gl.getAttribLocation(program, "a_quad");
+        aRectLoc = gl.getAttribLocation(program, "a_rect");
+        aColorLoc = gl.getAttribLocation(program, "a_color");
+        uViewLoc = gl.getUniformLocation(program, "u_view");
+        uPlotLoc = gl.getUniformLocation(program, "u_plot");
+        uCanvasLoc = gl.getUniformLocation(program, "u_canvas");
 
-        // legend swatches
-        for (const t of [-8, -4, -2, -1, 0, 1, 2, 4, 8]) {
-          const s = document.createElement("span");
-          s.className = "sw";
-          s.innerHTML = `<i style="background:${css(gapRGB(t))}"></i>${t > 0 ? "+" : t < 0 ? "−" : ""}${Math.abs(t)}${Math.abs(t) === 8 ? "+" : ""}`;
-          $("legend").appendChild(s);
-        }
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
 
-        // progressive computation
-        const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-        const list = []; // computed fluxes
-        let nextQ = 2;
-        let nextP = 1;
-        let qTarget = parseInt($("qmax").value, 10);
-        function computeOne() {
-          for (;;) {
-            if (nextQ > qTarget || nextQ > MAXQ) {
-              return false;
-            }
+        // Unit quad: TRIANGLE_STRIP (0,0) (1,0) (0,1) (1,1)
+        quadBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+        gl.bufferData(
+          gl.ARRAY_BUFFER,
+          new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]),
+          gl.STATIC_DRAW,
+        );
+        gl.enableVertexAttribArray(aQuadLoc);
+        gl.vertexAttribPointer(aQuadLoc, 2, gl.FLOAT, false, 0, 0);
 
-            if (nextP >= nextQ) {
-              nextQ++;
-              nextP = 1;
-              continue;
-            }
+        // Interleaved instance buffer: [x0, y0, x1, y1, r, g, b, a] * N
+        instBuf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+        const STRIDE = 8 * 4;
+        gl.enableVertexAttribArray(aRectLoc);
+        gl.vertexAttribPointer(aRectLoc, 4, gl.FLOAT, false, STRIDE, 0);
+        gl.vertexAttribDivisor(aRectLoc, 1);
+        gl.enableVertexAttribArray(aColorLoc);
+        gl.vertexAttribPointer(aColorLoc, 4, gl.FLOAT, false, STRIDE, 16);
+        gl.vertexAttribDivisor(aColorLoc, 1);
 
-            const p = nextP++;
-            const q = nextQ;
-            if (gcd(p, q) !== 1) {
-              continue;
-            }
-            if (w.qmc_bf_edges(p, q) !== 0) {
-              continue;
-            }
+        gl.bindVertexArray(null);
 
-            const edges = new Float64Array(
-              wasmMemory.buffer,
-              w.qmc_bf_buffer(),
-              2 * q,
-            ).slice();
-
-            const tknn = new Array(q - 1);
-            for (let r = 1; r < q; r++) {
-              const t = w.qmc_bf_tknn(p, q, r);
-              tknn[r - 1] = t === INT_MIN ? null : t;
-            }
-
-            list.push({ p, q, alpha: p / q, edges, tknn });
-
-            return true;
+        // Growable CPU-side instance array
+        let instData = new Float32Array(4096 * 8);
+        let instCount = 0;
+        function ensureCapacity(n) {
+          const need = n * 8;
+          if (instData.length < need) {
+            let cap = instData.length;
+            while (cap < need) cap *= 2;
+            const grown = new Float32Array(cap);
+            grown.set(instData.subarray(0, instCount * 8));
+            instData = grown;
           }
         }
+        function pushRect(x0, y0, x1, y1, rgba) {
+          ensureCapacity(instCount + 1);
+          const o = instCount * 8;
+          instData[o + 0] = x0;
+          instData[o + 1] = y0;
+          instData[o + 2] = x1;
+          instData[o + 3] = y1;
+          instData[o + 4] = rgba[0];
+          instData[o + 5] = rgba[1];
+          instData[o + 6] = rgba[2];
+          instData[o + 7] = rgba[3];
+          instCount++;
+        }
 
+        // ----------------------------------------------------------------
+        // Geometry / layout
+        // ----------------------------------------------------------------
+        function computeLayout(W, H) {
+          const ml = Math.round(H * 0.075);
+          const mr = Math.round(H * 0.02);
+          const mt = Math.round(H * 0.03);
+          const mb = Math.max(Math.round(H * 0.095), 46);
+          const pw = W - ml - mr;
+          const ph = H - mt - mb;
+          return { ml, mt, mr, mb, pw, ph, W, H };
+        }
+
+        // Current view in data coordinates. Zoom/pan edits this.
+        const FULL_VIEW = { x0: 0, y0: -E_MAX, x1: 1, y1: E_MAX };
+        let view = { ...FULL_VIEW };
+
+        // Cached sorted flux list for the current qmax
         let viewKey = "";
         let viewCache = [];
-        function view(qmax) {
+        function sortedView(qmax) {
           const key = qmax + ":" + list.length;
           if (key !== viewKey) {
             viewCache = list
@@ -433,60 +551,153 @@
               .sort((a, b) => a.alpha - b.alpha);
             viewKey = key;
           }
-
           return viewCache;
         }
 
-        // drawing (used for the screen and for the PNG export)
-        function draw(ctx, W, H, o) {
-          ctx.fillStyle = BG;
-          ctx.fillRect(0, 0, W, H);
+        // ----------------------------------------------------------------
+        // Rectangle builder
+        // ----------------------------------------------------------------
+        function buildInstances(L, qmax, colored) {
+          instCount = 0;
+          const v = sortedView(qmax);
 
-          const ml = Math.round(H * 0.075);
-          const mr = Math.round(H * 0.02);
-          const mt = Math.round(H * (o.title ? 0.09 : 0.03));
-          const mb = Math.max(Math.round(H * 0.095), 46);
-          const pw = W - ml - mr;
-          const ph = H - mt - mb;
-          const X = (a) => ml + a * pw;
-          const Y = (e) => mt + ((E_MAX - e) / (2 * E_MAX)) * ph;
-          const v = view(o.qmax);
+          // Data -> pixel helpers (only used for the y coordinate here;
+          // the x extent of each strip is already in data coordinates)
+          const EtoPix = (E) =>
+            L.mt + ((view.y1 - E) / (view.y1 - view.y0)) * L.ph;
 
           for (let i = 0; i < v.length; i++) {
             const f = v[i];
             const left = i === 0 ? 0 : 0.5 * (v[i - 1].alpha + f.alpha);
             const right =
               i === v.length - 1 ? 1 : 0.5 * (f.alpha + v[i + 1].alpha);
-            const x0 = Math.floor(X(left));
-            const x1 = Math.max(x0 + 1, Math.floor(X(right)));
-            const wd = x1 - x0;
 
-            ctx.fillStyle = BAND;
+            // Skip fluxes completely outside the current view (helps
+            // a lot when zoomed in)
+            if (right < view.x0 || left > view.x1) continue;
+
+            // Bands
             for (let b = 0; b < f.q; b++) {
-              const yt = Y(f.edges[2 * b + 1]);
-              const yb = Y(f.edges[2 * b]);
-              ctx.fillRect(x0, yt, wd, Math.max(0.6, yb - yt));
+              const eLo = f.edges[2 * b];
+              const eHi = f.edges[2 * b + 1];
+              if (eHi < view.y0 || eLo > view.y1) continue;
+              const yTop = EtoPix(Math.min(eHi, view.y1));
+              const yBot = EtoPix(Math.max(eLo, view.y0));
+              const h = Math.max(0.6, yBot - yTop);
+              pushRect(
+                left,
+                eLo,
+                right,
+                eLo + (h / L.ph) * (view.y1 - view.y0),
+                BAND,
+              );
             }
 
+            // Gaps
             for (let r = 1; r < f.q; r++) {
-              const lo = f.edges[2 * (r - 1) + 1];
-              const hi = f.edges[2 * r];
-              if (hi - lo > 1e-9) {
-                ctx.fillStyle = o.colored ? css(gapRGB(f.tknn[r - 1])) : PLAIN;
-                ctx.fillRect(x0, Y(hi), wd, Y(lo) - Y(hi));
+              const eLo = f.edges[2 * (r - 1) + 1];
+              const eHi = f.edges[2 * r];
+              if (eHi - eLo < 1e-9) continue;
+              if (eHi < view.y0 || eLo > view.y1) continue;
+              const t = f.tknn[r - 1];
+              let col;
+              if (colored) {
+                const c = chernRGB(t);
+                col = [c[0] / 255, c[1] / 255, c[2] / 255, 1.0];
+              } else {
+                col = [190 / 255, 200 / 255, 220 / 255, 1.0];
               }
+              pushRect(left, eLo, right, eHi, col);
             }
           }
+        }
 
+        // ----------------------------------------------------------------
+        // Draw
+        // ----------------------------------------------------------------
+        function drawFrame(L, clearOnly) {
+          gl.viewport(0, 0, L.W, L.H);
+          gl.clearColor(BG[0], BG[1], BG[2], 1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          if (clearOnly || instCount === 0) return;
+
+          gl.useProgram(program);
+          gl.bindVertexArray(vao);
+
+          gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+          gl.bufferData(
+            gl.ARRAY_BUFFER,
+            instData.subarray(0, instCount * 8),
+            gl.DYNAMIC_DRAW,
+          );
+
+          gl.uniform4f(uViewLoc, view.x0, view.y0, view.x1, view.y1);
+          gl.uniform4f(uPlotLoc, L.ml, L.mt, L.pw, L.ph);
+          gl.uniform2f(uCanvasLoc, L.W, L.H);
+
+          gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, instCount);
+          gl.bindVertexArray(null);
+        }
+
+        // ----------------------------------------------------------------
+        // Canvas sizing
+        // ----------------------------------------------------------------
+        let layoutCache = null;
+        function layout() {
+          const cw = plot.clientWidth;
+          const ch = Math.max(300, Math.round(cw * 0.62));
+          plot.style.height = ch + "px";
+          const dpr = Math.min(2, window.devicePixelRatio || 1);
+          for (const c of [glCanvas, ovCanvas]) {
+            c.width = Math.round(cw * dpr);
+            c.height = Math.round(ch * dpr);
+          }
+          layoutCache = computeLayout(glCanvas.width, glCanvas.height);
+        }
+
+        let geo = null;
+        function redraw() {
+          if (!layoutCache) layout();
+          const L = layoutCache;
+          buildInstances(
+            L,
+            parseInt($("qmax").value, 10),
+            $("colored").checked,
+          );
+          drawFrame(L, false);
+          geo = {
+            ml: L.ml,
+            mt: L.mt,
+            pw: L.pw,
+            ph: L.ph,
+            W: L.W,
+            H: L.H,
+            view,
+            v: sortedView(parseInt($("qmax").value, 10)),
+          };
+          drawOverlay();
+        }
+
+        // ----------------------------------------------------------------
+        // Overlay (crosshair + axes text on the 2D canvas)
+        // ----------------------------------------------------------------
+        function drawOverlay() {
+          const c = ovCanvas.getContext("2d");
+          c.clearRect(0, 0, ovCanvas.width, ovCanvas.height);
+          if (!geo) return;
+          const { ml, mt, pw, ph, W, H, v } = geo;
+
+          // Axis ticks
           const fs = Math.max(11, Math.round(H * 0.026));
           const fam = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+          c.font = fs + "px " + fam;
+          c.fillStyle = "#8993a8";
+          c.strokeStyle = "#8993a8";
+          c.lineWidth = 1;
+          c.textAlign = "center";
+          c.textBaseline = "top";
 
-          ctx.font = fs + "px " + fam;
-          ctx.fillStyle = "#8993a8";
-          ctx.strokeStyle = "#8993a8";
-          ctx.lineWidth = 1;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
+          // flux ticks
           for (const [a, txt] of [
             [0, "0"],
             [0.25, "1/4"],
@@ -496,101 +707,99 @@
             [0.75, "3/4"],
             [1, "1"],
           ]) {
-            ctx.beginPath();
-            ctx.moveTo(X(a) + 0.5, Y(-E_MAX));
-            ctx.lineTo(X(a) + 0.5, Y(-E_MAX) + 5);
-            ctx.stroke();
-            ctx.fillText(txt, X(a), Y(-E_MAX) + 8);
+            if (a < view.x0 || a > view.x1) continue;
+            const px = ml + ((a - view.x0) / (view.x1 - view.x0)) * pw;
+            c.beginPath();
+            c.moveTo(px + 0.5, mt + ph);
+            c.lineTo(px + 0.5, mt + ph - 5);
+            c.stroke();
+            c.fillText(txt, px, mt + ph + 3);
           }
 
-          ctx.textAlign = "right";
-          ctx.textBaseline = "middle";
+          // energy ticks
+          c.textAlign = "right";
+          c.textBaseline = "middle";
           for (const e of [-4, -2, 0, 2, 4]) {
-            ctx.beginPath();
-            ctx.moveTo(ml - 5, Y(e) + 0.5);
-            ctx.lineTo(ml, Y(e) + 0.5);
-            ctx.stroke();
-            ctx.fillText(String(e), ml - 9, Y(e));
+            if (e < view.y0 || e > view.y1) continue;
+            const py = mt + ((view.y1 - e) / (view.y1 - view.y0)) * ph;
+            c.beginPath();
+            c.moveTo(ml - 5, py + 0.5);
+            c.lineTo(ml, py + 0.5);
+            c.stroke();
+            c.fillText(String(e), ml - 9, py);
           }
 
-          ctx.fillStyle = "#d7dce5";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "alphabetic";
-          ctx.fillText(
-            "magnetic flux per plaquette  α = p/q",
+          c.fillStyle = "#d7dce5";
+          c.textAlign = "center";
+          c.textBaseline = "alphabetic";
+          c.fillText(
+            "magnetic flux per plaquette  \u03B1 = p/q",
             ml + pw / 2,
-            H - Math.round(H * 0.012),
+            H - 6,
           );
-          ctx.textAlign = "left";
-          ctx.textBaseline = "top";
-          ctx.fillText("E / t", ml + 6, mt + 4);
-          ctx.textAlign = "right";
-          ctx.fillText("q ≤ " + o.qmax, W - mr - 6, mt + 4);
-          if (o.title) {
-            ctx.textAlign = "left";
-            ctx.font = "600 " + Math.round(H * 0.04) + "px " + fam;
-            ctx.fillStyle = "#d7dce5";
-            ctx.fillText(
-              "Hofstadter butterfly - gaps coloured by Chern number",
-              ml,
-              Math.round(H * 0.022),
-            );
-            ctx.font = fs + "px " + fam;
-            ctx.fillStyle = "#8993a8";
-            ctx.textAlign = "right";
-            ctx.textBaseline = "top";
-            ctx.fillText(
-              "QMC · github.com/Harshit-Dhanwalkar/QMC",
-              W - mr,
-              Math.round(H * 0.03),
-            );
-          }
+          c.textAlign = "left";
+          c.textBaseline = "top";
+          c.fillText("E / t", ml + 6, mt + 4);
+          c.textAlign = "right";
+          const zoom = view.x1 - view.x0;
+          c.fillText(
+            "q \u2264 " +
+              parseInt($("qmax").value, 10) +
+              (zoom < 0.999
+                ? "   \u00B7 zoom " + (1 / zoom).toFixed(1) + "\u00D7"
+                : ""),
+            W - (W - ml - pw) - 6,
+            mt + 4,
+          );
 
-          return { X, Y, ml, mt, pw, ph, v };
+          // Crosshair marks for hover / pin
+          const mark = (sel, solid) => {
+            if (!sel) {
+              return;
+            }
+            const x =
+              ml + ((sel.flux.alpha - view.x0) / (view.x1 - view.x0)) * pw;
+            const y = mt + ((view.y1 - sel.E) / (view.y1 - view.y0)) * ph;
+            c.strokeStyle = solid
+              ? "rgba(255,255,255,.95)"
+              : "rgba(255,255,255,.55)";
+            c.lineWidth = Math.max(1, H / 500);
+            c.setLineDash(solid ? [] : [5, 4]);
+            c.beginPath();
+            c.moveTo(x, mt);
+            c.lineTo(x, mt + ph);
+            c.moveTo(ml, y);
+            c.lineTo(ml + pw, y);
+            c.stroke();
+            c.setLineDash([]);
+            c.beginPath();
+            c.arc(x, y, Math.max(4, H / 90), 0, 2 * Math.PI);
+            c.stroke();
+          };
+
+          mark(hover, false);
+          mark(pinned, true);
         }
 
-        // canvases
-        const bf = $("bf");
-        const ov = $("ov");
-        const plot = $("plot");
-        let geo = null;
-        function layout() {
-          const cw = plot.clientWidth;
-          const ch = Math.max(300, Math.round(cw * 0.62));
-          plot.style.height = ch + "px";
-          const dpr = Math.min(2, window.devicePixelRatio || 1);
-          for (const c of [bf, ov]) {
-            c.width = Math.round(cw * dpr);
-            c.height = Math.round(ch * dpr);
-          }
+        // Data (list of computed fluxes)
+        const list = [];
 
-          redraw();
-        }
-
-        function redraw() {
-          geo = draw(bf.getContext("2d"), bf.width, bf.height, {
-            qmax: parseInt($("qmax").value, 10),
-            colored: $("colored").checked,
-          });
-
-          drawOverlay();
-        }
-
-        // inspection
+        // Hover / pin logic
         let hover = null;
-        let pinned = null; // {flux, E}
+        let pinned = null;
+
         function locate(ev) {
           if (!geo) {
             return null;
           }
-
-          const r = ov.getBoundingClientRect();
-          const sx = ov.width / r.width;
-          const sy = ov.height / r.height;
+          const r = ovCanvas.getBoundingClientRect();
+          const sx = ovCanvas.width / r.width;
+          const sy = ovCanvas.height / r.height;
           const px = (ev.clientX - r.left) * sx;
           const py = (ev.clientY - r.top) * sy;
-          const alpha = (px - geo.ml) / geo.pw;
-          const E = E_MAX - ((py - geo.mt) / geo.ph) * 2 * E_MAX;
+          const alpha =
+            view.x0 + ((px - geo.ml) / geo.pw) * (view.x1 - view.x0);
+          const E = view.y1 - ((py - geo.mt) / geo.ph) * (view.y1 - view.y0);
           if (
             alpha < 0 ||
             alpha > 1 ||
@@ -601,10 +810,11 @@
             return null;
           }
 
-          let lo = 0;
-          let hi = geo.v.length - 1; // nearest flux by binary search
+          let lo = 0,
+            hi = geo.v.length - 1;
           while (lo < hi) {
             const mid = (lo + hi) >> 1;
+
             if (geo.v[mid].alpha < alpha) {
               lo = mid + 1;
             } else {
@@ -625,7 +835,6 @@
         }
 
         function classify(sel) {
-          // what is at energy E for this flux?
           const f = sel.flux;
           const E = sel.E;
           for (let r = 1; r < f.q; r++) {
@@ -636,74 +845,39 @@
             }
           }
 
-          for (let b = 0; b < f.q; b++)
-            if (E >= f.edges[2 * b] && E <= f.edges[2 * b + 1])
+          for (let b = 0; b < f.q; b++) {
+            if (E >= f.edges[2 * b] && E <= f.edges[2 * b + 1]) {
               return {
                 kind: "band",
                 b,
                 lo: f.edges[2 * b],
                 hi: f.edges[2 * b + 1],
               };
-
-          return { kind: "none" };
-        }
-
-        function drawOverlay() {
-          const c = ov.getContext("2d");
-          c.clearRect(0, 0, ov.width, ov.height);
-          if (!geo) {
-            return;
+            }
           }
 
-          const mark = (sel, solid) => {
-            if (!sel) {
-              return;
-            }
-
-            const x = geo.X(sel.flux.alpha);
-            const y = geo.Y(sel.E);
-            c.strokeStyle = solid
-              ? "rgba(255,255,255,.95)"
-              : "rgba(255,255,255,.55)";
-            c.lineWidth = Math.max(1, ov.height / 500);
-            c.setLineDash(solid ? [] : [5, 4]);
-            c.beginPath();
-            c.moveTo(x, geo.mt);
-            c.lineTo(x, geo.mt + geo.ph);
-            c.moveTo(geo.ml, y);
-            c.lineTo(geo.ml + geo.pw, y);
-            c.stroke();
-            c.setLineDash([]);
-            c.beginPath();
-            c.arc(x, y, Math.max(4, ov.height / 90), 0, 2 * Math.PI);
-            c.stroke();
-          };
-
-          mark(hover, false);
-          mark(pinned, true);
+          return { kind: "none" };
         }
 
         function describe(sel, extra) {
           const f = sel.flux;
           const c = classify(sel);
-          let h = `<div class="big"><span class="k">flux</span> α = <b>${f.p}/${f.q}</b> &nbsp;<span class="k">(${f.q} bands, E/t = ${fmt(sel.E)})</span></div>`;
+          let h = `<div class="big"><span class="k">flux</span> \u03B1 = <b>${f.p}/${f.q}</b> &nbsp;<span class="k">(${f.q} bands, E/t = ${fmt(sel.E)})</span></div>`;
           if (c.kind === "gap") {
             if (c.t === null) {
               h += `<div>Gap ${c.r} (above the lowest ${c.r} bands) is <b>closed</b>: the two middle bands touch at E = 0 (Dirac points), so no Hall number is defined.</div>`;
             } else {
-              h += `<div><span class="chip" style="background:${css(gapRGB(c.t))}"></span>Gap above the lowest <b>${c.r}</b> band${c.r > 1 ? "s" : ""}: E/t ∈ (${fmt(c.lo)}, ${fmt(c.hi)}), width ${(c.hi - c.lo).toFixed(3)}</div>`;
-              h += `<div>Hall number <b>σ<sub>xy</sub> = ${c.t < 0 ? "−" : c.t > 0 ? "+" : ""}${Math.abs(c.t)}</b> <span class="k">(TKNN: ${c.r} = ${f.q}·s + ${f.p}·t)</span></div>`;
+              h += `<div><span class="chip" style="background:${rgb255(chernRGB(c.t))}"></span>Gap above the lowest <b>${c.r}</b> band${c.r > 1 ? "s" : ""}: E/t \u2208 (${fmt(c.lo)}, ${fmt(c.hi)}), width ${(c.hi - c.lo).toFixed(3)}</div>`;
+              h += `<div>Hall number <b>\u03C3<sub>xy</sub> = ${c.t < 0 ? "\u2212" : c.t > 0 ? "+" : ""}${Math.abs(c.t)}</b> <span class="k">(TKNN: ${c.r} = ${f.q}\u00B7s + ${f.p}\u00B7t)</span></div>`;
             }
           } else if (c.kind === "band") {
-            h += `<div>Inside band ${c.b + 1} of ${f.q}: E/t ∈ [${fmt(c.lo)}, ${fmt(c.hi)}], bandwidth ${(c.hi - c.lo).toFixed(3)}</div>`;
+            h += `<div>Inside band ${c.b + 1} of ${f.q}: E/t \u2208 [${fmt(c.lo)}, ${fmt(c.hi)}], bandwidth ${(c.hi - c.lo).toFixed(3)}</div>`;
           } else {
             h += `<div class="k">Outside the spectrum.</div>`;
           }
-
           return h + (extra || "");
         }
 
-        const sameSel = (a, b) => a && b && a.flux === b.flux;
         let checkHTML = "";
         function showPinned() {
           if (pinned) $("info").innerHTML = describe(pinned, checkHTML);
@@ -718,17 +892,16 @@
             return;
           }
 
-          // The FHS integer is only right if the k-grid resolves the Berry curvature, so scale it with |t|;
-          // cost ~ 1.5e-4 * q^3 * n_k^2 ms, skip when that would freeze the page
           const est = (nk) => 1.5e-4 * f.q ** 3 * nk * nk;
           let nk = Math.max(8, Math.min(40, 2 * Math.abs(c.t) + 8));
           if (est(nk) > 5000) {
             checkHTML = `<div class="warn">Live check skipped: resolving a Hall number of ${Math.abs(c.t)} at q = ${f.q} would take about ${(est(nk) / 1000).toFixed(0)} s in the browser. The TKNN value above is exact.</div>`;
             showPinned();
+
             return;
           }
 
-          checkHTML = `<div class="k">Computing Chern number with the library (n<sub>k</sub> = ${nk})…</div>`;
+          checkHTML = `<div class="k">Computing Chern number with the library (n<sub>k</sub> = ${nk})\u2026</div>`;
           showPinned();
           const token = sel;
           setTimeout(() => {
@@ -740,8 +913,8 @@
             let C = w.qmc_bf_chern(f.p, f.q, c.r, nk);
             let ms = performance.now() - t0;
             let ok = Math.abs(C - c.t) < 0.05;
+
             if (!ok && est(Math.ceil(nk * 1.6)) < 5000) {
-              // under-resolved grid: refine once
               nk = Math.ceil(nk * 1.6);
               t0 = performance.now();
               C = w.qmc_bf_chern(f.p, f.q, c.r, nk);
@@ -755,15 +928,39 @@
             if (Number.isNaN(C)) {
               checkHTML = `<div class="warn">Library check: grid too coarse or gap too small at n<sub>k</sub> = ${nk} (the library refuses to guess).</div>`;
             } else if (ok) {
-              checkHTML = `<div class="ok">✓ Library check: Fukui-Hatsugai-Suzuki C = ${Math.round(C)} on a ${nk}×${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
+              checkHTML = `<div class="ok">\u2713 Library check: Fukui-Hatsugai-Suzuki C = ${Math.round(C)} on a ${nk}\u00D7${nk} k-grid (${ms.toFixed(0)} ms) agrees.</div>`;
             } else {
               checkHTML = `<div class="warn">Library check at n<sub>k</sub> = ${nk} gave C = ${C.toFixed(3)}: the grid does not resolve the Berry curvature of this gap (a Chern number from a too-coarse grid is aliased). TKNN is exact.</div>`;
             }
+
             showPinned();
           }, 30);
         }
 
-        ov.addEventListener("pointermove", (e) => {
+        // Interaction: hover, pin, zoom, pan
+        glCanvas.addEventListener("pointermove", (e) => {
+          // Drag = pan
+          if (dragState.active) {
+            const L = layoutCache;
+            const dx = e.clientX - dragState.lastX;
+            const dy = e.clientY - dragState.lastY;
+            dragState.lastX = e.clientX;
+            dragState.lastY = e.clientY;
+            const sx = ovCanvas.width / glCanvas.getBoundingClientRect().width;
+            const sy =
+              ovCanvas.height / glCanvas.getBoundingClientRect().height;
+            const dAlpha = (-(dx * sx) / L.pw) * (view.x1 - view.x0);
+            const dE = ((dy * sy) / L.ph) * (view.y1 - view.y0);
+            view.x0 += dAlpha;
+            view.x1 += dAlpha;
+            view.y0 += dE;
+            view.y1 += dE;
+            clampView();
+            redraw();
+
+            return;
+          }
+
           hover = locate(e);
           drawOverlay();
           if (!pinned && hover) {
@@ -771,26 +968,101 @@
           }
         });
 
-        ov.addEventListener("pointerleave", () => {
+        glCanvas.addEventListener("pointerleave", () => {
           hover = null;
+          dragState.active = false;
+          glCanvas.classList.remove("dragging");
           drawOverlay();
         });
 
-        ov.addEventListener("pointerdown", (e) => {
-          const s = locate(e);
-          if (!s) {
-            return;
+        const dragState = { active: false, lastX: 0, lastY: 0, moved: 0 };
+        glCanvas.addEventListener("pointerdown", (e) => {
+          glCanvas.setPointerCapture(e.pointerId);
+          dragState.active = true;
+          dragState.lastX = e.clientX;
+          dragState.lastY = e.clientY;
+          dragState.moved = 0;
+          glCanvas.classList.add("dragging");
+        });
+
+        glCanvas.addEventListener("pointerup", (e) => {
+          glCanvas.releasePointerCapture(e.pointerId);
+          if (dragState.active && dragState.moved < 4) {
+            // Treat as a click (pin)
+            const s = locate(e);
+            if (s) {
+              pinned = s;
+              hover = null;
+              drawOverlay();
+              checkHTML = "";
+              showPinned();
+              numericCheck(s);
+            }
           }
 
-          pinned = s;
-          hover = null;
-          drawOverlay();
-          checkHTML = "";
-          showPinned();
-          numericCheck(s);
+          dragState.active = false;
+          glCanvas.classList.remove("dragging");
         });
 
-        // controls
+        glCanvas.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            const L = layoutCache;
+            const r = glCanvas.getBoundingClientRect();
+            const sx = ovCanvas.width / r.width;
+            const sy = ovCanvas.height / r.height;
+            const px = (e.clientX - r.left) * sx;
+            const py = (e.clientY - r.top) * sy;
+
+            // Cursor position in data coordinates
+            const alphaC = view.x0 + ((px - L.ml) / L.pw) * (view.x1 - view.x0);
+            const EC = view.y1 - ((py - L.mt) / L.ph) * (view.y1 - view.y0);
+
+            const factor = Math.exp(e.deltaY * 0.0015);
+            const newW = (view.x1 - view.x0) * factor;
+            const newH = (view.y1 - view.y0) * factor;
+
+            // Keep cursor point fixed
+            view.x0 = alphaC - (alphaC - view.x0) * factor;
+            view.x1 = view.x0 + newW;
+            view.y0 = EC - (EC - view.y0) * factor;
+            view.y1 = view.y0 + newH;
+            clampView();
+            redraw();
+          },
+
+          { passive: false },
+        );
+
+        function clampView() {
+          // Never let view become absurdly large or small
+          const minW = 1e-4;
+          const maxW = 1.5;
+          const w = view.x1 - view.x0;
+          if (w < minW) {
+            const c = 0.5 * (view.x0 + view.x1);
+            view.x0 = c - minW / 2;
+            view.x1 = c + minW / 2;
+          } else if (w > maxW) {
+            view.x0 = 0;
+            view.x1 = 1;
+          }
+
+          const h = view.y1 - view.y0;
+          const minH = 1e-3;
+          const maxH = 2 * E_MAX * 1.5;
+          if (h < minH) {
+            const c = 0.5 * (view.y0 + view.y1);
+            view.y0 = c - minH / 2;
+            view.y1 = c + minH / 2;
+          } else if (h > maxH) {
+            view.y0 = -E_MAX;
+            view.y1 = E_MAX;
+          }
+        }
+
+        // Controls
         $("qmax").addEventListener("input", () => {
           qTarget = parseInt($("qmax").value, 10);
           $("qmaxv").textContent = String(qTarget);
@@ -798,28 +1070,239 @@
           schedule();
         });
         $("colored").addEventListener("change", redraw);
-        $("png").addEventListener("click", () => {
-          const c = document.createElement("canvas");
-          c.width = 2400;
-          c.height = 1500;
-          draw(c.getContext("2d"), c.width, c.height, {
-            qmax: parseInt($("qmax").value, 10),
-            colored: $("colored").checked,
-            title: true,
+        $("reset").addEventListener("click", () => {
+          view = { ...FULL_VIEW };
+          redraw();
+        });
+        $("png").addEventListener("click", exportPNG);
+        window.addEventListener("resize", () => {
+          layout();
+          redraw();
+        });
+
+        // PNG export: render at 2400x1500 into an offscreen canvas, then
+        // composite the axis text on top with a 2D canvas
+        function exportPNG() {
+          const TW = 2400;
+          const TH = 1500;
+          const off = document.createElement("canvas");
+          off.width = TW;
+          off.height = TH;
+          const ogl = off.getContext("webgl2", {
+            antialias: true,
+            alpha: false,
+            preserveDrawingBuffer: true,
           });
-          c.toBlob((b) => {
+
+          if (!ogl) {
+            showError("PNG export needs WebGL2.");
+            return;
+          }
+
+          const L = computeLayout(TW, TH);
+
+          // Rebuild instances with the same view, but a fresh recorder
+          const savedInst = instData;
+          const savedCount = instCount;
+          instData = new Float32Array(4096 * 8);
+          instCount = 0;
+          buildInstances(
+            L,
+            parseInt($("qmax").value, 10),
+            $("colored").checked,
+          );
+
+          // Render on the offscreen context. Reuse the same program source.
+          const prog = makeProgram(ogl, VS_SRC, FS_SRC);
+          const aq = ogl.getAttribLocation(prog, "a_quad");
+          const ar = ogl.getAttribLocation(prog, "a_rect");
+          const ac = ogl.getAttribLocation(prog, "a_color");
+          const uv = ogl.getUniformLocation(prog, "u_view");
+          const up = ogl.getUniformLocation(prog, "u_plot");
+          const uc = ogl.getUniformLocation(prog, "u_canvas");
+
+          const vao2 = ogl.createVertexArray();
+          ogl.bindVertexArray(vao2);
+
+          const qb = ogl.createBuffer();
+          ogl.bindBuffer(ogl.ARRAY_BUFFER, qb);
+          ogl.bufferData(
+            ogl.ARRAY_BUFFER,
+            new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]),
+            ogl.STATIC_DRAW,
+          );
+          ogl.enableVertexAttribArray(aq);
+          ogl.vertexAttribPointer(aq, 2, ogl.FLOAT, false, 0, 0);
+
+          const ib = ogl.createBuffer();
+          ogl.bindBuffer(ogl.ARRAY_BUFFER, ib);
+          ogl.bufferData(
+            ogl.ARRAY_BUFFER,
+            instData.subarray(0, instCount * 8),
+            ogl.STATIC_DRAW,
+          );
+          ogl.enableVertexAttribArray(ar);
+          ogl.vertexAttribPointer(ar, 4, ogl.FLOAT, false, 32, 0);
+          ogl.vertexAttribDivisor(ar, 1);
+          ogl.enableVertexAttribArray(ac);
+          ogl.vertexAttribPointer(ac, 4, ogl.FLOAT, false, 32, 16);
+          ogl.vertexAttribDivisor(ac, 1);
+
+          ogl.viewport(0, 0, TW, TH);
+          ogl.clearColor(BG[0], BG[1], BG[2], 1.0);
+          ogl.clear(ogl.COLOR_BUFFER_BIT);
+          ogl.useProgram(prog);
+          ogl.uniform4f(uv, view.x0, view.y0, view.x1, view.y1);
+          ogl.uniform4f(up, L.ml, L.mt, L.pw, L.ph);
+          ogl.uniform2f(uc, TW, TH);
+          ogl.drawArraysInstanced(ogl.TRIANGLE_STRIP, 0, 4, instCount);
+
+          // Composite text on top
+          const comp = document.createElement("canvas");
+          comp.width = TW;
+          comp.height = TH;
+          const cctx = comp.getContext("2d");
+          cctx.drawImage(off, 0, 0);
+          drawLabels(cctx, L, TW, TH);
+
+          // Restore main-thread state
+          instData = savedInst;
+          instCount = savedCount;
+
+          comp.toBlob((b) => {
             const a = document.createElement("a");
             a.href = URL.createObjectURL(b);
             a.download = "hofstadter_butterfly.png";
             a.click();
             setTimeout(() => URL.revokeObjectURL(a.href), 2000);
           });
-        });
-        window.addEventListener("resize", layout);
+        }
 
-        // pump: compute in small slices so the butterfly visibly grows
-        let pumping = false;
-        let lastDraw = 0;
+        function drawLabels(c, L, W, H) {
+          const fs = Math.max(18, Math.round(H * 0.026));
+          const fam = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+          c.font = fs + "px " + fam;
+          c.fillStyle = "#d7dce5";
+          c.strokeStyle = "#8993a8";
+          c.textAlign = "center";
+          c.textBaseline = "top";
+          for (const [a, txt] of [
+            [0, "0"],
+            [0.25, "1/4"],
+            [1 / 3, "1/3"],
+            [0.5, "1/2"],
+            [2 / 3, "2/3"],
+            [0.75, "3/4"],
+            [1, "1"],
+          ]) {
+            if (a < view.x0 || a > view.x1) {
+              continue;
+            }
+            const px = L.ml + ((a - view.x0) / (view.x1 - view.x0)) * L.pw;
+            c.fillText(txt, px, L.mt + L.ph + 8);
+          }
+
+          c.textAlign = "right";
+          c.textBaseline = "middle";
+          for (const e of [-4, -2, 0, 2, 4]) {
+            if (e < view.y0 || e > view.y1) {
+              continue;
+            }
+
+            const py = L.mt + ((view.y1 - e) / (view.y1 - view.y0)) * L.ph;
+            c.fillText(String(e), L.ml - 12, py);
+          }
+
+          c.textAlign = "center";
+          c.textBaseline = "alphabetic";
+          c.fillText(
+            "magnetic flux per plaquette  \u03B1 = p/q",
+            L.ml + L.pw / 2,
+            H - 12,
+          );
+        }
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_butterfly.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_butterfly.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly from disk, serve the " +
+              "folder: <code>python3 -m http.server</code> and open " +
+              "<code>http://localhost:8000/butterfly_webgl.html</code>.",
+          );
+          $("prog").textContent = "";
+          return;
+        }
+
+        const MAXQ =
+          typeof w.qmc_bf_max_q === "function"
+            ? Math.min(50, w.qmc_bf_max_q())
+            : 50;
+
+        // Legend
+        for (const t of [-8, -4, -2, -1, 0, 1, 2, 4, 8]) {
+          const s = document.createElement("span");
+          s.className = "sw";
+          s.innerHTML = `<i style="background:${rgb255(chernRGB(t))}"></i>${t > 0 ? "+" : t < 0 ? "\u2212" : ""}${Math.abs(t)}${Math.abs(t) === 8 ? "+" : ""}`;
+          $("legend").appendChild(s);
+        }
+
+        const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+        let nextQ = 2;
+        let nextP = 1;
+        let qTarget = parseInt($("qmax").value, 10);
+
+        function computeOne() {
+          for (;;) {
+            if (nextQ > qTarget || nextQ > MAXQ) {
+              return false;
+            }
+
+            if (nextP >= nextQ) {
+              nextQ++;
+              nextP = 1;
+              continue;
+            }
+
+            const p = nextP++;
+            const q = nextQ;
+            if (gcd(p, q) !== 1) {
+              continue;
+            }
+
+            if (w.qmc_bf_edges(p, q) !== 0) {
+              continue;
+            }
+
+            const edges = new Float64Array(
+              wasmMemory.buffer,
+              w.qmc_bf_buffer(),
+              2 * q,
+            ).slice();
+            const tknn = new Array(q - 1);
+            for (let r = 1; r < q; r++) {
+              const t = w.qmc_bf_tknn(p, q, r);
+              tknn[r - 1] = t === INT_MIN ? null : t;
+            }
+
+            list.push({ p, q, alpha: p / q, edges, tknn });
+            return true;
+          }
+        }
+
         function totalFor(qm) {
           let n = 0;
           for (let q = 2; q <= qm; q++) {
@@ -833,6 +1316,8 @@
           return n;
         }
 
+        let pumping = false;
+        let lastDraw = 0;
         function pump() {
           const t0 = performance.now();
           let did = false;
@@ -844,28 +1329,27 @@
           const total = totalFor(Math.min(qTarget, MAXQ));
           const finished = done >= total;
           $("prog").textContent = finished
-            ? `${total} fluxes (q ≤ ${qTarget}) computed in your browser`
-            : `computing fluxes… ${done} / ${total}`;
+            ? `${total} fluxes (q \u2264 ${qTarget}) computed in your browser`
+            : `computing fluxes\u2026 ${done} / ${total}`;
+
           const now = performance.now();
           if (did && (finished || now - lastDraw > 120)) {
             redraw();
             lastDraw = now;
-            if (!pinned && !hover) {
-              /* keep hint */
-            }
           }
 
-          if (!finished) requestAnimationFrame(pump);
-          else pumping = false;
-
-          if (finished && !pinned) {
-            // start with the textbook 1/3 case pinned
-            const f = list.find((x) => x.p === 1 && x.q === 3);
-            if (f) {
-              pinned = { flux: f, E: 0.5 * (f.edges[1] + f.edges[2]) };
-              drawOverlay();
-              showPinned();
-              numericCheck(pinned);
+          if (!finished) {
+            requestAnimationFrame(pump);
+          } else {
+            pumping = false;
+            if (!pinned) {
+              const f = list.find((x) => x.p === 1 && x.q === 3);
+              if (f) {
+                pinned = { flux: f, E: 0.5 * (f.edges[1] + f.edges[2]) };
+                drawOverlay();
+                showPinned();
+                numericCheck(pinned);
+              }
             }
           }
         }
@@ -877,8 +1361,10 @@
           }
         }
 
+        // Go
         try {
           layout();
+          redraw();
           schedule();
         } catch (err) {
           showError(
