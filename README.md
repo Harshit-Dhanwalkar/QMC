@@ -162,9 +162,23 @@
       <br>
       <b>Quantum carpet</b>
       <br>
-      <sub>A wavepacket in a box reassembles itself exactly at T, T/2, T/4 — the Talbot effect with matter waves</sub>
+      <sub>A wavepacket in a box reassembles itself exactly at T, T/2, T/4 - the Talbot effect with matter waves</sub>
     </td>
   </tr>
+  <tr>
+    <td width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/zeno.html">
+        <img src="docs/src/playground/thumbs/zeno.jpg" alt="Quantum Zeno effect: survival probability under pulsed and continuous measurement" width="260" height="260">
+      </a>
+      <br>
+      <b>Quantum Zeno effect</b>
+      <br>
+      <sub>A driven qubit watched too closely stops flipping: pulsed measurements and continuous dephasing</sub>
+    </td>
+    <td width="33%"></td>
+  </tr>
+</table>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -369,6 +383,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_87_grover_multi.c</code></li>
   <li><code>eg_88_bell_chsh.c</code></li>
   <li><code>eg_89_box_revival.c</code></li>
+  <li><code>eg_90_zeno.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -441,6 +456,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_grover_multi.c</code></li>
   <li><code>test_bell_chsh.c</code></li>
   <li><code>test_box_revival.c</code></li>
+  <li><code>test_zeno.c</code></li>
   <li><code>test_pimc.c</code></li>
   <li><code>test_potentials.c</code></li>
   <li><code>test_qec.c</code></li>
