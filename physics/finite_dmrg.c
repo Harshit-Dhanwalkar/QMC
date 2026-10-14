@@ -1,9 +1,9 @@
 /*
- * Finite-system DMRG sweeps for the open-boundary spin-1/2 XXZ chain
+ * Finite-system DMRG sweeps for open-boundary spin-1/2 XXZ chain
  *
  * This file is deliberately self-contained (it does not reach into dmrg.c's
  * static helpers) so validated infinite-system algorithm in dmrg.c is
- * untouched. The only things shared with dmrg.h are dmrg_block_t layout and
+ * untouched. Only things shared with dmrg.h are dmrg_block_t layout and
  * dmrg_block_init()/dmrg_block_free()
  */
 
@@ -385,7 +385,7 @@ lanczos_fail:
 
 /*
  * Truncate D x D `raw` block (just-enlarged system side) down to at most m_max
- * states, using the reduced density matrix of ground state \Psi (D x D2, D2 =
+ * states, using reduced density matrix of ground state \Psi (D x D2, D2 =
  * environment dim) on raw/system (row) side:
  *   \rho = \Psi @ \Psi^\dagger
  *
@@ -519,11 +519,9 @@ static int sweep_step(dmrg_block_t **cache, int l, int r, double Jz, double Jxy,
   return 1;
 }
 
-/*
- * Read-only version of sweep_step: same diagonalization, but truncated block is
- * discarded rather than stored, for convergence diagnostics that must not
- * perturb the cache mid-sweep
- */
+// Read-only version of sweep_step: same diagonalization, but truncated block is
+// discarded rather than stored, for convergence diagnostics that must not
+// perturb cache mid-sweep
 static int diag_step(dmrg_block_t **cache, int l, int r, double Jz, double Jxy,
                      const cmatrix_t *sz, const cmatrix_t *sp,
                      const cmatrix_t *sm, int m_max, double *E0_out,
@@ -653,7 +651,7 @@ finite_dmrg_result_t *finite_dmrg_run(int N_target, double Jz, double Jxy,
   }
 
   // NOTE: Sweep: alternately grow one side from 2 up to N-1, then other,
-  // re-truncating the growing side at every step from the cache's current
+  // re-truncating growing side at every step from cache's current
   // (increasingly well-optimized) opposite-side blocks
   int direction = 1; // +1: l runs 2..N-1 upward; -1: l runs N-2..1 downward
   double last_E0 = 0.0, last_terr = 0.0;
@@ -676,7 +674,7 @@ finite_dmrg_result_t *finite_dmrg_run(int N_target, double Jz, double Jxy,
 
     direction = -direction;
 
-    // Read-only diagnostic checkpoint at the most balanced bipartition
+    // Read-only diagnostic checkpoint at most balanced bipartition
     if (!diag_step(cache, half, N - half, Jz, Jxy, sz, sp, sm, m_max, &last_E0,
                    &last_terr)) {
       goto fail;

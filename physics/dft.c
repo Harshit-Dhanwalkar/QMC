@@ -246,7 +246,7 @@ void pbe_correlation_potential(double n, double sigma, double *vrho,
   double T2 = t * t;
 
   //  B(ec) = (\beta / \gamma) / (\exp(-ec / \gamma) - 1)
-  // and dB/dec by the quotient + chain rule
+  // and dB/dec by quotient + chain rule
   double y = exp(-ec / gamma);
   double B = (beta / gamma) / (y - 1.0);
   double dB_dec = beta * y / (gamma * gamma * (y - 1.0) * (y - 1.0));
@@ -323,7 +323,7 @@ static void normalize_u(double *u, int N, double dr) {
 }
 
 /*
- * Kohn-Sham Hamiltonian matrix at the current density (encoded via u[],
+ * Kohn-Sham Hamiltonian matrix at current density (encoded via u[],
  * n_orbitals doubly-occupied orbitals). Diagonal-only potential (kinetic
  * off-diagonals aside), unlike hartree_fock.c's dense exchange matrix.
  */
@@ -409,9 +409,9 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
 
   /* Dirichlet boundaries: fully decouple endpoints so u(r_min)=u(r_max)=0
    * exactly
-   * WARN: avoids -Z/r_min singularity acting as a spurious deep attractive well
-   * pinned to a single grid point, which would otherwise dominate the low end
-   * of spectrum. */
+   *  WARN: avoids -Z/r_min singularity acting as a spurious deep attractive
+   * well pinned to a single grid point, which would otherwise dominate low
+   * end of spectrum */
   for (int j = 0; j < N; j++) {
     CMAT(hamiltonian, 0, j) = c_zero();
     CMAT(hamiltonian, N - 1, j) = c_zero();
@@ -558,7 +558,7 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
     eps_prev_sum = eps_sum;
   }
 
-  // Final energetics at the converged density
+  // Final energetics at converged density
   double *n_dens = malloc((size_t)N * sizeof(double));
   double *V_H = malloc((size_t)N * sizeof(double));
   double *Y0 = malloc((size_t)N * sizeof(double));

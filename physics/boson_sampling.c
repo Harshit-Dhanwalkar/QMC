@@ -1,7 +1,7 @@
 /*
-Boson sampling: photon transition amplitudes/probabilities through
-linear-optical network
-*/
+ * Boson sampling: photon transition amplitudes/probabilities through
+ * linear-optical network
+ */
 
 #include "boson_sampling.h"
 #include "../core/complex.h"

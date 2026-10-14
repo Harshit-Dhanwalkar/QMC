@@ -6,8 +6,8 @@
 #define IDX4(arr, nso, p, q, r, s)                                             \
   (arr)[(((size_t)(p) * (nso) + (q)) * (nso) + (r)) * (nso) + (s)]
 
-/* tmp_d(i,j,k,a,b,c) = t1_ia * <jk||bc> : disconnected-triples "base" term
- * (before the P(i/jk)P(a/bc) antisymmetrization below is applied). */
+// tmp_d(i,j,k,a,b,c) = t1_ia * <jk||bc> : disconnected-triples "base" term
+// (before the P(i/jk)P(a/bc) antisymmetrization below is applied)
 static double tmp_d_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
                         int a, int b, int c) {
   (void)k;
@@ -15,8 +15,8 @@ static double tmp_d_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
   return IDX2(amp->t1, nso, i, a) * IDX4(amp->V, nso, j, k, b, c);
 }
 
-/* tmp_c(i,j,k,a,b,c) = sum_e t2_jkae*<ei||bc> - sum_m t2_imbc*<majk> -- the
-   connected-triples "base" term. */
+// tmp_c(i,j,k,a,b,c) = sum_e t2_jkae*<ei||bc> - sum_m t2_imbc*<majk> -
+// connected-triples "base" term
 static double tmp_c_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
                         int a, int b, int c) {
   int nso = amp->nso;
@@ -41,10 +41,10 @@ static double tmp_c_val(const ccsd_amplitudes_t *amp, int i, int j, int k,
 typedef double (*tmp_fn_t)(const ccsd_amplitudes_t *, int, int, int, int, int,
                            int);
 
-/* P(i/jk) P(a/bc) tmp(i,j,k,a,b,c): the 3-term cyclic antisymmetrizer over {i
- * swapped with j, i swapped with k} composed with the same over {a swapped with
- * b, a swapped with c} -> 9 terms total (3x3), signs from expanding (1 - Sij -
- * Sik)(1 - Sab - Sac). */
+// P(i/jk) P(a/bc) tmp(i,j,k,a,b,c): 3-term cyclic antisymmetrizer over {i
+// swapped with j, i swapped with k} composed with same over {a swapped with b,
+// a swapped with c} -> 9 terms total (3x3), signs from expanding (1 - Sij
+// Sik)(1 - Sab - Sac)
 static double P_ijk_abc(tmp_fn_t tmp, const ccsd_amplitudes_t *amp, int i,
                         int j, int k, int a, int b, int c) {
   double t = 0.0;

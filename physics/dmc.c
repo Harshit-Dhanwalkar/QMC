@@ -1,6 +1,6 @@
 /*
-Diffusion Monte Carlo for two-electron atoms/ions (He, H-, Li+, Be2+, ...).
-*/
+ * Diffusion Monte Carlo for two-electron atoms/ions (He, H-, Li+, Be2+, ...)
+ */
 
 #include "dmc.h"
 #include "../core/random.h"
@@ -35,6 +35,7 @@ void dmc_drift_velocity(const dmc_drift_params_t *params, double drift_out[3]) {
   if (!params || !params->walker) {
     return;
   }
+
   const vmc_walker_t *walker = params->walker;
   double radius1 = norm3(walker->r1);
   double radius2 = norm3(walker->r2);
@@ -91,16 +92,14 @@ int dmc_move_electron(vmc_walker_t *walker, int which, double Zeff,
   double drift_new[3];
   dmc_drift_velocity(&drift_p_new, drift_new);
 
-  /*
-   * NOTE: Green's function ratio for reverse vs forward drift-diffusion move
+  /*  NOTE: Green's function ratio for reverse vs forward drift-diffusion move
    * (normalization prefactors (2 * \pi * \tau)^(-3/2) are identical for forward
    * and reverse and cancel in ratio):
    *  fwd = r' - r - \tau * v(r)
    *  bwd = r - r' - \tau * v(r')
    *  \ln G(r<-r') - \ln G(r'<-r) = (|fwd|^2 - |bwd|^2) / (2 * \tau)
    * Full log acceptance ratio: 2 * (\ln(Psi') - \ln(Psi)) + that
-   * Green's-function term.
-   */
+   * Green's-function term */
   double fwd[3], bwd[3];
   for (int k = 0; k < 3; k++) {
     fwd[k] = proposed[k] - old_pos[k] - tau * drift_old[k];
@@ -150,13 +149,13 @@ int dmc_branch_walker(vmc_walker_t *walker, double Z_charge, double Zeff,
    * finite Jastrow/orbital form; an un-mitigated spike makes \exp(-\tau * dE)
    * enormous or vanishing for one walker, which is "population explosion /
    * walker starves" failure mode DMC branching is prone to. UNR's prescription
-   * is to cut off dE itself (not just the resulting weight) via a bounded, odd,
+   * is to cut off dE itself (not just resulting weight) via a bounded, odd,
    * smooth function of dE that:
-   *   - reduces to the identity (dE_eff -> dE) when |dE*tau| << 1, so normal
+   *   - reduces to identity (dE_eff -> dE) when |dE*tau| << 1, so normal
    *     small fluctuations are completely unaffected (no bias introduced in
    *     well-behaved regime that dominates a correctly-tuned run), and
-   *   - saturates to +-1/tau as dE -> +-infinity, so tau*dE_eff is bounded in
-   *     magnitude by 1 regardless of how large the raw spike is.
+   *   - saturates to +-1/\tau as dE -> +-\infty, so \tau*dE_eff is bounded in
+   *     magnitude by 1 regardless of how large raw spike is
    *
    * dE_eff = dE / \sqrt(1 + (dE * \tau)^2)
    */
@@ -221,7 +220,7 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
 
 /* One full generation: move+branch every walker in `cur`, writing
  * survivors/replicas into `next`. Walkers beyond max_population are handled by
- * random subsampling back down to target_population.
+ * random subsampling back down to target_population
  *
  * NOTE: Parallelized across walker population. Structured as
  * compute-then-scatter to stay race-free under OpenMP: pass 1 (parallel)
@@ -231,11 +230,11 @@ void dmc_population_init(dmc_population_t *pop, int target_size, double Zeff,
  * and accept/energy reductions, avoiding any race on next->count that
  * concurrent scatter would create. Population-control resampling still uses a
  * single `control_rng` (one rng_uniform call per generation, serial by nature
- * already).
+ * already)
  *
  * Returns population-weighted mean local energy for this generation (for mixed
  * estimator and E_T update), and accumulates acceptance counts into
- * *accept_sum / *move_count.
+ * *accept_sum / *move_count
  */
 static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
                                  double Z_charge, double Zeff, double param_b,
@@ -304,10 +303,8 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
   free(acc);
   free(EL);
 
-  /*
-   * Population control via comb (systematic) resampling back to
-   * target_population whenever post-branching count exceeds max_population.
-   */
+  // Population control via comb (systematic) resampling back to
+  // target_population whenever post-branching count exceeds max_population
   if (next->count > max_population) {
     if (resample_count) {
       (*resample_count)++;
@@ -335,10 +332,10 @@ static double run_one_generation(dmc_population_t *cur, dmc_population_t *next,
 
       free(resampled);
     }
-    /* NOTE: If the allocation failed, next->count is still forced down below so
+    /* NOTE: If allocation failed, next->count is still forced down below so
      * population stays bounded; (rare, transient) walkers left in
      * data[0..target_population-1] from before this block are used as-is rather
-     * than leaving population control silently skipped. */
+     * than leaving population control silently skipped */
 
     next->count = target_population;
   }
@@ -375,13 +372,11 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
 
   dmc_population_init(pop_a, target_population, Zeff, rng);
 
-  /*
-   * NOTE: Per-slot RNG streams for the walker population : one independent
-   * stream per population slot 0..max_population-1, derived once here via
-   * rng_jump chaining from the caller's `rng`, which itself continues to be
-   * used serially as the population-control RNG ("control_rng" below) and done
-   * before any parallel region opens, so no race deriving these.
-   */
+  /*  NOTE: Per-slot RNG streams for walker population : one independent stream
+   * per population slot 0..max_population-1, derived once here via rng_jump
+   * chaining from caller's `rng`, which itself continues to be used serially as
+   * population-control RNG ("control_rng" below) and done before any parallel
+   * region opens, so no race deriving these */
   rng_state_t *walker_streams =
       malloc((size_t)max_population * sizeof(rng_state_t));
   if (!walker_streams) {
@@ -398,13 +393,11 @@ static dmc_result_t dmc_run_with_rng(rng_state_t *rng, double Z_charge,
     rng_jump(&walker_streams[i]);
   }
 
-  /*
-   * NOTE: E_T feedback gain. \kappa~0.1-1 is a theoretical value (Reference:
+  /* NOTE: E_T feedback gain. \kappa~0.1-1 is a theoretical value (Reference:
    * Umrigar, Nightingale & Runge 1993); now caller-supplied (see
    * DMC_DEFAULT_KAPPA / dmc_run_ex / dmc_run_parallel_ex), since different
    * (\tau, target_population) regimes can need a different feedback gain to
-   * stay stable.
-   */
+   * stay stable */
   double E_T = 0.0;
   for (int i = 0; i < pop_a->count; i++) {
     E_T += vmc_local_energy(&pop_a->data[i], Z_charge, Zeff, param_b);

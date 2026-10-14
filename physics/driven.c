@@ -1,6 +1,6 @@
 /*
-Driven two-level systems: general time-dependent Hamiltonians, Landau-Zener
-sweeps, and lab-frame driving beyond the rotating-wave approximation (RWA).
+* Driven two-level systems: general time-dependent Hamiltonians, Landau-Zener
+* sweeps, and lab-frame driving beyond the rotating-wave approximation (RWA)
 */
 
 #include "driven.h"

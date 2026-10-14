@@ -1,5 +1,5 @@
 /*
-Infinite-system DMRG for the open-boundary spin-1/2 XXZ chain
+ * Infinite-system DMRG for open-boundary spin-1/2 XXZ chain
  */
 
 #include "dmrg.h"
@@ -9,8 +9,8 @@ Infinite-system DMRG for the open-boundary spin-1/2 XXZ chain
 #include <math.h>
 #include <stdlib.h>
 
-/* Bare 2x2 site operators basis order [up, down], S^z_up=+1/2, S^z_down=-1/2,
- * S^+ raises down->up */
+// Bare 2x2 site operators basis order [up, down], S^z_up=+1/2, S^z_down=-1/2,
+// S^+ raises down->up
 static cmatrix_t *site_sz(void) {
   cmatrix_t *m = cmatrix_alloc(2, 2);
   if (!m) {
@@ -110,7 +110,7 @@ static cmatrix_t *add_scaled(const cmatrix_t *a, const cmatrix_t *b,
 /*
  * Enlarge block `b` by one bare site: new dim = b->dim * 2
  * H_new  = H_b (x) I2 + Jz*(Sz_b (x) Sz) + (Jxy/2)*(Sp_b (x) Sm + Sm_b (x) Sp)
- * Sz_new = I_dim (x) Sz   (acts on the newly appended site)
+ * Sz_new = I_dim (x) Sz   (acts on newly appended site)
  * Sp_new = I_dim (x) Sp
  *
  * Returns NULL on allocation failure; frees no inputs
@@ -190,12 +190,12 @@ fail:
 }
 
 /*
- * Matrix-free application of the superblock Hamiltonian to V (D x D, system
+ * Matrix-free application of superblock Hamiltonian to V (D x D, system
  * index x mirrored-environment index):
  *  H_super = H_eb(x)I + I(x)H_eb + Jz * (Sz_eb(x)Sz_eb)
  *                     + (Jxy / 2) * (Sp_eb(x)Sm_eb + Sm_eb(x)Sp_eb)
  *
- * Using the identity (A(x)B) applied to V (reshaped as a matrix) equals A @ V @
+ * Using identity (A(x)B) applied to V (reshaped as a matrix) equals A @ V @
  * B^T, and that H_eb, Sz_eb are real-symmetric (B^T=B) while Sm_eb = Sp_eb^T
  * (so both cross terms reduce to Sp_eb@V@Sp_eb and Sm_eb@V@Sm_eb):
  *   H_super(V) = H_eb@V + V@H_eb + Jz * (Sz_eb@V@Sz_eb)
@@ -475,9 +475,9 @@ dmrg_result_t *dmrg_run(int N_target, double Jz, double Jxy, int m_max) {
       return result;
     }
 
-    /* Reduced density matrix of the system (enlarged block) side:
-     * Psi[a][e] (a=system index, e=mirrored-environment index) is ground state
-     * reshaped as a D x D matrix; \rho = \Psi * \Psi^\dagger */
+    // Reduced density matrix of system (enlarged block) side:
+    // \Psi[a][e] (a=system index, e=mirrored-environment index) is ground state
+    // reshaped as a D x D matrix; \rho = \Psi * \Psi^\dagger
     cmatrix_t *Psi_dag = cmatrix_adjoint(Psi);
     cmatrix_t *rho = Psi_dag ? cmatrix_multiply(Psi, Psi_dag) : NULL;
 
@@ -508,8 +508,9 @@ dmrg_result_t *dmrg_run(int N_target, double Jz, double Jxy, int m_max) {
 
     double kept = 0.0;
     for (int col = 0; col < m; col++) {
-      int src_col = D - 1 - col; // largest eigenvalues are at the end
+      int src_col = D - 1 - col; // largest eigenvalues are at end
       kept += rho_eig->eigenvalues[src_col];
+
       for (int row = 0; row < D; row++) {
         CMAT(O, row, col) = CMAT(rho_eig->eigenvectors, row, src_col);
       }

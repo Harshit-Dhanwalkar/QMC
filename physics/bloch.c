@@ -1,6 +1,6 @@
 /*
-Single-qubit Bloch vector on top of Lindblad solver
-*/
+ * Single-qubit Bloch vector on top of Lindblad solver
+ */
 
 #include "bloch.h"
 #include "../core/complex.h"

@@ -1,5 +1,5 @@
 /*
-Hydrogen fine structure: spin-orbit coupling + known closed-form formula.
+8 Hydrogen fine structure: spin-orbit coupling + known closed-form formula
 */
 
 #include "fine_structure.h"
@@ -105,7 +105,7 @@ double spin_orbit_ls_expect_from_coupling(int l, int j_2, int M_2) {
       }
 
       // L- S+: valid when m_orb can be lowered (m_{orb} - 1>=-l) and m2_2 can
-      // be raised (only from spin-down, m_{spin} = -1/2, up to +1/2).
+      // be raised (only from spin-down, m_{spin} = -1/2, up to +1/2)
       if (m_orb - 1 >= -l && m2_2 + 2 <= j2_2) {
         int i1m = i1 - 1;
         int i2m = i2 + 1;

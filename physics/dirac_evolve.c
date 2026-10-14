@@ -1,6 +1,6 @@
 /*
-Time evolution of the 1D Dirac equation: split-operator Fourier method
-*/
+ * Time evolution of 1D Dirac equation: split-operator Fourier method
+ */
 
 #include "dirac_evolve.h"
 #include "../core/complex.h"
@@ -21,11 +21,11 @@ static int valid_spinor(const cvector_t *upper, const cvector_t *lower) {
 }
 
 static int valid_constants(double dx, double m, double hbar, double c) {
-  return isfinite(dx) && dx > 0.0 && isfinite(m) && m >= 0.0 && isfinite(hbar) &&
-         hbar > 0.0 && isfinite(c) && c > 0.0;
+  return isfinite(dx) && dx > 0.0 && isfinite(m) && m >= 0.0 &&
+         isfinite(hbar) && hbar > 0.0 && isfinite(c) && c > 0.0;
 }
 
-// Wave number of momentum-space index j (same ordering as soft.c).
+// Wave number of momentum-space index j
 static double wave_number(int j, int n, double dx) {
   int jj = (j < n / 2) ? j : j - n;
 
@@ -49,9 +49,12 @@ int dirac_evolve_1d(cvector_t *upper, cvector_t *lower, const double *V,
     }
   }
 
-  // Per-momentum quantities of the exact free propagator
-  //   U(k) = cs - i sn (a \sigma_x + b \sigma_z),  a = c \hbar k,  b = m c^2
-  // with cs = \cos(E dt/\hbar), sn = \sin(E dt/\hbar)/E (-> dt/\hbar as E -> 0)
+  // Per-momentum quantities of exact free propagator
+  //   U(k) = cs - i sn (a \sigma_x + b \sigma_z)
+  //   a = c \hbar k
+  //   b = m c^2
+  // with cs = \cos(E dt/\hbar)
+  //      sn = \sin(E dt/\hbar)/E (-> dt/\hbar as E -> 0)
   double *a = malloc((size_t)n * sizeof *a);
   double *cs = malloc((size_t)n * sizeof *cs);
   double *sn = malloc((size_t)n * sizeof *sn);
@@ -157,8 +160,8 @@ int dirac_packet_1d(cvector_t *upper, cvector_t *lower, double dx, double x0,
   double a0 = c * hbar * k0;
   double e0 = sqrt(a0 * a0 + b * b);
 
-  // Spinor of the requested branch at k0: eigenvector (E_s + b, a0) of H_0(k0)
-  // with eigenvalue E_s = branch * E_k0 (any fixed spinor for branch 0)
+  // Spinor of requested branch at k0: eigenvector (E_s + b, a0) of H_0(k0) with
+  // eigenvalue E_s = branch * E_k0 (any fixed spinor for branch 0)
   double s_up = 1.0;
   double s_lo = 0.0;
   if (branch != 0) {
@@ -169,7 +172,7 @@ int dirac_packet_1d(cvector_t *upper, cvector_t *lower, double dx, double x0,
       s_up = (es + b) / norm;
       s_lo = a0 / norm;
     } else if (branch < 0) {
-      s_up = 0.0; // k0 = 0: negative-energy state is the lower component
+      s_up = 0.0; // k0 = 0: negative-energy state is lower component
       s_lo = 1.0;
     }
   }
@@ -184,12 +187,12 @@ int dirac_packet_1d(cvector_t *upper, cvector_t *lower, double dx, double x0,
   }
 
   if (branch != 0) {
-    // Project onto the sign-`branch` energy subspace in momentum space:
+    // Project onto sign-`branch` energy subspace in momentum space:
     // P = (1 + branch H_0(k)/E_k) / 2. Needed because a Gaussian of finite
-    // width mixes in neighbouring k whose eigenspinors differ from the one
-    // at k0
+    // width mixes in neighbouring k whose eigenspinors differ from one at k0
     fft(upper);
     fft(lower);
+
     for (int j = 0; j < n; j++) {
       double a = c * hbar * wave_number(j, n, dx);
       double e = sqrt(a * a + b * b);
@@ -201,8 +204,10 @@ int dirac_packet_1d(cvector_t *upper, cvector_t *lower, double dx, double x0,
         complex_t hu = c_new(b * u.re + a * l.re, b * u.im + a * l.im);
         complex_t hl = c_new(a * u.re - b * l.re, a * u.im - b * l.im);
 
-        upper->data[j] = c_new(0.5 * (u.re + f * hu.re), 0.5 * (u.im + f * hu.im));
-        lower->data[j] = c_new(0.5 * (l.re + f * hl.re), 0.5 * (l.im + f * hl.im));
+        upper->data[j] =
+            c_new(0.5 * (u.re + f * hu.re), 0.5 * (u.im + f * hu.im));
+        lower->data[j] =
+            c_new(0.5 * (l.re + f * hl.re), 0.5 * (l.im + f * hl.im));
       }
     }
 
@@ -261,7 +266,8 @@ double dirac_energy_1d(const cvector_t *upper, const cvector_t *lower,
                        const double *V, double dx, double m, double hbar,
                        double c) {
   double norm = dirac_norm_1d(upper, lower, dx);
-  if (!(norm > 0.0) || !is_pow2_len(upper->n) || !valid_constants(dx, m, hbar, c)) {
+  if (!(norm > 0.0) || !is_pow2_len(upper->n) ||
+      !valid_constants(dx, m, hbar, c)) {
     return NAN;
   }
 
@@ -290,7 +296,8 @@ double dirac_energy_1d(const cvector_t *upper, const cvector_t *lower,
                2.0 * a * (uj.re * lj.re + uj.im * lj.im);
   }
 
-  // Parseval for unnormalised forward FFT: ]sum_i |f_i|^2 = (1/N) \sum_j |F_j|^2
+  // Parseval for unnormalised forward FFT: \sum_i |f_i|^2 = (1/N) \sum_j
+  // |F_j|^2
   kinetic *= dx / (double)n;
 
   double potential = 0.0;
@@ -322,7 +329,7 @@ double dirac_step_transmission(double E, double V0, double m, double hbar,
 
   double ep = E - V0;
   if (fabs(ep) <= b) {
-    return 0.0; // no propagating state inside the step
+    return 0.0; // no propagating state inside step
   }
 
   double k = sqrt(E * E - b * b) / (hbar * c);

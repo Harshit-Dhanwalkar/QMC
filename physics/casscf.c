@@ -1,6 +1,6 @@
 /*
-CASSCF (Complete Active Space SCF)
-*/
+ * CASSCF (Complete Active Space SCF)
+ */
 
 #include "casscf.h"
 #include "../core/linalg/complex_eigh.h"

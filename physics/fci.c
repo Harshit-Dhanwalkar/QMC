@@ -20,10 +20,9 @@ static int binomial(int n, int k) {
   return (int)result;
 }
 
-/* Shared implementation: takes an already-built full Fock-space Hamiltonian
- * (dimension full_dim = 2^n_modes) and extracts/diagonalizes the
- * n_electrons-particle sector
- */
+// Shared implementation: takes an already-built full Fock-space Hamiltonian
+// (dimension full_dim = 2^n_modes) and extracts/diagonalizes
+// n_electrons-particle sector
 static fci_result_t *fci_solve_from_full_hamiltonian(cmatrix_t *H, int n_modes,
                                                      int n_electrons,
                                                      int n_spatial_report) {
@@ -53,9 +52,9 @@ static fci_result_t *fci_solve_from_full_hamiltonian(cmatrix_t *H, int n_modes,
     }
   }
 
-  /* count must equal dim by combinatorics of popcount; if it doesn't, something
-   * is inconsistent (e.g. n_modes not matching H's actual mode count) - fail
-   * cleanly. */
+  // count must equal dim by combinatorics of popcount; if it doesn't, something
+  // is inconsistent (e.g. n_modes not matching H's actual mode count) - fail
+  // cleanly
   if (count != dim) {
     free(basis_states);
     cmatrix_free(H);
@@ -142,6 +141,7 @@ fci_result_t *fci_solve_frozen_core(int n_spatial, int n_frozen,
 
   cmatrix_t *H = second_quant_build_molecular_hamiltonian_frozen_core(
       n_spatial, n_frozen, h_mo, eri_mo, nuclear_repulsion);
+
   return fci_solve_from_full_hamiltonian(H, n_modes, n_electrons_active,
                                          n_active_spatial);
 }

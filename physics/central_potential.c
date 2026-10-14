@@ -1,9 +1,9 @@
 /*
-General 3D central-potential radial solver.
-
-Unlocks: 3D isotropic harmonic oscillator, finite/infinite spherical
-wells, Yukawa, Morse (radial), or any user-supplied potential_fn.
-*/
+ * General 3D central-potential radial solver
+ *
+ * Unlocks: 3D isotropic harmonic oscillator, finite/infinite spherical
+ * wells, Yukawa, Morse (radial), or any user-supplied potential_fn
+ */
 
 #include "central_potential.h"
 #include "../core/linalg/tridiag_eigh.h"
@@ -11,9 +11,9 @@ wells, Yukawa, Morse (radial), or any user-supplied potential_fn.
 #include "potentials.h"
 #include <stdlib.h>
 
-eigen_t *central_potential_radial_solve(const double *r, int N, int l, double hbar,
-                                        double mass, potential_fn V,
-                                        void *params) {
+eigen_t *central_potential_radial_solve(const double *r, int N, int l,
+                                        double hbar, double mass,
+                                        potential_fn V, void *params) {
   if (!r || N < 3 || !V || mass <= 0.0) {
     return NULL;
   }
