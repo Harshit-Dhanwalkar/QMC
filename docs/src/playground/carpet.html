@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Quantum carpet</title>
+    <meta
+      name="description"
+      content="A Gaussian wave packet in an infinite square well weaves a quantum carpet in space and time and then reassembles itself exactly: full, half and quarter revivals, computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="The quantum carpet: a wave packet that reassembles itself, in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Drag a time cursor through the space-time density of a packet in a box and watch exact revivals and Schr\u00f6dinger-cat copies appear."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/carpet.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #cp {
+        aspect-ratio: 1 / 1;
+        cursor: ns-resize;
+        touch-action: none;
+      }
+      #sl {
+        aspect-ratio: 16 / 7;
+      }
+      #rc {
+        aspect-ratio: 16 / 6;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: #e8e1d6;
+        pointer-events: none;
+        line-height: 1.5;
+        text-shadow: 0 0 4px #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; Quantum carpet</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        A Gaussian wave packet bounces around an infinite square well. Its
+        density |&psi;(x,t)|&sup2; draws the <b>quantum carpet</b> on the left
+        (position across, time downward). Because the energies are
+        E<sub>n</sub>&nbsp;=&nbsp;n&sup2;, every mode returns to its starting
+        phase at the same time T: at <b>T</b> the packet is exactly back, at
+        <b>T/2</b> it is its own mirror image, at <b>T/4</b> it is two copies at
+        once (a cat state). <b>Drag the cursor</b> down the carpet; the plot on
+        the right shows the density at that time and the curve below shows the
+        return probability. The modes and phases are computed live by the QMC
+        library (<code>box_wavefunction</code>).
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="cp">
+            <canvas id="cpc"></canvas>
+            <div id="readout"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Cursor</h2>
+            <div class="row" id="jumps">
+              <button data-f="0">0</button><button data-f="0.125">T/8</button
+              ><button data-f="0.25">T/4</button
+              ><button data-f="0.5">T/2</button
+              ><button data-f="0.75">3T/4</button><button data-f="1">T</button>
+              <button id="play" class="primary">Play</button>
+            </div>
+            <div class="row">
+              <label
+                ><span>time t/T</span
+                ><input
+                  id="tt"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.001"
+                  value="0.25" /><b id="ttv"></b
+              ></label>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Packet</h2>
+            <div class="row">
+              <label
+                ><span>centre x<sub>0</sub></span
+                ><input
+                  id="x0"
+                  type="range"
+                  min="0.1"
+                  max="0.9"
+                  step="0.01"
+                  value="0.3" /><b id="x0v"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>width &sigma;</span
+                ><input
+                  id="sg"
+                  type="range"
+                  min="0.02"
+                  max="0.15"
+                  step="0.005"
+                  value="0.07" /><b id="sgv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>mode n<sub>0</sub></span
+                ><input
+                  id="n0"
+                  type="range"
+                  min="-40"
+                  max="40"
+                  step="1"
+                  value="8" /><b id="n0v"></b
+              ></label>
+            </div>
+            <div id="note"></div>
+          </div>
+          <div class="cv" id="sl"><canvas id="slc"></canvas></div>
+          <div class="cv" id="rc"><canvas id="rcc"></canvas></div>
+          <div class="legend">
+            <span
+              >return probability |&lang;&psi;<sub>0</sub>|&psi;(t)&rang;|&sup2;
+              over one revival time</span
+            >
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        &psi;(x,t) = &sum;<sub>n</sub> c<sub>n</sub> e<sup
+          >&minus;i n&sup2; t</sup
+        >
+        &radic;2 sin(n&pi;x) on the well [0,1], c<sub>n</sub> the overlap of the
+        Gaussian with each mode, 160 modes kept (the page reports the weight
+        lost to truncation). Exact identities, all checked in
+        <code>tests/test_box_revival.c</code>: &psi;(x,T) =
+        &psi;<sub>0</sub>(x), &psi;(x,T/2) =
+        &minus;&psi;<sub>0</sub>(1&minus;x), and &psi;(x,T/4) =
+        &frac12;[(1&minus;i)&psi;<sub>0</sub>(x) &minus;
+        (1+i)&psi;<sub>0</sub>(1&minus;x)]. The carpet is the same Talbot effect
+        as light behind a diffraction grating. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/box_revival.c"
+          ><code>physics/box_revival.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_carpet.c"
+          ><code>wasm/qmc_carpet.c</code></a
+        >.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_carpet.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_carpet.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/carpet.html</code>.",
+          );
+
+          return;
+        }
+
+        const NX = w.qmc_qc_nx();
+        const NT = w.qmc_qc_nt();
+        const NC = w.qmc_qc_curve_len();
+
+        // views are created after the calls that touch memory (memory can grow)
+        const CAR = () =>
+          new Float64Array(w.memory.buffer, w.qmc_qc_carpet_buffer(), NX * NT);
+        const SLB = () =>
+          new Float64Array(w.memory.buffer, w.qmc_qc_slice_buffer(), NX);
+        const CVB = () =>
+          new Float64Array(w.memory.buffer, w.qmc_qc_curve_buffer(), NC);
+
+        let frac = 0.25;
+        let p0 = null;
+        let raf = 0;
+        let last = 0;
+        let ret = 1;
+        let packet = { x0: 0.3, s: 0.07, n0: 8 };
+
+        const off = document.createElement("canvas");
+        off.width = NX;
+        off.height = NT;
+        const og = off.getContext("2d");
+        const img = og.createImageData(NX, NT);
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        // magma-like: black -> purple -> orange -> pale yellow
+        const stops = [
+          [0, [4, 4, 14]],
+          [0.25, [70, 20, 110]],
+          [0.5, [190, 55, 95]],
+          [0.75, [250, 140, 60]],
+          [1, [252, 245, 190]],
+        ];
+
+        function ramp(t) {
+          t = Math.max(0, Math.min(1, t));
+          for (let i = 1; i < stops.length; i++)
+            if (t <= stops[i][0]) {
+              const a = stops[i - 1];
+              const b = stops[i];
+              const u = (t - a[0]) / (b[0] - a[0]);
+
+              return [0, 1, 2].map((k) => a[1][k] + (b[1][k] - a[1][k]) * u);
+            }
+
+          return stops[stops.length - 1][1];
+        }
+
+        function buildCarpet() {
+          const c = CAR();
+          let top = 1e-9;
+          for (let i = 0; i < c.length; i++) {
+            top = Math.max(top, c[i]);
+          }
+
+          top *= 0.55;
+          for (let i = 0; i < c.length; i++) {
+            const col = ramp(Math.pow(c[i] / top, 0.6));
+            img.data[i * 4] = col[0];
+            img.data[i * 4 + 1] = col[1];
+            img.data[i * 4 + 2] = col[2];
+            img.data[i * 4 + 3] = 255;
+          }
+
+          og.putImageData(img, 0, 0);
+        }
+
+        const G = { x0: 0, y0: 0, w: 0, h: 0 };
+        function drawCarpet() {
+          const { g, W: cw, H: ch } = fit($("cpc"));
+          G.x0 = 0;
+          G.y0 = 0;
+          G.w = cw;
+          G.h = ch;
+          g.imageSmoothingEnabled = true;
+          g.imageSmoothingQuality = "high";
+          g.drawImage(off, 0, 0, cw, ch);
+          g.strokeStyle = "rgba(255,255,255,0.18)";
+          g.lineWidth = 1;
+          g.setLineDash([3, 4]);
+          for (const f of [0.25, 0.5, 0.75]) {
+            g.beginPath();
+            g.moveTo(0, f * ch);
+            g.lineTo(cw, f * ch);
+            g.stroke();
+          }
+          g.setLineDash([]);
+          g.fillStyle = "rgba(255,255,255,0.7)";
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("T/4", cw - 28, 0.25 * ch - 4);
+          g.fillText("T/2", cw - 28, 0.5 * ch - 4);
+          g.fillText("3T/4", cw - 34, 0.75 * ch - 4);
+          g.fillText("x \u2192", cw - 36, 14);
+          g.fillText("t \u2193", 8, ch - 8);
+          g.strokeStyle = "#3ddc97";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(0, frac * ch);
+          g.lineTo(cw, frac * ch);
+          g.stroke();
+          $("readout").innerHTML =
+            "t = " +
+            frac.toFixed(3) +
+            " T<br>return = " +
+            (100 * ret).toFixed(1) +
+            "%";
+        }
+
+        function drawSlice() {
+          const { g, W: cw, H: ch } = fit($("slc"));
+          const x0 = 36;
+          const x1 = cw - 10;
+          const y0 = ch - 20;
+          const y1 = 10;
+          const s = SLB();
+          let top = 1e-9;
+          for (let j = 0; j < NX; j++) {
+            top = Math.max(top, s[j], p0 ? p0[j] : 0);
+          }
+
+          const X = (j) => x0 + ((j + 0.5) / NX) * (x1 - x0);
+          const Y = (v) => y0 - (v / top) * (y0 - y1 - 4);
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          if (p0) {
+            g.strokeStyle = "#8993a8";
+            g.setLineDash([4, 4]);
+            g.beginPath();
+            for (let j = 0; j < NX; j++) {
+              j ? g.lineTo(X(j), Y(p0[j])) : g.moveTo(X(j), Y(p0[j]));
+            }
+            g.stroke();
+            g.setLineDash([]);
+          }
+
+          g.fillStyle = "rgba(61,220,151,0.25)";
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(X(0), y0);
+          for (let j = 0; j < NX; j++) {
+            g.lineTo(X(j), Y(s[j]));
+          }
+          g.lineTo(X(NX - 1), y0);
+          g.closePath();
+          g.fill();
+          g.stroke();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("|\u03c8(x, t)|\u00b2 (dashed: t = 0)", x0 + 6, y1 + 13);
+          g.fillText("0", x0, ch - 5);
+          g.fillText("x", (x0 + x1) / 2 - 3, ch - 5);
+          g.fillText("1", x1 - 6, ch - 5);
+        }
+
+        function drawReturn() {
+          const { g, W: cw, H: ch } = fit($("rcc"));
+          const x0 = 36;
+          const x1 = cw - 10;
+          const y0 = ch - 20;
+          const y1 = 10;
+          const c = CVB();
+          const X = (i) => x0 + (i / (NC - 1)) * (x1 - x0);
+          const Y = (v) => y0 - v * (y0 - y1 - 4);
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+          g.strokeStyle = css("--accent");
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < NC; i++) {
+            i ? g.lineTo(X(i), Y(c[i])) : g.moveTo(X(i), Y(c[i]));
+          }
+          g.stroke();
+          g.strokeStyle = "#3ddc97";
+          g.globalAlpha = 0.5;
+          g.beginPath();
+          g.moveTo(X(frac * (NC - 1)), y1);
+          g.lineTo(X(frac * (NC - 1)), y0);
+          g.stroke();
+          g.globalAlpha = 1;
+          g.fillStyle = "#fff";
+          g.beginPath();
+          g.arc(X(frac * (NC - 1)), Y(ret), 4, 0, 7);
+          g.fill();
+          g.fillStyle = css("--muted");
+          g.font = "11px ui-monospace,monospace";
+          g.fillText("1", x0 - 12, Y(1) + 4);
+          g.fillText("0", x0 - 12, y0 + 3);
+          g.fillText("0", x0, ch - 5);
+          g.fillText("T", x1 - 6, ch - 5);
+          g.fillText("t", (x0 + x1) / 2, ch - 5);
+        }
+
+        function note() {
+          const near = (f) => Math.abs(frac - f) < 0.004;
+          $("note").textContent =
+            near(1) || near(0)
+              ? "Full revival: the packet is exactly back where it started."
+              : near(0.5)
+                ? "Half revival: the mirror image of the starting packet (see the dashed curve reflected)."
+                : near(0.25) || near(0.75)
+                  ? "Quarter revival: the packet and its mirror image at once, with return probability 1/2."
+                  : "Weight in the 160 retained modes: " +
+                    (100 * w.qmc_qc_weight()).toFixed(3) +
+                    "%";
+        }
+
+        function refreshSlice() {
+          ret = w.qmc_qc_slice(frac);
+          $("ttv").textContent = frac.toFixed(3) + " T";
+          drawCarpet();
+          drawSlice();
+          drawReturn();
+          note();
+        }
+
+        function setPacket(initial) {
+          const p = {
+            x0: +$("x0").value,
+            s: +$("sg").value,
+            n0: +$("n0").value,
+          };
+          $("x0v").textContent = p.x0.toFixed(2);
+          $("sgv").textContent = p.s.toFixed(3);
+          $("n0v").textContent = String(p.n0);
+          if (w.qmc_qc_set(p.x0, p.s, p.n0) !== 0) {
+            showError("parameters rejected");
+            return;
+          }
+          $("err").style.display = "none";
+          packet = p;
+          w.qmc_qc_slice(0);
+          p0 = Float64Array.from(SLB());
+          buildCarpet();
+          refreshSlice();
+        }
+
+        let pending = 0;
+        const schedule = () => {
+          if (!pending)
+            pending = requestAnimationFrame(() => {
+              pending = 0;
+              setPacket();
+            });
+        };
+
+        ["x0", "sg", "n0"].forEach((id) =>
+          $(id).addEventListener("input", () => {
+            stop();
+            schedule();
+          }),
+        );
+        $("tt").addEventListener("input", (e) => {
+          stop();
+          frac = +e.target.value;
+          refreshSlice();
+        });
+
+        document.querySelectorAll("#jumps button[data-f]").forEach((b) =>
+          b.addEventListener("click", () => {
+            stop();
+            frac = +b.dataset.f;
+            $("tt").value = frac;
+            refreshSlice();
+          }),
+        );
+
+        function stop() {
+          if (raf) {
+            cancelAnimationFrame(raf);
+          }
+          raf = 0;
+          $("play").textContent = "Play";
+        }
+
+        function tick(t) {
+          if (!last) {
+            last = t;
+          }
+          frac += ((t - last) / 1000) * 0.05;
+          last = t;
+          if (frac > 1) {
+            frac -= 1;
+          }
+          $("tt").value = frac;
+          refreshSlice();
+          raf = requestAnimationFrame(tick);
+        }
+
+        $("play").addEventListener("click", () => {
+          if (raf) {
+            stop();
+            return;
+          }
+          $("play").textContent = "Pause";
+          last = 0;
+          raf = requestAnimationFrame(tick);
+        });
+
+        function drag(ev) {
+          const r = $("cpc").getBoundingClientRect();
+          frac = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
+          $("tt").value = frac;
+          refreshSlice();
+        }
+
+        let down = false;
+        $("cpc").addEventListener("pointerdown", (e) => {
+          stop();
+          down = true;
+          $("cpc").setPointerCapture(e.pointerId);
+          drag(e);
+        });
+        $("cpc").addEventListener("pointermove", (e) => {
+          if (down) { drag(e); }
+        });
+        $("cpc").addEventListener("pointerup", () => {
+          down = false;
+        });
+
+        window.addEventListener("resize", () => refreshSlice());
+        setPacket(true);
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

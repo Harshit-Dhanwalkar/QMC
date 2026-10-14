@@ -174,7 +174,7 @@ int main(void) {
   printf("  --- invalid input ---\n");
   {
     complex_t t[4];
-    double xx[2] = {0.2, 0.4};
+    const double xx[2] = {0.2, 0.4};
 
     check_true(box_gaussian_coefficients(NULL, 4, 0.5, 0.05, 1.0) < 0.0,
                "NULL rejected");

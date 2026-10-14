@@ -138,6 +138,15 @@
   </tr>
   <tr>
     <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bell.html">
+        <img src="docs/src/playground/bell.gif" alt="CHSH Bell test on a Werner state" width="260" height="260">
+      </a>
+      <br>
+      <b>CHSH Bell test</b>
+      <br>
+      <sub>Entanglement vs the classical bound: correlations of a Werner state, checked against the local hidden-variable model</sub>
+    </td>
+    <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/grover.html">
         <img src="docs/src/playground/grover.gif" alt="Grover search amplitude amplification on a grid of items" width="260" height="260">
       </a>
@@ -147,13 +156,13 @@
       <sub>Mark items, step the oracle and diffusion, watch amplitude amplification peak and overshoot</sub>
     </td>
     <td align="center" width="33%">
-      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/bell.html">
-        <img src="docs/src/playground/bell.gif" alt="CHSH Bell test on a Werner state" width="260" height="260">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/carpet.html">
+        <img src="docs/src/playground/carpet.gif" alt="Quantum carpet: space-time density with revivals" width="260" height="260">
       </a>
       <br>
-      <b>CHSH Bell test</b>
+      <b>Quantum carpet</b>
       <br>
-      <sub>Entanglement vs the classical bound: correlations of a Werner state, checked against the local hidden-variable model</sub>
+      <sub>A wavepacket in a box reassembles itself exactly at T, T/2, T/4 — the Talbot effect with matter waves</sub>
     </td>
   </tr>
 </table>
@@ -259,7 +268,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Core Math : Complex vectors/matrices, special functions (Hermite, Laguerre, Legendre, Spherical Harmonics, Bessel)
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
 - 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
-- Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP).
+- Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP), exact Talbot-carpet time evolution of a Gaussian packet in a box, with closed-form revival identities checked against the state vector.
 - Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).

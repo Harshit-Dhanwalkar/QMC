@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-14 interactive demos, all computed live by the same C library you can read
+16 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -22,6 +22,7 @@ what the C code returns.
 | [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
 | [Grover search](playground/grover.html)            | Amplitude amplification, and overshooting it          | `grover_multi_step`                 | 20 KB |
 | [Bell test](playground/bell.html)                  | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
+| [Quantum carpet](playground/carpet.html) | A packet in a box that reassembles itself | `box_wavefunction` | 17 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -157,9 +158,9 @@ follows the classical diffusion for a few kicks and then stops. Quantum
 interference freezes the spreading, leaving a momentum distribution with
 exponential tails: dynamical localisation, the momentum-space cousin of
 Anderson localisation, and one of the first signatures of quantum chaos. At
-the special value ℏ = 4π the free rotation drops out and the spreading is
-ballistic with the exact result ⟨m²⟩ = (nK/ℏ)²/2, which the test suite
-checks to 1e-13.
+the special value $\hbar = 4\pi$ the free rotation drops out and the spreading
+is ballistic with the exact result $\langle m^2 \rangle = (nK/\hbar)^2/2$,
+which the test suite checks to 1e-13.
 
 [Open the demo](playground/kicked_rotor.html)
 
@@ -172,7 +173,7 @@ topological insulator. Start with the strong bond inside each cell and the
 chain is an ordinary insulator. Strengthen the bond between cells instead
 and the bulk gap closes and reopens, but the chain has changed: the phase
 of the bulk Bloch function now winds once around the origin (winding number
-1, Zak phase π), and two states appear in the gap, one at each end, with
+1, Zak phase $\pi$), and two states appear in the gap, one at each end, with
 energy exponentially close to zero. The page diagonalises the finite chain
 live, so you can drag the hopping through the transition and watch the pair
 peel off the band edge, then switch on random hopping and see that the edge
@@ -289,6 +290,26 @@ grid search, checks that the deterministic strategies and the hidden-angle
 model stop at exactly 2, and tests the sampler against the exact correlations.
 
 [Open the demo](playground/bell.html)
+
+## The quantum carpet: a wave packet that reassembles itself
+
+[![Quantum carpet](playground/carpet.gif)](playground/carpet.html)
+
+Drop a Gaussian packet into an infinite square well and let it bounce. It
+spreads, collides with itself and the walls, and its probability density
+paints an intricate woven pattern in space and time. The reason is that the
+energies are $E_n = n^2$, so every mode's phase is a multiple of $2\pi$
+after the same time T. At t = T the packet is exactly back; at T/2 it is
+its own mirror image, and at T/4 it is a superposition of the packet and the
+mirror image, a Schrödinger cat, with the same 1/2 return probability that
+shows up as a peak in the autocorrelation. Every rational fraction of T
+gives a finite number of copies. The page draws the carpet, lets you drag a
+time cursor through it and shows the return probability. The test suite
+checks the full, half and quarter revival identities exactly (to 1e-13), the
+norm, the mean position and energy, and the return probabilities.
+
+[Open the demo](playground/carpet.html)
+
 
 ## Run it yourself
 
