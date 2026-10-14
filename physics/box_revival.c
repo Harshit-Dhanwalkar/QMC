@@ -1,3 +1,77 @@
+/*
+ * Quantum revivals in a particle-in-a-box
+ *
+ * Units: Well is [0, 1], \hbar = 1 and mass is chosen so that eigenenergies are
+ * E_n = n^2
+ * Eigenfunctions are
+ *     \phi_n(x) = \sqrt(2) \sin(n \pi x)
+ * so time-evolved state is
+ *     \psi(x, t) = \sum_{n >= 1} c_n \exp(-i n^2 t) \phi_n(x)
+ * and whole system is periodic with revival time T = 2 \pi (harmonic-oscillator
+ * analogy is misleading; "clock" here is n^2 phase, which returns to 1 for
+ * every integer n only at multiples of 2 \pi)
+ *
+ * Projection (box_gaussian_coefficients):
+ *   Initial packet is a Gaussian of spread sigma centred at x0,multiplied by a
+ *   plane-wave phase e^{i k0 x} with k0 = \pi n0 (so n0 is central mode number)
+ *   Overlap integral
+ *       c_n = \int_0^1 \sqrt(2) \sin(n \pi x)
+ *                      \exp^{-(x - x0)^2 / (4 \sigma^2)} \exp^{i k0 x} dx
+ *   is evaluated by composite Simpson's rule on [0, 1]. Number of subintervals
+ *   is scaled with highest mode number requested plus central mode, since
+ *   integrand oscillates roughly (n + n0) half-waves over interval and Simpson
+ *   grid has to resolve them
+ *
+ *   Gaussian is not normalised on [0, 1] (only on real line), so after
+ *   coefficients are computed routine computes on-grid norm of unprojected
+ *   packet and divides every coefficient through by its square root. This fixes
+ *   amplitude to 1 exactly, independent of how much of Gaussian actually sat
+ *   inside well. Retained weight (sum |c_n|^2 before that second
+ *   renormalisation) is returned so caller can tell how much of packet fell
+ *   outside truncated mode space; a value near 1 means truncation is not losing
+ *   weight
+ *
+ * Time evolution (box_wavefunction, box_density_map, box_overlap):
+ *   All three routines fold t modulo T = 2 \pi before touching phase and inside
+ *   that they fold n^2 t modulo 2 \pi per mode. This is what keeps phase
+ *   accurate for t well beyond T: without reduction, argument to exp() would
+ *   grow as n^2 t and lose precision long before interesting revival structure
+ *   appears
+ *
+ *   box_wavefunction returns \psi(x_j, t) at nx supplied positions, with
+ *   eigenfunction phases precomputed into a stack array of at most
+ *   BOX_MAX_MODES complex doubles
+ *
+ *   box_density_map fills a full space-time grid \rho[i * nx + j] for
+ *   nt evenly spaced times from 0 to t_max. It is same computation as
+ *   calling box_wavefunction nt times, but it precomputes sine table
+ *   \sin(n \pi x_j) once (this is dominant cost), and it skips modes
+ *   whose |c_n|^2 is below 1e-16, so a sharply peaked packet pays for only
+ *   modes it actually occupies. Uses one heap allocation of (n_modes + 2) * nx
+ *   doubles
+ *
+ *   box_overlap returns autocorrelation function
+ *       <\psi(0)|\psi(t)> = \sum_n |c_n|^2 e^{-i n^2 t},
+ *   which starts at 1 and passes through a sequence of partial revivals
+ *   ("carpet") that mirrors Talbot effect in optics. Because phase prefactor is
+ *   |c_n|^2 rather than c_n, this is return probability amplitude for a
+ *   measurement in initial state and |<\psi(0)|\psi(t)>|^2
+ *
+ * Closed-form references (box_mean_energy, box_mean_position):
+ *    mean energy  = \sum_n n^2 |c_n|^2
+ *    mean position = \int x |\psi(x)|^2 dx / \int |\psi(x)|^2 dx
+ *  second computed on caller's x grid by trapezoid rule on both numerator and
+ *  denominator so ratio is well defined even for an unnormalised grid sample
+ *
+ * Edge cases:
+ *   x0 must be strictly inside well (0 < x0 < 1) and sigma confined to
+ *   [0.005, 0.25]
+ *   outside that range projection either misses well or starts fighting grid
+ *   resolution. n_modes is capped at BOX_MAX_MODES (512) so stack array in
+ *   box_wavefunction stays bounded and coefficient buffer fits comfortably in
+ *   cache
+ */
+
 #include "box_revival.h"
 #include "complex.h"
 #include <math.h>
@@ -17,14 +91,21 @@ double box_gaussian_coefficients(complex_t *c, int n_modes, double x0,
   }
 
   // composite Simpson on [0, 1]; integrand oscillates at most n_modes + n0
-  // half-waves
+  // half-waves 
+  // Round subinterval count up to an even number so
+  // Simpson's rule is exact for odd/even weighting pattern
   int steps = 8 * (n_modes + (int)fabs(n0) + 16);
-  double h = 1.0 / steps, k0 = M_PI * n0, norm = 0.0;
+  steps += steps % 2;
+
+  double h = 1.0 / steps;
+  double k0 = M_PI * n0;
+  double norm = 0.0;
 
   steps += steps % 2;
   h = 1.0 / steps;
   for (int n = 1; n <= n_modes; n++) {
-    double re = 0.0, im = 0.0;
+    double re = 0.0;
+    double im = 0.0;
 
     for (int i = 0; i <= steps; i++) {
       double x = i * h;
