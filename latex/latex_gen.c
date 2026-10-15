@@ -810,8 +810,14 @@ int latex_generate_table(const char *texpath, const char *const *const *data,
     return -1;
   }
 
-  FILE *f = fopen(texpath, "w");
+  int fd = open(texpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
     return -1;
   }
 

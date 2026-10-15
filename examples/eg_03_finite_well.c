@@ -16,9 +16,12 @@
 #include "../core/matrix.h"
 #include "../core/utils.h"
 #include "../export/plot.h"
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 int main(void) {
   printf(" > Finite Square Well: Bound States vs V_0\n\n");
@@ -134,21 +137,26 @@ int main(void) {
   {
     char path[256];
     snprintf(path, sizeof path, "%s/finite_well_energies.dat", QMC_OUTPUT_DIR);
-    FILE *f = fopen(path, "w");
-    if (f) {
-      fprintf(f, "# V0  E1  E2  E3  E4  E5\n");
-      for (int v = 0; v < n_V; v++) {
-        fprintf(f, "%.6e", V0_arr[v]);
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd >= 0) {
+      FILE *f = fdopen(fd, "w");
+      if (f) {
+        fprintf(f, "# V0  E1  E2  E3  E4  E5\n");
+        for (int v = 0; v < n_V; v++) {
+          fprintf(f, "%.6e", V0_arr[v]);
+          for (int k = 0; k < n_states; k++) {
+            fprintf(f, "  %.6e", E_arr[v * n_states + k]);
+          }
 
-        for (int k = 0; k < n_states; k++) {
-          fprintf(f, "  %.6e", E_arr[v * n_states + k]);
+          fprintf(f, "\n");
         }
 
-        fprintf(f, "\n");
-      }
+        fclose(f);
 
-      fclose(f);
-      printf("\n   Saved finite_well_energies.dat\n");
+        printf("\n   Saved finite_well_energies.dat\n");
+      } else {
+        close(fd);
+      }
     }
   }
 

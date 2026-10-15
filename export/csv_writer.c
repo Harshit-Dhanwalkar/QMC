@@ -1,11 +1,13 @@
 #include "csv_writer.h"
 
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -67,8 +69,17 @@ csv_writer_t *csv_open_append(const char *path, const csv_options_t *options) {
   w->opts = options ? *options : csv_options_default();
   w->opts.write_header = 0;
 
-  w->file = fopen(path, "a");
+  int fd = open(path, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    free(w);
+
+    return NULL;
+  }
+
+  w->file = fdopen(fd, "a");
+
   if (!w->file) {
+    close(fd);
     free(w);
 
     return NULL;

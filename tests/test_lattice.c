@@ -6,7 +6,7 @@
  *    analytic dispersion (Bloch's theorem / standing-wave quantization) to near
  *    machine precision
  * 2. 2D square lattice (open + periodic): using exact separability of 2D
- *    problem into independent x/y 1D dispersions.
+ *    problem into independent x/y 1D dispersions
  * 3. lattice_ipr: deterministic checks on a delta-function state (IPR=1,
  *    maximally localized) and a uniform superposition (IPR=1/n, maximally
  *    delocalized)
@@ -227,10 +227,9 @@ static void test_anderson_localization_trend(void) {
   printf("  strong disorder (W=%.1f): avg. ground-state IPR = %.5f\n",
          W_values[1], avg_ipr[1]);
 
-  check_true(
-      avg_ipr[1] > avg_ipr[0],
-      "strong disorder localizes the ground state more than weak disorder "
-      "(Anderson localization)");
+  check_true(avg_ipr[1] > avg_ipr[0],
+             "strong disorder localizes ground state more than weak disorder "
+             "(Anderson localization)");
 }
 
 static void test_ssh_topological_edge_states(void) {
@@ -294,7 +293,7 @@ static void test_ssh_topological_edge_states(void) {
     printf("  edge weight (first+last 2 sites) = %.4f   IPR = %.4f\n",
            edge_weight, ipr);
     check_true(edge_weight > 0.5,
-               "topological zero mode is concentrated at the chain edges");
+               "topological zero mode is concentrated at chain edges");
     check_true(ipr > 0.1, "topological zero mode is significantly more "
                           "localized than a generic extended state (~1/N)");
 
@@ -315,8 +314,8 @@ static void test_landau_zero_field_matches_plain_square(void) {
 
   // NOTE: \alpha=0 must reduce lattice_build_2d_square_magnetic exactly to
   // lattice_build_2d_square (all Peierls phases = \exp(0) = 1). Using
-  // LATTICE_OPEN on both sides for a like-for-like comparison: the magnetic
-  // builder is always open in x (required by the Landau gauge choice), so
+  // LATTICE_OPEN on both sides for a like-for-like comparison: magnetic
+  // builder is always open in x (required by Landau gauge choice), so
   // comparing against a plain square lattice that is periodic in x would differ
   // by x-wraparound bonds alone
   cmatrix_t *H_mag =

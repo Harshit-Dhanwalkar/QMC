@@ -12,7 +12,7 @@
 
 /* Extension per format
  *
- * NULL for WINDOW and unrecognized 
+ * NULL for WINDOW and unrecognized
  */
 static const char *format_extension(plot_format_t format) {
   switch (format) {
@@ -92,7 +92,7 @@ plot_status_t plot_output_path(const char *filename, plot_format_t format,
 
 /*
  * Full-precision decimal formatting: try 1..17 significant digits and stop
- * at the first whose strtod round-trips bit-exactly
+ * at first whose strtod round-trips bit-exactly
  */
 static void write_double(FILE *f, double v) {
   char buf[64];

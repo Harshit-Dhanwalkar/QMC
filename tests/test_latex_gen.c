@@ -14,10 +14,12 @@
  */
 
 #include "../latex/latex_gen.h"
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 static int failures = 0;
 
@@ -194,7 +196,12 @@ static void test_escaping(void) {
   check(latex_escape_text(NULL) == NULL, "NULL input returns NULL cleanly");
 
   const char *path = "/tmp/qmc_test_escaped_write.txt";
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  FILE *f = (fd >= 0) ? fdopen(fd, "w") : NULL;
+  if (fd >= 0 && f == NULL) {
+    close(fd);
+  }
+
   check(f != NULL, "test file opens for latex_write_escaped_text");
   if (f) {
     int rc = latex_write_escaped_text(f, "50% & rising");
@@ -212,7 +219,7 @@ static void test_escaping(void) {
     }
 
     check(strcmp(buf, "50\\% \\& rising") == 0,
-          "latex_write_escaped_text writes the escaped form to the file");
+          "latex_write_escaped_text writes escaped form to file");
   }
 
   remove(path);
@@ -246,7 +253,7 @@ static void test_string_builder(void) {
   check(strcmp(s.data, "Hello, world! (1/2)") == 0,
         "accumulated content is exactly as appended, in order");
   check(s.length == strlen("Hello, world! (1/2)"),
-        "length tracks the accumulated content exactly");
+        "length tracks accumulated content exactly");
 
   // Force at least one internal reallocation (initial capacity is small)
   for (int i = 0; i < 200; i++) {
@@ -257,9 +264,9 @@ static void test_string_builder(void) {
         "didn't corrupt anything)");
 
   char *detached = latex_string_detach(&s);
-  check(detached != NULL, "detach returns the accumulated string");
+  check(detached != NULL, "detach returns accumulated string");
   check(s.data == NULL && s.length == 0 && s.capacity == 0,
-        "detach resets the builder to the freshly-initialized state");
+        "detach resets builder to freshly-initialized state");
 
   free(detached);
 
@@ -283,7 +290,7 @@ static void test_string_builder(void) {
   latex_string_append(&s2, "kept");
   latex_string_free(&s2);
   check(s2.data == NULL && s2.length == 0 && s2.capacity == 0,
-        "latex_string_free resets the builder to the empty state");
+        "latex_string_free resets builder to empty state");
 }
 
 static void test_matrix_type_validation(void) {
@@ -311,7 +318,7 @@ static void test_render_options(void) {
   check(opts.compiler == NULL && opts.dpi == 200 && opts.use_amsmath == 1 &&
             opts.use_amssymb == 1 && opts.use_physics == 1 &&
             opts.use_bm == 1 && opts.keep_temp_files == 0,
-        "latex_render_options_default() matches the documented defaults");
+        "latex_render_options_default() matches documented defaults");
 
   if (!latex_tools_available()) {
     printf("  (skipped remainder: pdflatex/pdftoppm not available in this "
@@ -342,8 +349,8 @@ static void test_render_options(void) {
   check(rc_lo == 0 && rc_hi == 0, "both DPI variants render successfully");
   if (rc_lo == 0 && rc_hi == 0) {
     check(file_size(png_hi) > file_size(png_lo),
-          "a 300 DPI render is larger than a 50 DPI render of the same "
-          "expression (dpi option actually took effect)");
+          "a 300 DPI render is larger than a 50 DPI render of same expression "
+          "(dpi option actually took effect)");
   }
 
   remove(png_lo);
@@ -359,7 +366,7 @@ static void test_render_options(void) {
 
   const char *msg = latex_last_error();
   check(strstr(msg, "qmc-latex-") != NULL,
-        "latex_last_error names the kept temp directory");
+        "latex_last_error names kept temp directory");
 
   remove(pdf_kept);
 
@@ -603,7 +610,7 @@ static void test_document_builder(void) {
 }
 
 static void test_document_compiles_for_real(void) {
-  printf("  === Test: a document assembled with the new builders actually "
+  printf("  === Test: a document assembled with new builders actually "
          "compiles with pdflatex ===\n");
 
   if (!latex_tools_available()) {
@@ -637,8 +644,8 @@ static void test_document_compiles_for_real(void) {
   latex_document_free(doc);
 
   check(latex_compile(texpath, NULL, "/tmp") == 0,
-        "pdflatex actually accepts and compiles the generated document "
-        "with no errors");
+        "pdflatex actually accepts and compiles generated document with no "
+        "errors");
 
   remove(texpath);
   remove("/tmp/qmc_test_real_compile.pdf");

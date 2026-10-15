@@ -3,10 +3,13 @@
 #include "fft/fft.h"
 #include "matrix.h"
 #include "vector.h"
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -92,7 +95,8 @@ double expectation_value(const cvector_t *psi, const cvector_t *op_psi,
   return result.re * deltax;
 }
 
-double expectation_position(const cvector_t *psi, const double *x, double deltax) {
+double expectation_position(const cvector_t *psi, const double *x,
+                            double deltax) {
   double expect = 0.0;
   for (int i = 0; i < psi->n; i++) {
     expect += x[i] * c_abs2(psi->data[i]);
@@ -131,8 +135,16 @@ void save_wavefunction(const char *filename, const double *posx,
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename); // NOLINT
 
-  FILE *file_ptr = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    fprintf(stderr, "Cannot open %s for writing\n", path);
+
+    return;
+  }
+
+  FILE *file_ptr = fdopen(fd, "w");
   if (!file_ptr) {
+    close(fd);
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;

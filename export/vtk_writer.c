@@ -1,8 +1,11 @@
 #include "vtk_writer.h"
 
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -36,8 +39,14 @@ int vtk_write_structured_points(const char *filename, const char *varname,
   char path[512];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
     return -1;
   }
 
@@ -78,4 +87,3 @@ int vtk_write_structured_points(const char *filename, const char *varname,
 
   return 0;
 }
-

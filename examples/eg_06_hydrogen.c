@@ -12,9 +12,12 @@
 #include "../core/vector.h"
 #include "../physics/hydrogen.h"
 #include "../physics/potentials.h"
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -78,15 +81,22 @@ int main(void) {
       // Save r, R(r), |R(r)|^2, and probability density r^2 |R(r)|^2
       char path[512];
       snprintf(path, sizeof(path), "%s/%s", QMC_OUTPUT_DIR, fname);
-      FILE *f = fopen(path, "w");
-      if (f) {
-        fprintf(f, "# r (m)  R(r)  |R|^2  r^2|R|^2\n");
-        for (int j = 0; j < N; j++) {
-          double R = col->data[j].re; // real for bound states
-          double rho = R * R;
+      int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+      if (fd >= 0) {
+        FILE *f = fopen(path, "w");
+        if (f) {
+          fprintf(f, "# r (m)  R(r)  |R|^2  r^2|R|^2\n");
+          for (int j = 0; j < N; j++) {
+            double R = col->data[j].re; // real for bound states
+            double rho = R * R;
 
-          fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", r[j], R, rho,
-                  r[j] * r[j] * rho);
+            fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", r[j], R, rho,
+                    r[j] * r[j] * rho);
+          }
+          fclose(f);
+          printf("    Saved %s\n", fname);
+        } else {
+          close(fd);
         }
 
         fclose(f);
