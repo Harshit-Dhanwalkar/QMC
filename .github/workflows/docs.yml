@@ -10,25 +10,32 @@ on:
       - "core/**"
       - "tests/**"
       - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "wasm/**"
+      - "physics/**"
+      - "core/**"
+      - ".github/workflows/docs.yml"
   workflow_run:
     workflows: ["Coverage"]
     types: [completed]
   workflow_dispatch:
 
+# Build-only permissions; deploy job asks for pages/id-token itself
 permissions:
   contents: read
-  pages: write
-  id-token: write
   actions: read
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       MDBOOK_VERSION: "0.5.4"
       MDBOOK_KATEX_VERSION: "0.10.0"
@@ -44,7 +51,7 @@ jobs:
         index.html anderson.html bloch.html butterfly.html dirac.html
         orbitals.html quantum_walk.html landau_zener.html kicked_rotor.html
         ssh_chain.html ising_quench.html haldane.html wigner.html
-        grover.html bell.html carpet.html qmc_zeno.wasm
+        grover.html bell.html carpet.html zeno.html
         wasi-shim.js nav.js
 
     steps:
@@ -156,14 +163,21 @@ jobs:
             cp "docs/src/playground/$f" "docs/book/html/playground/$f"
           done
 
-      - name: Fetch coverage report from Coverage run
-        if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-html
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-          path: docs/book/html/coverage
+      # Every deploy replaces whole site, so every deploy must carry
+      # coverage report, not only ones triggered by Coverage run
+      - name: Fetch latest coverage report
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run_id=$(gh run list --workflow coverage.yml --status success --limit 1 \
+                     --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$run_id" ]; then
+            echo "::warning::no successful Coverage run yet; site ships without /coverage"
+            exit 0
+          fi
+          gh run download "$run_id" --name coverage-html --dir docs/book/html/coverage
 
       - name: Confirm playground survived mdBook's asset copy
         run: |
@@ -180,14 +194,21 @@ jobs:
           exit $fail
 
       - name: Setup Pages
+        if: github.event_name != 'pull_request'
         uses: actions/configure-pages@v6
 
       - name: Upload Pages Artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v5
         with:
           path: docs/book/html
 
   deploy:
+    if: github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

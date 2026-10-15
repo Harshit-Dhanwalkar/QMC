@@ -1,0 +1,30 @@
+name: Install build dependencies
+description: apt packages shared by every QMC job, with sane apt timeouts
+inputs:
+  extra:
+    description: Extra space-separated apt packages for this job (clang, valgrind, lcov, ...)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install packages
+      shell: bash
+      env:
+        EXTRA: ${{ inputs.extra }}
+      run: |
+        printf '%s\n' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'Acquire::Retries "2";' \
+          | sudo tee /etc/apt/apt.conf.d/99timeout >/dev/null
+        sudo apt-get update
+        # shellcheck disable=SC2086
+        sudo apt-get install -y \
+          build-essential cmake gnuplot libomp-dev \
+          libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+          libqhull-dev zlib1g-dev \
+          libx11-dev libxt-dev libxrender-dev libxext-dev \
+          libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+          libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+          liblapacke-dev liblapack-dev libblas-dev liblapack-test \
+          libhdf5-dev libnetcdf-dev \
+          $EXTRA
+
