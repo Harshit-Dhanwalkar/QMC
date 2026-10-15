@@ -401,6 +401,7 @@
             </div>
             <div class="row">
               <button id="play" class="primary">Play Kerr evolution</button>
+              <button id="reset">⟲ Reset view</button>
             </div>
             <div id="note"></div>
           </div>
@@ -448,6 +449,7 @@
     <script type="module">
       import { createGL, compileProgram } from "./webgl/context.mjs";
       import { Image2D, IMAGE_VS, IMAGE_FS } from "./webgl/texture.mjs";
+      import { OrthoCamera } from "./webgl/camera.mjs";
       import { Overlay2D } from "./webgl/overlay.mjs";
 
       const $ = (id) => document.getElementById(id);
@@ -512,6 +514,14 @@
       const img = new Image2D(gl);
       const ov = new Overlay2D($("wg-ov"));
 
+      // Camera over phase space
+      const FULL_VIEW = { x0: -EXT, y0: -EXT, x1: EXT, y1: EXT };
+      const camera = new OrthoCamera(
+        FULL_VIEW,
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+
       const KIND_INFO = [
         {
           name: "coherent state |\u03b1\u27e9",
@@ -571,8 +581,7 @@
         }
       }
 
-      // Diverging colormap: dark at v = 0, warm for v > 0, cool for v < 0.
-      // Same formula as the 2D version -- unchanged.
+      // Diverging colormap, unchanged from 2D version
       function colour(v) {
         const t = Math.min(1, Math.abs(v));
         if (t < 0.004) {
@@ -603,11 +612,9 @@
         for (let i = 0; i < N * N; i++) {
           top = Math.max(top, Math.abs(wv[i]));
         }
+
         top = Math.max(top, (1 / Math.PI) * 0.95);
 
-        // Row 0 of the pixel buffer is at the top of the texture after
-        // UNPACK_FLIP_Y_WEBGL. We want p = +EXT at the top of the plot, so
-        // pixel row 0 holds data at l = N-1.
         for (let l = 0; l < N; l++) {
           for (let j = 0; j < N; j++) {
             const c = colour(wv[l * N + j] / top);
@@ -624,7 +631,6 @@
 
       // Layout
       let dpr = 1;
-      let plotRect = { ml: 0, mt: 0, pw: 1, ph: 1 };
 
       function layoutWigner() {
         const cw = $("wg").clientWidth;
@@ -636,19 +642,23 @@
           el.width = W;
           el.height = H;
         }
+
         ov.setSize(W, H);
 
-        // In device pixels:
-        //   top margin for |\psi(x)|^2 marginal, right margin for P(p),
-        //   bottom margin for x-axis tick labels
         const topPad = 52 * dpr;
         const leftPad = 8 * dpr;
         const botPad = 22 * dpr;
-        const s = Math.min(W - topPad - leftPad, H - topPad - botPad);
-        plotRect = { ml: leftPad, mt: topPad, pw: s, ph: s };
+        const rightPad = 52 * dpr;
+        const availW = W - leftPad - rightPad;
+        const availH = H - topPad - botPad;
+        const s = Math.min(availW, availH);
+        const ml = leftPad + (availW - s) / 2;
+        const mt = topPad + (availH - s) / 2;
+        camera.setCanvas({ W, H });
+        camera.setPlotRect({ ml, mt, pw: s, ph: s });
       }
 
-      // Draw
+      // Draw: WebGL heatmap through camera's view window, then  overlay (guide lines, marginals, hover)
       function drawWigner() {
         const W = $("wg-gl").width;
         const H = $("wg-gl").height;
@@ -656,37 +666,55 @@
         gl.clearColor(0.02, 0.03, 0.05, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
+        const v = camera.view;
         img.flush(gl, imgProgram, {
-          u_view: [-EXT, -EXT, EXT, EXT],
+          u_view: [v.x0, v.y0, v.x1, v.y1],
           u_data: [-EXT, -EXT, EXT, EXT],
-          u_plot: [plotRect.ml, plotRect.mt, plotRect.pw, plotRect.ph],
+          u_plot: [
+            camera.plotRect.ml,
+            camera.plotRect.mt,
+            camera.plotRect.pw,
+            camera.plotRect.ph,
+          ],
           u_canvas: [W, H],
         });
 
         const ctx = ov.ctx;
         ctx.clearRect(0, 0, W, H);
-        const { ml, mt, pw, ph } = plotRect;
+        const { ml, mt, pw, ph } = camera.plotRect;
 
         const fs = Math.max(11, Math.round(H * 0.028));
         const fam = "ui-monospace,monospace";
+        const PX = (x) => camera.dataToPix(x, 0)[0];
+        const PY = (p) => camera.dataToPix(0, p)[1];
 
-        const PX = (x) => ml + ((x + EXT) / (2 * EXT)) * pw;
-        const PY = (p) => mt + ((EXT - p) / (2 * EXT)) * ph;
-
-        // Dashed guide lines at x, p = -4, 0, 4
+        // Dashed guide lines at x, p = -4, 0, 4, but only if in view
         ctx.strokeStyle = "rgba(137,147,168,0.28)";
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 4]);
+
         for (const t of [-4, 0, 4]) {
+          if (t < v.x0 || t > v.x1) {
+            continue;
+          }
+
           ctx.beginPath();
           ctx.moveTo(PX(t), mt);
           ctx.lineTo(PX(t), mt + ph);
           ctx.stroke();
+        }
+
+        for (const t of [-4, 0, 4]) {
+          if (t < v.y0 || t > v.y1) {
+            continue;
+          }
+
           ctx.beginPath();
           ctx.moveTo(ml, PY(t));
           ctx.lineTo(ml + pw, PY(t));
           ctx.stroke();
         }
+
         ctx.setLineDash([]);
 
         // Border
@@ -704,10 +732,14 @@
         ctx.fillText("p", ml + pw + fs * 0.3, mt + fs * 0.4);
         ctx.textAlign = "center";
         for (const t of [-4, 0, 4]) {
+          if (t < v.x0 || t > v.x1) {
+            continue;
+          }
+
           ctx.fillText(String(t), PX(t), mt + ph + fs * 0.3);
         }
 
-        // Marginals
+        // Marginals, follow zoom
         const mx = XB();
         const mp = PB();
         let tx = 1e-9;
@@ -717,39 +749,95 @@
           tp = Math.max(tp, mp[i]);
         }
 
-        const marginalH = (52 - 12) * dpr;
+        const marginalH = 40 * dpr;
         ctx.fillStyle = "rgba(255,180,84,0.28)";
         ctx.strokeStyle = "#ffb454";
         ctx.lineWidth = 1.5;
 
-        // top marginal |\psi(x)|^2
+        // Top marginal |psi(x)|^2, clipped to visible x
+        ctx.save();
         ctx.beginPath();
-        ctx.moveTo(PX(-EXT), mt - 4 * dpr);
+        ctx.rect(ml, mt - marginalH - 4 * dpr, pw, marginalH);
+        ctx.clip();
+        ctx.beginPath();
+        let started = false;
         for (let j = 0; j < N; j++) {
           const x = -EXT + (j * 2 * EXT) / (N - 1);
-          ctx.lineTo(PX(x), mt - 4 * dpr - (mx[j] / tx) * marginalH);
-        }
-        ctx.lineTo(PX(EXT), mt - 4 * dpr);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+          if (x < v.x0 - 0.1 || x > v.x1 + 0.1) {
+            continue;
+          }
 
-        // right marginal P(p)
+          const px = PX(x);
+          const py = mt - 4 * dpr - (mx[j] / tx) * marginalH;
+          if (!started) {
+            ctx.moveTo(px, mt - 4 * dpr);
+            ctx.lineTo(px, py);
+            started = true;
+          } else {
+            ctx.lineTo(px, py);
+          }
+        }
+
+        if (started) {
+          const pxEnd = PX(v.x1);
+          ctx.lineTo(pxEnd, mt - 4 * dpr);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Right marginal P(p), clipped to visible p
+        ctx.save();
         ctx.beginPath();
-        ctx.moveTo(ml + pw + 4 * dpr, PY(-EXT));
+        ctx.rect(ml + pw + 4 * dpr, mt, marginalH, ph);
+        ctx.clip();
+        ctx.beginPath();
+        started = false;
         for (let l = 0; l < N; l++) {
           const p = -EXT + (l * 2 * EXT) / (N - 1);
-          ctx.lineTo(ml + pw + 4 * dpr + (mp[l] / tp) * marginalH, PY(p));
+          if (p < v.y0 - 0.1 || p > v.y1 + 0.1) {
+            continue;
+          }
+
+          const px = ml + pw + 4 * dpr + (mp[l] / tp) * marginalH;
+          const py = PY(p);
+          if (!started) {
+            ctx.moveTo(ml + pw + 4 * dpr, py);
+            ctx.lineTo(px, py);
+            started = true;
+          } else {
+            ctx.lineTo(px, py);
+          }
         }
-        ctx.lineTo(ml + pw + 4 * dpr, PY(EXT));
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
+
+        if (started) {
+          const pyEnd = PY(v.y0);
+          ctx.lineTo(ml + pw + 4 * dpr, pyEnd);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Zoom indicator
+        const zoom = (FULL_VIEW.x1 - FULL_VIEW.x0) / (v.x1 - v.x0);
+        if (zoom > 1.001) {
+          ctx.fillStyle = "rgba(255,255,255,0.55)";
+          ctx.font = fs + "px " + fam;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          ctx.fillText(
+            zoom.toFixed(1) + "\u00D7",
+            ml + fs * 0.6,
+            mt + fs * 0.4,
+          );
+        }
 
         // Hover marker
         if (hover) {
           const wv = WB();
-          const v = wv[hover.l * N + hover.j];
+          const v0 = wv[hover.l * N + hover.j];
           ctx.strokeStyle = "#fff";
           ctx.lineWidth = 1;
           ctx.beginPath();
@@ -761,14 +849,14 @@
             "  p = " +
             hover.p.toFixed(2) +
             "<br>W = " +
-            (v >= 0 ? " " : "") +
-            v.toFixed(4);
+            (v0 >= 0 ? " " : "") +
+            v0.toFixed(4);
         } else {
           $("readout").innerHTML = "hover for W(x, p)";
         }
       }
 
-      // Photon-number distribution (2D canvas, unchanged)
+      // Photon-number distribution
       function fit(canvas) {
         const r = canvas.parentElement.getBoundingClientRect();
         const d = window.devicePixelRatio || 1;
@@ -873,7 +961,7 @@
         $("par").disabled = !info.par;
         if (info.par) $("plab").textContent = info.plab;
         $("kt").value = kt;
-
+        camera.reset();
         render();
       }
 
@@ -917,6 +1005,7 @@
         if (raf) {
           cancelAnimationFrame(raf);
         }
+
         raf = 0;
         $("play").textContent = "Play Kerr evolution";
       }
@@ -931,6 +1020,7 @@
           kt -= 1;
         }
         $("kt").value = kt;
+
         render();
         raf = requestAnimationFrame(tick);
       }
@@ -946,15 +1036,52 @@
         raf = requestAnimationFrame(tick);
       });
 
-      // Hover on overlay canvas, only redraws overlay (texture already holds current Wigner function)
-      $("wg-ov").addEventListener("pointermove", (ev) => {
+      $("reset").addEventListener("click", () => {
+        camera.reset();
+        drawWigner();
+      });
+
+      // Pointer: hover inspects; drag pans; wheel zooms; double-click resets.
+      const drag = { active: false, lx: 0, ly: 0, moved: 0 };
+
+      function pixelFromEvent(ev) {
         const r = $("wg-ov").getBoundingClientRect();
         const sx = $("wg-ov").width / r.width;
         const sy = $("wg-ov").height / r.height;
-        const px = (ev.clientX - r.left) * sx;
-        const py = (ev.clientY - r.top) * sy;
-        const x = ((px - plotRect.ml) / plotRect.pw) * 2 * EXT - EXT;
-        const p = EXT - ((py - plotRect.mt) / plotRect.ph) * 2 * EXT;
+        return [(ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy];
+      }
+
+      $("wg-ov").addEventListener("pointerdown", (e) => {
+        drag.active = true;
+        drag.lx = e.clientX;
+        drag.ly = e.clientY;
+        drag.moved = 0;
+        $("wg-ov").setPointerCapture(e.pointerId);
+        $("wg-ov").classList.add("panning");
+      });
+
+      $("wg-ov").addEventListener("pointermove", (e) => {
+        if (drag.active) {
+          const [px, py] = pixelFromEvent(e);
+          const [pdx, pdy] = pixelFromEvent({
+            clientX: drag.lx,
+            clientY: drag.ly,
+          });
+          const ddx = px - pdx;
+          const ddy = py - pdy;
+          drag.moved += Math.abs(ddx) + Math.abs(ddy);
+          camera.pan(ddx, ddy);
+          clampCamera();
+          drag.lx = e.clientX;
+          drag.ly = e.clientY;
+
+          drawWigner();
+          return;
+        }
+
+        // pure hover
+        const [px, py] = pixelFromEvent(e);
+        const [x, p] = camera.pixToData(px, py);
         if (Math.abs(x) > EXT || Math.abs(p) > EXT) {
           hover = null;
         } else {
@@ -966,10 +1093,48 @@
         drawWigner();
       });
 
+      $("wg-ov").addEventListener("pointerup", (e) => {
+        drag.active = false;
+        $("wg-ov").classList.remove("panning");
+        try {
+          $("wg-ov").releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        if (e.detail === 2 && drag.moved < 4) {
+          camera.reset();
+          drawWigner();
+        }
+      });
+
       $("wg-ov").addEventListener("pointerleave", () => {
         hover = null;
+        drag.active = false;
+        $("wg-ov").classList.remove("panning");
         drawWigner();
       });
+
+      $("wg-ov").addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const [px, py] = pixelFromEvent(e);
+          camera.zoomAt(px, py, Math.exp(e.deltaY * 0.0015));
+          clampCamera();
+          drawWigner();
+        },
+        { passive: false },
+      );
+
+      function clampCamera() {
+        // Keep the view inside the phase-space window, and don't let it
+        // get so small that the 128-texel grid looks blocky.
+        camera.clamp({
+          minW: 0.6,
+          maxW: 2 * EXT,
+          minH: 0.6,
+          maxH: 2 * EXT,
+          bounds: { x0: -EXT, y0: -EXT, x1: EXT, y1: EXT },
+        });
+      }
 
       window.addEventListener("resize", () => {
         layoutWigner();
