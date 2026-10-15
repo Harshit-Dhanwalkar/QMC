@@ -23,7 +23,7 @@ jobs:
           submodules: recursive
 
       - uses: ./.github/actions/setup-deps
-         with:
+        with:
           extra: valgrind
 
       - uses: ./.github/actions/setup-gr
