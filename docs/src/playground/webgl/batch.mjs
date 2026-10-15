@@ -43,10 +43,15 @@ class InstanceBatchBase {
     this.vao = gl.createVertexArray();
     this.data = new Float32Array(4096 * floatsPerInstance);
     this.count = 0;
+    // GPU buffer is re-uploaded only when CPU data changed
+    // so pan / zoom / hover redraws cost zero buffer traffic
+    this.dirty = true;
+    this.gpuBytes = 0;
   }
 
   reset() {
     this.count = 0;
+    this.dirty = true;
   }
 
   _ensure(n) {
@@ -82,13 +87,20 @@ class InstanceBatchBase {
     gl.useProgram(program);
     gl.bindVertexArray(this.vao);
 
-    // Upload (only if buffer binding might be stale)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      this.data.subarray(0, this.count * this.floatsPerInstance),
-      gl.DYNAMIC_DRAW,
-    );
+    if (this.dirty) {
+      const view = this.data.subarray(0, this.count * this.floatsPerInstance);
+      if (view.byteLength > this.gpuBytes) {
+        // Grow-only: reallocate (bufferData) when it no longer fits
+        this.gpuBytes = this.data.byteLength;
+        gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.DYNAMIC_DRAW);
+      } else {
+        // otherwise overwrite in place, no driver-side realloc
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, view);
+      }
+
+      this.dirty = false;
+    }
 
     // Attribute setup on first use per program
     if (this.program !== program) {

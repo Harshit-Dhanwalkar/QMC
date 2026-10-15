@@ -7,7 +7,7 @@ export function createGL(canvas, opts = {}) {
     depth: false,
     stencil: false,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: false,
     ...opts,
   });
 

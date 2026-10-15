@@ -416,8 +416,8 @@ void main() { outColor = v_color; }`;
         throw err;
       }
 
-      const program = compileProgram(gl, VS, FS);
-      const rects = new RectBatch(gl);
+      let program = compileProgram(gl, VS, FS);
+      let rects = new RectBatch(gl);
       const overlay = new Overlay2D(ovCanvas);
 
       const FULL_VIEW = { x0: 0, y0: -E_MAX, x1: 1, y1: E_MAX };
@@ -427,8 +427,10 @@ void main() { outColor = v_color; }`;
       });
 
       let layoutCache = null;
+      let lastCw = 0;
       function layout() {
         const cw = plot.clientWidth;
+        lastCw = cw;
         const ch = Math.max(300, Math.round(cw * 0.62));
         plot.style.height = ch + "px";
         const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -544,8 +546,13 @@ void main() { outColor = v_color; }`;
       }
 
       // Redraw
-      function redraw() {
-        if (!layoutCache) {
+      let instKey = "";
+      let needGL = false;
+      let rafId = 0;
+      let glLost = false;
+
+      function renderGL() {
+        if (glLost) {
           return;
         }
 
@@ -553,14 +560,55 @@ void main() { outColor = v_color; }`;
         gl.clearColor(BG[0], BG[1], BG[2], 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        buildInstances(
-          rects,
-          parseInt($("qmax").value, 10),
-          $("colored").checked,
-        );
+        // Rebuild + re-upload instances only when data changed
+        // pan / zoom just change uniforms
+        const qm = parseInt($("qmax").value, 10);
+        const col = $("colored").checked;
+        const key = qm + ":" + col + ":" + list.length;
+        if (key !== instKey) {
+          buildInstances(rects, qm, col);
+          instKey = key;
+        }
+
         rects.flush(gl, program, camera.uniforms());
+      }
+
+      function frame() {
+        rafId = 0;
+        if (!layoutCache) {
+          return;
+        }
+
+        if (needGL) {
+          renderGL();
+          needGL = false;
+        }
+
         drawOverlay();
       }
+
+      function requestFrame(gpu) {
+        needGL = needGL || gpu;
+        if (!rafId) {
+          rafId = requestAnimationFrame(frame);
+        }
+      }
+
+      const redraw = () => requestFrame(true);
+      const refreshOverlay = () => requestFrame(false);
+
+      // Mobile browsers drop WebGL contexts under memory pressure
+      glCanvas.addEventListener("webglcontextlost", (e) => {
+        e.preventDefault();
+        glLost = true;
+      });
+      glCanvas.addEventListener("webglcontextrestored", () => {
+        program = compileProgram(gl, VS, FS);
+        rects = new RectBatch(gl);
+        instKey = "";
+        glLost = false;
+        redraw();
+      });
 
       // Load WebAssembly
       let w;
@@ -685,7 +733,7 @@ void main() { outColor = v_color; }`;
             const f = list.find((x) => x.p === 1 && x.q === 3);
             if (f) {
               pinned = { flux: f, E: 0.5 * (f.edges[1] + f.edges[2]) };
-              drawOverlay();
+              refreshOverlay();
               showPinned();
               numericCheck(pinned);
             }
@@ -875,7 +923,7 @@ void main() { outColor = v_color; }`;
           drag.moved += Math.abs(dx) + Math.abs(dy);
           camera.pan(dx, dy);
           camera.clamp({
-            minW: 1e-4,
+            minW: 5e-4,
             maxW: 1.5,
             minH: 1e-3,
             maxH: 4 * E_MAX,
@@ -887,7 +935,7 @@ void main() { outColor = v_color; }`;
         }
 
         hover = locate(e);
-        drawOverlay();
+        refreshOverlay();
         if (!pinned && hover) {
           $("info").innerHTML = describe(hover);
         }
@@ -897,7 +945,12 @@ void main() { outColor = v_color; }`;
         hover = null;
         drag.active = false;
         glCanvas.classList.remove("dragging");
-        drawOverlay();
+        refreshOverlay();
+      });
+
+      glCanvas.addEventListener("pointercancel", () => {
+        drag.active = false;
+        glCanvas.classList.remove("dragging");
       });
 
       glCanvas.addEventListener("pointerup", (e) => {
@@ -907,7 +960,7 @@ void main() { outColor = v_color; }`;
           if (s) {
             pinned = s;
             hover = null;
-            drawOverlay();
+            refreshOverlay();
             checkHTML = "";
             showPinned();
             numericCheck(s);
@@ -925,13 +978,17 @@ void main() { outColor = v_color; }`;
           const r = glCanvas.getBoundingClientRect();
           const sx = glCanvas.width / r.width;
           const sy = glCanvas.height / r.height;
+          let dy =
+            e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+          dy = Math.max(-300, Math.min(300, dy));
+
           camera.zoomAt(
             (e.clientX - r.left) * sx,
             (e.clientY - r.top) * sy,
-            Math.exp(e.deltaY * 0.0015),
+            Math.exp(dy * 0.0015),
           );
           camera.clamp({
-            minW: 1e-4,
+            minW: 5e-4,
             maxW: 1.5,
             minH: 1e-3,
             maxH: 4 * E_MAX,
@@ -956,10 +1013,13 @@ void main() { outColor = v_color; }`;
       });
       $("png").addEventListener("click", exportCurrent);
 
-      window.addEventListener("resize", () => {
-        layout();
-        redraw();
-      });
+      // ResizeObserver
+      new ResizeObserver(() => {
+        if (plot.clientWidth !== lastCw) {
+          layout();
+          redraw();
+        }
+      }).observe(plot);
 
       // PNG export
       function exportCurrent() {
