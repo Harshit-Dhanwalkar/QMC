@@ -1,0 +1,61 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "core/**"
+      - "physics/**"
+      - "benchmarks/**"
+      - "Makefile"
+      - ".github/workflows/bench.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmarks
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-deps
+
+      # Benchmarks must run optimised and without ASan, or timings are noise
+      - name: Build and run benchmarks
+        run: |
+          make benchmarks SANITIZE=0
+          make run-benchmarks SANITIZE=0
+
+      - name: Convert eigensolver output to benchmark JSON
+        run: |
+          awk '!/^#/ && NF >= 3 {
+                 printf "%s{\"name\":\"eigensolver n=%s\",\"unit\":\"ms\",\"value\":%s}", (n++ ? "," : "["), $1, $2
+               }
+               END { if (!n) exit 1; print "]" }' \
+            output/bench_eigensolver.dat > bench_eigensolver.json
+          python3 -m json.tool bench_eigensolver.json
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: QMC eigensolver
+          tool: "customSmallerIsBetter"
+          output-file-path: bench_eigensolver.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          # Shared runners are noisy: warn at +50%, never fail a push
+          alert-threshold: "150%"
+          comment-on-alert: true
+          fail-on-alert: false

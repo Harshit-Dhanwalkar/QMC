@@ -1,0 +1,53 @@
+name: Links
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "README.md"
+      - ".github/workflows/links.yml"
+  schedule:
+    - cron: "17 4 * * 1"   # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: links-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  internal:
+    name: internal links (blocking)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress --verbose 'docs/src/**/*.md' README.md
+          fail: true
+
+  external:
+    name: external links (report only)
+    # Remote sites flake, this must never block a PR
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.run_id }}
+          restore-keys: lychee-
+      - uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --cache --max-cache-age 3d
+            --max-retries 3 --retry-wait-time 5 --timeout 20
+            --accept '200..=299,403,429'
+            'docs/src/**/*.md' README.md
+          fail: false
+          jobSummary: true
