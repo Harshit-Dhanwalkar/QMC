@@ -117,7 +117,7 @@ jobs:
           submodules: recursive
 
       - uses: ./.github/actions/setup-deps
-         with:
+        with:
           extra: cppcheck clang-tidy
 
       - uses: ./.github/actions/setup-gr
@@ -143,6 +143,12 @@ jobs:
       #     bear -- make all CC=${{ matrix.compiler }} PLOT_BACKEND=GR
       - name: Install compiledb
         run: pip install compiledb
+
+      - name: Cache pip packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
 
       - name: Generate compilation database
         run: |
@@ -173,7 +179,7 @@ jobs:
           submodules: recursive
 
       - uses: ./.github/actions/setup-deps
-         with:
+        with:
           extra: clang
 
       - uses: ./.github/actions/setup-gr
