@@ -268,7 +268,13 @@
     <style>
       #wg {
         aspect-ratio: 1 / 1;
+      }
+      #wg-gl {
+        pointer-events: none;
+      }
+      #wg-ov {
         cursor: crosshair;
+        touch-action: none;
       }
       #pn {
         aspect-ratio: 16 / 5;
@@ -317,7 +323,8 @@
       <div class="main">
         <div>
           <div class="cv" id="wg">
-            <canvas id="wgc"></canvas>
+            <canvas id="wg-gl"></canvas>
+            <canvas id="wg-ov"></canvas>
             <div id="readout"></div>
           </div>
           <div class="legend">
@@ -439,461 +446,537 @@
 
     <script src="wasi-shim.js"></script>
     <script type="module">
-      (async () => {
-        const $ = (id) => document.getElementById(id);
-        const showError = (m) => {
-          const e = $("err");
-          e.style.display = "block";
-          e.innerHTML = m;
-        };
-        const css = (v) =>
-          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+      import { createGL, compileProgram } from "./webgl/context.mjs";
+      import { Image2D, IMAGE_VS, IMAGE_FS } from "./webgl/texture.mjs";
+      import { Overlay2D } from "./webgl/overlay.mjs";
 
-        // Load WebAssembly
-        let w;
-        let wasmMemory = null;
-        try {
-          const res = await fetch("qmc_wigner.wasm");
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const { instance } = await WebAssembly.instantiate(
-            await res.arrayBuffer(),
-            makeWasiImports(() => wasmMemory),
-          );
-          w = instance.exports;
-          wasmMemory = w.memory;
-          if (w._initialize) w._initialize();
-        } catch (err) {
-          showError(
-            "Could not load <code>qmc_wigner.wasm</code> (" +
-              err.message +
-              "). If you opened this file directly " +
-              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/wigner.html</code>.",
-          );
+      const $ = (id) => document.getElementById(id);
+      const showError = (m) => {
+        const e = $("err");
+        e.style.display = "block";
+        e.innerHTML = m;
+      };
 
-          return;
+      // Load WebAssembly
+      let w;
+      let wasmMemory = null;
+      try {
+        const res = await fetch("qmc_wigner.wasm");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const { instance } = await WebAssembly.instantiate(
+          await res.arrayBuffer(),
+          makeWasiImports(() => wasmMemory),
+        );
+        w = instance.exports;
+        wasmMemory = w.memory;
+        if (w._initialize) w._initialize();
+      } catch (err) {
+        showError(
+          "Could not load <code>qmc_wigner.wasm</code> (" +
+            err.message +
+            "). If you opened this file directly from disk, serve the " +
+            "folder: <code>python3 -m http.server</code> and open " +
+            "<code>http://localhost:8000/wigner.html</code>.",
+        );
+        throw err;
+      }
+
+      const N = w.qmc_wg_n();
+      const NMAX = w.qmc_wg_nmax();
+      const EXT = w.qmc_wg_extent();
+
+      const WB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_wg_w_buffer(), N * N);
+      const XB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_wg_x_buffer(), N);
+      const PB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_wg_p_buffer(), N);
+      const NB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_wg_pn_buffer(), NMAX + 1);
+
+      // WebGL
+      let gl;
+      try {
+        gl = createGL($("wg-gl"));
+      } catch (err) {
+        showError(
+          "This playground needs WebGL2. " +
+            "Try a recent Chrome, Firefox, Edge, or Safari. (" +
+            err.message +
+            ")",
+        );
+        throw err;
+      }
+
+      const imgProgram = compileProgram(gl, IMAGE_VS, IMAGE_FS);
+      const img = new Image2D(gl);
+      const ov = new Overlay2D($("wg-ov"));
+
+      const KIND_INFO = [
+        {
+          name: "coherent state |\u03b1\u27e9",
+          a: "|\u03b1|",
+          amax: 3.8,
+          astep: 0.05,
+          par: true,
+          plab: "arg \u03b1",
+        },
+        {
+          name: "Fock state |n\u27e9",
+          a: "n",
+          amax: 12,
+          astep: 1,
+          par: false,
+        },
+        {
+          name: "even cat (|\u03b1\u27e9 + |\u2212\u03b1\u27e9)",
+          a: "|\u03b1|",
+          amax: 3.8,
+          astep: 0.05,
+          par: true,
+          plab: "arg \u03b1",
+        },
+        {
+          name: "odd cat (|\u03b1\u27e9 \u2212 |\u2212\u03b1\u27e9)",
+          a: "|\u03b1|",
+          amax: 3.8,
+          astep: 0.05,
+          par: true,
+          plab: "arg \u03b1",
+        },
+        {
+          name: "squeezed vacuum",
+          a: "r",
+          amax: 1.2,
+          astep: 0.02,
+          par: true,
+          plab: "angle \u03b8",
+        },
+      ];
+
+      let kind = 0;
+      let amp = 2.5;
+      let par = 0;
+      let kt = 0;
+      let hover = null;
+      let ok = true;
+
+      function compute() {
+        ok =
+          w.qmc_wg_state(kind, amp, (par * Math.PI) / 180, kt * Math.PI) === 0;
+        if (!ok) {
+          showError("parameters rejected");
+        } else {
+          $("err").style.display = "none";
         }
+      }
 
-        const N = w.qmc_wg_n();
-        const NMAX = w.qmc_wg_nmax();
-        const EXT = w.qmc_wg_extent();
-        // views are created after the calls that touch memory (memory can grow)
-        const WB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_wg_w_buffer(), N * N);
-        const XB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_wg_x_buffer(), N);
-        const PB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_wg_p_buffer(), N);
-        const NB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_wg_pn_buffer(), NMAX + 1);
-
-        const KIND_INFO = [
-          {
-            name: "coherent state |\u03b1\u27e9",
-            a: "|\u03b1|",
-            amax: 3.8,
-            astep: 0.05,
-            par: true,
-            plab: "arg \u03b1",
-          },
-          {
-            name: "Fock state |n\u27e9",
-            a: "n",
-            amax: 12,
-            astep: 1,
-            par: false,
-          },
-          {
-            name: "even cat (|\u03b1\u27e9 + |\u2212\u03b1\u27e9)",
-            a: "|\u03b1|",
-            amax: 3.8,
-            astep: 0.05,
-            par: true,
-            plab: "arg \u03b1",
-          },
-          {
-            name: "odd cat (|\u03b1\u27e9 \u2212 |\u2212\u03b1\u27e9)",
-            a: "|\u03b1|",
-            amax: 3.8,
-            astep: 0.05,
-            par: true,
-            plab: "arg \u03b1",
-          },
-          {
-            name: "squeezed vacuum",
-            a: "r",
-            amax: 1.2,
-            astep: 0.02,
-            par: true,
-            plab: "angle \u03b8",
-          },
-        ];
-
-        let kind = 0;
-        let amp = 2.5;
-        let par = 0;
-        let kt = 0;
-        let hover = null;
-        let ok = true;
-
-        function compute() {
-          ok =
-            w.qmc_wg_state(kind, amp, (par * Math.PI) / 180, kt * Math.PI) ===
-            0;
-          if (!ok) {
-            showError("parameters rejected");
-          } else {
-            $("err").style.display = "none";
-          }
+      // Diverging colormap: dark at v = 0, warm for v > 0, cool for v < 0.
+      // Same formula as the 2D version -- unchanged.
+      function colour(v) {
+        const t = Math.min(1, Math.abs(v));
+        if (t < 0.004) {
+          return [8, 10, 18, 255];
         }
-
-        // colour map: 0 -> panel black, positive -> amber -> white, negative -> blue -> white
-        function colour(v) {
-          const t = Math.min(1, Math.abs(v));
-          if (t < 0.004) {
-            return [8, 10, 18, 255];
-          }
-
-          if (v >= 0)
-            return [
-              Math.round(255 * Math.min(1, 1.9 * t)),
-              Math.round(255 * Math.pow(t, 1.15) * 0.8 + 10),
-              Math.round(30 + 200 * Math.pow(t, 3)),
-              255,
-            ].slice(0, 4);
-
+        if (v >= 0) {
           return [
-            Math.round(20 + 130 * Math.pow(t, 2.2)),
-            Math.round(255 * Math.pow(t, 0.8) * 0.75 + 8),
             Math.round(255 * Math.min(1, 1.9 * t)),
+            Math.round(255 * Math.pow(t, 1.15) * 0.8 + 10),
+            Math.round(30 + 200 * Math.pow(t, 3)),
             255,
           ];
         }
 
-        const off = document.createElement("canvas");
-        off.width = off.height = N;
-        const og = off.getContext("2d");
-        const img = og.createImageData(N, N);
+        return [
+          Math.round(20 + 130 * Math.pow(t, 2.2)),
+          Math.round(255 * Math.pow(t, 0.8) * 0.75 + 8),
+          Math.round(255 * Math.min(1, 1.9 * t)),
+          255,
+        ];
+      }
 
-        function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect();
-          const d = window.devicePixelRatio || 1;
-          canvas.width = Math.max(2, r.width * d);
-          canvas.height = Math.max(2, r.height * d);
-          const g = canvas.getContext("2d");
-          g.setTransform(d, 0, 0, d, 0, 0);
+      const pixels = new Uint8ClampedArray(N * N * 4);
 
-          return { g, W: r.width, H: r.height };
+      function buildWignerPixels() {
+        const wv = WB();
+        let top = 1e-9;
+        for (let i = 0; i < N * N; i++) {
+          top = Math.max(top, Math.abs(wv[i]));
+        }
+        top = Math.max(top, (1 / Math.PI) * 0.95);
+
+        // Row 0 of the pixel buffer is at the top of the texture after
+        // UNPACK_FLIP_Y_WEBGL. We want p = +EXT at the top of the plot, so
+        // pixel row 0 holds data at l = N-1.
+        for (let l = 0; l < N; l++) {
+          for (let j = 0; j < N; j++) {
+            const c = colour(wv[l * N + j] / top);
+            const o = ((N - 1 - l) * N + j) * 4;
+            pixels[o] = c[0];
+            pixels[o + 1] = c[1];
+            pixels[o + 2] = c[2];
+            pixels[o + 3] = 255;
+          }
         }
 
-        const G = { x0: 0, y0: 0, s: 0 };
-        const PX = (x) => G.x0 + ((x + EXT) / (2 * EXT)) * G.s;
-        const PY = (p) => G.y0 + ((EXT - p) / (2 * EXT)) * G.s;
+        img.upload(pixels, N, N);
+      }
 
-        function drawWigner() {
-          const { g, W: cw, H: ch } = fit($("wgc"));
-          const m = 52;
-          G.x0 = 8;
-          G.y0 = m;
-          G.s = Math.min(cw - m - 8, ch - m - 22);
+      // Layout
+      let dpr = 1;
+      let plotRect = { ml: 0, mt: 0, pw: 1, ph: 1 };
+
+      function layoutWigner() {
+        const cw = $("wg").clientWidth;
+        const ch = $("wg").clientHeight;
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+        const W = Math.round(cw * dpr);
+        const H = Math.round(ch * dpr);
+        for (const el of [$("wg-gl"), $("wg-ov")]) {
+          el.width = W;
+          el.height = H;
+        }
+        ov.setSize(W, H);
+
+        // In device pixels:
+        //   top margin for |\psi(x)|^2 marginal, right margin for P(p),
+        //   bottom margin for x-axis tick labels
+        const topPad = 52 * dpr;
+        const leftPad = 8 * dpr;
+        const botPad = 22 * dpr;
+        const s = Math.min(W - topPad - leftPad, H - topPad - botPad);
+        plotRect = { ml: leftPad, mt: topPad, pw: s, ph: s };
+      }
+
+      // Draw
+      function drawWigner() {
+        const W = $("wg-gl").width;
+        const H = $("wg-gl").height;
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0.02, 0.03, 0.05, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        img.flush(gl, imgProgram, {
+          u_view: [-EXT, -EXT, EXT, EXT],
+          u_data: [-EXT, -EXT, EXT, EXT],
+          u_plot: [plotRect.ml, plotRect.mt, plotRect.pw, plotRect.ph],
+          u_canvas: [W, H],
+        });
+
+        const ctx = ov.ctx;
+        ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = plotRect;
+
+        const fs = Math.max(11, Math.round(H * 0.028));
+        const fam = "ui-monospace,monospace";
+
+        const PX = (x) => ml + ((x + EXT) / (2 * EXT)) * pw;
+        const PY = (p) => mt + ((EXT - p) / (2 * EXT)) * ph;
+
+        // Dashed guide lines at x, p = -4, 0, 4
+        ctx.strokeStyle = "rgba(137,147,168,0.28)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        for (const t of [-4, 0, 4]) {
+          ctx.beginPath();
+          ctx.moveTo(PX(t), mt);
+          ctx.lineTo(PX(t), mt + ph);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(ml, PY(t));
+          ctx.lineTo(ml + pw, PY(t));
+          ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Border
+        ctx.strokeStyle = "#232b3d";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(ml, mt, pw, ph);
+
+        // Axis labels
+        ctx.fillStyle = "#8993a8";
+        ctx.font = fs + "px " + fam;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText("x", ml + pw - fs * 0.3, mt + ph + fs * 0.3);
+        ctx.textAlign = "left";
+        ctx.fillText("p", ml + pw + fs * 0.3, mt + fs * 0.4);
+        ctx.textAlign = "center";
+        for (const t of [-4, 0, 4]) {
+          ctx.fillText(String(t), PX(t), mt + ph + fs * 0.3);
+        }
+
+        // Marginals
+        const mx = XB();
+        const mp = PB();
+        let tx = 1e-9;
+        let tp = 1e-9;
+        for (let i = 0; i < N; i++) {
+          tx = Math.max(tx, mx[i]);
+          tp = Math.max(tp, mp[i]);
+        }
+
+        const marginalH = (52 - 12) * dpr;
+        ctx.fillStyle = "rgba(255,180,84,0.28)";
+        ctx.strokeStyle = "#ffb454";
+        ctx.lineWidth = 1.5;
+
+        // top marginal |\psi(x)|^2
+        ctx.beginPath();
+        ctx.moveTo(PX(-EXT), mt - 4 * dpr);
+        for (let j = 0; j < N; j++) {
+          const x = -EXT + (j * 2 * EXT) / (N - 1);
+          ctx.lineTo(PX(x), mt - 4 * dpr - (mx[j] / tx) * marginalH);
+        }
+        ctx.lineTo(PX(EXT), mt - 4 * dpr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // right marginal P(p)
+        ctx.beginPath();
+        ctx.moveTo(ml + pw + 4 * dpr, PY(-EXT));
+        for (let l = 0; l < N; l++) {
+          const p = -EXT + (l * 2 * EXT) / (N - 1);
+          ctx.lineTo(ml + pw + 4 * dpr + (mp[l] / tp) * marginalH, PY(p));
+        }
+        ctx.lineTo(ml + pw + 4 * dpr, PY(EXT));
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Hover marker
+        if (hover) {
           const wv = WB();
+          const v = wv[hover.l * N + hover.j];
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(PX(hover.x), PY(hover.p), 4, 0, 7);
+          ctx.stroke();
+          $("readout").innerHTML =
+            "x = " +
+            hover.x.toFixed(2) +
+            "  p = " +
+            hover.p.toFixed(2) +
+            "<br>W = " +
+            (v >= 0 ? " " : "") +
+            v.toFixed(4);
+        } else {
+          $("readout").innerHTML = "hover for W(x, p)";
+        }
+      }
 
-          let top = 1e-9;
-          for (let i = 0; i < N * N; i++) {
-            top = Math.max(top, Math.abs(wv[i]));
-          }
+      // Photon-number distribution (2D canvas, unchanged)
+      function fit(canvas) {
+        const r = canvas.parentElement.getBoundingClientRect();
+        const d = window.devicePixelRatio || 1;
+        canvas.width = Math.max(2, r.width * d);
+        canvas.height = Math.max(2, r.height * d);
+        const g = canvas.getContext("2d");
+        g.setTransform(d, 0, 0, d, 0, 0);
 
-          top = Math.max(top, (1 / Math.PI) * 0.95);
-          for (let l = 0; l < N; l++) {
-            for (let j = 0; j < N; j++) {
-              const c = colour(wv[l * N + j] / top);
-              const o = ((N - 1 - l) * N + j) * 4; // p increases upward
-              img.data[o] = c[0];
-              img.data[o + 1] = c[1];
-              img.data[o + 2] = c[2];
-              img.data[o + 3] = 255;
-            }
-          }
+        return { g, W: r.width, H: r.height };
+      }
 
-          og.putImageData(img, 0, 0);
-          g.imageSmoothingEnabled = true;
-          g.imageSmoothingQuality = "high";
-          g.drawImage(off, G.x0, G.y0, G.s, G.s);
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.strokeRect(G.x0, G.y0, G.s, G.s);
-          g.strokeStyle = "rgba(137,147,168,0.28)";
-          g.setLineDash([3, 4]);
+      function drawPn() {
+        const { g, W: cw, H: ch } = fit($("pnc"));
+        const x0 = 36;
+        const x1 = cw - 10;
+        const y0 = ch - 20;
+        const y1 = 12;
+        const pn = NB();
+        const last = Math.min(NMAX, kind === 1 ? 14 : 40);
 
-          for (const t of [-4, 0, 4]) {
-            g.beginPath();
-            g.moveTo(PX(t), G.y0);
-            g.lineTo(PX(t), G.y0 + G.s);
-            g.stroke();
-            g.beginPath();
-            g.moveTo(G.x0, PY(t));
-            g.lineTo(G.x0 + G.s, PY(t));
-            g.stroke();
-          }
-
-          g.setLineDash([]);
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("x", G.x0 + G.s - 10, G.y0 + G.s + 14);
-          g.fillText("p", G.x0 + G.s + 2, G.y0 + 10);
-          for (const t of [-4, 0, 4]) {
-            g.fillText(String(t), PX(t) - 3, G.y0 + G.s + 14);
-          }
-
-          // marginals
-          const mx = XB();
-          const mp = PB();
-          let tx = 1e-9;
-          let tp = 1e-9;
-          for (let i = 0; i < N; i++) {
-            tx = Math.max(tx, mx[i]);
-            tp = Math.max(tp, mp[i]);
-          }
-
-          g.fillStyle = "rgba(255,180,84,0.28)";
-          g.strokeStyle = "#ffb454";
-          g.lineWidth = 1.5;
-          g.beginPath();
-          g.moveTo(PX(-EXT), G.y0 - 4);
-          for (let j = 0; j < N; j++)
-            g.lineTo(
-              PX(-EXT + (j * 2 * EXT) / (N - 1)),
-              G.y0 - 4 - (mx[j] / tx) * (m - 12),
-            );
-          g.lineTo(PX(EXT), G.y0 - 4);
-          g.closePath();
-          g.fill();
-          g.stroke();
-          g.beginPath();
-          g.moveTo(G.x0 + G.s + 4, PY(-EXT));
-          for (let l = 0; l < N; l++) {
-            g.lineTo(
-              G.x0 + G.s + 4 + (mp[l] / tp) * (m - 12),
-              PY(-EXT + (l * 2 * EXT) / (N - 1)),
-            );
-          }
-          g.lineTo(G.x0 + G.s + 4, PY(EXT));
-          g.closePath();
-          g.fill();
-          g.stroke();
-          if (hover) {
-            const v = wv[hover.l * N + hover.j];
-            g.strokeStyle = "#fff";
-            g.lineWidth = 1;
-            g.beginPath();
-            g.arc(PX(hover.x), PY(hover.p), 4, 0, 7);
-            g.stroke();
-            $("readout").innerHTML =
-              "x = " +
-              hover.x.toFixed(2) +
-              "  p = " +
-              hover.p.toFixed(2) +
-              "<br>W = " +
-              (v >= 0 ? " " : "") +
-              v.toFixed(4);
-          } else {
-            $("readout").innerHTML = "hover for W(x, p)";
-          }
+        let top = 1e-9;
+        for (let n = 0; n <= last; n++) {
+          top = Math.max(top, pn[n]);
         }
 
-        function drawPn() {
-          const { g, W: cw, H: ch } = fit($("pnc"));
-          const x0 = 36;
-          const x1 = cw - 10;
-          const y0 = ch - 20;
-          const y1 = 12;
-          const pn = NB();
-          const last = Math.min(NMAX, kind === 1 ? 14 : 40);
-
-          let top = 1e-9;
-          for (let n = 0; n <= last; n++) {
-            top = Math.max(top, pn[n]);
-          }
-
-          g.strokeStyle = css("--line");
-          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
-          const bw = (x1 - x0) / (last + 1);
-          g.fillStyle = css("--accent");
-          for (let n = 0; n <= last; n++) {
-            const h = (pn[n] / top) * (y0 - y1 - 4);
-            g.fillRect(x0 + n * bw + 1, y0 - h, Math.max(1, bw - 2), h);
-          }
-
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("n", x1 - 8, ch - 5);
-          g.fillText("0", x0, ch - 5);
-          g.fillText(String(last), x1 - 18, ch - 5);
-          g.fillText("max " + top.toFixed(3), x0 + 6, y1 + 12);
+        g.strokeStyle = "#232b3d";
+        g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+        const bw = (x1 - x0) / (last + 1);
+        g.fillStyle = "#3ddc97";
+        for (let n = 0; n <= last; n++) {
+          const h = (pn[n] / top) * (y0 - y1 - 4);
+          g.fillRect(x0 + n * bw + 1, y0 - h, Math.max(1, bw - 2), h);
         }
 
-        function stats() {
-          const neg = w.qmc_wg_negativity();
-          const wmin = w.qmc_wg_wmin();
+        g.fillStyle = "#8993a8";
+        g.font = "11px ui-monospace,monospace";
+        g.fillText("n", x1 - 8, ch - 5);
+        g.fillText("0", x0, ch - 5);
+        g.fillText(String(last), x1 - 18, ch - 5);
+        g.fillText("max " + top.toFixed(3), x0 + 6, y1 + 12);
+      }
 
-          $("stats").innerHTML =
-            '<div class="stat"><span>state</span><span>' +
-            KIND_INFO[kind].name +
-            "</span></div>" +
-            '<div class="stat"><span>mean photon number \u27e8n\u27e9</span><span>' +
-            w.qmc_wg_nbar().toFixed(3) +
-            "</span></div>" +
-            '<div class="stat"><span>minimum of W</span><span>' +
-            wmin.toFixed(4) +
-            "</span></div>" +
-            '<div class="stat"><span>negative volume</span><span>' +
-            (neg < 5e-4 ? "0 (Gaussian-like)" : neg.toFixed(4)) +
-            "</span></div>";
+      function stats() {
+        const neg = w.qmc_wg_negativity();
+        const wmin = w.qmc_wg_wmin();
 
-          const k = kt;
-          $("note").textContent =
-            kind === 0 && Math.abs(k - 0.5) < 0.006
-              ? "\u03c7t = \u03c0/2: the exact two-component cat, fringes between the blobs."
-              : kind === 0 && k > 0.994
-                ? "\u03c7t = \u03c0: full revival, the Gaussian is back."
-                : kind === 0 && k > 0.01 && neg < 5e-4
-                  ? "Smeared along the ring but still positive everywhere."
-                  : neg > 0.05
-                    ? "The blue fringes are negative probability density: no classical mixture looks like this."
-                    : "";
+        $("stats").innerHTML =
+          '<div class="stat"><span>state</span><span>' +
+          KIND_INFO[kind].name +
+          "</span></div>" +
+          '<div class="stat"><span>mean photon number \u27e8n\u27e9</span><span>' +
+          w.qmc_wg_nbar().toFixed(3) +
+          "</span></div>" +
+          '<div class="stat"><span>minimum of W</span><span>' +
+          wmin.toFixed(4) +
+          "</span></div>" +
+          '<div class="stat"><span>negative volume</span><span>' +
+          (neg < 5e-4 ? "0 (Gaussian-like)" : neg.toFixed(4)) +
+          "</span></div>";
+
+        const k = kt;
+        $("note").textContent =
+          kind === 0 && Math.abs(k - 0.5) < 0.006
+            ? "\u03c7t = \u03c0/2: the exact two-component cat, fringes between the blobs."
+            : kind === 0 && k > 0.994
+              ? "\u03c7t = \u03c0: full revival, the Gaussian is back."
+              : kind === 0 && k > 0.01 && neg < 5e-4
+                ? "Smeared along the ring but still positive everywhere."
+                : neg > 0.05
+                  ? "The blue fringes are negative probability density: no classical mixture looks like this."
+                  : "";
+      }
+
+      function render() {
+        compute();
+        if (!ok) {
+          return;
         }
 
-        function render() {
-          compute();
-          if (!ok) {
-            return;
-          }
+        buildWignerPixels();
+        layoutWigner();
+        drawWigner();
+        drawPn();
+        stats();
+        $("ampv").textContent = amp.toFixed(KIND_INFO[kind].astep >= 1 ? 0 : 2);
+        $("parv").innerHTML = Math.round(par) + "&deg;";
+        $("ktv").textContent = kt.toFixed(3);
+      }
 
-          drawWigner();
-          drawPn();
-          stats();
-          $("ampv").textContent = amp.toFixed(
-            KIND_INFO[kind].astep >= 1 ? 0 : 2,
-          );
-          $("parv").innerHTML = Math.round(par) + "&deg;";
-          $("ktv").textContent = kt.toFixed(3);
-        }
+      function setKind(k, a, p, c) {
+        kind = k;
+        amp = a;
+        par = p;
+        kt = c;
+        const info = KIND_INFO[k];
+        const s = $("amp");
+        s.max = info.amax;
+        s.step = info.astep;
+        s.value = amp;
+        $("alab").textContent = info.a;
+        $("par").value = par;
+        $("par").disabled = !info.par;
+        if (info.par) $("plab").textContent = info.plab;
+        $("kt").value = kt;
 
-        function setKind(k, a, p, c) {
-          kind = k;
-          amp = a;
-          par = p;
-          kt = c;
-          const info = KIND_INFO[k];
-          const s = $("amp");
-          s.max = info.amax;
-          s.step = info.astep;
-          s.value = amp;
-          $("alab").textContent = info.a;
-          $("par").value = par;
-          $("par").disabled = !info.par;
-          if (info.par) $("plab").textContent = info.plab;
-          $("kt").value = kt;
+        render();
+      }
 
-          render();
-        }
-
-        document.querySelectorAll("#presets button").forEach((b) =>
-          b.addEventListener("click", () => {
-            stopPlay();
-            document
-              .querySelectorAll("#presets button")
-              .forEach((x) => x.classList.remove("on"));
-            b.classList.add("on");
-            setKind(+b.dataset.k, +b.dataset.a, +b.dataset.p, +b.dataset.c);
-          }),
-        );
-
-        const unpreset = () =>
+      document.querySelectorAll("#presets button").forEach((b) =>
+        b.addEventListener("click", () => {
+          stopPlay();
           document
             .querySelectorAll("#presets button")
             .forEach((x) => x.classList.remove("on"));
+          b.classList.add("on");
+          setKind(+b.dataset.k, +b.dataset.a, +b.dataset.p, +b.dataset.c);
+        }),
+      );
 
-        $("amp").addEventListener("input", (e) => {
-          stopPlay();
-          amp = +e.target.value;
-          unpreset();
-          render();
-        });
-        $("par").addEventListener("input", (e) => {
-          stopPlay();
-          par = +e.target.value;
-          unpreset();
-          render();
-        });
-        $("kt").addEventListener("input", (e) => {
-          stopPlay();
-          kt = +e.target.value;
-          render();
-        });
+      const unpreset = () =>
+        document
+          .querySelectorAll("#presets button")
+          .forEach((x) => x.classList.remove("on"));
 
-        let raf = 0;
-        let last = 0;
-        function stopPlay() {
-          if (raf) {
-            cancelAnimationFrame(raf);
-          }
-          raf = 0;
-          $("play").textContent = "Play Kerr evolution";
+      $("amp").addEventListener("input", (e) => {
+        stopPlay();
+        amp = +e.target.value;
+        unpreset();
+        render();
+      });
+      $("par").addEventListener("input", (e) => {
+        stopPlay();
+        par = +e.target.value;
+        unpreset();
+        render();
+      });
+      $("kt").addEventListener("input", (e) => {
+        stopPlay();
+        kt = +e.target.value;
+        render();
+      });
+
+      let raf = 0;
+      let last = 0;
+      function stopPlay() {
+        if (raf) {
+          cancelAnimationFrame(raf);
         }
+        raf = 0;
+        $("play").textContent = "Play Kerr evolution";
+      }
 
-        function tick(t) {
-          if (!last) {
-            last = t;
-          }
-
-          kt += ((t - last) / 1000) * 0.12;
+      function tick(t) {
+        if (!last) {
           last = t;
-          if (kt > 1) {
-            kt -= 1;
-          }
-          $("kt").value = kt;
+        }
+        kt += ((t - last) / 1000) * 0.12;
+        last = t;
+        if (kt > 1) {
+          kt -= 1;
+        }
+        $("kt").value = kt;
+        render();
+        raf = requestAnimationFrame(tick);
+      }
 
-          render();
-          raf = requestAnimationFrame(tick);
+      $("play").addEventListener("click", () => {
+        if (raf) {
+          stopPlay();
+          return;
         }
 
-        $("play").addEventListener("click", () => {
-          if (raf) {
-            stopPlay();
-            return;
-          }
+        $("play").textContent = "Pause";
+        last = 0;
+        raf = requestAnimationFrame(tick);
+      });
 
-          $("play").textContent = "Pause";
-          last = 0;
-
-          raf = requestAnimationFrame(tick);
-        });
-
-        $("wgc").addEventListener("pointermove", (ev) => {
-          const r = $("wgc").getBoundingClientRect();
-          const px = ev.clientX - r.left;
-          const py = ev.clientY - r.top;
-          const x = ((px - G.x0) / G.s) * 2 * EXT - EXT;
-          const p = EXT - ((py - G.y0) / G.s) * 2 * EXT;
-          if (Math.abs(x) > EXT || Math.abs(p) > EXT) {
-            hover = null;
-          } else {
-            const j = Math.round(((x + EXT) / (2 * EXT)) * (N - 1));
-            const l = Math.round(((p + EXT) / (2 * EXT)) * (N - 1));
-            hover = { x, p, j, l };
-          }
-
-          drawWigner();
-        });
-
-        $("wgc").addEventListener("pointerleave", () => {
+      // Hover on overlay canvas, only redraws overlay (texture already holds current Wigner function)
+      $("wg-ov").addEventListener("pointermove", (ev) => {
+        const r = $("wg-ov").getBoundingClientRect();
+        const sx = $("wg-ov").width / r.width;
+        const sy = $("wg-ov").height / r.height;
+        const px = (ev.clientX - r.left) * sx;
+        const py = (ev.clientY - r.top) * sy;
+        const x = ((px - plotRect.ml) / plotRect.pw) * 2 * EXT - EXT;
+        const p = EXT - ((py - plotRect.mt) / plotRect.ph) * 2 * EXT;
+        if (Math.abs(x) > EXT || Math.abs(p) > EXT) {
           hover = null;
-          drawWigner();
-        });
+        } else {
+          const j = Math.round(((x + EXT) / (2 * EXT)) * (N - 1));
+          const l = Math.round(((p + EXT) / (2 * EXT)) * (N - 1));
+          hover = { x, p, j, l };
+        }
 
-        window.addEventListener("resize", render);
-        setKind(0, 2.5, 0, 0);
-      })();
+        drawWigner();
+      });
+
+      $("wg-ov").addEventListener("pointerleave", () => {
+        hover = null;
+        drawWigner();
+      });
+
+      window.addEventListener("resize", () => {
+        layoutWigner();
+        drawWigner();
+      });
+
+      setKind(0, 2.5, 0, 0);
     </script>
 
     <script src="nav.js"></script>
