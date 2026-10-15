@@ -3,8 +3,8 @@
 Quantum mechanics simulation and visualization engine written in pure C.
 
 <div class="hero-actions">
-<a class="primary" href="showcase.html">See the live demos</a>
-<a href="setup/building.html">Build from source</a>
+<a class="primary" href="showcase.md">See the live demos</a>
+<a href="setup/building.md">Build from source</a>
 <a href="https://github.com/Harshit-Dhanwalkar/QMC">GitHub</a>
 </div>
 
