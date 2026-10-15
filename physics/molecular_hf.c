@@ -155,6 +155,10 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
   double E_nuc = molecule_nuclear_repulsion(mol);
 
   molecular_hf_result_t *res = malloc(sizeof(molecular_hf_result_t));
+  if (!res) {
+    return NULL;
+  }
+
   res->n_basis = n;
   res->n_electrons = n_electrons;
   res->electronic_energy = E_elec;

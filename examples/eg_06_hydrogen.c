@@ -83,7 +83,7 @@ int main(void) {
       snprintf(path, sizeof(path), "%s/%s", QMC_OUTPUT_DIR, fname);
       int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
       if (fd >= 0) {
-        FILE *f = fopen(path, "w");
+        FILE *f = fdopen(fd, "w");
         if (f) {
           fprintf(f, "# r (m)  R(r)  |R|^2  r^2|R|^2\n");
           for (int j = 0; j < N; j++) {
@@ -93,14 +93,12 @@ int main(void) {
             fprintf(f, "%.6e  %.6e  %.6e  %.6e\n", r[j], R, rho,
                     r[j] * r[j] * rho);
           }
+
           fclose(f);
           printf("    Saved %s\n", fname);
         } else {
           close(fd);
         }
-
-        fclose(f);
-        printf("    Saved %s\n", fname);
       }
 
       cvector_free(col);

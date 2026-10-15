@@ -1,8 +1,8 @@
 /*
-Noisy VQE: drives lindblad.c's existing GKSL machinery gate-by-gate to simulate
-the vqe.c hardware-efficient ansatz under T1/T2 noise, plus a
-zero-noise-extrapolation (ZNE) mitigation estimator.
-*/
+ * Noisy VQE: drives lindblad.c's existing GKSL machinery gate-by-gate to
+ * simulate vqe.c hardware-efficient ansatz under T1/T2 noise, plus a
+ * zero-noise-extrapolation (ZNE) mitigation estimator.
+ */
 
 #include "vqe_noisy.h"
 #include "../core/complex.h"
@@ -35,7 +35,7 @@ static cmatrix_t *dm_conjugate_free(const cmatrix_t *U, cmatrix_t *rho) {
 }
 
 /*
- * NOTE: CNOT conjugation on a density matrix via the permutation formula:
+ * NOTE: CNOT conjugation on a density matrix via permutation formula:
  *  \rho'[i][j] = \rho[perm(i)][perm(j)]
  *
  * Where
@@ -92,8 +92,8 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
 
   CMAT(rho, 0, 0) = c_real(1.0);
 
-  // H=0 for the pure-decoherence steps between gates: only dissipators act, no
-  // unitary drift beyond what the gates themselves already apply.
+  // H=0 for pure-decoherence steps between gates: only dissipators act, no
+  // unitary drift beyond what gates themselves already apply
   cmatrix_t *Hzero = cmatrix_alloc(dim, dim);
   if (!Hzero) {
     cmatrix_free(rho);
@@ -213,13 +213,13 @@ double vqe_noisy_energy(int n_qubits, int n_layers, const double *theta,
 }
 
 /*
- * Solve the (d + 1)x(d + 1) normal-equations system for a degree-d
- * least-squares polynomial fit y ~= \sum_k p[k] * c^k through the given (c[i],
- * y[i]) points, via Gaussian elimination with partial pivoting. Writes p[0..d]
- * (p[0] is the c=0 intercept, to satisfy ZNE).
+ * Solve (d + 1)x(d + 1) normal-equations system for a degree-d
+ * least-squares polynomial fit y ~= \sum_k p[k] * c^k through given (c[i],
+ * y[i]) points, via Gaussian elimination with partial pivoting
+ * Writes p[0..d] (p[0] is c=0 intercept, to satisfy ZNE)
  *
  * Returns 0 on success, -1 on a singular system (shouldn't happen for distinct
- * c[i] with n_points >= d+1).
+ * c[i] with n_points >= d+1)
  */
 static int polyfit_intercept(const double *c, const double *y, int n_points,
                              int degree, double *p_out) {
@@ -344,7 +344,7 @@ double vqe_noisy_zne_energy(int n_qubits, int n_layers, const double *theta,
 
   int degree = n_scales - 1;
   double *p = malloc((size_t)(degree + 1) * sizeof *p);
-  double result = E[0]; // fallback: no mitigation if the fit fails
+  double result = E[0]; // fallback: no mitigation if fit fails
   if (p && polyfit_intercept(c, E, n_scales, degree, p) == 0) {
     result = p[0];
   }

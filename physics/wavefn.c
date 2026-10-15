@@ -1,15 +1,19 @@
 /*
-Wave functions, normalization, expectation values
-*/
+ * Wave functions, normalization, expectation values
+ */
 #include "wavefn.h"
 #include "../core/complex.h"
 #include "../core/constants.h"
 #include "../core/fft/fft.h" // for momentum expectation
 #include "../core/vector.h"
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 static const double TWO = 2.0;
 static const double NORM_TOL = 1e-30;
@@ -205,7 +209,7 @@ double wavefunction_expect_p2(const wavefunction_t *wavefn) {
   for (int i = 0; i < wavefn->n; i++) {
     double kval = (i < wavefn->n / 2) ? i * delta_k : (i - wavefn->n) * delta_k;
 
-    sum += kval* kval * c_abs2(psi_k->data[i]);
+    sum += kval * kval * c_abs2(psi_k->data[i]);
   }
 
   sum *= delta_k;
@@ -240,8 +244,15 @@ void wavefunction_save(const wavefunction_t *wavefn, const char *filename) {
     return;
   }
 
-  FILE *f = fopen(filename, "w");
+  int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    fprintf(stderr, "Cannot open %s\n", filename);
+    return;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
     fprintf(stderr, "Cannot open %s\n", filename);
     return;
   }
@@ -258,7 +269,8 @@ void wavefunction_save(const wavefunction_t *wavefn, const char *filename) {
   fclose(f);
 }
 
-void wavefunction_save_prob(const wavefunction_t *wavefn, const char *filename) {
+void wavefunction_save_prob(const wavefunction_t *wavefn,
+                            const char *filename) {
   if (!wavefn || !filename) {
     return;
   }
@@ -268,7 +280,14 @@ void wavefunction_save_prob(const wavefunction_t *wavefn, const char *filename) 
     return;
   }
 
-  FILE *f = fopen(filename, "w");
+  int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    free(rho);
+
+    return;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
     free(rho);
 

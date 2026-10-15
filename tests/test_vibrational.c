@@ -1,5 +1,5 @@
 /*
- * Test: numerical Hessian (central-difference of the analytic RHF gradient) +
+ * Test: Numerical Hessian (central-difference of analytic RHF gradient) +
  * harmonic vibrational frequency analysis
  *
  * H2/STO-3G at R=1.4 bohr (close to its equilibrium bond length), checked
@@ -37,8 +37,8 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-// H2 geometry-builder callback: rebuilds the 2-basis-function H2/STO-3G system
-// at whatever geometry the Hessian driver requests
+// H2 geometry-builder callback: rebuilds 2-basis-function H2/STO-3G system at
+// whatever geometry Hessian driver requests
 static molecular_system_t *build_h2(const double geom[][3], int n_atoms,
                                     void *userdata) {
   (void)userdata;
@@ -47,6 +47,10 @@ static molecular_system_t *build_h2(const double geom[][3], int n_atoms,
   }
 
   molecular_system_t *sys = malloc(sizeof *sys);
+  if (!sys) {
+    return NULL;
+  }
+
   sys->n_basis = 2;
   sys->basis = malloc(2 * sizeof *sys->basis);
   sys->basis[0] = molint_basis_sto3g_h(geom[0]);
@@ -84,7 +88,7 @@ static void free_h2(molecular_system_t *sys, void *userdata) {
 }
 
 static void test_h2_hessian_and_frequency(void) {
-  printf("test_h2_hessian_and_frequency:\n");
+  printf("  === Test: H2 hessian and frequency ===\n");
 
   double R = 1.4;
   double geom0[2][3] = {{0, 0, 0}, {0, 0, R}};
@@ -126,7 +130,7 @@ static void test_h2_hessian_and_frequency(void) {
   check_true(
       vib->n_trans_rot == 5,
       "H2 (linear diatomic) has exactly 5 trans/rot modes projected out (3 "
-      "translation + 2 rotation; the third rotation, about bond axis, has zero "
+      "translation + 2 rotation; third rotation, about bond axis, has zero "
       "moment of inertia and drops out of Gram-Schmidt automatically)");
   check_true(vib->n_modes == 1,
              "exactly 1 genuine vibrational mode remains (3*2 - 5 = 1)");
@@ -144,7 +148,7 @@ static void test_h2_hessian_and_frequency(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test: Invalid input ===\n");
 
   double geom0[2][3] = {{0, 0, 0}, {0, 0, 1.4}};
 
@@ -167,6 +171,9 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Numerical Hessian and harmonic vibrational frequency analysis "
+         "tests:\n");
+
   test_invalid_input();
   test_h2_hessian_and_frequency();
 

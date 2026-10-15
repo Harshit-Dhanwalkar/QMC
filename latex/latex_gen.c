@@ -1,11 +1,14 @@
 #include "latex_gen.h"
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 // Platform setup
 #ifdef _WIN32
@@ -404,8 +407,15 @@ static void job_destroy(latex_job_t *job) {
 
 // .tex writing
 static int write_file(const char *path, const char *content) {
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
+
     return -1;
   }
 
@@ -1143,11 +1153,6 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
 
   size_t pos = 0;
   int n;
-
-  if (pos >= est) {
-    free(res);
-    return NULL;
-  }
 
   n = snprintf(res + pos, est - pos, "\\begin{%s}", type);
   if (n < 0 || (size_t)n >= est - pos) {

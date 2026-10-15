@@ -1,6 +1,6 @@
 /*
  * Test: translation-symmetry-adapted exact diagonalization of spin-1/2 XXZ
- * ring, and Lanczos continued-fraction dynamical structure factor.
+ * ring, and Lanczos continued-fraction dynamical structure factor
  *
  * Reference values were generated independently with a full-Hilbert-space (no
  * symmetry) numpy exact-diagonalization script for isotropic Heisenberg chain
@@ -16,15 +16,15 @@
  * Where
  *   \phi0 = S^z_q |\psi_0>, computed via full diagonalization + exact Lehmann
  * sum (sum of |<n|S^z_q|0>|^2 over ALL eigenstates equals I0 by completeness;
- * this is sum rule symmetry-sector construction must reproduce exactly,
- * since S^z_q preserves S^z and only moves spectral weight into a single
- * (S^z=0, k=q) sector).
+ * this is sum rule symmetry-sector construction must reproduce exactly, since
+ * S^z_q preserves S^z and only moves spectral weight into a single (S^z=0, k=q)
+ * sector)
  *
  * NOTE:: for N=6 ground state sits at momentum k=3 (i.e. k=\pi), Not k=0
  * This is a real, well-known feature of finite-size Heisenberg
  * antiferromagnet, not an implementation detail: for even N ground-state
  * momentum is 0 when N/2 is even and \pi when N/2 is odd (Marshall's sign rule
- * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so ground state is at k=\pi.
+ * / Lieb-Schultz-Mattis). N=6 has N/2=3, odd, so ground state is at k=\pi
  */
 
 #include "../core/complex.h"
@@ -99,11 +99,12 @@ static double ring_ground_energy(int N) {
 
 static void test_ground_energies(void) {
 #if RUNNING_ON_VALGRIND
-  printf("  === Ground-state energies (Valgrind: only N=4) ===\n");
+  printf("  === Test: Ground-state energies (Valgrind: only N=4) ===\n");
   check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
 #else
-  printf(
-      "  === Ground-state energies vs exact-diagonalization reference ===\n");
+  printf("  === Test: Ground-state energies vs exact-diagonalization reference "
+         "===\n");
+
   check_close(ring_ground_energy(4), -2.000000, 1e-6, "N=4 E0");
   check_close(ring_ground_energy(6), -2.802776, 1e-5, "N=6 E0");
   check_close(ring_ground_energy(8), -3.651093, 1e-5, "N=8 E0");
@@ -111,7 +112,7 @@ static void test_ground_energies(void) {
 }
 
 static void test_hamiltonian_hermitian_and_sector_sizes(void) {
-  printf("  === Sector bookkeeping sanity checks ===\n");
+  printf("  === Test: Sector bookkeeping sanity checks ===\n");
   int N = 8;
   long total = 0;
 
@@ -131,7 +132,9 @@ static void test_hamiltonian_hermitian_and_sector_sizes(void) {
 
 // Cross-check S^z_q construction against exact sum rule I0
 static void test_szq_sum_rule(void) {
-  printf("  === S^z_q excitation: sum-rule cross-check (N=6, q index 1) ===\n");
+  printf("  === Test: S^z_q excitation: sum-rule cross-check (N=6, q index 1) "
+         "===\n");
+
   /* Ground-state momentum for N=6 is k=pi (index 3), not k=0
    * (NOTE: Marshall's sign rule / Lieb-Schultz-Mattis: N/2=3 is odd) */
   int N = 6;
@@ -140,8 +143,8 @@ static void test_szq_sum_rule(void) {
   int k_gs = 3;
 
   spin_sector_t *sec0 = spin_sector_build(N, nup, k_gs);
-  check(sec0 != NULL, "k=pi, Sz=0 sector built");
-  if (!sec0) {
+  check(sec0 != NULL, "spin_sector_build returned non-NULL sector");
+  if (sec0 == NULL) {
     return;
   }
 
@@ -189,8 +192,8 @@ static void test_szq_sum_rule(void) {
  * and S includes I0 prefactor so \int S(q,w) d\omega over all \omega equals I0
  */
 static void test_continued_fraction_integrates_to_I0(void) {
-  printf(
-      "  === Continued-fraction spectral weight vs I0 (N=6, q index 1) ===\n");
+  printf("  === Test: Continued-fraction spectral weight vs I0 (N=6, q index "
+         "1) ===\n");
   // Same k = \pi ground sector as test_szq_\sum_rule
 
   int N = 6;
@@ -263,8 +266,9 @@ static void test_continued_fraction_integrates_to_I0(void) {
  * NULL well short of a full spectrum
  */
 static void test_reflection_parity(void) {
-  printf("  === Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
-         "under parity splitting ===\n");
+  printf(
+      "  === Test: Reflection parity: R^2=I, [H,R]=0, ground energy preserved "
+      "under parity splitting ===\n");
 
   struct {
     int N, nup, k;
@@ -418,8 +422,8 @@ static void test_reflection_parity(void) {
  * restricted to k=0/N/2
  */
 static void test_spin_inversion(void) {
-  printf("  === Spin inversion: I^2=I, [H,I]=0, ground energy preserved under "
-         "parity splitting, at every k (half filling) ===\n");
+  printf("  === Test: Spin inversion: I^2=I, [H,I]=0, ground energy preserved "
+         "under parity splitting, at every k (half filling) ===\n");
 
   struct {
     int N, nup;
