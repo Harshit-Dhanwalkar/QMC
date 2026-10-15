@@ -39,8 +39,8 @@ static void householder_reflection(cmatrix_t *A, int k) {
   for (int i = 0; i < m; i++) {
     norm += c_abs2(x[i]);
   }
-  norm = sqrt(norm);
 
+  norm = sqrt(norm);
   if (norm < 1e-15) {
     free(x);
 
@@ -54,8 +54,8 @@ static void householder_reflection(cmatrix_t *A, int k) {
   for (int i = 0; i < m; i++) {
     v_norm += c_abs2(x[i]);
   }
-  v_norm = sqrt(v_norm);
 
+  v_norm = sqrt(v_norm);
   if (v_norm < 1e-15) {
     free(x);
 
@@ -75,8 +75,8 @@ static void householder_reflection(cmatrix_t *A, int k) {
     for (int i = 0; i < m; i++) {
       sum = c_add(sum, c_mul(c_conj(x[i]), CMAT(A, k + i, j)));
     }
-    complex_t factor = c_scale(sum, -2.0);
 
+    complex_t factor = c_scale(sum, -2.0);
     for (int i = 0; i < m; i++) {
       CMAT(A, k + i, j) = c_add(CMAT(A, k + i, j), c_mul(x[i], factor));
     }
@@ -125,6 +125,7 @@ static void power_iteration(cmatrix_t *A, cvector_t *v, double *lambda,
       numerator = c_add(numerator, c_mul(c_conj(v->data[i]), w->data[i]));
       denominator = c_add(denominator, c_mul(c_conj(v->data[i]), v->data[i]));
     }
+
     *lambda = c_div(numerator, denominator).re; // real part is the eigenvalue
 
     // Normalize w
@@ -181,6 +182,7 @@ for (int iter = 0; iter < max_iter; iter++) {
     complex_t diff = c_sub(y->data[i], v_old->data[i]);
     err += c_abs2(diff);
   }
+
   err = sqrt(err);
 
   if (err < tol) {

@@ -1,7 +1,7 @@
 /*
  * Tridiagonal symmetric eigensolver:
  * Implicit QL algorithm with Wilkinson shift (EISPACK tql2 / Numerical Recipes
- * "tqli", adapted to 0-indexed C).
+ * "tqli", adapted to 0-indexed C)
  */
 
 #include "tridiag_eigh.h"
@@ -14,22 +14,24 @@ static double pythag(double a, double b) {
   double absa = fabs(a), absb = fabs(b);
   if (absa > absb) {
     double r = absb / absa;
+
     return absa * sqrt(1.0 + r * r);
   } else if (absb == 0.0) {
     return 0.0;
   } else {
     double r = absa / absb;
+
     return absb * sqrt(1.0 + r * r);
   }
 }
 
 /*
- * Shared QL sweep. Computes ascending eigenvalues into returned array.
- * The per-rotation update loop below a stride-1 sweep over row, rather than
+ * Shared QL sweep. Computes ascending eigenvalues into returned array
+ * Per-rotation update loop below a stride-1 sweep over row, rather than
  * stride-n sweep a row-major layout would give). If z is NULL, all eigenvector
- * bookkeeping is skipped entirely.
+ * bookkeeping is skipped entirely
  *
- * Returns NULL on allocation failure.
+ * Returns NULL on allocation failure
  */
 static double *tridiag_eigh_core(const double *diag, const double *offdiag,
                                  int n, double *z) {
@@ -38,6 +40,7 @@ static double *tridiag_eigh_core(const double *diag, const double *offdiag,
   if (!d || !e) {
     free(d);
     free(e);
+
     return NULL;
   }
 
@@ -48,11 +51,13 @@ static double *tridiag_eigh_core(const double *diag, const double *offdiag,
   for (int i = 0; i < n - 1; i++) {
     e[i] = offdiag[i];
   }
+
   e[n - 1] = 0.0;
 
   for (int l = 0; l < n; l++) {
     int iter = 0;
     int m;
+
     do {
       for (m = l; m < n - 1; m++) {
         double dd = fabs(d[m]) + fabs(d[m + 1]);
@@ -65,11 +70,16 @@ static double *tridiag_eigh_core(const double *diag, const double *offdiag,
         if (++iter > 100) {
           break; // did not converge for eigenvalue
         }
+        if (l + 1 >= n) {
+          break;
+        }
 
         double g = (d[l + 1] - d[l]) / (2.0 * e[l]);
         double r = pythag(g, 1.0);
         g = d[m] - d[l] + e[l] / (g + (g >= 0 ? fabs(r) : -fabs(r)));
-        double s = 1.0, c = 1.0, p = 0.0;
+        double s = 1.0;
+        double c = 1.0;
+        double p = 0.0;
         int i;
         for (i = m - 1; i >= l; i--) {
           double f = s * e[i];
@@ -114,7 +124,7 @@ static double *tridiag_eigh_core(const double *diag, const double *offdiag,
   }
 
   // Sort ascending, permuting eigenvector columns to match (only if
-  // eigenvectors were requested).
+  // eigenvectors were requested)
   for (int i = 0; i < n - 1; i++) {
     int k = i;
     double p = d[i];
@@ -129,10 +139,11 @@ static double *tridiag_eigh_core(const double *diag, const double *offdiag,
       d[k] = d[i];
       d[i] = p;
       if (z) {
-        // Column-major: swap two contiguous n-length column blocks directly
+        // Column-major: swap two contiguous n-length column blocks directl
         // (also a cache-friendly sequential sweep).
         for (int row = 0; row < n; row++) {
           double tmp = z[i * n + row];
+
           z[i * n + row] = z[k * n + row];
           z[k * n + row] = tmp;
         }
@@ -181,6 +192,7 @@ eigen_t *tridiag_eigh(const double *diag, const double *offdiag, int n) {
       CMAT(Z, i, j) = c_real(z[j * n + i]); // column-major z -> row-major CMAT
     }
   }
+
   free(z);
 
   eigen_t *result = malloc(sizeof *result);

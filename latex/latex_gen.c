@@ -1136,23 +1136,86 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
   }
 
   size_t pos = 0;
+  int n;
 
-  pos += (size_t)snprintf(res + pos, est - pos, "\\begin{%s}", type);
+  if (pos >= est) {
+    free(res);
+    return NULL;
+  }
+
+  n = snprintf(res + pos, est - pos, "\\begin{%s}", type);
+  if (n < 0 || (size_t)n >= est - pos) {
+    free(res);
+
+    return NULL;
+  }
+
+  pos += (size_t)n;
+
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-      pos += (size_t)snprintf(res + pos, est - pos, "%s",
-                              data[i][j] ? data[i][j] : "0");
+      if (pos >= est) {
+        free(res);
+
+        return NULL;
+      }
+
+      n = snprintf(res + pos, est - pos, "%s", data[i][j] ? data[i][j] : "0");
+      if (n < 0 || (size_t)n >= est - pos) {
+        free(res);
+
+        return NULL;
+      }
+
+      pos += (size_t)n;
       if (j < cols - 1) {
-        pos += (size_t)snprintf(res + pos, est - pos, " & ");
+        if (pos >= est) {
+          free(res);
+
+          return NULL;
+        }
+
+        n = snprintf(res + pos, est - pos, " & ");
+        if (n < 0 || (size_t)n >= est - pos) {
+          free(res);
+
+          return NULL;
+        }
+
+        pos += (size_t)n;
       }
     }
 
     if (i < rows - 1) {
-      pos += (size_t)snprintf(res + pos, est - pos, " \\\\ ");
+      if (pos >= est) {
+        free(res);
+
+        return NULL;
+      }
+
+      n = snprintf(res + pos, est - pos, " \\\\ ");
+      if (n < 0 || (size_t)n >= est - pos) {
+        free(res);
+
+        return NULL;
+      }
+
+      pos += (size_t)n;
     }
   }
 
-  snprintf(res + pos, est - pos, "\\end{%s}", type);
+  if (pos >= est) {
+    free(res);
+
+    return NULL;
+  }
+
+  n = snprintf(res + pos, est - pos, "\\end{%s}", type);
+  if (n < 0 || (size_t)n >= est - pos) {
+    free(res);
+
+    return NULL;
+  }
 
   return res;
 }

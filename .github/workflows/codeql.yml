@@ -66,7 +66,7 @@ jobs:
 
       - name: Build (traced by CodeQL)
         if: matrix.language == 'c-cpp'
-        run: make -j"$(nproc)" all
+        run: make -j"$(nproc)" all USE_HDF5=1 USE_NETCDF=1
 
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
