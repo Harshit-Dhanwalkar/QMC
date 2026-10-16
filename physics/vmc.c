@@ -1,6 +1,6 @@
 /*
-Variational Monte Carlo for helium ground state.
-*/
+ * Variational Monte Carlo for helium ground state
+ */
 
 #include "vmc.h"
 #include "../core/random.h"
@@ -50,11 +50,11 @@ double vmc_trial_wavefunction(const vmc_walker_t *w, double Zeff, double b) {
  *       u(s) = s / (2 * (1 + bs))
  *
  *   For each electron i, -1/2 * lap_i(\Psi) / \Psi = (-1/2) * (\lap_i f +
- *   |\grad_i f|^2). Summing i=1,2 and adding potential (-Z / r1 - Z / r2  + 1 /
- *   s), the Zeff^2 orbital-kinetic term and the (-Z / r1 - Z / r2) potential
+ *   |\nabla_i f|^2). Summing i=1,2 and adding potential (-Z / r1 - Z / r2  + 1 /
+ *   s), Zeff^2 orbital-kinetic term and (-Z / r1 - Z / r2) potential
  *   term combine to leave a residual (Zeff - Z) * (1/r1 + 1/r2) cross term
- *   whenever Zeff != Z. Every other term is independent of Z, since only the
- *   orbital exponent Zeff enters wavefunction envelope.
+ *   whenever Zeff != Z. Every other term is independent of Z, since only
+ *   orbital exponent Zeff enters wavefunction envelope
  */
 double vmc_local_energy(const vmc_walker_t *w, double Z, double Zeff,
                         double b) {
@@ -160,10 +160,10 @@ void vmc_metropolis_sweep(vmc_walker_t *w, double Zeff, double b,
   }
 }
 
-/* Run one full VMC chain against an already-seeded  rng_state_t. */
+/* Run one full VMC chain against an already-seeded  rng_state_t */
 // NOTE: vmc_run() seeds a fresh rng and calls this; vmc_run_parallel() calls
 // this once per replica, each replica given its own  rng_jump()-derived stream,
-// so this is only place the sampling loop is written.
+// so this is only place sampling loop is written
 static vmc_result_t vmc_run_with_rng(rng_state_t *rng, double Z, double Zeff,
                                      double b, int n_equilibration,
                                      int n_samples, int block_size,
@@ -298,10 +298,10 @@ vmc_run_parallel_core(const rng_state_t *seed_stream, int n_replicas, double Z,
   }
 
   // NOTE: Combine: pooled mean/variance over all samples (equal n_samples per
-  // replica, by construction), and statistically stronger estimate the
-  // *inter-replica* standard error, since the replicas are exactly independent
+  // replica, by construction), and statistically stronger estimate
+  // *inter-replica* standard error, since replicas are exactly independent
   // (jump-guaranteed), unlike single-chain block-averaging whose validity
-  // depends on block_size safely exceeding an unmeasured autocorrelation time.
+  // depends on block_size safely exceeding an unmeasured autocorrelation time
   double sum_mean = 0.0;
   double sum_var = 0.0;
   double sum_acc1 = 0.0;

@@ -87,7 +87,7 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
 
     for (int bt = 0; bt < GEOM_OPT_MAX_BACKTRACK; bt++) {
       for (int i = 0; i < ndim; i++) {
-        // move downhill along force = -gradient
+        // move downhill along force = -gradient (i.e., \nabla)
         trial_coords[i] = coords[i] - step * grad[i];
       }
 
@@ -118,7 +118,7 @@ geometry_optimization_result_t *optimize_geometry_steepest_descent(
 
     /* NOTE: Grow step back a little after a successful move, so a step shrunk
      * by backtracking earlier doesn't stay pessimistically small for rest of
-     * the optimization */
+     * optimization */
     step *= 1.2;
   }
 

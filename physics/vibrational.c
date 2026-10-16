@@ -1,8 +1,8 @@
 /*
-Numerical Hessian (central-difference of the analytic gradient) + harmonic
-vibrational frequency analysis via mass-weighting and translation/rotation
-projection.
-*/
+ * Numerical Hessian (central-difference of the analytic gradient) + harmonic
+ * vibrational frequency analysis via mass-weighting and translation/rotation
+ * projection
+ */
 
 #include "vibrational.h"
 #include "../core/complex.h"
@@ -90,8 +90,8 @@ static double *hessian_numerical_generic(molecular_geometry_fn build_system,
         break;
       }
 
-      // Central difference: H[i][j] accumulates +grad[j]/(2h) for +h
-      // displacement and -\grad[j]/(2h) for the -h displacement
+      // Central difference: H[i][j] accumulates +\nabla[j]/(2h) for +h
+      // displacement and -\nabla[j]/(2h) for the -h displacement
       double factor = (sign == 0) ? (1.0 / (2.0 * h)) : (-1.0 / (2.0 * h));
       for (int j = 0; j < dim; j++) {
         if (sign == 0) {

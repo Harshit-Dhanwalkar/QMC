@@ -14,9 +14,9 @@ static const double CONST_THREE = 3.0;
 static const double CONST_FOUR = 4.0;
 static const double CONST_TWO = 2.0;
 
-/* ---------------------------------------------------------------------
+/*
  * LDA exchange-correlation functional
- * ------------------------------------------------------------------- */
+ */
 
 double lda_exchange_energy_density(double n) {
   if (n <= 0.0) {
@@ -88,11 +88,11 @@ double lda_xc_potential(double n) {
   return lda_exchange_potential(n) + lda_correlation_potential_pz81(n);
 }
 
-/* ---------------------------------------------------------------------
+/*
  * PW92 LDA correlation (\zeta=0), and PBE GGA exchange-correlation built on it.
  * Reference: Perdew & Wang, Phys. Rev. B 45, 13244 (1992); Perdew, Burke &
  * Ernzerhof (PBE), Phys. Rev. Lett. 77, 3865 (1996).
- * ------------------------------------------------------------------- */
+ */
 
 /* PW92's G(rs) parametrization (unpolarized/zeta=0 branch) and its
  * rs-derivative, both needed (latter for LDA potential and as PBE correlation's
@@ -302,10 +302,10 @@ void pbe_xc_potential(double n, double sigma, double *vrho, double *vsigma) {
   *vsigma = vsigma_x + vsigma_c;
 }
 
-/* ---------------------------------------------------------------------
+/*
  * SCF machinery : structurally parallel to hartree_fock.c's, with dense Fock
  * exchange (K) matrix replaced by local V_xc(n(r)) diagonal potential.
- * ------------------------------------------------------------------- */
+ */
 
 static void normalize_u(double *u, int N, double dr) {
   double norm_sq = 0.0;

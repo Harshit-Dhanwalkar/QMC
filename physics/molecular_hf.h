@@ -6,7 +6,7 @@
 
 /*
  * General N-basis-function closed-shell restricted Hartree-Fock (RHF) and
- * AO->MO integral transform. (built on top of general GTO engine).
+ * AO->MO integral transform. (built on top of general GTO engine)
  */
 
 typedef struct {
@@ -26,10 +26,10 @@ typedef struct {
  * basis and mol as built by molecular_integrals.c (molint_basis_sto3g_h,
  * basis_function_alloc, molecule_alloc, ...). Uses symmetric (Lowdin)
  * orthogonalization via overlap matrix's own eigendecomposition, then
- * Roothaan-equation SCF iteration with simple density-based convergence.
+ * Roothaan-equation SCF iteration with simple density-based convergence
  *
  * Returns NULL on invalid input (n_basis<=0, odd/nonpositive n_electrons,
- * n_electrons > 2*n_basis) or allocation failure.
+ * n_electrons > 2*n_basis) or allocation failure
  */
 molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
                                      const molecule_t *mol, int n_electrons,
@@ -40,9 +40,10 @@ void molecular_hf_result_free(molecular_hf_result_t *res);
 /*
  * General N-basis-function open-shell Unrestricted Hartree-Fock (UHF):
  * separate alpha/beta density matrices and MO coefficients, additive extension
- * of molecular_rhf. Unlocks radicals, open-shell cations/anions, and triplet
- * (or higher-multiplicity) states that RHF's paired-electron assumption cannot
- * represent.
+ * of molecular_rhf
+ * Unlocks radicals, open-shell cations/anions, and triplet (or
+ * higher-multiplicity) states that RHF's paired-electron assumption cannot
+ * represent
  *
  * Fock matrices (Refrence: UHF equations, Szabo & Ostlund Ch. 3.8):
  *   F^a_ij = Hcore_ij + J[D^a+D^b]_ij - K[D^a]_ij
@@ -50,10 +51,10 @@ void molecular_hf_result_free(molecular_hf_result_t *res);
  *
  * Where
  *  D^s_ij = sum over occupied spin-s MOs of C^s_ik C^s_jk (no factor of 2 -
- * single-particle density per spin channel, unlike RHF's paired D).
- * Both spin channels are diagonalized against the same Lowdin-orthogonalized
- * basis (shared S^{-1/2}), each self-consistently, sharing only Coulomb (J)
- * term built from the total density.
+ * single-particle density per spin channel, unlike RHF's paired D)
+ * Both spin channels are diagonalized against same Lowdin-orthogonalized basis
+ * (shared S^{-1/2}), each self-consistently, sharing only Coulomb (J) term
+ * built from total density
  */
 typedef struct {
   int n_basis;
@@ -74,9 +75,9 @@ typedef struct {
 /*
  * Run UHF for a general basis/molecule. n_alpha and n_beta may differ
  * (open-shell); n_alpha,n_beta >= 0, n_alpha + n_beta >= 1,
- * max(n_alpha,n_beta) <= n_basis. tol/max_iter as in molecular_rhf.
+ * max(n_alpha,n_beta) <= n_basis. tol/max_iter as in molecular_rhf
  *
- * Returns NULL on invalid input or allocation failure.
+ * Returns NULL on invalid input or allocation failure
  */
 molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
                                       const molecule_t *mol, int n_alpha,
@@ -93,7 +94,7 @@ void molecular_uhf_result_free(molecular_uhf_result_t *res);
  *
  * WARN: since it is only ever used here on same small active spaces
  * second_quant_build_molecular_hamiltonian is already restricted to. Nnot
- * intended to scale to large basis sets without optimising this).
+ * intended to scale to large basis sets without optimising this)
  */
 void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
                         const cmatrix_t *C, int n_basis, double *h_mo,
@@ -101,62 +102,64 @@ void molecular_ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
 
 /*
  * General (mixed-coefficient) two-electron AO -> MO integral transform:
- * MOLINT_ERI(eri_mo, n, i, j, k, l) is the \bra pair (i,j) transformed with
- * C_bra and the ket pair (k,l) transformed with C_ket. molecular_ao_to_mo's ERI
- * transform is the special case C_bra == C_ket == C (same-spin, e.g. RHF, or a
- * single UHF spin channel's own (aa|aa)/(bb|bb) integrals).
+ * MOLINT_ERI(eri_mo, n, i, j, k, l) is \bra pair (i,j) transformed with C_\bra
+ * and \ket pair (k,l) transformed with C_ket. molecular_ao_to_mo's ERI
+ * transform is special case C_bra == C_ket == C (same-spin, e.g. RHF, or a
+ * single UHF spin channel's own (aa|aa)/(bb|bb) integrals)
  *
- * The general (mixed) case is needed for a UHF-based post-HF method's
+ * General (mixed) case is needed for a UHF-based post-HF method's
  * opposite-spin block, e.g. UMP2's (i_alpha a_alpha | j_beta b_beta) term:
  *  pass C_bra = C_alpha, C_ket = C_beta
  *
  * eri_mo must be preallocated n_basis^4 (MOLINT_ERI flat-indexed, as in
- * molecular_ao_to_mo).
+ * molecular_ao_to_mo)
  */
 void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
                                   const cmatrix_t *C_ket, int n_basis,
                                   double *eri_mo);
 
 /*
- * Analytic RHF nuclear gradient / forces (Reference Pulay 1969).
- * atom_of_basis[i] gives the index into mol->center[]/mol->charge[] that
+ * Analytic RHF nuclear gradient / forces (Reference Pulay 1969)
+ * atom_of_basis[i] gives index into mol->center[]/mol->charge[] that
  * basis[i] is centered on (a basis function not tied to any atom, e.g. a
  * floating orbital, may pass -1 to exclude it from AO-center chain-rule terms;
  * every basis set shipped in this project is atom-centered so this is always
  * 0..n_atoms-1 in practice). scf must be a converged molecular_rhf result for
- * the same basis/mol (uses scf->C, scf->orbital_energies, scf->n_electrons).
+ * same basis/mol (uses scf->C, scf->orbital_energies, scf->n_electrons)
  *
- * Returns a newly allocated flat n_atoms*3 array (grad[3*A+d] = dE/dR_A[d],
+ * Returns a newly allocated flat n_atoms*3 array (\nabla[3*A+d] = dE/dR_A[d],
  * d=0,1,2 for x,y,z), caller frees with free(). Returns NULL on invalid
- * input, an unconverged scf result, or allocation failure.
+ * input, an unconverged scf result, or allocation failure
  */
 double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
                                const molecule_t *mol, const int *atom_of_basis,
                                const molecular_hf_result_t *scf);
 
 /*
- * Analytic UHF nuclear gradient / forces - the open-shell generalization of
+ * Analytic UHF nuclear gradient / forces - open-shell generalization of
  * molecular_rhf_gradient(), for radicals/open-shell cations/anions where
- * molecular_rhf() doesn't apply. Reuses the exact same derivative-integral
- * primitives (they're purely geometric derivatives of the AO integrals,
- * independent of RHF vs UHF); only the density-matrix construction and the
- * two-particle density Gamma differ:
+ * molecular_rhf() doesn't apply. Reuses exact same derivative-integral
+ * primitives (they're purely geometric derivatives of AO integrals, independent
+ * of RHF vs UHF); only density-matrix construction and two-particle density
+ * Gamma differ:
  *
- *   P^total = P^alpha + P^beta   (P^sigma_uv = sum_{i occ-sigma} C^sigma_ui
- *                                 C^sigma_vi, no factor of 2: each spin-
- *                                 orbital holds exactly one electron)
- *   W = W^alpha + W^beta         (same sum, weighted by that spin's
- *                                 orbital energy)
- *   Gamma_uvls = 0.5 * (P^total_uv * P^total_ls)
- *                - 0.5 * (P^alpha_ul * P^alpha_vs + P^beta_ul * P^beta_vs)
+ *   P^total = P^\alpha + P^\beta (P^\sigma_{uv} = \sum_{i occ-sigma}
+ *                                 C^\sigma_{ui} C^\sigma_{vi}, no factor of 2:
+ *                                 each spin- orbital holds exactly one
+ *                                 electron)
+ *   W = W^\alpha + W^\beta       (same sum, weighted by that spin's orbital
+ *                                 energy)
+ *   \Gamma_{uvls} = 0.5 * (P^total_{uv} * P^total_{ls})
+ *                   - 0.5 * (P^\alpha_ul * P^\alpha_{vs}
+ *                   + P^\beta_{ul} * P^\beta_{vs})
  *
  * NOTE: Same conventions as molecular_rhf_gradient: atom_of_basis[i] maps
- * basis[i] to its atom index (-1 excludes it from AO-center chain-rule terms).
- * scf must be a converged molecular_uhf result for the same basis/mol.
+ * basis[i] to its atom index (-1 excludes it from AO-center chain-rule terms)
+ * scf must be a converged molecular_uhf result for same basis/mol
  *
- * Returns a newly allocated flat n_atoms*3 array (grad[3 * A + d] = dE /
+ * Returns a newly allocated flat n_atoms*3 array (\nabla[3 * A + d] = dE /
  * dR_A[d]), caller frees with free(). Returns NULL on invalid input, an
- * unconverged scf result, or allocation failure.
+ * unconverged scf result, or allocation failure
  */
 double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
                                const molecule_t *mol, const int *atom_of_basis,

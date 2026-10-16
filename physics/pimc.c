@@ -158,7 +158,7 @@ int pimc_bisection_move(pimc_walker_t *w, int which, double Z, double tau,
   }
 
   /* new_seg[0..seg] holds segment's beads at offsets 0..seg from anchor; offset
-   * 0 and offset seg are fixed, offsets 1..seg-1 get resampled. */
+   * 0 and offset seg are fixed, offsets 1..seg-1 get resampled */
   double (*new_seg)[3] = malloc((size_t)(seg + 1) * sizeof *new_seg);
   double (*old_seg)[3] = malloc((size_t)(seg + 1) * sizeof *old_seg);
   int *offsets = malloc((size_t)(seg + 1) * sizeof *offsets);
@@ -314,7 +314,7 @@ double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau) {
 /*
  * dV_Kelbg/dr at fixed \lambda (\tau held fixed): derived term-by-term from
  *   V_Kelbg(r) = (q/r) * (1 - \exp(-r^2 / \lambda^2))
- *                  + q * (\sqrt(\pi) / \lambda) * erfc(r / \lambda)
+ *                 + q * (\sqrt(\pi) / \lambda) * erfc(r / \lambda)
  */
 static double kelbg_dV_dr(double r, double lambda, double q) {
   double x = r / lambda;
@@ -357,14 +357,14 @@ double pimc_virial_estimator(const pimc_walker_t *w, double Z, double tau) {
                       w->r1[i][2] - w->r2[i][2]};
     double s = norm3(r12v);
 
-    // Same (V + \tau * dV / d\tau) potential term the thermodynamic estimator
+    // Same (V + \tau * dV / d\tau) potential term thermodynamic estimator
     // uses
     double vterm = kelbg_energy_correction(r1n, lambda_eN, -Z) +
                    kelbg_energy_correction(r2n, lambda_eN, -Z) +
                    kelbg_energy_correction(s, lambda_ee, 1.0);
 
-    // grad_1 V and grad_2 V of the total potential at this bead (plain spatial
-    // gradient, (\tau / \lambda) held fixed).
+    // \nabla_1 V and \nabla_2 V of total potential at this bead (plain spatial
+    // gradient, (\tau / \lambda) held fixed)
     double dV_dr1 = kelbg_dV_dr(r1n, lambda_eN, -Z);
     double dV_ds = kelbg_dV_dr(s, lambda_ee, 1.0);
     double dV_dr2 = kelbg_dV_dr(r2n, lambda_eN, -Z);

@@ -278,11 +278,28 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
   int n = n_basis;
   int n_occ = n_electrons / 2;
+  if (n_occ > n) {
+    n_occ = n;
+  }
   int ng = grid->n_points;
 
-  cmatrix_t *S = molecular_overlap_matrix(basis, n);
-  cmatrix_t *Hcore = molecular_core_hamiltonian(basis, n, mol);
-  double *eri = molecular_eri_tensor(basis, n);
+  cmatrix_t *S = NULL;
+  cmatrix_t *Hcore = NULL;
+  cmatrix_t *Shalf = NULL;
+  double *eri = NULL;
+  double *ao_vals = NULL;
+  eigen_t *eig_S = NULL;
+  double *D = NULL;
+  double *D_computed = NULL;
+  double *D_new = NULL;
+  double *C_arr = NULL;
+  double *orbital_energies = NULL;
+  double *dens = NULL;
+  double *vxc_pot = NULL;
+
+  S = molecular_overlap_matrix(basis, n);
+  Hcore = molecular_core_hamiltonian(basis, n, mol);
+  eri = molecular_eri_tensor(basis, n);
   if (!S || !Hcore || !eri) {
     cmatrix_free(S);
     cmatrix_free(Hcore);
@@ -295,18 +312,37 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
    * (dominant memory cost is n_basis*n_grid doubles: fine for small systems
    * this module targets; avoids re-evaluating primitives on every SCF
    * iteration) */
-  double *ao_vals = malloc((size_t)ng * n * sizeof(double));
+  ao_vals = malloc((size_t)ng * n * sizeof(double));
+  if (!ao_vals) {
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    free(eri);
+
+    return NULL;
+  }
+
   for (int g = 0; g < ng; g++) {
     double r[3] = {grid->points[g].x, grid->points[g].y, grid->points[g].z};
 
     for (int p = 0; p < n; p++) {
-      ao_vals[g * n + p] = basis_function_value(basis[p], r);
+      ao_vals[(size_t)g * n + p] = basis_function_value(basis[p], r);
     }
   }
 
   // Lowdin symmetric orthogonalization
-  eigen_t *eig_S = cmatrix_eigh_complex(S);
-  cmatrix_t *Shalf = cmatrix_alloc(n, n);
+  eig_S = cmatrix_eigh_complex(S);
+  Shalf = cmatrix_alloc(n, n);
+  if (!eig_S || !Shalf) {
+    eigen_free(eig_S);
+    cmatrix_free(Shalf);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    free(eri);
+    free(ao_vals);
+
+    return NULL;
+  }
+
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       double sum = 0.0;
@@ -324,29 +360,68 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
   eigen_free(eig_S);
 
-  double *D = calloc((size_t)n * n, sizeof(double));
-  double *D_computed = malloc((size_t)n * n * sizeof(double));
-  double *D_new = malloc((size_t)n * n * sizeof(double));
-  double *C_arr = malloc((size_t)n * n * sizeof(double));
-  double *orbital_energies = malloc((size_t)n * sizeof(double));
-  double *dens = malloc((size_t)ng * sizeof(double));
-  double *vxc_pot = malloc((size_t)ng * sizeof(double));
+  eig_S = NULL;
 
-  double E_total = 0.0, E_old = 0.0;
-  double E_core = 0.0, E_coulomb = 0.0, E_xc = 0.0;
+  D = calloc((size_t)n * n, sizeof(double));
+  D_computed = malloc((size_t)n * n * sizeof(double));
+  D_new = malloc((size_t)n * n * sizeof(double));
+  C_arr = malloc((size_t)n * n * sizeof(double));
+  orbital_energies = malloc((size_t)n * sizeof(double));
+  dens = malloc((size_t)ng * sizeof(double));
+  vxc_pot = malloc((size_t)ng * sizeof(double));
+  if (!D || !D_computed || !D_new || !C_arr || !orbital_energies || !dens ||
+      !vxc_pot) {
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    free(dens);
+    free(vxc_pot);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(ao_vals);
+
+    return NULL;
+  }
+
+  double E_total = 0.0;
+  double E_old = 0.0;
+  double E_core = 0.0;
+  double E_coulomb = 0.0;
+  double E_xc = 0.0;
   int converged = 0;
   int iter = 0;
 
   for (; iter < max_iter; iter++) {
     // Classical (exact, analytic) Coulomb matrix J from ERI tensor
     cmatrix_t *J = cmatrix_alloc(n, n);
+    if (!J) {
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(vxc_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+
+      return NULL;
+    }
+
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         double v = 0.0;
 
         for (int k = 0; k < n; k++) {
           for (int l = 0; l < n; l++) {
-            v += D[k * n + l] * MOLINT_ERI(eri, n, i, j, l, k);
+            v += D[(size_t)k * n + l] * MOLINT_ERI(eri, n, i, j, l, k);
           }
         }
 
@@ -359,27 +434,28 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
       double v = 0.0;
 
       for (int p = 0; p < n; p++) {
-        double ap = ao_vals[g * n + p];
+        double ap = ao_vals[(size_t)g * n + p];
 
         if (ap == 0.0) {
           continue;
         }
 
         for (int q = 0; q < n; q++) {
-          v += D[p * n + q] * ap * ao_vals[g * n + q];
+          v += D[(size_t)p * n + q] * ap * ao_vals[(size_t)g * n + q];
         }
       }
 
       dens[g] = v > 0.0 ? v : 0.0;
     }
 
-    double Exc_g = 0.0, Vxc_n_g = 0.0;
+    double Exc_g = 0.0;
+    double Vxc_n_g = 0.0;
     for (int g = 0; g < ng; g++) {
       double n_g = dens[g] > 1e-12 ? dens[g] : 1e-12;
       double eps_xc = lda_xc_energy_density(n_g);
 
       vxc_pot[g] = lda_xc_potential(n_g);
-      /* Weight energy/potential contributions by unfloored density, so an
+      /* NOTE: Weight energy/potential contributions by unfloored density, so an
        * exactly-zero-density point contributes exactly zero rather than a
        * phantom floor-value times a (possibly large, far-radial-shell)
        * quadrature weight */
@@ -389,13 +465,31 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
     // Vxc matrix, built on grid
     cmatrix_t *Vxc = cmatrix_alloc(n, n);
+    if (!Vxc) {
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(vxc_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+
+      return NULL;
+    }
+
     for (int p = 0; p < n; p++) {
       for (int q = p; q < n; q++) {
         double v = 0.0;
 
         for (int g = 0; g < ng; g++) {
-          v += grid->points[g].weight * vxc_pot[g] * ao_vals[g * n + p] *
-               ao_vals[g * n + q];
+          v += grid->points[g].weight * vxc_pot[g] *
+               ao_vals[(size_t)g * n + p] * ao_vals[(size_t)g * n + q];
         }
 
         CMAT(Vxc, p, q) = c_real(v);
@@ -405,6 +499,25 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
     // F = Hcore + J + Vxc, Lowdin-orthogonalize, diagonalize
     cmatrix_t *F = cmatrix_alloc(n, n);
+    if (!F) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(vxc_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+
+      return NULL;
+    }
+
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         CMAT(F, i, j) = c_real(CMAT(Hcore, i, j).re + CMAT(J, i, j).re +
@@ -417,9 +530,45 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
     cmatrix_free(tmp);
     cmatrix_free(F);
+    if (!Fp) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(vxc_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+
+      return NULL;
+    }
 
     eigen_t *eig_F = cmatrix_eigh_complex(Fp);
     cmatrix_free(Fp);
+    if (!eig_F) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(vxc_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+
+      return NULL;
+    }
 
     for (int i = 0; i < n; i++) {
       for (int k = 0; k < n; k++) {
@@ -429,7 +578,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
           v += CMAT(Shalf, i, p).re * CMAT(eig_F->eigenvectors, p, k).re;
         }
 
-        C_arr[i * n + k] = v;
+        C_arr[(size_t)i * n + k] = v;
       }
     }
 
@@ -441,10 +590,10 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
         for (int k = 0; k < n_occ; k++) {
           // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
-          v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
+          v += 2.0 * C_arr[(size_t)i * n + k] * C_arr[(size_t)j * n + k];
         }
 
-        D_computed[i * n + j] = v;
+        D_computed[(size_t)i * n + j] = v;
       }
     }
 
@@ -458,7 +607,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
     double E_J = 0.0;
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        E_J += D_new[i * n + j] * CMAT(J, i, j).re;
+        E_J += D_new[(size_t)i * n + j] * CMAT(J, i, j).re;
       }
     }
 
@@ -476,7 +625,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        E_core += D_new[i * n + j] * CMAT(Hcore, i, j).re;
+        E_core += D_new[(size_t)i * n + j] * CMAT(Hcore, i, j).re;
       }
     }
 
@@ -500,15 +649,46 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
   }
 
   molecular_dft_result_t *res = malloc(sizeof(molecular_dft_result_t));
-  if (res == NULL) {
+  if (!res) {
     free(D);
     free(D_computed);
     free(D_new);
     free(C_arr);
-    free(dens);
     free(orbital_energies);
+    free(dens);
+    free(vxc_pot);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(ao_vals);
 
     return NULL;
+  }
+
+  res->C = cmatrix_alloc(n, n);
+  if (!res->C) {
+    free(res);
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    free(dens);
+    free(vxc_pot);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(ao_vals);
+
+    return NULL;
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      CMAT(res->C, i, j) = c_real(C_arr[(size_t)i * n + j]);
+    }
   }
 
   res->total_energy = E_total;
@@ -521,13 +701,6 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
   res->n_electrons = n_electrons;
   res->converged = converged;
   res->iterations = iter;
-
-  res->C = cmatrix_alloc(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      CMAT(res->C, i, j) = c_real(C_arr[i * n + j]);
-    }
-  }
 
   free(D);
   free(D_computed);
@@ -569,11 +742,32 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
   int n = n_basis;
   int n_occ = n_electrons / 2;
+  if (n_occ > n) {
+    n_occ = n;
+  }
   int ng = grid->n_points;
 
-  cmatrix_t *S = molecular_overlap_matrix(basis, n);
-  cmatrix_t *Hcore = molecular_core_hamiltonian(basis, n, mol);
-  double *eri = molecular_eri_tensor(basis, n);
+  cmatrix_t *S = NULL;
+  cmatrix_t *Hcore = NULL;
+  cmatrix_t *Shalf = NULL;
+  double *eri = NULL;
+  double *ao_vals = NULL;
+  double *ao_grads = NULL;
+  eigen_t *eig_S = NULL;
+  double *D = NULL;
+  double *D_computed = NULL;
+  double *D_new = NULL;
+  double *C_arr = NULL;
+  double *orbital_energies = NULL;
+  double *dens = NULL;
+  double *dens_grad = NULL;
+  double *vrho_pot = NULL;
+  double *vsigma_pot = NULL;
+  double *vxc_pot = NULL;
+
+  S = molecular_overlap_matrix(basis, n);
+  Hcore = molecular_core_hamiltonian(basis, n, mol);
+  eri = molecular_eri_tensor(basis, n);
   if (!S || !Hcore || !eri) {
     cmatrix_free(S);
     cmatrix_free(Hcore);
@@ -584,20 +778,42 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
   // Precompute every basis function's value and gradient at every grid point
   // once
-  double *ao_vals = malloc((size_t)ng * n * sizeof(double));
-  double *ao_grads = malloc((size_t)ng * n * 3 * sizeof(double));
+  ao_vals = malloc((size_t)ng * n * sizeof(double));
+  ao_grads = malloc((size_t)ng * n * 3 * sizeof(double));
+  if (!ao_vals || !ao_grads) {
+    free(ao_vals);
+    free(ao_grads);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    free(eri);
+
+    return NULL;
+  }
+
   for (int g = 0; g < ng; g++) {
     double r[3] = {grid->points[g].x, grid->points[g].y, grid->points[g].z};
 
     for (int p = 0; p < n; p++) {
-      ao_vals[g * n + p] = basis_function_value(basis[p], r);
+      ao_vals[(size_t)g * n + p] = basis_function_value(basis[p], r);
       basis_function_gradient(basis[p], r, &ao_grads[((size_t)g * n + p) * 3]);
     }
   }
 
   // Lowdin symmetric orthogonalization
-  eigen_t *eig_S = cmatrix_eigh_complex(S);
-  cmatrix_t *Shalf = cmatrix_alloc(n, n);
+  eig_S = cmatrix_eigh_complex(S);
+  Shalf = cmatrix_alloc(n, n);
+  if (!eig_S || !Shalf) {
+    eigen_free(eig_S);
+    cmatrix_free(Shalf);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    free(eri);
+    free(ao_vals);
+    free(ao_grads);
+
+    return NULL;
+  }
+
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       double sum = 0.0;
@@ -615,31 +831,74 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
   eigen_free(eig_S);
 
-  double *D = calloc((size_t)n * n, sizeof(double));
-  double *D_computed = malloc((size_t)n * n * sizeof(double));
-  double *D_new = malloc((size_t)n * n * sizeof(double));
-  double *C_arr = malloc((size_t)n * n * sizeof(double));
-  double *orbital_energies = malloc((size_t)n * sizeof(double));
-  double *dens = malloc((size_t)ng * sizeof(double));
-  double *dens_grad = malloc((size_t)ng * 3 * sizeof(double));
-  double *vrho_pot = malloc((size_t)ng * sizeof(double));
-  double *vsigma_pot = malloc((size_t)ng * sizeof(double));
+  D = calloc((size_t)n * n, sizeof(double));
+  D_computed = malloc((size_t)n * n * sizeof(double));
+  D_new = malloc((size_t)n * n * sizeof(double));
+  C_arr = malloc((size_t)n * n * sizeof(double));
+  orbital_energies = malloc((size_t)n * sizeof(double));
+  dens = malloc((size_t)ng * sizeof(double));
+  dens_grad = malloc((size_t)ng * 3 * sizeof(double));
+  vrho_pot = malloc((size_t)ng * sizeof(double));
+  vsigma_pot = malloc((size_t)ng * sizeof(double));
+  if (!D || !D_computed || !D_new || !C_arr || !orbital_energies || !dens ||
+      !dens_grad || !vrho_pot || !vsigma_pot) {
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    free(dens);
+    free(dens_grad);
+    free(vrho_pot);
+    free(vsigma_pot);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(ao_vals);
+    free(ao_grads);
 
-  double E_total = 0.0, E_old = 0.0;
-  double E_core = 0.0, E_coulomb = 0.0, E_xc = 0.0;
+    return NULL;
+  }
+
+  double E_total = 0.0;
+  double E_old = 0.0;
+  double E_core = 0.0;
+  double E_coulomb = 0.0;
+  double E_xc = 0.0;
   int converged = 0;
   int iter = 0;
 
   for (; iter < max_iter; iter++) {
     // Classical (exact, analytic) Coulomb matrix J from ERI tensor
     cmatrix_t *J = cmatrix_alloc(n, n);
+    if (!J) {
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(dens_grad);
+      free(vrho_pot);
+      free(vsigma_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+      free(ao_grads);
+
+      return NULL;
+    }
+
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         double v = 0.0;
 
         for (int k = 0; k < n; k++) {
           for (int l = 0; l < n; l++) {
-            v += D[k * n + l] * MOLINT_ERI(eri, n, i, j, l, k);
+            v += D[(size_t)k * n + l] * MOLINT_ERI(eri, n, i, j, l, k);
           }
         }
 
@@ -649,8 +908,8 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
     // Density AND density gradient on grid, from current (pre-update)
     // density matrix:
-    // n(r) = \sum_{pq} D_{pq} * \phi_p * \phi_q, grad n(r)
-    //      = 2 * \sum_{pq} D_{pq} * \grad(\phi_p) * \phi_q
+    // n(r) = \sum_{pq} D_{pq} * \phi_p * \phi_q, \nabla n(r)
+    //      = 2 * \sum_{pq} D_{pq} * \nabla(\phi_p) * \phi_q
     // (D symmetric)
     for (int g = 0; g < ng; g++) {
       double v = 0.0;
@@ -659,12 +918,12 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
       double gz = 0.0;
 
       for (int p = 0; p < n; p++) {
-        double ap = ao_vals[g * n + p];
+        double ap = ao_vals[(size_t)g * n + p];
         const double *gp = &ao_grads[((size_t)g * n + p) * 3];
 
         for (int q = 0; q < n; q++) {
-          double Dpq = D[p * n + q];
-          double aq = ao_vals[g * n + q];
+          double Dpq = D[(size_t)p * n + q];
+          double aq = ao_vals[(size_t)g * n + q];
 
           v += Dpq * ap * aq;
           gx += Dpq * gp[0] * aq;
@@ -682,8 +941,9 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
     double Exc_g = 0.0;
     for (int g = 0; g < ng; g++) {
       double n_g = dens[g] > 1e-12 ? dens[g] : 1e-12;
-      double dgx = dens_grad[g * 3 + 0], dgy = dens_grad[g * 3 + 1],
-             dgz = dens_grad[g * 3 + 2];
+      double dgx = dens_grad[g * 3 + 0];
+      double dgy = dens_grad[g * 3 + 1];
+      double dgz = dens_grad[g * 3 + 2];
       double sigma_g = dgx * dgx + dgy * dgy + dgz * dgz;
 
       double eps_xc = pbe_xc_energy_density(n_g, sigma_g);
@@ -699,15 +959,36 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
     }
 
     // GGA Vxc matrix: V_pq = \int [ vrho * \phi_p * \phi_q + 2 * vsigma *
-    // (\grad n).(\phi_q * \grad(\phi_p) + \phi_p * \grad(\phi_q)) ] dr
+    // (\nabla n) \cdot (\phi_q * \nabla(\phi_p) + \phi_p * \nabla(\phi_q)) ] dr
     cmatrix_t *Vxc = cmatrix_alloc(n, n);
+    if (!Vxc) {
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(dens_grad);
+      free(vrho_pot);
+      free(vsigma_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+      free(ao_grads);
+
+      return NULL;
+    }
+
     for (int p = 0; p < n; p++) {
       for (int q = p; q < n; q++) {
         double v = 0.0;
 
         for (int g = 0; g < ng; g++) {
-          double ap = ao_vals[g * n + p];
-          double aq = ao_vals[g * n + q];
+          double ap = ao_vals[(size_t)g * n + p];
+          double aq = ao_vals[(size_t)g * n + q];
 
           const double *gp = &ao_grads[((size_t)g * n + p) * 3];
           const double *gq = &ao_grads[((size_t)g * n + q) * 3];
@@ -731,6 +1012,28 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
     // F = Hcore + J + Vxc, Lowdin-orthogonalize, diagonalize
     cmatrix_t *F = cmatrix_alloc(n, n);
+    if (!F) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(dens_grad);
+      free(vrho_pot);
+      free(vsigma_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+      free(ao_grads);
+
+      return NULL;
+    }
+
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         CMAT(F, i, j) = c_real(CMAT(Hcore, i, j).re + CMAT(J, i, j).re +
@@ -743,9 +1046,51 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
     cmatrix_free(tmp);
     cmatrix_free(F);
+    if (!Fp) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(dens_grad);
+      free(vrho_pot);
+      free(vsigma_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+      free(ao_grads);
+
+      return NULL;
+    }
 
     eigen_t *eig_F = cmatrix_eigh_complex(Fp);
     cmatrix_free(Fp);
+    if (!eig_F) {
+      cmatrix_free(Vxc);
+      cmatrix_free(J);
+      free(D);
+      free(D_computed);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      free(dens);
+      free(dens_grad);
+      free(vrho_pot);
+      free(vsigma_pot);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+      free(ao_vals);
+      free(ao_grads);
+
+      return NULL;
+    }
 
     for (int i = 0; i < n; i++) {
       for (int k = 0; k < n; k++) {
@@ -755,7 +1100,7 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
           v += CMAT(Shalf, i, p).re * CMAT(eig_F->eigenvectors, p, k).re;
         }
 
-        C_arr[i * n + k] = v;
+        C_arr[(size_t)i * n + k] = v;
       }
     }
 
@@ -767,10 +1112,10 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
         for (int k = 0; k < n_occ; k++) {
           // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
-          v += 2.0 * C_arr[i * n + k] * C_arr[j * n + k];
+          v += 2.0 * C_arr[(size_t)i * n + k] * C_arr[(size_t)j * n + k];
         }
 
-        D_computed[i * n + j] = v;
+        D_computed[(size_t)i * n + j] = v;
       }
     }
 
@@ -782,8 +1127,8 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
     double E_J = 0.0, Vxc_n_g = 0.0;
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        E_J += D_new[i * n + j] * CMAT(J, i, j).re;
-        Vxc_n_g += D_new[i * n + j] * CMAT(Vxc, i, j).re;
+        E_J += D_new[(size_t)i * n + j] * CMAT(J, i, j).re;
+        Vxc_n_g += D_new[(size_t)i * n + j] * CMAT(Vxc, i, j).re;
       }
     }
 
@@ -801,7 +1146,7 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
-        E_core += D_new[i * n + j] * CMAT(Hcore, i, j).re;
+        E_core += D_new[(size_t)i * n + j] * CMAT(Hcore, i, j).re;
       }
     }
 
@@ -857,9 +1202,30 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
   res->iterations = iter;
 
   res->C = cmatrix_alloc(n, n);
+  if (!res->C) {
+    free(res);
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    free(dens);
+    free(dens_grad);
+    free(vrho_pot);
+    free(vsigma_pot);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(ao_vals);
+    free(ao_grads);
+
+    return NULL;
+  }
+
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
-      CMAT(res->C, i, j) = c_real(C_arr[i * n + j]);
+      CMAT(res->C, i, j) = c_real(C_arr[(size_t)i * n + j]);
     }
   }
 
@@ -867,16 +1233,17 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
   free(D_computed);
   free(D_new);
   free(C_arr);
+  free(orbital_energies);
   free(dens);
   free(dens_grad);
   free(vrho_pot);
   free(vsigma_pot);
-  free(ao_vals);
-  free(ao_grads);
   cmatrix_free(S);
   cmatrix_free(Hcore);
   cmatrix_free(Shalf);
   free(eri);
+  free(ao_vals);
+  free(ao_grads);
 
   return res;
 }
