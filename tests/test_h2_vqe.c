@@ -1,5 +1,5 @@
 /*
- * Test: full H2/STO-3G VQE pipeline, end to end :
+ * Test: full H2/STO-3G VQE pipeline, end to end:
  * AO integrals (molecular_integrals.c) -> RHF -> AO-to-MO transform ->
  * second-quantized Jordan-Wigner Hamiltonian (second_quant.c) -> exact
  * diagonalization (FCI) -> VQE (vqe.c)
@@ -36,15 +36,34 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-// Same RHF as test_molecular_integrals.c, but also returns converged MO
-// coefficient matrix C, needed for AO->MO integral transform below
+/*
+ * RHF helper for minimal H2/STO-3G test system
+ *
+ * Purpose:
+ *   - Run a closed-shell RHF SCF procedure in a 2-function AO basis
+ *   - Return converged electronic energy.
+ *   - Export converged MO coefficients in C_out for downstream AO->MO
+ *     transforms
+ *
+ * Inputs:
+ *   R_bond : kept for interface consistency with other helpers (unused here)
+ *   funcs  : AO basis functions
+ *   Hcore  : one-electron core Hamiltonian in AO basis
+ *   eri    : two-electron AO integrals in physicist/chemist ordering used
+ *            below
+ *
+ * Output:
+ *   C_out  : converged MO coefficient matrix C (AO rows, MO columns)
+ */
 static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
                                   cmatrix_t *Hcore, const double *eri,
                                   double C_out[2][2]) {
+  // Build AO overlap matrix S and its eigendecomposition
   cmatrix_t *S = molecular_overlap_matrix(funcs, 2);
   eigen_t *eig_S = cmatrix_eigh_complex(S);
   cmatrix_t *Shalf = cmatrix_alloc(2, 2);
 
+  // Construct symmetric orthogonalizer S^{-1/2} = U diag(s^{-1/2}) U^T
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       double sum = 0.0;
@@ -59,9 +78,12 @@ static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
     }
   }
 
+  // Start SCF from zero density; track electronic energy for convergence
   double D[2][2] = {{0, 0}, {0, 0}};
-  double E_elec = 0.0, E_elec_old = 0.0;
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
 
+  // SCF loop: build F(D), solve Roothaan equations, update D, check convergence
   for (int it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
 

@@ -6,9 +6,9 @@
  *    integrates to 1, has no negative part; <n> = |\alpha|^2
  * 2. Fock states n = 0..4: W(0,0) = (-1)^n / \pi, <n> = n, negative for n >= 1
  * 3. Marginals: integrating W over p gives |\psi(x)|^2
- * 4. Cat states: Wigner function equals closed form with its
- *    interference term, and goes negative
- * 5. Squeezed vacuum: <n> = sinh^2 r and <x^2> = e^{-2r} / 2 from Wigner
+ * 4. Cat states: Wigner function equals closed form with its interference term,
+ *    and goes negative
+ * 5. Squeezed vacuum: <n> = \sinh^2 r and <x^2> = \exp(-2r) / 2 from Wigner
  *    marginal
  * 6. Kerr: norm and <n> are conserved; at \chi t = \pi / 2 a coherent state
  *    is exactly cat
@@ -92,12 +92,23 @@ static double gauss(double x, double p, double x0, double p0) {
   return exp(-(x - x0) * (x - x0) - (p - p0) * (p - p0)) / M_PI;
 }
 
+/*
+ * Phase-space test driver
+ *
+ * This function exercises main public API on representative states and checks
+ * numerical invariants (normalization, moments, negativity, and expected
+ * evolution behavior) with fixed tolerances
+ */
 int main(void) {
   complex_t c[NMAX + 1];
 
+  // Build x/p grids used by all Wigner-related checks below
   grid();
 
-  printf("  --- coherent state ---\n");
+  // Coherent-state benchmark: Wigner function should match the analytical
+  // Gaussian, integrate to 1, have zero negativity, and preserve standard state
+  // invariants
+  printf("  === Test: Coherent state ===\n");
   {
     double ar = 1.2;
     double ai = -0.7;
@@ -122,7 +133,7 @@ int main(void) {
     check_close(ps_norm2(c, NMAX), 1.0, 1e-12, "norm");
   }
 
-  printf("  --- Fock states ---\n");
+  printf("  === Test: Fock states ===\n");
   for (int n = 0; n <= 4; n++) {
     char label[64];
 
@@ -152,7 +163,7 @@ int main(void) {
     }
   }
 
-  printf("  --- marginal: integral of W over p = |\\psi(x)|^2 ---\n");
+  printf("  === Test: Marginal integral of W over p = |\\psi(x)|^2 ===\n");
   {
     ps_fock_state(c, NMAX, 3);
     wigner_of(c);
@@ -171,7 +182,7 @@ int main(void) {
     check_close(worst, 0.0, 1e-5, "max |marginal - |\\psi|^2|");
   }
 
-  printf("  --- cat states, \\alpha = 2 ---\n");
+  printf("  === Test: Cat states, \\alpha = 2 ===\n");
   for (int parity = 1; parity >= -1; parity -= 2) {
     double alpha = 2.0;
     double x0 = sqrt(2.0) * alpha;
@@ -184,9 +195,11 @@ int main(void) {
       for (int j = 0; j < NX; j++) {
         // W = [W_a + W_-a + parity 2 G \cos(2 x0 p)] /
         //          (2 (1 + parity \exp(-2 a^2)))
-        double ex = (gauss(xs[j], ps[l], x0, 0.0) + gauss(xs[j], ps[l], -x0, 0.0) +
-              parity * 2.0 * gauss(xs[j], ps[l], 0.0, 0.0) *
-                  cos(2.0 * x0 * ps[l])) / norm;
+        double ex =
+            (gauss(xs[j], ps[l], x0, 0.0) + gauss(xs[j], ps[l], -x0, 0.0) +
+             parity * 2.0 * gauss(xs[j], ps[l], 0.0, 0.0) *
+                 cos(2.0 * x0 * ps[l])) /
+            norm;
 
         worst = fmax(worst, fabs(W[l * NX + j] - ex));
       }
@@ -200,7 +213,7 @@ int main(void) {
     check_close(wint(), 1.0, 1e-5, "  integral of W");
   }
 
-  printf("  --- squeezed vacuum ---\n");
+  printf("  === Test: Squeezed vacuum ===\n");
   {
     double r = 0.7;
 
@@ -228,7 +241,7 @@ int main(void) {
                 "no negative volume");
   }
 
-  printf("  --- Kerr evolution of a coherent state, \\alpha = 2.5 ---\n");
+  printf("  === Test: Kerr evolution of a coherent state, \\alpha = 2.5 ===\n");
   {
     complex_t cat[NMAX + 1];
     complex_t orig[NMAX + 1];
@@ -280,7 +293,7 @@ int main(void) {
     check_close(dist, 0.0, 1e-12, "\\chi(t) = \\pi: full revival");
   }
 
-  printf("  --- invalid input ---\n");
+  printf("  === Test: Invalid input ===\n");
   {
     complex_t t[4];
     const double pp[2] = {0.0, 1.0};

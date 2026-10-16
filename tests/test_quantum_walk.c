@@ -45,8 +45,13 @@ enum { N = 2048 };
 static double g_p[N];
 static double g_c[N];
 
+/*
+ * Validation for discrete-time quantum walk behavior
+ * Each section below checks one physical/statistical property, while preserving
+ * a single executable test entrypoint
+ */
 int main(void) {
-  printf(" > Quantum walk on a line\n\n");
+  printf(" > Quantum walk on a line test:\n");
 
   cvector_t *up = cvector_alloc(N);
   cvector_t *down = cvector_alloc(N);
@@ -54,7 +59,8 @@ int main(void) {
     return 1;
   }
 
-  printf("  === One Hadamard step ===\n");
+  // One Hadamard step from |up>: mass splits equally to x = +/-1
+  printf("  === Test: One Hadamard step ===\n");
   qwalk_init(up, down, QWALK_COIN_UP);
   qwalk_step(up, down, M_PI / 4, 1);
   qwalk_probability(up, down, g_p);
@@ -62,7 +68,8 @@ int main(void) {
   check_close(g_p[N / 2 + 1], 0.5, 1e-14, "P(+1)");
   check_close(g_p[N / 2], 0.0, 1e-14, "P(0)");
 
-  printf("  === Unitarity ===\n");
+  // Unitarity: total probability (state norm) must remain 1
+  printf("  === Test: Unitarity ===\n");
   const double angles[] = {0.3, M_PI / 4, 1.2};
 
   for (int k = 0; k < 3; k++) {
@@ -71,7 +78,7 @@ int main(void) {
     check_close(qwalk_norm(up, down), 1.0, 1e-12, "norm after 600 steps");
   }
 
-  printf("  === Ballistic spreading <x^2>/t^2 -> 1 - \\sin(\\theta) ===\n");
+  printf("  === Test: Ballistic spreading <x^2>/t^2 -> 1 - \\sin(\\theta) ===\n");
   for (int k = 0; k < 3; k++) {
     qwalk_init(up, down, QWALK_COIN_SYM);
     qwalk_step(up, down, angles[k], 800);
@@ -79,7 +86,7 @@ int main(void) {
                 qwalk_asymptotic_variance(angles[k]), 2e-4, "variance ratio");
   }
 
-  printf("  === Symmetric start, Hadamard, t = 400 ===\n");
+  printf("  === Test: Symmetric start, Hadamard, t = 400 ===\n");
   qwalk_init(up, down, QWALK_COIN_SYM);
   qwalk_step(up, down, M_PI / 4, 400);
   qwalk_probability(up, down, g_p);
@@ -107,13 +114,13 @@ int main(void) {
   check_true(g_p[N / 2] < 0.2 * g_p[peak],
              "front is much higher than the centre");
 
-  printf("  === Biased start |up> ===\n");
+  printf("  === Test: Biased start |up> ===\n");
   qwalk_init(up, down, QWALK_COIN_UP);
   qwalk_step(up, down, M_PI / 4, 400);
   check_close(qwalk_mean(up, down) / 400.0, 1.0 - 1.0 / sqrt(2.0), 2e-3,
               "drift per step");
 
-  printf("  === Classical walk ===\n");
+  printf("  === Test: Classical walk ===\n");
   check_true(qwalk_classical(g_c, N, 4) == 0, "classical t = 4");
   check_close(g_c[N / 2], 6.0 / 16.0, 1e-14, "P(0) = 6/16");
   check_close(g_c[N / 2 + 2], 4.0 / 16.0, 1e-14, "P(2) = 4/16");
@@ -134,7 +141,7 @@ int main(void) {
   check_true(sqrt(qwalk_variance(up, down)) > 5.0 * sqrt(var),
              "quantum width > 5x classical width");
 
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
   check_true(qwalk_init(NULL, down, 0) == -1, "NULL");
   check_true(qwalk_init(up, down, 3) == -1, "bad coin");
   check_true(qwalk_step(up, down, NAN, 1) == -1, "NaN angle");

@@ -23,10 +23,12 @@ static double E_analytic(int n, double L) {
 int main(void) {
   printf(" > Particle in a 1D Infinite Square Well\n");
 
-  int N = 51;
-  if (N < 4) {
-    return 1;
-  }
+  // int N = 51;
+  // if (N < 4) {
+  //   return 1;
+  // }
+  enum { N = 51 };
+  _Static_assert(N >= 4, "N must be at least 4");
 
   double L = 1.0;
   double dx = L / (N - 1);
@@ -44,11 +46,11 @@ int main(void) {
 
   // Numerical: tridiagonal finite-difference
   int M = N - 2; // interior points
-  if (M < 2) {
-    free(x);
-
-    return 1;
-  }
+  // if (M < 2) {
+  //   free(x);
+  //
+  //   return 1;
+  // }
 
   double coeff = 1.0 / (2.0 * dx * dx); // \hbar^2/(2m) = 0.5 in a.u.
   double *diag = malloc(M * sizeof(double));

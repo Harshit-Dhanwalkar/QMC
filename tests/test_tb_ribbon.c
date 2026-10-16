@@ -101,6 +101,17 @@ int main(void) {
   double e[MAXS];
   double mc[MAXS];
 
+  /* Plan:
+   * 1. Verify zigzag graphene ribbon has near-zero edge modes at k1 = \pi
+   * 2. In Chern phase (for both signs of \phi), verify in-gap edge states cross
+   * a Fermi level with opposite chirality on opposite edges
+   * 3. In a trivial phase, verify no in-gap edge channels cross gap
+   * 4. Verify edge-state profile properties (normalisation/localisation)
+   * 5. Verify invalid-input handling paths
+   */
+
+  // Graphene zigzag ribbon supports two edge-localised near-zero modes around
+  // k1 = \pi (flat edge band feature)
   printf("  --- graphene zigzag ribbon: flat edge band ---\n");
   {
     tb_model_t *g = tb_model_graphene(1.0);
@@ -118,6 +129,9 @@ int main(void) {
     tb_model_free(g);
   }
 
+  // Topological-phase sweep over opposite flux signs to check that edge-mode
+  // propagation direction flips with \phi, while opposite edges keep opposite
+  // velocities/chiralities
   const double t2 = 0.1;
   const double phis[2] = {M_PI / 2, -M_PI / 2};
 
@@ -154,8 +168,7 @@ int main(void) {
         }
       }
 
-      check_true(count == 2,
-                 "two edge-localised states near middle of gap");
+      check_true(count == 2, "two edge-localised states near middle of gap");
     }
 
     tb_model_free(m);

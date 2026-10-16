@@ -33,7 +33,7 @@ static void check_true(int cond, const char *label) {
 #include <hdf5.h>
 
 static void test_1d_round_trip(void) {
-  printf("  === Test 1D round trip (USE_HDF5=1) ===\n");
+  printf("  === Test: 1D round trip (USE_HDF5=1) ===\n");
 
   const double data[5] = {1.0, 2.5, -3.0, 0.0, 42.125};
   int rc = hdf5_write_1d("test_hdf5_1d.h5", "values", data, 5);
@@ -49,7 +49,7 @@ static void test_1d_round_trip(void) {
   }
 
   hid_t dset = H5Dopen2(file, "values", H5P_DEFAULT);
-  check_true(dset >= 0, "dataset 'values' exists in the file");
+  check_true(dset >= 0, "dataset 'values' exists in file");
 
   double readback[5] = {0};
   herr_t status =
@@ -70,7 +70,7 @@ static void test_1d_round_trip(void) {
 }
 
 static void test_matrix_round_trip(void) {
-  printf("  === Test matrix round trip (USE_HDF5=1) ===\n");
+  printf("  === Test: Matrix round trip (USE_HDF5=1) ===\n");
 
   // 2x3 row-major matrix
   const double data[6] = {1, 2, 3, 4, 5, 6};
@@ -108,7 +108,7 @@ static void test_matrix_round_trip(void) {
 }
 
 static void test_groups_and_generic_types(void) {
-  printf("  === Test groups and generic_types (USE_HDF5=1) ===\n");
+  printf("  === Test: Groups and generic_types (USE_HDF5=1) ===\n");
 
   hdf5_writer_t *w = hdf5_open(QMC_OUTPUT_DIR "/test_hdf5_groups.h5");
   check_true(w != NULL, "hdf5_open succeeds");
@@ -192,7 +192,7 @@ static void test_groups_and_generic_types(void) {
 }
 
 static void test_attributes(void) {
-  printf("  === Test attributes (USE_HDF5=1) ===\n");
+  printf("  === Test: Attributes (USE_HDF5=1) ===\n");
 
   hdf5_writer_t *w = hdf5_open(QMC_OUTPUT_DIR "/test_hdf5_attrs.h5");
   check_true(w != NULL, "hdf5_open succeeds");
@@ -247,7 +247,7 @@ static void test_attributes(void) {
       }
 
       check_true(strcmp(buf, "eV") == 0,
-                 "'units' attribute reflects the overwritten value 'eV'");
+                 "'units' attribute reflects overwritten value 'eV'");
 
       H5Tclose(atype);
       H5Aclose(attr);
@@ -282,7 +282,7 @@ static void test_attributes(void) {
 }
 
 static void test_chunking_and_compression(void) {
-  printf("  === Test chunking and_ ompression (USE_HDF5=1) ===\n");
+  printf("  === Test: Chunking and Compression (USE_HDF5=1) ===\n");
 
   hdf5_writer_t *w = hdf5_open(QMC_OUTPUT_DIR "/test_hdf5_chunked.h5");
   check_true(w != NULL, "hdf5_open succeeds");
@@ -350,8 +350,9 @@ static hid_t open_ro(const char *path) {
 }
 
 static void test_appendable_datasets(void) {
-  printf("  === Test appendable datasets (USE_HDF5=1) ===\n");
+  printf("  === Test: Appendable datasets (USE_HDF5=1) ===\n");
 
+  // Open writer for schema-focused fixture file
   const char *path = QMC_OUTPUT_DIR "/test_hdf5_append.h5";
   hdf5_writer_t *w = hdf5_open(path);
   check_true(w != NULL, "hdf5_open succeeds");
@@ -433,7 +434,7 @@ static void test_appendable_datasets(void) {
   check_true(hdf5_dataset_close(e) == HDF5_OK, "close 1D dataset");
   check_true(hdf5_close(w) == HDF5_OK, "hdf5_close succeeds");
 
-  // read everything back independently through the HDF5 C API
+  // read everything back independently through HDF5 C API
   hid_t file = open_ro(path);
   check_true(file >= 0, "file reopens read-only");
   if (file < 0) {
@@ -458,8 +459,8 @@ static void test_appendable_datasets(void) {
   double got[13];
   H5Dread(ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, got);
 
-  // NOTE: Intentional bit-exact comparison of the whole array as written/read
-  // back NOLINTNEXTLINE(bugprone-suspicious-memory-comparison)
+  // NOTE: Intentional bit-exact comparison of whole array as written/read back
+  // NOLINTNEXTLINE(bugprone-suspicious-memory-comparison)
   check_true(memcmp(got, expect, sizeof got) == 0,
              "1D data reads back bit-for-bit, in append order");
   H5Pclose(dcpl);
@@ -473,7 +474,7 @@ static void test_appendable_datasets(void) {
                  dims[1] == 3,
              "2D dataset has shape (8, 3)");
   check_true(maxd[0] == H5S_UNLIMITED && maxd[1] == 3,
-             "only the row axis is extendible");
+             "only row axis is extendible");
 
   int32_t got2[24];
   H5Dread(ds, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, got2);
@@ -503,8 +504,16 @@ static void test_appendable_datasets(void) {
   H5Fclose(file);
 }
 
+/*
+ * End-to-end validation of mixed metadata writing:
+ *  - schema header creation
+ *  - nested string dataset creation and replacement
+ *  - integer attribute creation and replacement
+ *  - invalid-argument handling paths
+ * Remainder of this test verifies that values are persisted and readable
+ */
 static void test_strings_int_attrs_and_schema_header(void) {
-  printf("  === Test string dataset, int attribute, schema header ===\n");
+  printf("  === Test: String dataset, int attribute, schema header ===\n");
 
   const char *path = QMC_OUTPUT_DIR "/test_hdf5_schema.h5";
   hdf5_writer_t *w = hdf5_open(path);
@@ -513,6 +522,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
     return;
   }
 
+  // Write baseline schema/header and metadata entries
   check_true(hdf5_write_schema_header(w, 0) == HDF5_OK,
              "schema header (no timestamp) succeeds");
   check_true(hdf5_write_string(w, "metadata/method", "DMC") == HDF5_OK,
@@ -520,11 +530,15 @@ static void test_strings_int_attrs_and_schema_header(void) {
   check_true(hdf5_write_string(w, "metadata/method", "VMC longer name") ==
                  HDF5_OK,
              "hdf5_write_string replaces an existing dataset");
+
+  // Validate integer attribute write/overwrite semantics
   check_true(hdf5_create_group(w, "g") == HDF5_OK, "group created");
   check_true(hdf5_write_attribute_int(w, "g", "n_walkers", 200) == HDF5_OK,
              "hdf5_write_attribute_int succeeds");
   check_true(hdf5_write_attribute_int(w, "g", "n_walkers", 400) == HDF5_OK,
              "hdf5_write_attribute_int replaces existing attribute");
+
+  // Exercise invalid-argument guards on public API entry points
   check_true(hdf5_write_string(NULL, "s", "x") == HDF5_ERR_INVALID_ARGUMENT &&
                  hdf5_write_string(w, "s", NULL) == HDF5_ERR_INVALID_ARGUMENT,
              "hdf5_write_string rejects NULL args");
@@ -589,7 +603,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
   }
 
   check_true(strcmp(buf, "VMC longer name") == 0,
-             "string dataset holds the replacement value");
+             "string dataset holds replacement value");
 
   hid_t g = H5Gopen2(file, "g", H5P_DEFAULT);
   long nw = -1;
@@ -600,7 +614,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
     H5Aclose(a);
   }
 
-  check_true(nw == 400, "int attribute holds the replacement value");
+  check_true(nw == 400, "int attribute holds replacement value");
 
   H5Gclose(g);
   H5Fclose(file);
@@ -640,7 +654,7 @@ static void test_strings_int_attrs_and_schema_header(void) {
 #else // !USE_HDF5
 
 static void test_apis_stub_without_crashing(void) {
-  printf("  === Test: apis stub without crashing (default build, no USE_HDF5) "
+  printf("  === Test: APIs stub without crashing (default build, no USE_HDF5) "
          "===\n");
 
   hdf5_writer_t *w = hdf5_open("unused.h5");
@@ -685,7 +699,7 @@ static void test_apis_stub_without_crashing(void) {
 }
 
 static void test_stub_returns_failure_without_crashing(void) {
-  printf("  === Test: stub returns failure without_crashing (default build, no "
+  printf("  === Test: Stub returns failure without_crashing (default build, no "
          "USE_HDF5) ===\n");
 
   const double data[3] = {1.0, 2.0, 3.0};

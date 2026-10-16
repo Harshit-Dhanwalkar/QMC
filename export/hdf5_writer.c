@@ -109,7 +109,7 @@ static hdf5_status_t ensure_parent_groups(hid_t file,
       cur_len++;
     }
 
-    memcpy(cumulative + cur_len, tok, tok_len + 1); /* +1 copies NUL */
+    memcpy(cumulative + cur_len, tok, tok_len + 1); // +1 copies NUL
 
     if (H5Lexists(file, cumulative, H5P_DEFAULT) <= 0) {
       hid_t g =
@@ -134,7 +134,7 @@ static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
-  // data may be NULL only if the total element count is zero
+  // data may be NULL only if total element count is zero
   size_t total = 1;
   for (int i = 0; i < rank; i++) {
     total *= dims[i];
@@ -235,6 +235,19 @@ hdf5_status_t hdf5_writer_write_matrix(hdf5_writer_t *writer,
   return write_dataset_impl(writer, dataset, data, 2, dims);
 }
 
+/*
+ * Write an arbitrary-rank dataset to an open HDF5 file
+ *
+ * This is generic write path used by typed/rank-specific wrappers
+ * Function validates arguments, computes total element count, configures
+ * dataset creation options, creates dataset, writes payload data (when
+ * present) and maps HDF5 failures to hdf5_status_t values
+ *
+ * NOTE:
+ * - rank must be in [1, HDF5_MAX_RANK]
+ * - dims must contain exactly `rank` entries
+ * - data may be NULL only when total logical element count is zero
+ */
 hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
                                  hdf5_type_t type, int rank, const size_t *dims,
                                  const void *data,
@@ -243,12 +256,14 @@ hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
     return HDF5_ERR_INVALID_ARGUMENT;
   }
 
-  // data may be NULL only if the total element count is zero
+  // Compute total element count from dimensions
+  // This is used to enforce NULL-data rule for empty vs non-empty datasets
   size_t total = 1;
   for (int i = 0; i < rank; i++) {
     total *= dims[i];
   }
 
+  // Non-empty datasets must provide a payload pointer
   if (total > 0 && !data) {
     return HDF5_ERR_INVALID_ARGUMENT;
   }
@@ -745,6 +760,7 @@ hdf5_status_t hdf5_dataset_close(hdf5_dataset_t *ds) {
   }
 
   hdf5_status_t rc = (H5Dclose(ds->dset) < 0) ? HDF5_ERR_CLOSE : HDF5_OK;
+
   free(ds);
 
   return rc;
@@ -765,10 +781,11 @@ static int legacy_write_dataset(const char *filename, const char *dataset,
     return HDF5_ERR_PATH_TOO_LONG;
   }
 
-  /* Open an existing file if present (so prior datasets survive), else
-   * create a new one. Subsequent dataset write replaces any dataset
-   * of same name, but does not touch other datasets */
-  hid_t file = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
+  // Open an existing file if present (so prior datasets survive), else create a
+  // new one
+  // Subsequent dataset write replaces any dataset cf same name, but does not
+  // touch other datasets chid_t file = H5Fopen(path, H5F_ACC_RDWR,
+  // H5P_DEFAULT);
   if (file < 0) {
     file = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   }

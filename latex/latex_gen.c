@@ -141,7 +141,7 @@ static const char *tmp_base(void) {
 //
 // #ifdef _WIN32
 //
-//   // cmd.exe's system() return value IS the child's exit code directly - no
+//   // cmd.exe's system() return value is child's exit code directly - no
 //   // POSIX-style wait-status encoding to unpack.
 //   return status == 0 ? 0 : -1;
 //
@@ -180,7 +180,7 @@ static int has_unsafe_shell_metachars(const char *s) {
 
 /* Runs `command -v <tool>` (POSIX) or `where <tool>` (Windows)
  *
- * Returns 1 if the tool is on PATH */
+ * Returns 1 if tool is on PATH */
 static int check_tool_on_path(const char *tool) {
   if (!tool) {
     return 0;
@@ -228,7 +228,7 @@ int latex_tools_available(void) {
  * argv must be NULL-terminated; argv[0] is tool name
  * cwd, stdout_path, stderr_path may be NULL
 
- * Returns 0 if the process exited with status 0, -1 otherwise
+ * Returns 0 if process exited with status 0, -1 otherwise
  */
 static int run_tool(const char *tool, char *const argv[], const char *cwd,
                     const char *stdout_path, const char *stderr_path) {
@@ -1131,6 +1131,18 @@ char *latex_display_math(const char *expr) {
   return res;
 }
 
+/*
+ * Build a LaTeX matrix environment string from a 2D string table
+ *
+ * - `type` selects environment and must be one of:
+ *     bmatrix, pmatrix, Bmatrix, vmatrix, Vmatrix
+ *   If `type` is NULL, "bmatrix" is used
+ * - `data` is a rows x cols table of cell strings; NULL cells are treated as
+ *   empty placeholders when rendering
+ * - Returns a newly allocated NUL-terminated string on success
+ *   Caller owns returned memory and must free() it
+ * - Returns NULL on invalid arguments or allocation/formatting failure
+ */
 char *latex_matrix(const char *type, const char *const *const *data, int rows,
                    int cols) {
   if (!data || rows <= 0 || cols <= 0) {
@@ -1145,6 +1157,10 @@ char *latex_matrix(const char *type, const char *const *const *data, int rows,
     return NULL;
   }
 
+  // Estimate output size conservatively:
+  //  - begin/end tags and fixed syntax overhead
+  //  - per-cell text length (or 1 char placeholder for NULL cell)
+  //  - separators (" & ", row breaks, spacing)
   size_t est = 2 * strlen(type) + 20;
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {

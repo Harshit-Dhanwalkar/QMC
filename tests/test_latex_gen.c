@@ -482,12 +482,14 @@ static void test_table_builder(void) {
 static void test_document_builder(void) {
   printf("  === Test: latex_document_t builder ===\n");
 
+  // Create a fresh document instance; abort this test early if allocation fails
   latex_document_t *doc = latex_document_create("Results & Discussion");
   check(doc != NULL, "latex_document_create succeeds");
   if (!doc) {
     return;
   }
 
+  // Configure document-level metadata and preamble settings
   check(latex_document_set_author(doc, "J. Doe") == 0, "set_author");
   check(latex_document_set_date(doc, "2026") == 0, "set_date");
   check(latex_document_set_abstract(doc, "50% faster convergence.") == 0,
@@ -498,6 +500,7 @@ static void test_document_builder(void) {
   check(latex_document_add_package(doc, "geometry", "margin=1in") == 0,
         "add_package with options");
 
+  // Build representative body content, mixing escaped text and raw LaTeX nodes
   check(latex_document_add_section(doc, "Introduction") == 0, "add_section");
   check(latex_document_add_paragraph(doc, "Energy at 50% of baseline.") == 0,
         "add_paragraph (escaped)");

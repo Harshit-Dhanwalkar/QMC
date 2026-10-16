@@ -91,10 +91,10 @@ static double becke_weight_at(int atom_idx, const double r[3],
 /*
  * Gauss-Chebyshev-of-the-second-kind radial grid, mapped (-1,1) -> (0, \infty)
  * via r = r_m * (1 + x)/(1 - x)
- * NOTE: Raw GC2 weight (\pi / (N + 1)) * \sin^2(\theta_i) carries an
- * implicit \sqrt(1 - x^2) = \sin(\theta_i) weight function, which must be
- * divided back out before multiplying by (r^2 * dr/dx) Jacobian to get a plain
- * (unweighted) integral over r in (0, \infty)
+ * NOTE: Raw GC2 weight (\pi / (N + 1)) * \sin^2(\theta_i) carries an implicit
+ * \sqrt(1 - x^2) = \sin(\theta_i) weight function, which must be divided back
+ * out before multiplying by (r^2 * dr/dx) Jacobian to get a plain (unweighted)
+ * integral over r in (0, \infty)
  */
 static void gauss_chebyshev_radial(int n, double r_m, double *r, double *w) {
   for (int i = 1; i <= n; i++) {
@@ -108,6 +108,22 @@ static void gauss_chebyshev_radial(int n, double r_m, double *r, double *w) {
   }
 }
 
+/*
+ * Build a molecular integration grid by combining:
+ *   1. per-atom radial quadrature shells
+ *   2. angular quadrature points on each shell
+ *   3. Becke fuzzy-Voronoi partition weights for atomic decomposition
+ *
+ * Inputs:
+ *   - mol: molecule geometry (atom centers)
+ *   - n_radial / n_polar / n_azimuthal: quadrature resolutions
+ *   - radial_scale: radial mapping scale (> 0)
+ * Output:
+ *   - heap-allocated molecular_grid_t on success
+ *   - NULL on invalid input or allocation/initialization failure
+ *
+ * Return caller owns grid and must destroy it with matching grid-free routine
+ */
 molecular_grid_t *molecular_grid_build(const molecule_t *mol, int n_radial,
                                        int n_polar, int n_azimuthal,
                                        double radial_scale) {
@@ -1232,7 +1248,6 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
   free(D_computed);
   free(D_new);
   free(C_arr);
-  free(orbital_energies);
   free(dens);
   free(dens_grad);
   free(vrho_pot);
