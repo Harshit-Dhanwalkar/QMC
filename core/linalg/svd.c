@@ -85,9 +85,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
 
   // Fill S and V
   S->n = n;
-  if (S->data) {
-    free(S->data);
-  }
+  free(S->data);
 
   S->data = malloc(n * sizeof(complex_t));
   if (!S->data) {
