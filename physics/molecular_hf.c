@@ -102,8 +102,21 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
   double *D_new = malloc((size_t)n * n * sizeof(double));
   double *C_arr = malloc((size_t)n * n * sizeof(double));
   double *orbital_energies = malloc((size_t)n * sizeof(double));
+  if (!D || !D_new || !C_arr || !orbital_energies) {
+    free(D);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
 
-  double E_elec = 0.0, E_elec_old = 0.0;
+    return NULL;
+  }
+
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
   int converged = 0;
   int iter = 0;
 
@@ -133,6 +146,18 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
 
     eigen_t *eig_F = cmatrix_eigh_complex(Fp);
     cmatrix_free(Fp);
+    if (!eig_F) {
+      free(D);
+      free(D_new);
+      free(C_arr);
+      free(orbital_energies);
+      cmatrix_free(S);
+      cmatrix_free(Hcore);
+      cmatrix_free(Shalf);
+      free(eri);
+
+      return NULL;
+    }
 
     // C = Shalf * C'
     for (int i = 0; i < n; i++) {
@@ -216,6 +241,27 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
     return NULL;
   }
 
+  res->C = cmatrix_alloc(n, n);
+  if (!res->C) {
+    free(res);
+    free(D);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+
+    return NULL;
+  }
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      CMAT(res->C, i, j) = c_real(C_arr[i * n + j]);
+    }
+  }
+
   res->n_basis = n;
   res->n_electrons = n_electrons;
   res->electronic_energy = E_elec;
@@ -223,13 +269,6 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
   res->iterations = iter;
   res->converged = converged;
   res->orbital_energies = orbital_energies;
-
-  res->C = cmatrix_alloc(n, n);
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      CMAT(res->C, i, j) = c_real(C_arr[i * n + j]);
-    }
-  }
 
   free(D);
   free(D_new);
@@ -277,6 +316,16 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   // Lowdin symmetric orthogonalization (shared by both spin channels)
   eigen_t *eig_S = cmatrix_eigh_complex(S);
   cmatrix_t *Shalf = cmatrix_alloc(n, n);
+  if (!eig_S || !Shalf) {
+    eigen_free(eig_S);
+    cmatrix_free(Shalf);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    free(eri);
+
+    return NULL;
+  }
+
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       double sum = 0.0;
@@ -302,6 +351,23 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   double *Cb_arr = malloc((size_t)n * n * sizeof(double));
   double *orb_a = malloc((size_t)n * sizeof(double));
   double *orb_b = malloc((size_t)n * sizeof(double));
+  if (!Da || !Db || !Da_new || !Db_new || !Ca_arr || !Cb_arr || !orb_a ||
+      !orb_b) {
+    free(Da);
+    free(Db);
+    free(Da_new);
+    free(Db_new);
+    free(Ca_arr);
+    free(Cb_arr);
+    free(orb_a);
+    free(orb_b);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+
+    return NULL;
+  }
 
   double E_elec = 0.0, E_elec_old = 0.0;
   int converged = 0;
@@ -461,6 +527,41 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
 
   molecular_uhf_result_t *res = malloc(sizeof(molecular_uhf_result_t));
   if (!res) {
+    free(Da);
+    free(Db);
+    free(Da_new);
+    free(Db_new);
+    free(Ca_arr);
+    free(Cb_arr);
+    free(orb_a);
+    free(orb_b);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+
+    return NULL;
+  }
+
+  res->C_alpha = cmatrix_alloc(n, n);
+  res->C_beta = cmatrix_alloc(n, n);
+  if (!res->C_alpha || !res->C_beta) {
+    cmatrix_free(res->C_alpha);
+    cmatrix_free(res->C_beta);
+    free(res);
+    free(Da);
+    free(Db);
+    free(Da_new);
+    free(Db_new);
+    free(Ca_arr);
+    free(Cb_arr);
+    free(orb_a);
+    free(orb_b);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+
     return NULL;
   }
 
@@ -475,8 +576,6 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   res->orbital_energies_alpha = orb_a;
   res->orbital_energies_beta = orb_b;
 
-  res->C_alpha = cmatrix_alloc(n, n);
-  res->C_beta = cmatrix_alloc(n, n);
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       CMAT(res->C_alpha, i, j) = c_real(Ca_arr[i * n + j]);
@@ -641,9 +740,9 @@ void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
  * own-center kinetic/nuclear-attraction derivative (summed over every atom's
  * nuclear charge, since AOs interact with all nuclei); likewise for v; and
  * separately, for every atom's own nuclear-attraction operator, a
- * "Hellmann-Feynman" contribution from differentiating wrt THAT atom's own
- * charge position (gto_nuclear_attraction_grad_C), present regardless of which
- * atoms u,v happen to be centered on
+ * "Hellmann-Feynman" contribution from differentiating with respect to that
+ * atom's own charge position (gto_nuclear_attraction_grad_C), present
+ * regardless of which atoms u,v happen to be centered on
  */
 double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
                                const molecule_t *mol, const int *atom_of_basis,
@@ -663,9 +762,9 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
   }
 
   /* One-electron density P_{uv} = 2 \sum_occ C_{ui} C_{vi}, and energy-weighted
-   * density W_{uv} = 2 * \sum_{occ} eps_i C_ui C_vi.
+   * density W_{uv} = 2 * \sum_{occ} eps_i C_ui C_vi
    * Real orbitals throughout (molecular_rhf always produces real C/eps), so
-   * only .re is used. */
+   * only .re is used */
   double *P = malloc((size_t)n * n * sizeof(double));
   double *W = malloc((size_t)n * n * sizeof(double));
   if (!P || !W) {
