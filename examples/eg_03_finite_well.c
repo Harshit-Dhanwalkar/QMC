@@ -3,13 +3,13 @@
  *
  * Sweeps V_0 from 0 to V_max and finds bound state energies numerically. Shows
  * how states appear as V_0 increases - each new bound state appears when V_0
- * crosses threshold, visible as spike in E(V_0) curves.
+ * crosses threshold, visible as spike in E(V_0) curves
  *   V(x) = -V_0     for |x| <= a, else 0
  * Analytic threshold for n-th bound state:
  *   V_0^n = (2n-1)^2 * \pi^2 /(8 * a^2)
  * (in natural units \hbar = 2m = 1)
  *
- * Method: finite-difference tridiagonal eigensolver on x \in [-L, L].
+ * Method: finite-difference tridiagonal eigensolver on x \in [-L, L]
  */
 
 #include "../core/linalg/tridiag_eigh.h"
@@ -60,7 +60,7 @@ int main(void) {
     return 1;
   }
 
-  // Off-diagonal is the same for every V_0, so build it once outside sweep
+  // Off-diagonal is same for every V_0, so build it once outside sweep
   for (int i = 0; i < N - 1; i++) {
     offdiag[i] = -coeff;
   }
@@ -112,7 +112,9 @@ int main(void) {
     int pct = (int)(100.0 * (v + 1) / n_V);
     if (pct >= next_pct) {
       printf("   ...%d%% (V_0=%.2f)\n", pct, V0);
+
       fflush(stdout);
+
       next_pct += 10;
     }
   }
@@ -164,6 +166,18 @@ int main(void) {
   {
     // Extract each state's energy as a separate array
     double **E_by_state = malloc(n_states * sizeof *E_by_state);
+    if (!E_by_state) {
+      fprintf(stderr, "Failed to allocate E_by_state\n");
+      free(V0_arr);
+      free(E_arr);
+      free(n_bound);
+      free(diag);
+      free(offdiag);
+      free(x);
+
+      return 1;
+    }
+
     for (int k = 0; k < n_states; k++) {
       E_by_state[k] = malloc(n_V * sizeof **E_by_state);
       for (int v = 0; v < n_V; v++) {

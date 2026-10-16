@@ -202,6 +202,11 @@ static void test_continued_fraction_integrates_to_I0(void) {
   int k_gs = 3;
 
   spin_sector_t *sec0 = spin_sector_build(N, nup, k_gs);
+  check(sec0 != NULL, "spin sector build for ground-state sector succeeded");
+  if (!sec0) {
+    return;
+  }
+
   sparse_matrix_t *H0 = spin_sector_hamiltonian(sec0, 1.0, 1.0, 1);
   lanczos_result_t *gs = lanczos_eigs(H0, 1, sec0->dim, 1e-12);
   double E0 = gs->values[0];

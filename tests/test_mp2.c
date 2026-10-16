@@ -1,16 +1,16 @@
 /*
- * Test: MP2 (s-orbitals-only restricted) second-order perturbation theory.
+ * Test: MP2 (s-orbitals-only restricted) second-order perturbation theory
  *
  * 1. Deterministic fixture: mp2_correlation_energy on a built hf_result_t
  *    with synthetic (non-HF) occupied/virtual orbitals and orbital energies,
  * 2. Physics: MP2 on top of converged helium HF must be negative, monotonically
  *    increase (in magnitude) as more virtuals are included, and move total
- *    energy toward the exact ground state.
+ *    energy toward the exact ground state
  *     NOTE: Given the s-only restriction , this recovers only part of true
  *    correlation energy (angular correlation from p/d virtuals is missing), so
- *    test currently checks direction, not exact recovery.
+ *    test currently checks direction, not exact recovery
  *     FIX: Now QMC support p and d orbitals
- * 3. Invalid-input handling.
+ * 3. Invalid-input handling
  */
 
 #include "../core/complex.h"
@@ -122,9 +122,9 @@ static hf_result_t *build_synthetic_hf(const double *r, int N) {
   return hf;
 }
 
-// Deterministic fixture must use same grid as the reference value.
+// Deterministic fixture must use same grid as reference value
 static void test_synthetic_fixture(void) {
-  printf("test_synthetic_fixture:\n");
+  printf("  === Test: Synthetic fixture ===\n");
 
   int N = 160;
   double *r = linspace(1e-4, 12.0, N);
@@ -142,7 +142,7 @@ static void test_synthetic_fixture(void) {
 }
 
 static void test_helium_mp2_physical_sanity(void) {
-  printf("test_helium_mp2_physical_sanity:\n");
+  printf("  === Test: Helium MP2 physical sanity ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 40 : 160;
   double r_min = 1e-4;
@@ -191,7 +191,7 @@ static void test_helium_mp2_physical_sanity(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test: Invalid input ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 40 : 160;
   double *r = linspace(1e-4, RUNNING_ON_VALGRIND ? 6.0 : 12.0, N);
@@ -221,7 +221,7 @@ static void test_invalid_input(void) {
 //   MP2 corr (no frozen):  -0.012868323831743156
 //   MP2 corr (frozen=1):   -0.012640335346251669
 static void test_molecular_mp2_lih(void) {
-  printf("test_molecular_mp2_lih:\n");
+  printf("  === Test: Molecular MP2 LiH ===\n");
 
   double R = 3.015;
   double c_li[3] = {0.0, 0.0, 0.0};
@@ -295,13 +295,13 @@ static void test_molecular_mp2_lih(void) {
   molecule_free(mol);
 }
 
-// Unrestricted (UHF-based) MP2 on the lithium atom doublet (2 \alpha, 1 \beta),
+// Unrestricted (UHF-based) MP2 on lithium atom doublet (2 \alpha, 1 \beta),
 // reference (mol = gto.M(atom='Li 0 0 0', basis='sto-3g', spin=1);
 // mp.UMP2(scf.UHF(mol))):
 //   UHF total energy:        -7.315525981281088
 //   UMP2 corr energy:        -0.0002564094444800904
 static void test_molecular_ump2_li(void) {
-  printf("test_molecular_ump2_li:\n");
+  printf("  === Test: Molecular UMP2 Li ===\n");
 
   double c_li[3] = {0.0, 0.0, 0.0};
   basis_function_t *li_orbs[5];
@@ -339,11 +339,11 @@ static void test_molecular_ump2_li(void) {
     check_close(ump2.e_mp2, -0.0002564094444800904, 1e-6,
                 "E_UMP2 matches reference");
     check_close(ump2.e_aa, 0.0, 1e-10,
-                "E_aa is exactly 0 (only 1 occupied alpha pair below the 2s/2p "
+                "E_aa is exactly 0 (only 1 occupied alpha pair below 2s/2p "
                 "near-degeneracy - no same-spin excitation available in this "
                 "minimal basis)");
     check_close(ump2.e_bb, 0.0, 1e-10,
-                "E_bb is exactly 0 (single beta electron: no i!=j pair to "
+                "E_bb is exactly 0 (single \\beta electron: no i!=j pair to "
                 "correlate against)");
     check_close(ump2.e_mp2, ump2.e_aa + ump2.e_bb + ump2.e_ab, 1e-12,
                 "e_mp2 == e_aa + e_bb + e_ab");
@@ -380,6 +380,9 @@ static void test_molecular_ump2_li(void) {
 }
 
 int main(void) {
+  printf(" > MP2 (s-orbitals-only restricted) second-order perturbation theory "
+         "tests:\n");
+
   test_synthetic_fixture();
   test_invalid_input();
   test_helium_mp2_physical_sanity();

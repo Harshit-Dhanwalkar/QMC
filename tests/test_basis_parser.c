@@ -1,5 +1,5 @@
 /*
- * Test: general Gaussian94-format basis-set-file parser (basis_parser.c).
+ * Test: general Gaussian94-format basis-set-file parser (basis_parser.c)
  *
  * Validation strategy: rather than trust the parser in isolation, cross-check
  * it two ways against pre-existing, already-validated hardcoded STO-3G builders
@@ -18,7 +18,7 @@
  *
  * Covers: malformed input rejection, D-exponent Fortran notation, comment
  * lines, element lookup, and general (non-minimal) multi-shell-type parsing via
- * a synthetic basis with an explicit D shell.
+ * a synthetic basis with an explicit D shell
  */
 
 #include "../physics/basis_parser.h"
@@ -72,7 +72,7 @@ static const char *STO3G_TEXT =
     "****\n";
 
 static void test_parse_basic_structure(void) {
-  printf("Test: basic parse structure (element/shell counts)\n");
+  printf("  === Test: basic parse structure (element/shell counts) ===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT);
   check(bs != NULL, "parse should succeed on well-formed text");
@@ -141,9 +141,9 @@ static void test_parsed_values_match_hardcoded_h(void) {
 }
 
 static void test_build_atom_h_matches_hardcoded(void) {
-  printf("Test: basis_set_build_atom(H) produces a normalized basis "
-         "function matching molint_basis_sto3g_h's overlap-normalized "
-         "output\n");
+  printf("  === Test: basis_set_build_atom(H) produces a normalized basis "
+         "function matching molint_basis_sto3g_h's overlap-normalized output "
+         "===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT);
   check(bs != NULL, "parse should succeed");
@@ -185,8 +185,8 @@ static void test_build_atom_h_matches_hardcoded(void) {
 }
 
 static void test_build_atom_li_matches_hardcoded(void) {
-  printf("Test: basis_set_build_atom(Li) SP-shell split produces 5 "
-         "functions (1s,2s,2px,2py,2pz) matching molint_basis_sto3g_li\n");
+  printf("  === Test: basis_set_build_atom(Li) SP-shell split produces 5 "
+         "functions (1s,2s,2px,2py,2pz) matching molint_basis_sto3g_li ===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT);
   check(bs != NULL, "parse should succeed");
@@ -233,9 +233,9 @@ static void test_build_atom_li_matches_hardcoded(void) {
 }
 
 static void test_build_molecule_h2_rhf_energy(void) {
-  printf("Test: end-to-end H2/STO-3G RHF energy from parsed basis-set-file "
-         "text matches test_molecular_hf.c's reference (-1.116714 Hartree @ "
-         "R=1.4 bohr)\n");
+  printf("  === Test: end-to-end H2/STO-3G RHF energy from parsed "
+         "basis-set-file text matches test_molecular_hf.c's reference "
+         "(-1.116714 Hartree @ R=1.4 bohr) ===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT);
   check(bs != NULL, "parse should succeed");
@@ -284,9 +284,9 @@ static void test_build_molecule_h2_rhf_energy(void) {
 }
 
 static void test_build_molecule_lih_rhf_energy(void) {
-  printf("Test: end-to-end LiH/STO-3G RHF energy from parsed basis-set-file "
-         "text matches test_lih.c's reference (-7.862009272 Hartree @ R=3.015 "
-         "bohr)\n");
+  printf("  === Test: end-to-end LiH/STO-3G RHF energy from parsed "
+         "basis-set-file text matches test_lih.c's reference (-7.862009272 "
+         "Hartree @ R=3.015 bohr) ===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT);
   check(bs != NULL, "parse should succeed");
@@ -333,8 +333,8 @@ static void test_build_molecule_lih_rhf_energy(void) {
 }
 
 static void test_malformed_input_rejected(void) {
-  printf("Test: malformed basis-set text is rejected (returns NULL), not "
-         "silently mis-parsed\n");
+  printf("  === Test: malformed basis-set text is rejected (returns NULL), not "
+         "silently mis-parsed ===\n");
 
   // Shell header claims 3 primitives but only provides 1 line before EOF
   const char *truncated = "H     0\nS   3   1.00\n   3.42525091   0.1543\n";
@@ -356,8 +356,8 @@ static void test_malformed_input_rejected(void) {
 }
 
 static void test_fortran_d_exponent_notation(void) {
-  printf("Test: Fortran-style 'D' exponent notation parses identically to "
-         "'E'/plain notation\n");
+  printf("  === Test: Fortran-style 'D' exponent notation parses identically "
+         "to 'E'/plain notation ===\n");
 
   const char *plain_text = "H     0\nS   1   1.00\n   1.5   1.0\n****\n";
   const char *fortran_text =
@@ -390,8 +390,8 @@ static void test_fortran_d_exponent_notation(void) {
 }
 
 static void test_general_d_shell_expansion(void) {
-  printf("Test: a synthetic D shell expands into 6 Cartesian components, "
-         "each individually normalized\n");
+  printf("  === Test: a synthetic D shell expands into 6 Cartesian components, "
+         "each individually normalized ===\n");
 
   /* WARN: Not a real published basis set : just a single D-shell carbon-like
    * exponent, used purely to exercise l=2 Cartesian expansion beyond the STO-3G
@@ -440,8 +440,8 @@ static void test_general_d_shell_expansion(void) {
 }
 
 static void test_build_molecule_missing_element_fails(void) {
-  printf("Test: basis_set_build_molecule fails cleanly when an atom's element "
-         "is absent from the basis set\n");
+  printf("  === Test: basis_set_build_molecule fails cleanly when an atom's "
+         "element is absent from basis set ===\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_TEXT); // only has H, Li
   check(bs != NULL, "parse should succeed");
@@ -461,7 +461,7 @@ static void test_build_molecule_missing_element_fails(void) {
 }
 
 int main(void) {
-  printf("Basis-set-file parser tests n\n");
+  printf(" > Basis-set-file parser tests:\n");
 
   test_parse_basic_structure();
   test_parsed_values_match_hardcoded_h();

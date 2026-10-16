@@ -1,23 +1,25 @@
 /*
  * Test: Quantum Phase Estimation (QPE), physics/qpe.c.
  *
- * Closed-form result (Nielsen & Chuang eq. 5.34): for a single-qubit eigenstate
- * with exact eigenphase \phi, n_count counting qubits, the post-inverse-QFT
- * counting-register distribution is :
- *   P(x) = (1/N^2) * |sum_{k=0}^{N-1} \exp^{2 * \pi * i * k * (\phi - x/N)}|^2,
+ * Closed-form result (Refernce: Nielsen & Chuang eq. 5.34): for a single-qubit
+ * eigenstate with exact eigenphase \phi, n_count counting qubits, the
+ * post-inverse-QFT counting-register distribution is:
+ *
+ *   P(x) = (1/N^2) * |\sum_{k=0}^{N-1} \exp(2 * \pi * i * k * (\phi - x/N))|^2,
  *          N=2^n_count
  * which collapses to a delta function (P=1 at x = \phi*N) whenever \phi*N is an
  * integer, and a sinc^2-like spread otherwise.
  *
  * 1. Single-qubit target, phase gate diag(1, \exp^{2 * \pi * i * \phi}) with
  *    eigenstate |1>, phi=3/8 exactly representable with n_count=3 bits: exact
- *    peak, P=1.0.
+ *    peak, P=1.0
  * 2. Same setup, phi=0.2 (not exactly representable) with n_count=5 bits:
  *    checks best estimate lands within 1/2^n_count of true phase, and
- *    cross-checks the full distribution against the closed form above.
- * 3. Two-qubit target register, U=diag(1,1,1,e^{2*pi*i*phi}) with eigenstate
- *    |11>, phi=1/4, n_count=2: exercises qstate_apply_controlled_unitary's
- *    multi-qubit-target path (test 1/2 only exercise single-target-qubit case).
+ *    cross-checks the full distribution against the closed form above
+ * 3. Two-qubit target register, U=diag(1,1,1,\exp(2 * \pi * i * \phi)) with
+ *    eigenstate |11>, phi=1/4, n_count=2: exercises
+ *    qstate_apply_controlled_unitary's multi-qubit-target path (test 1/2 only
+ *    exercise single-target-qubit case)
  */
 
 #include "../core/complex.h"
@@ -48,11 +50,12 @@ static void check_true(int cond, const char *label) {
 }
 
 /* Closed-form QPE distribution (Nielsen & Chuang eq. 5.34) for a
-   single-eigenstate exact-phase input, computed independently of qpe.c for
-   cross-checking the full C-computed distribution, not just its peak. */
+ * single-eigenstate exact-phase input, computed independently of qpe.c for
+ * cross-checking the full C-computed distribution, not just its peak */
 static double closed_form_prob(double phi, int n_count, int x) {
   long long N = 1LL << n_count;
-  double re = 0.0, im = 0.0;
+  double re = 0.0;
+  double im = 0.0;
 
   for (long long k = 0; k < N; k++) {
     double angle = 2.0 * M_PI * (double)k * (phi - (double)x / (double)N);

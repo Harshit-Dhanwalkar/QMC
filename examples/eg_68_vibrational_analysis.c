@@ -1,12 +1,12 @@
 /*
  * Harmonic Vibrational Frequency Analysis
  *
- * Gram-Schmidt on the mass-weighted translation/rotation vectors), and reports
- * the vibrational frequencies in wavenumbers.
+ * Gram-Schmidt on mass-weighted translation/rotation vectors) and reports
+ * vibrational frequencies in wavenumbers
  *
  * H2/STO-3G: a linear diatomic has only 1 vibrational mode (3*2 degrees of
  * freedom - 3 translation - 2 rotation, third rotation about bond axis having
- * zero moment of inertia).
+ * zero moment of inertia)
  */
 
 #include "../physics/molecular_hf.h"
@@ -23,6 +23,10 @@ static molecular_system_t *build_h2(const double geom[][3], int n_atoms,
   }
 
   molecular_system_t *sys = malloc(sizeof *sys);
+  if (sys == NULL) {
+    return NULL;
+  }
+
   sys->n_basis = 2;
   sys->basis = malloc(2 * sizeof *sys->basis);
   sys->basis[0] = molint_basis_sto3g_h(geom[0]);
@@ -59,11 +63,11 @@ static void free_h2(molecular_system_t *sys, void *userdata) {
 int main(void) {
   printf(" > Harmonic Vibrational Frequency Analysis: H2/STO-3G\n\n");
 
-  double R = 1.4; // bohr, close to the STO-3G/RHF equilibrium bond length
+  double R = 1.4; // bohr, close to STO-3G/RHF equilibrium bond length
   double geom0[2][3] = {{0, 0, 0}, {0, 0, R}};
 
-  printf("  Step 1: numerical Hessian (central difference of the analytic "
-         "RHF gradient)\n\n");
+  printf("  Step 1: numerical Hessian (central difference of analytic RHF "
+         "gradient)\n\n");
   double *H = molecular_rhf_hessian_numerical(build_h2, free_h2, NULL, geom0, 2,
                                               1e-12, 300, 1e-3);
   if (!H) {

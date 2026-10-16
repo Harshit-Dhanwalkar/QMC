@@ -2,7 +2,7 @@
  * Test: complex-Hermitian eigensolver (cmatrix_eigh_complex)
  *
  * 1. 2x2: Pauli \sigma_y matrix has known eigenvalues +-1 and known
- *   eigenvectors (1,+-i) / \sqrt2
+ *   eigenvectors (1,+-i) / \sqrt{2}
  * 2. General NxN Hermitian check:
  *   verify ||H v_k - \lambda_k v_k|| is small for every eigenpair, eigenvectors
  *   are orthonormal (V^\dagger V ~= I). This checks defining property of an
@@ -337,6 +337,8 @@ static void test_large_degeneracy(void) {
 }
 
 int main(void) {
+  printf(" > Complex-Hermitian eigensolver tests:\n");
+
   test_sigma_y();
   test_random_hermitian();
   test_large_degeneracy();

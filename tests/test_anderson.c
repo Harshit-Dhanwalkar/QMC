@@ -47,7 +47,8 @@ static void start_on_site(cvector_t *psi, int site) {
 }
 
 int main(void) {
-  printf(" > 1D Anderson localisation:\n");
+  printf(" > 1D Anderson localisation tests:\n");
+
   cvector_t *psi = cvector_alloc(N);
 
   if (!psi) {

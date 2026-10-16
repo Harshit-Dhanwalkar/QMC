@@ -9,7 +9,7 @@
  * final states, no coupling among final states), evolves it exactly via
  * diagonalization, and shows survival probability settling onto \exp(-\Gamma *
  * t) at intermediate times, after initial quadratic ("quantum Zeno") transient
- * and before finite-size recurrences.
+ * and before finite-size recurrences
  */
 
 #include "../core/complex.h"
@@ -23,8 +23,8 @@
 int main(void) {
   printf(" > Fermi's Golden Rule: Coupling to a Quasi-Continuum\n\n");
 
-  int M = 150;      // no. of final states in the manifold
-  double W = 4.0;   // energy window the manifold spans
+  int M = 150;      // no. of final states in manifold
+  double W = 4.0;   // energy window manifold spans
   double V0 = 0.05; // coupling strength, initial state to each final state
   int dim = M + 1;
 
@@ -60,6 +60,12 @@ int main(void) {
 
   eigen_t *eig = cmatrix_eigh_generic(H);
   cmatrix_free(H);
+  if (eig == NULL) {
+    fprintf(stderr, "Failed to diagonalize Hamiltonian (cmatrix_eigh_generic "
+                    "returned NULL).\n");
+
+    return 1;
+  }
 
   double *c = malloc(dim * sizeof(double));
   for (int k = 0; k < dim; k++) {

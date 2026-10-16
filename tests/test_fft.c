@@ -58,11 +58,19 @@ static void test_naive_dft_matches_reference(void) {
   }
 
   cvector_t *ref = cvector_copy(x);
+  if (ref == NULL) {
+    check(0, "cvector_copy returned NULL");
+
+    cvector_free(x);
+
+    return;
+  }
 
   fft(x);
 
   for (int k = 0; k < n; k++) {
-    double re = 0.0, im = 0.0;
+    double re = 0.0;
+    double im = 0.0;
 
     for (int j = 0; j < n; j++) {
       double angle = -2.0 * M_PI * k * j / n;

@@ -3,12 +3,11 @@
  *
  * NOTE: QPE (QFT/inverse-QFT) is implemented and validated in tests/test_qpe.c
  * against Reference Nielsen & Chuang's closed-form eq. 5.34 distribution. This
- * example estimates the eigenphase \phi of U = diag(1, \exp^{2 * \pi * i *
- * \phi}) acting on its own eigenstate |1>, for a \phi that does not land
- * exactly on a multiple of 1/2^n_count; showing QPE's characteristic "spread
- * across neighboring bins, sharply peaked at nearest one" behavior, then
- * repeats with more counting qubits to show the estimate's precision improving
- * as ~1/2^n_count.
+ * example estimates eigenphase \phi of U = diag(1, \exp(2 * \pi * i * \phi))
+ * acting on its own eigenstate |1>, for a \phi that does not land exactly on a
+ * multiple of 1/2^n_count; showing QPE's characteristic "spread across
+ * neighboring bins, sharply peaked at nearest one" behavior, then repeats with
+ * more counting qubits to show estimate's precision improving as ~1/2^n_count
  */
 
 #include "../core/complex.h"
@@ -24,18 +23,26 @@ static void run_estimate(double phi_true, int n_count) {
   CMAT(U, 1, 0) = c_zero();
   CMAT(U, 1, 1) = c_new(cos(2.0 * M_PI * phi_true), sin(2.0 * M_PI * phi_true));
 
-  complex_t eigenstate[2] = {c_zero(), c_real(1.0)}; // |1>, U's phi-eigenstate
+  complex_t eigenstate[2] = {c_zero(), c_real(1.0)}; // |1>, U's \phi-eigenstate
 
   qpe_distribution_t *d = qpe_estimate_phase(n_count, 1, U, eigenstate);
+  if (d == NULL) {
+    fprintf(stderr, "qpe_estimate_phase failed for n_count=%d, \\phi=%.6f\n",
+            n_count, phi_true);
 
-  printf("  n_count=%2d (%d bins): phi_estimate=%.6f  true phi=%.6f  "
+    cmatrix_free(U);
+
+    return;
+  }
+
+  printf("  n_count=%2d (%d bins): \\phi_estimate=%.6f  true \\phi=%.6f  "
          "error=%.2e  (~1/2^n_count = %.2e)\n",
          n_count, 1 << n_count, d->phi_estimate, phi_true,
          fabs(d->phi_estimate - phi_true), 1.0 / (1 << n_count));
 
-  /* NOTE: Show the top 3 most-probable measurement outcomes, to make "spread
-   * across neighboring bins" behavior visible when \phi doesn't fall exactly on
-   * a representable 1/2^n_count fraction. */
+  /* NOTE: Show top 3 most-probable measurement outcomes, to make "spread across
+   * neighboring bins" behavior visible when \phi doesn't fall exactly on a
+   * representable 1/2^n_count fraction */
   int dim = 1 << n_count;
   for (int rank = 0; rank < 3 && rank < dim; rank++) {
     int best = -1;
@@ -63,11 +70,11 @@ int main(void) {
 
   /* \phi = 3/8 is exactly representable with 3 counting qubits (QPE should be
    * exact, zero spread). \phi = 0.3 is not exactly representable at any finite
-   * n_count, so QPE's estimate only converges as n_count grows. */
+   * n_count, so QPE's estimate only converges as n_count grows */
   printf("  Case 1: \\phi = 3/8 = 0.375, exactly representable at n_count=3\n");
   run_estimate(3.0 / 8.0, 3);
 
-  printf("\n  Case 2: \\phi = 0.3, not exactly representable, estimate improves "
+  printf("  Case 2: \\phi = 0.3, not exactly representable, estimate improves "
          "with more counting qubits\n");
   run_estimate(0.3, 3);
   run_estimate(0.3, 6);

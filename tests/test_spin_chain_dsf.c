@@ -100,6 +100,10 @@ static int build_dsf_pipeline(int N, int q_index, double *E0_out,
 
   int nup = N / 2;
   spin_sector_t *sec0 = spin_sector_build(N, nup, k_gs);
+  if (!sec0) {
+    return 1;
+  }
+
   sparse_matrix_t *H0 = spin_sector_hamiltonian(sec0, 1.0, 1.0, 1);
   lanczos_result_t *gs = lanczos_eigs(H0, 1, sec0->dim, 1e-12);
 
@@ -259,6 +263,8 @@ static void test_n4_sum_rule_cross_check(void) {
 }
 
 int main(void) {
+  printf(" > Lanczos continued-fraction evaluation tests\n");
+  
   test_q_zero_annihilates_ground_state();
   test_dsf_is_nonnegative();
   test_n4_sum_rule_cross_check();

@@ -12,15 +12,15 @@ static const double BECKE_SMOOTH_FACTOR_1 = 1.5;
 static const double BECKE_SMOOTH_FACTOR_2 = 0.5;
 static const double HALF = 0.5;
 
-/* ---------------------------------------------------------------------
+/*
  * Becke fuzzy-Voronoi molecular grid
- * ------------------------------------------------------------------- */
+ */
 
 /*
  * Becke's iterated-polynomial smoothing step, applied k=3 times (Reference:
  * Becke 1988's own choice, standard in every subsequent implementation): each
  * application makes s(\mu) flatter near \mu=+-1 (i.e. sharper transition
- * region), giving faster convergence of the resulting cell functions.
+ * region), giving faster convergence of resulting cell functions
  */
 static double becke_smooth(double mu_val, int iterations) {
   double f = mu_val;
@@ -36,7 +36,7 @@ static double becke_smooth(double mu_val, int iterations) {
  * step function s(\mu_ij(r))); `dist` is a caller-provided scratch array of
  * length mol->n_atoms holding |r - R_k| for every atom k (computed once per
  * grid point and reused across all i, avoiding n_atoms^3 repeated distance
- * computations).
+ * computations)
  */
 static double becke_cell_unnormalized(int atom_idx, const double *dist,
                                       const molecule_t *mol) {
@@ -62,7 +62,7 @@ static double becke_cell_unnormalized(int atom_idx, const double *dist,
 }
 
 /*
- * Becke's normalized atomic partition weight w_i(r) = P_i(r) / \sum_k P_k(r).
+ * Becke's normalized atomic partition weight w_i(r) = P_i(r) / \sum_k P_k(r)
  */
 static double becke_weight_at(int atom_idx, const double r[3],
                               const molecule_t *mol, double *dist_scratch) {
@@ -90,11 +90,11 @@ static double becke_weight_at(int atom_idx, const double r[3],
 
 /*
  * Gauss-Chebyshev-of-the-second-kind radial grid, mapped (-1,1) -> (0, \infty)
- * via r = r_m*(1 + x)/(1 - x).
- * NOTE: The raw GC2 weight (\pi / (N + 1)) * \sin^2(\theta_i) carries an
+ * via r = r_m * (1 + x)/(1 - x)
+ * NOTE: Raw GC2 weight (\pi / (N + 1)) * \sin^2(\theta_i) carries an
  * implicit \sqrt(1 - x^2) = \sin(\theta_i) weight function, which must be
- * divided back out before multiplying by the r^2*dr/dx Jacobian to get a plain
- * (unweighted) integral over r in (0, \infty).
+ * divided back out before multiplying by (r^2 * dr/dx) Jacobian to get a plain
+ * (unweighted) integral over r in (0, \infty)
  */
 static void gauss_chebyshev_radial(int n, double r_m, double *r, double *w) {
   for (int i = 1; i <= n; i++) {
@@ -116,11 +116,18 @@ molecular_grid_t *molecular_grid_build(const molecule_t *mol, int n_radial,
     return NULL;
   }
 
-  // Gauss-Legendre nodes/weights in cos(theta) in (-1,1)
+  // Gauss-Legendre nodes/weights in \cos(\theta) in (-1,1)
   double *gl_x = malloc((size_t)n_polar * sizeof(double));
   double *gl_w = malloc((size_t)n_polar * sizeof(double));
+  if (!gl_x || !gl_w) {
+    free(gl_x);
+    free(gl_w);
+
+    return NULL;
+  }
+
   {
-    // Newton's method on the Legendre polynomial
+    // Newton's method on Legendre polynomial
     for (int i = 0; i < n_polar; i++) {
       double x = cos(M_PI * (i + 0.75) / (n_polar + 0.5));
       double dpdx = 0.0;
@@ -150,6 +157,15 @@ molecular_grid_t *molecular_grid_build(const molecule_t *mol, int n_radial,
 
   double *r_nodes = malloc((size_t)n_radial * sizeof(double));
   double *r_weights = malloc((size_t)n_radial * sizeof(double));
+  if (!r_nodes || !r_weights) {
+    free(r_nodes);
+    free(r_weights);
+    free(gl_x);
+    free(gl_w);
+
+    return NULL;
+  }
+
   gauss_chebyshev_radial(n_radial, radial_scale, r_nodes, r_weights);
 
   int n_ang = n_polar * n_azimuthal;
@@ -157,11 +173,40 @@ molecular_grid_t *molecular_grid_build(const molecule_t *mol, int n_radial,
   int total_points = mol->n_atoms * points_per_atom;
 
   molecular_grid_t *grid = malloc(sizeof(molecular_grid_t));
+  if (!grid) {
+    free(r_nodes);
+    free(r_weights);
+    free(gl_x);
+    free(gl_w);
+
+    return NULL;
+  }
+
   grid->points = malloc((size_t)total_points * sizeof(dft_grid_point_t));
+  if (!grid->points) {
+    free(grid);
+    free(r_nodes);
+    free(r_weights);
+    free(gl_x);
+    free(gl_w);
+
+    return NULL;
+  }
+
   grid->n_points = total_points;
 
-  double *dist_scratch = malloc((size_t)mol->n_atoms * sizeof(double));
   double w_phi = 2.0 * M_PI / n_azimuthal;
+  double *dist_scratch = malloc((size_t)mol->n_atoms * sizeof(double));
+  if (!dist_scratch) {
+    free(grid->points);
+    free(grid);
+    free(r_nodes);
+    free(r_weights);
+    free(gl_x);
+    free(gl_w);
+
+    return NULL;
+  }
 
   int idx = 0;
   for (int a = 0; a < mol->n_atoms; a++) {
@@ -216,9 +261,9 @@ void molecular_grid_free(molecular_grid_t *grid) {
   free(grid);
 }
 
-/* ---------------------------------------------------------------------
+/*
  * Kohn-Sham LDA SCF
- * ------------------------------------------------------------------- */
+ */
 
 molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
                                          const molecule_t *mol, int n_electrons,
@@ -249,7 +294,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
   /* NOTE: Precompute every basis function's value at every grid point once
    * (dominant memory cost is n_basis*n_grid doubles: fine for small systems
    * this module targets; avoids re-evaluating primitives on every SCF
-   * iteration). */
+   * iteration) */
   double *ao_vals = malloc((size_t)ng * n * sizeof(double));
   for (int g = 0; g < ng; g++) {
     double r[3] = {grid->points[g].x, grid->points[g].y, grid->points[g].z};
@@ -293,7 +338,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
   int iter = 0;
 
   for (; iter < max_iter; iter++) {
-    // Classical (exact, analytic) Coulomb matrix J from the ERI tensor
+    // Classical (exact, analytic) Coulomb matrix J from ERI tensor
     cmatrix_t *J = cmatrix_alloc(n, n);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
@@ -309,7 +354,7 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
       }
     }
 
-    // Density on the grid, from current (pre-update) density matrix
+    // Density on grid, from current (pre-update) density matrix
     for (int g = 0; g < ng; g++) {
       double v = 0.0;
 
@@ -334,15 +379,15 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
       double eps_xc = lda_xc_energy_density(n_g);
 
       vxc_pot[g] = lda_xc_potential(n_g);
-      /* Weight the energy/potential contributions by unfloored density, so an
+      /* Weight energy/potential contributions by unfloored density, so an
        * exactly-zero-density point contributes exactly zero rather than a
        * phantom floor-value times a (possibly large, far-radial-shell)
-       * quadrature weight. */
+       * quadrature weight */
       Exc_g += grid->points[g].weight * dens[g] * eps_xc;
       Vxc_n_g += grid->points[g].weight * dens[g] * vxc_pot[g];
     }
 
-    // Vxc matrix, built on the grid
+    // Vxc matrix, built on grid
     cmatrix_t *Vxc = cmatrix_alloc(n, n);
     for (int p = 0; p < n; p++) {
       for (int q = p; q < n; q++) {
@@ -497,9 +542,9 @@ molecular_dft_result_t *molecular_ks_lda_default(basis_function_t **basis,
                           200);
 }
 
-/* ---------------------------------------------------------------------
+/*
  * Kohn-Sham PBE (GGA) SCF
- * ------------------------------------------------------------------- */
+ */
 molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
                                          const molecule_t *mol, int n_electrons,
                                          const molecular_grid_t *grid,
@@ -526,9 +571,8 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
     return NULL;
   }
 
-  /* Precompute every basis function's value and gradient at every grid point
-   * once.
-   */
+  // Precompute every basis function's value and gradient at every grid point
+  // once
   double *ao_vals = malloc((size_t)ng * n * sizeof(double));
   double *ao_grads = malloc((size_t)ng * n * 3 * sizeof(double));
   for (int g = 0; g < ng; g++) {
@@ -592,7 +636,7 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
       }
     }
 
-    // Density AND density gradient on the grid, from the current (pre-update)
+    // Density AND density gradient on grid, from current (pre-update)
     // density matrix:
     // n(r) = \sum_{pq} D_{pq} * \phi_p * \phi_q, grad n(r)
     //      = 2 * \sum_{pq} D_{pq} * \grad(\phi_p) * \phi_q

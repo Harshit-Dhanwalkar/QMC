@@ -18,15 +18,21 @@
 
 /*
  * <\phi_{col}|V|\phi_k> for every k = 0..n-1, i.e. one full column of V in
- * eigenbasis, via direct numerical integration on position grid. Written into
- * V_pert's column `col`
- * NOTE:since V is symmetric here, that also gives the corresponding row.
+ * eigenbasis, via direct numerical integration on position grid
+ * Written into V_pert's column `col`
+ * NOTE:since V is symmetric here, that also gives corresponding row
  */
 static void fill_eigenbasis_column(cmatrix_t *V_pert, int col,
                                    const eigen_t *eig, const double *x,
                                    const double *V_grid, int N, double dx) {
   int n = eig->n;
   cvector_t *phi_col = cvector_from_matrix_column(eig->eigenvectors, col);
+  if (phi_col == NULL) {
+    fprintf(stderr, "Error: failed to extract eigenvector column %d.\n", col);
+
+    return;
+  }
+
   double norm_col = 0.0;
   for (int i = 0; i < N; i++) {
     norm_col += c_abs2(phi_col->data[i]);
@@ -36,22 +42,33 @@ static void fill_eigenbasis_column(cmatrix_t *V_pert, int col,
 
   for (int k = 0; k < n; k++) {
     cvector_t *phi_k = cvector_from_matrix_column(eig->eigenvectors, k);
+    if (phi_k == NULL) {
+      fprintf(stderr, "Error: failed to extract eigenvector column %d.\n", k);
+
+      cvector_free(phi_col);
+
+      return;
+    }
+
     double norm_k = 0.0;
     for (int i = 0; i < N; i++) {
       norm_k += c_abs2(phi_k->data[i]);
     }
+
     norm_k = sqrt(norm_k * dx);
 
     double element = 0.0;
     for (int i = 0; i < N; i++) {
       element += phi_k->data[i].re * V_grid[i] * phi_col->data[i].re;
     }
+
     element *= dx / (norm_k * norm_col);
 
     CMAT(V_pert, k, col) = c_real(element);
     CMAT(V_pert, col, k) = c_real(element); // V is real symmetric here
     cvector_free(phi_k);
   }
+
   cvector_free(phi_col);
   (void)x;
 }
@@ -90,7 +107,7 @@ int main(void) {
 
   eigen_t *eig0 = cmatrix_eigh(H_0);
 
-  printf("Step 1: build V' = lambda*x^4 in the H_0 eigenbasis (only columns "
+  printf("Step 1: build V' = lambda*x^4 in H_0 eigenbasis (only columns "
          "needed for states 0..4) and call perturb_nondeg directly\n");
 
   cmatrix_t *V_pert = cmatrix_alloc(N, N);
