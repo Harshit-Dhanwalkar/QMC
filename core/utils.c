@@ -145,6 +145,7 @@ void save_wavefunction(const char *filename, const double *posx,
   FILE *file_ptr = fdopen(fd, "w");
   if (!file_ptr) {
     close(fd);
+
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;
@@ -164,8 +165,18 @@ void save_eigenvalues(const char *filename, const double *eigenvals,
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
-  FILE *file_ptr = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+  if (fd < 0) {
+    fprintf(stderr, "Cannot open %s for writing\n", path);
+
+    return;
+  }
+
+  FILE *file_ptr = fdopen(fd, "w");
   if (!file_ptr) {
+    close(fd);
+
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;
@@ -184,8 +195,17 @@ void save_potential(const char *filename, const double *posx, const double *pot,
   char path[PATH_BUFFER_SIZE];
   snprintf(path, sizeof path, "%s/%s", QMC_OUTPUT_DIR, filename);
 
-  FILE *file_ptr = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    fprintf(stderr, "Cannot open %s for writing\n", path);
+
+    return;
+  }
+
+  FILE *file_ptr = fdopen(fd, "w");
   if (!file_ptr) {
+    close(fd);
+
     fprintf(stderr, "Cannot open %s for writing\n", path);
 
     return;

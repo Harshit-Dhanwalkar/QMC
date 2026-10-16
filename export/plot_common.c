@@ -6,11 +6,16 @@
 #include "plot.h"
 #include "plot_internal.h"
 
+#include <fcntl.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
-/* Extension per format
+/*
+ * Extension per format
  *
  * NULL for WINDOW and unrecognized
  */
@@ -91,8 +96,8 @@ plot_status_t plot_output_path(const char *filename, plot_format_t format,
 // PLOT_FORMAT_TEXT writers
 
 /*
- * Full-precision decimal formatting: try 1..17 significant digits and stop
- * at first whose strtod round-trips bit-exactly
+ * Full-precision decimal formatting: try 1..17 significant digits and stop at
+ * first whose strtod round-trips bit-exactly
  */
 static void write_double(FILE *f, double v) {
   char buf[64];
@@ -113,8 +118,16 @@ plot_status_t plot_write_text_1d(const char *path, const double *x,
     return PLOT_ERR_INVALID_ARGUMENT;
   }
 
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+
+  if (fd < 0) {
+    return PLOT_ERR_OPEN;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
+
     return PLOT_ERR_OPEN;
   }
 
@@ -126,12 +139,14 @@ plot_status_t plot_write_text_1d(const char *path, const double *x,
   for (int i = 0; i < n; i++) {
     write_double(f, x[i]);
     fputc(',', f);
+
     write_double(f, y[i]);
     fputc('\n', f);
   }
 
   if (ferror(f)) {
     fclose(f);
+
     return PLOT_ERR_WRITE;
   }
   if (fclose(f) != 0) {
@@ -151,8 +166,15 @@ plot_status_t plot_write_text_nd(const char *path, const double *x,
     return PLOT_ERR_INVALID_ARGUMENT;
   }
 
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return PLOT_ERR_OPEN;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
+
     return PLOT_ERR_OPEN;
   }
 
@@ -175,6 +197,7 @@ plot_status_t plot_write_text_nd(const char *path, const double *x,
     write_double(f, x[i]);
     for (int s = 0; s < n_series; s++) {
       fputc(',', f);
+
       write_double(f, ys[s][i]);
     }
 
@@ -183,6 +206,7 @@ plot_status_t plot_write_text_nd(const char *path, const double *x,
 
   if (ferror(f)) {
     fclose(f);
+
     return PLOT_ERR_WRITE;
   }
 

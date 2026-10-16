@@ -774,8 +774,14 @@ int latex_generate_article(const char *texpath, const char *title,
     return -1;
   }
 
-  FILE *f = fopen(texpath, "w");
+  int fd = open(texpath, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
     return -1;
   }
 
@@ -997,6 +1003,7 @@ void latex_string_free(latex_string_t *s) {
   }
 
   free(s->data);
+
   s->data = NULL;
   s->length = 0;
   s->capacity = 0;

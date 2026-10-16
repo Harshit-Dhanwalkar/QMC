@@ -47,9 +47,18 @@ csv_writer_t *csv_open(const char *path, const csv_options_t *options) {
 
   w->opts = options ? *options : csv_options_default();
 
-  w->file = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    close(fd);
+    free(w);
+
+    return NULL;
+  }
+
+  w->file = fdopen(fd, "w");
   if (!w->file) {
     free(w);
+
     return NULL;
   }
 

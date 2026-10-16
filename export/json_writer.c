@@ -1,11 +1,14 @@
 #include "json_writer.h"
+#include "export_schema.h"
 
+#include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #ifndef QMC_OUTPUT_DIR
 #define QMC_OUTPUT_DIR "output"
@@ -14,7 +17,8 @@
 #define JSON_MAX_DEPTH 32
 #define JSON_MAX_PATH 512
 
-/* Write `s` as a JSON string literal (with surrounding quotes), escaping
+/*
+ * Write `s` as a JSON string literal (with surrounding quotes), escaping
  * characters per RFC 8259 §7
  * NULL writes as ""
  */
@@ -53,7 +57,8 @@ static json_status_t write_json_string(FILE *f, const char *s) {
   return ferror(f) ? JSON_ERR_IO : JSON_OK;
 }
 
-/* Write a double as a JSON number, or `null` for NaN/Inf
+/*
+ * Write a double as a JSON number, or `null` for NaN/Inf
  *
  * Uses shortest decimal precision (1..17 significant digits) whose value reads
  * back bit-for-bit identical via strtod (Reference: Steele & White 1990), so
@@ -120,8 +125,14 @@ json_writer_t *json_open_with_options(const char *path,
     return NULL;
   }
 
-  FILE *f = fopen(path, "w");
+  int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+  if (fd < 0) {
+    return NULL;
+  }
+
+  FILE *f = fdopen(fd, "w");
   if (!f) {
+    close(fd);
     return NULL;
   }
 
@@ -221,8 +232,9 @@ json_status_t json_close(json_writer_t *writer) {
   return rc;
 }
 
-/* Emit a comma if needed at current depth, then a newline + indent
- * (when pretty). Also flips need_comma bit for this depth
+/*
+ * Emit a comma if needed at current depth, then a newline + indent (when
+ * pretty). Also flips need_comma bit for this depth
  */
 static json_status_t element_prefix(json_writer_t *w) {
   if (w->need_comma[w->depth]) {
@@ -265,7 +277,8 @@ static json_status_t write_key(json_writer_t *w, const char *key) {
   return JSON_OK;
 }
 
-/* Every element-writing function (scalars, begin_object, begin_array) must
+/*
+ * Every element-writing function (scalars, begin_object, begin_array) must
  * agree with enclosing container on whether key is given: object members
  * require one, array elements must not have one
  */
