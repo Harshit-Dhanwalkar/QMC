@@ -500,6 +500,17 @@ molecular_dft_result_t *molecular_ks_lda(basis_function_t **basis, int n_basis,
   }
 
   molecular_dft_result_t *res = malloc(sizeof(molecular_dft_result_t));
+  if (res == NULL) {
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(dens);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   res->total_energy = E_total;
   res->e_core = E_core;
   res->e_coulomb = E_coulomb;
@@ -814,6 +825,25 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
   }
 
   molecular_dft_result_t *res = malloc(sizeof(molecular_dft_result_t));
+  if (!res) {
+    free(D);
+    free(D_computed);
+    free(D_new);
+    free(C_arr);
+    free(dens);
+    free(dens_grad);
+    free(vrho_pot);
+    free(vsigma_pot);
+    free(ao_vals);
+    free(ao_grads);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+    free(orbital_energies);
+
+    return NULL;
+  }
 
   res->total_energy = E_total;
   res->e_core = E_core;

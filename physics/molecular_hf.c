@@ -1,3 +1,51 @@
+/*
+ * molecular_hf.c - Hartree-Fock SCF drivers and analytic nuclear gradients
+ *
+ * Implements:
+ *   - molecular_rhf()                closed-shell RHF SCF
+ *   - molecular_uhf()                open-shell UHF SCF
+ *   - molecular_ao_to_mo()           AO -> MO transform (same-spin)
+ *   - molecular_ao_to_mo_eri_mixed() AO -> MO transform (mixed C_\bra/C_\ket)
+ *   - molecular_rhf_gradient()       analytic RHF nuclear gradient
+ *   - molecular_uhf_gradient()       analytic UHF nuclear gradient
+ *
+ * Both SCF drivers use symmetric (Lowdin) orthogonalization built from overlap
+ * matrix's own eigendecomposition, then iterate Roothaan / Pople-Nesbet
+ * equations to self-consistency on total electronic energy UHF driver shares
+ * one Coulomb term (built from total density D^\alpha + D^\beta) between spin
+ * channels and diagonalizes each channel separately
+ *
+ * Two gradient routines follow Pulay's analytic-derivative formulation
+ * (Reference: Pulay, Mol. Phys. 17, 197 (1969); Szabo & Ostlund, "Modern
+ * Quantum Chemistry", eq. 3.184; Helgaker, Jorgensen & Olsen, "Molecular
+ * Electronic- Structure Theory", ch. 10):
+ *
+ *   dE/dX_A = dE_nuc/dX_A
+ *           + sum_{uv}      P_uv         dH_uv/dX_A
+ *           + (1/2) sum     Gamma_uvls   d(uv|ls)/dX_A
+ *           - sum_{uv}      W_uv         dS_uv/dX_A
+ *
+ * where P is (spin-summed) one-electron density, W energy-weighted
+ * density (Pulay's stationarity trick makes implicit dC/dX terms vanish),
+ * and Gamma appropriate two-particle density:
+ *
+ *   RHF: Gamma_uvls = P_uv P_ls - (1/2) P_ul P_vs
+ *   UHF: Gamma_uvls = (1/2) P^t_uv P^t_ls
+ *                    - (1/2) (P^a_ul P^a_vs + P^b_ul P^b_vs)
+ *
+ * (UHF form reduces to RHF form when P^a = P^b = P_RHF / 2)
+ * Derivative-integral primitives (gto_*_grad_*) live in molecular_integrals.c
+ * and are purely geometric, so they are shared between RHF and UHF paths
+ *
+ * NOTE: Real-valued orbitals throughout - C and orbital_energies are complex
+ * matrices from cmatrix_eigh_complex(), but only .re component is used
+ * See molecular_hf.h for full API documentation, ownership rules and
+ * return-value contract of each entry point
+ *
+ * WARN: These routines are correct but not optimised; integral evaluation and
+ * AO -> MO transform are O(N^4) / O(N^5) and intended for small active
+ * spaces second_quant_build_molecular_hamiltonian already restricts to
+ */
 #include "molecular_hf.h"
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -156,6 +204,15 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
 
   molecular_hf_result_t *res = malloc(sizeof(molecular_hf_result_t));
   if (!res) {
+    free(D);
+    free(D_new);
+    free(C_arr);
+    free(orbital_energies);
+    cmatrix_free(S);
+    cmatrix_free(Hcore);
+    cmatrix_free(Shalf);
+    free(eri);
+
     return NULL;
   }
 
@@ -251,7 +308,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   int iter = 0;
 
   for (; iter < max_iter; iter++) {
-    // Coulomb term shared by both spins, built from the total density
+    // Coulomb term shared by both spins, built from total density
     double *Dtot = malloc((size_t)n * n * sizeof(double));
 
     for (int i = 0; i < n * n; i++) {
@@ -403,6 +460,10 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
   double E_nuc = molecule_nuclear_repulsion(mol);
 
   molecular_uhf_result_t *res = malloc(sizeof(molecular_uhf_result_t));
+  if (!res) {
+    return NULL;
+  }
+
   res->n_basis = n;
   res->n_alpha = n_alpha;
   res->n_beta = n_beta;
@@ -569,11 +630,11 @@ void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
  * Where
  *  \Gamma_{uvls} = P_{uv} * P_{ls} - 0.5 * P_{ul} * P_{vs} is RHF two-particle
  *      density
- *  P is the one-electron density matrix
- *  W_{uv} = 2 * \sum_{occ} eps_i C_{ui} C_{vi} is the energy-weighted density
- *      matrix (Pulay trick stationarity condition makes the implicit dP/dX
+ *  P is one-electron density matrix
+ *  W_{uv} = 2 * \sum_{occ} eps_i C_{ui} C_{vi} is energy-weighted density
+ *      matrix (Pulay trick stationarity condition makes implicit dP/dX
  *      contributions vanish against this term, neither P nor W nor C need to be
- *      re-differentiated wrt nuclear position).
+ *      re-differentiated wrt nuclear position)
  *
  * NOTE: dH_uv/dX_A (core Hamiltonian = kinetic + nuclear attraction) picks up a
  * contribution from every relevant piece: if AO u is centered on atom A, its
@@ -582,7 +643,7 @@ void molecular_ao_to_mo_eri_mixed(const double *eri_ao, const cmatrix_t *C_bra,
  * separately, for every atom's own nuclear-attraction operator, a
  * "Hellmann-Feynman" contribution from differentiating wrt THAT atom's own
  * charge position (gto_nuclear_attraction_grad_C), present regardless of which
- * atoms u,v happen to be centered on.
+ * atoms u,v happen to be centered on
  */
 double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
                                const molecule_t *mol, const int *atom_of_basis,
@@ -740,8 +801,8 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
             }
 
             double gE[3];
-            /* NOTE: Reorder so `slot` becomes the bra-first argument,
-             * preserving bra-pair/ket-pair structure. */
+            // NOTE: Reorder so `slot` becomes \bra-first argument, preserving
+            // \bra-pair/\ket-pair structure
             switch (slot) {
             case 0:
               gto_eri_grad_a(bfs4[0], bfs4[1], bfs4[2], bfs4[3], gE);
@@ -789,9 +850,9 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
     return NULL;
   }
 
-  // NOTE: Per-spin one-electron densities P^sigma_uv = sum_{i occ-sigma}
-  // C^sigma_ui C^sigma_vi (no factor of 2), their sum P^total, and the matching
-  // energy-weighted densities W^sigma / their sum W.
+  // NOTE: Per-spin one-electron densities P^sigma_uv = \sum_{i occ-\sigma}
+  // C^\sigma_{ui} C^\sigma_{vi} (no factor of 2), their sum P^total, and
+  // matching energy-weighted densities W^\sigma / their sum W
   double *Pa = malloc((size_t)n * n * sizeof(double));
   double *Pb = malloc((size_t)n * n * sizeof(double));
   double *Pt = malloc((size_t)n * n * sizeof(double));
@@ -835,7 +896,7 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
     }
   }
 
-  // Nuclear-nuclear repulsion: closed form (identical to the RHF case)
+  // Nuclear-nuclear repulsion: closed form (identical to RHF case)
   for (int A = 0; A < n_atoms; A++) {
     for (int B = 0; B < n_atoms; B++) {
       if (B == A) {
@@ -856,8 +917,8 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
   }
 
   // One-electron (kinetic + nuclear-attraction) and overlap contributions:
-  // identical structure to the RHF case, but with P^total/W in place of
-  // RHF's (factor-of-2) P/W.
+  // identical structure to RHF case, but with P^total/W in place of
+  // RHF's (factor-of-2) P/W
   for (int u = 0; u < n; u++) {
     for (int v = 0; v < n; v++) {
       double p_uv = Pt[u * n + v];
@@ -921,7 +982,7 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
 
   // Two-electron (ERI) contribution: Gamma_uvls = 0.5*(P^t_uv * P^t_ls) -
   // 0.5*(P^a_ul*P^a_vs + P^b_ul*P^b_vs) (UHF two-particle density; reduces
-  // exactly to the RHF formula when P^a = P^b = P_RHF/2).
+  // exactly to RHF formula when P^a = P^b = P_RHF/2)
   for (int u = 0; u < n; u++) {
     for (int v = 0; v < n; v++) {
       for (int l = 0; l < n; l++) {

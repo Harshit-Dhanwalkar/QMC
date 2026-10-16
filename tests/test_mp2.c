@@ -69,6 +69,9 @@ static double *make_radial(const double *r, int N, double dr, double a,
 // Builds a synthetic hf_result_t with 2 occupied and 2 virtual orbitals
 static hf_result_t *build_synthetic_hf(const double *r, int N) {
   hf_result_t *hf = malloc(sizeof *hf);
+  if (hf == NULL) {
+    return NULL;
+  }
 
   hf->n_orbitals = 2;
   hf->N = N;

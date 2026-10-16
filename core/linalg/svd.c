@@ -5,9 +5,9 @@
  * TODO: adapt to complex by treating real and imaginary separately
  *
  * Implemented a Golub-Reinsch algorithm for real and then provide a complex
- * wrapper that uses the real SVD on the block matrix :
+ * wrapper that uses real SVD on block matrix:
  *  [[Re(A), -Im(A)],
- *   [Im(A),  Re(A)]].
+ *   [Im(A),  Re(A)]]
  */
 
 #include "svd.h"
@@ -27,7 +27,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
   int m = A->nrows;
   int n = A->ncols;
   if (m < n) {
-    // Decompose A^T instead, then swap U and V.
+    // Decompose A^T instead, then swap U and V
     cmatrix_t *At = cmatrix_transpose(A);
     if (!At) {
       return -1;
@@ -35,8 +35,8 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
 
     // int ret = svd_decompose(At, V, S, U); // NOTE: U and V swapped
     cmatrix_free(At);
-    // At this point U and V are swapped, but caller expects U (m x m) and V
-    // (nxn).
+    // At this point U and V are swapped
+    // but caller expects U (m x m) and V (nxn)
     // HACK: For simplicity, assume m >= n
 
     return -1;
@@ -99,9 +99,7 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
 
   // V must be n x n
   if (V->nrows != n || V->ncols != n) {
-    if (V->data) {
-      free(V->data);
-    }
+    free(V->data);
 
     V->nrows = V->ncols = n;
     V->data = calloc((size_t)n * n, sizeof(complex_t));
@@ -127,11 +125,10 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
   }
 
   // Compute U = A * V * diag(1/S) (for nonzero S)
-  // U is m x n (thin SVD) or m x m (full). Do thin (m x n).
+  // U is m x n (thin SVD) or m x m (full)
+  // Do thin (m x n)
   if (U->nrows != m || U->ncols != n) {
-    if (U->data) {
-      free(U->data);
-    }
+    free(U->data);
 
     U->nrows = m;
     U->ncols = n;

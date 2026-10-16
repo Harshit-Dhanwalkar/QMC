@@ -361,9 +361,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
       shell_free(&cur_shells.items[i]);
     }
 
-    if (cur_shells.items) {
-      free(cur_shells.items);
-    }
+    free(cur_shells.items);
 
     for (int i = 0; i < elems.count; i++) {
       for (int j = 0; j < elems.items[i].n_shells; j++) {

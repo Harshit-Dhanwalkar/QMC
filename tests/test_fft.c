@@ -16,7 +16,7 @@ static void check(int cond, const char *msg) {
 }
 
 static int test_fft_power_of_two_peak(void) {
-  printf("  === Test: fft() of a pure exp(i*t) tone peaks at bin 1 "
+  printf("  === Test: fft() of a pure \\exp(i*t) tone peaks at bin 1 "
          "(power-of-two radix-2 path) ===\n");
 
   int N = 16;
@@ -99,6 +99,13 @@ static void test_naive_dft_not_a_noop(void) {
   }
 
   cvector_t *before = cvector_copy(x);
+  if (before == NULL) {
+    check(0, "cvector_copy returned NULL");
+
+    cvector_free(x);
+
+    return;
+  }
 
   fft(x);
 
