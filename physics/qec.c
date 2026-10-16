@@ -1,6 +1,41 @@
 /*
-3-qubit bit-flip and phase-flip QEC codes, ancilla-based syndrome extraction
-*/
+ * Three-qubit repetition codes for bit-flip and phase-flip errors, plus
+ * nine-qubit Shor code, all with explicit ancilla-based syndrome extraction
+ * on full 2^n state vector
+ *
+ * Encoding convention:
+ *   bit-flip  code: |0> -> |000>, |1> -> |111>
+ *   phase-flip code: |+> -> |+++>, |-> -> |--->; equivalently bit-flip
+ *     code conjugated by H on every data qubit
+ *   Shor code: |0>_L = (|000> + |111>)(|000> + |111>)(|000> + |111>) /
+ *     2\sqrt{2} |1>_L = (|000> - |111>)(|000> - |111>)(|000> - |111>) /
+ *     2\sqrt{2}
+ *     i.e. phase-flip code on three blocks, each block itself being a
+ *     three-qubit bit-flip code. This corrects an arbitrary single-qubit
+ *     error, including Y = i X Z
+ *
+ * Ancillas are treated as real physical qubits on same state vector
+ * Encoding, error injection, syndrome extraction and correction are all
+ * applied as explicit gate sequences (CNOT, H, single-qubit Pauli), so
+ * implementation is a direct transcription of textbook circuits - there is no
+ * shortcut that would hide a subtlety in stabilizer formalism
+ *
+ * Measurement: Ancilla measurements use qstate_measure_qubit(), which accepts a
+ * uniform random number u in [0, 1) and returns sampled bit. This makes whole
+ * routine deterministic given u[], which is what test suite relies on: same u[]
+ * reproduces same syndrome, and "recovered" logical amplitudes are compared
+ * against \alpha, \beta for a correct decode
+ *
+ * Readout: After correction, ancillas are reset to |0> so logical amplitudes
+ * sit at expected basis indices. In phase-flip code this requires undoing H
+ * layer that was applied before syndrome extraction. In Shor code ancillas are
+ * reset after each block's bit-flip correction, then reused for phase-flip
+ * correction across blocks - sequence of CNOTs, H's, and reset X's
+ *
+ * NOTE:: readout index for Shor code's final amplitudes is (0) and (1 << (n -
+ * 1)), not (s_anc << 0). This is because both ancillas are guaranteed to be |0>
+ * at end of decoding
+ */
 
 #include "qec.h"
 #include "../core/complex.h"

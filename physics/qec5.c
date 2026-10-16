@@ -1,8 +1,47 @@
 /*
-5-qubit "perfect" quantum error-correcting code: corrects an arbitrary
-single-qubit error (X, Y, or Z on any one of 5 physical qubits) using 4
-stabilizer ancillas
-*/
+ * Five-qubit "perfect" quantum error-correcting code (Reference: Laflamme,
+ * Miquel, Paz, Zurek 1996; Bennett, DiVincenzo, Smolin, Wootters 1996)
+ *
+ * Encodes one logical qubit into five physical qubits and corrects an
+ * arbitrary single-qubit error X, Y, or Z on any one of them. It is called
+ * "perfect" because it saturates quantum Hamming bound: with n = 5 physical
+ * qubits, 4 stabilizer generators and 2^n = 32 basis states, 16 syndrome
+ * classes (1 no-error + 15 single-qubit Paulis) exactly fill space, leaving
+ * no room for a second error and none wasted
+ *
+ * Stabilizers are four cyclic shifts of XZZXI over data qubits:
+ *
+ *     S1 = X Z Z X I
+ *     S2 = I X Z Z X
+ *     S3 = X I X Z Z
+ *     S4 = Z X I X Z
+ *
+ * Code space is simultaneous +1 eigenspace of these four commuting operators
+ * Measuring all four gives a 4-bit syndrome that uniquely identifies which of
+ * 15 single-qubit errors (if any) occurred; syndrome-to-correction map is
+ * qec5_syndrome_table in this file
+ *
+ * Rather than constructing code space via stabilizer formalism, two codewords
+ * |0_L>, |1_L> are hard-coded as amplitude patterns over 32 computational basis
+ * states. Each is a uniform superposition of 16 states with amplitudes of
+ * magnitude 1/4 and signs listed in qec5_codeword[]. These signs are correct
+ * Z-eigenvalue pattern for chosen stabilizers, and test suite verifies that
+ * state obtained by running explicit ancilla circuit on |0_L> really is in +1
+ * eigenspace of every S_k. This keeps encoder free of stabilizer machinery
+ * while remaining exact
+ *
+ * Syndrome extraction uses standard phase-kickback circuit: prepare each
+ * ancilla in |+>, apply controlled-Pauli for each non-identity letter of
+ * stabilizer word, apply H, measure in Z. Ancillas q5..q8 are real qubits on
+ * same state vector, so entire routine is just a fixed sequence of single- and
+ * two-qubit gates plus four projective measurements
+ *
+ * Readout: after correction, ancillas hold measured syndrome bits in their low
+ * 4 bits, so logical amplitudes are read at index (codeword << 4) | anc_val.
+ * There is no reset-to-|0> step because correction is applied directly to data
+ * qubits without touching ancillas and decode sums over data-qubit subspace at
+ * fixed ancilla pattern
+ */
 
 #include "qec5.h"
 #include "../core/complex.h"
@@ -18,11 +57,11 @@ stabilizer ancillas
 static const char *const qec5_stabilizers[4] = {"XZZXI", "IXZZX", "XIXZZ",
                                                 "ZXIXZ"};
 
-// |0_L> nonzero amplitudes: 16 of the 32 five-qubit basis states, each with
-// magnitude 1/4 and the sign given here (index = 5-bit pattern q0q1q2q3q4,
+// |0_L> nonzero amplitudes: 16 of 32 five-qubit basis states, each with
+// magnitude 1/4 and sign given here (index = 5-bit pattern q0q1q2q3q4,
 // MSB-first)
-// |1_L> = X_L|0_L> has identical signs at the bitwise 5-bit complement
-// (31-index) of each entry
+// |1_L> = X_L|0_L> has identical signs at bitwise 5-bit complement (31-index)
+// of each entry
 static const struct {
   int index;
   int sign;
@@ -33,12 +72,12 @@ static const struct {
 };
 
 // Syndrome -> (errored qubit, Pauli type) lookup, indexed by
-// s = 8*s1 + 4*s2 + 2*s3 + s4 (s_k = measured outcome of ancilla for S_k).
-// Derived from the stabilizers' commutation relations with each of the 15
-// possible single-qubit errors, and independently cross-checked by
-// simulating the exact ancilla H/controlled-Pauli/H/measure circuit below:
-// all 16 syndromes (1 "no error" + 15 single-qubit errors) come out
-// distinct, confirming the code saturates the quantum Hamming bound.
+// s = 8*s1 + 4*s2 + 2*s3 + s4 (s_k = measured outcome of ancilla for S_k)
+// Derived from stabilizers' commutation relations with each of 15 possible
+// single-qubit errors, and independently cross-checked by simulating exact
+// ancilla H/controlled-Pauli/H/measure circuit below: all 16 syndromes (1 "no
+// error" + 15 single-qubit errors) come out distinct, confirming code
+// saturates quantum Hamming bound
 static const struct {
   int qubit;
   qec_error_type_t type;
@@ -93,13 +132,13 @@ qec5_result_t qec5_run(complex_t alpha, complex_t beta, int error_qubit,
     psi->data[i] = c_zero();
   }
 
-  // Encode: direct amplitude assignment (see qec5.h). Ancillas start at
-  // |0000>, so every populated basis state has its low 4 bits (ancilla
-  // qubits 5..8) equal to 0, i.e. full index = data_index << 4.
+  // Encode: direct amplitude assignment
+  // Ancillas start at |0000>, so every populated basis state has its low 4 bits
+  // (ancilla qubits 5..8) equal to 0, i.e. full index = data_index << 4
   for (int k = 0; k < 16; k++) {
     int idx0 = qec5_codeword[k].index;
     double sign = (double)qec5_codeword[k].sign;
-    int idx1 = 31 - idx0; // |1_L>'s amplitude sits at the bit-complement
+    int idx1 = 31 - idx0; // |1_L>'s amplitude sits at bit-complement
 
     psi->data[idx0 << 4] =
         c_add(psi->data[idx0 << 4], c_scale(alpha, sign * 0.25));
@@ -113,8 +152,7 @@ qec5_result_t qec5_run(complex_t alpha, complex_t beta, int error_qubit,
   }
 
   // Syndrome extraction: one ancilla-based stabilizer measurement per S_k,
-  // via the standard phase-kickback circuit (H, controlled-Pauli's, H,
-  // measure).
+  // via standard phase-kickback circuit (H, controlled-Pauli's, H, measure)
   for (int k = 0; k < 4; k++) {
     int anc = 5 + k;
 
@@ -124,9 +162,11 @@ qec5_result_t qec5_run(complex_t alpha, complex_t beta, int error_qubit,
       if (p == 'I') {
         continue;
       }
+
       const complex_t *gate = (p == 'X') ? sigma_x : sigma_z;
       qstate_apply_controlled_u(psi, n, anc, q, gate);
     }
+
     qstate_apply_gate1(psi, n, anc, hadamard_gate);
 
     result.syndrome[k] = qstate_measure_qubit(psi, n, anc, u[k]);
@@ -143,9 +183,9 @@ qec5_result_t qec5_run(complex_t alpha, complex_t beta, int error_qubit,
                        pauli_gate(result.corrected_type));
   }
 
-  // Decode: ancillas now hold the fixed measured syndrome bits (low 4 bits
-  // of every surviving basis-state index); project the data-qubit subspace
-  // at that fixed ancilla pattern onto the |0_L>/|1_L> codewords directly.
+  // Decode: ancillas now hold fixed measured syndrome bits (low 4 bits of every
+  // surviving basis-state index); project data-qubit subspace at that fixed
+  // ancilla pattern onto |0_L>/|1_L> codewords directly
   int anc_val = s;
   complex_t rec_alpha = c_zero();
   complex_t rec_beta = c_zero();

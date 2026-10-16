@@ -1,3 +1,44 @@
+/*
+ * Quantum Phase Estimation (QPE)
+ *
+ * Given a unitary U acting on n_target qubits and an eigenstate |u> of U
+ * with eigenvalue \exp(2\pi i \phi), estimate \phi to n_count bits of
+ * precision. Circuit is:
+ *
+ *   1. Prepare n_count counting qubits in |+>^{\otimes n_count} and target
+ *      register in |u>
+ *   2. Apply controlled-U^{2^{n_count - 1 - k}} from counting qubit k onto
+ *      target register, for k = 0 .. n_count - 1. Qubit 0 gets highest power,
+ *      so inverse QFT that follows yields \phi as a big-endian binary fraction
+ *      directly in counting register
+ *   3. Apply inverse QFT on counting register
+ *   4. Measure counting register: outcome c / 2^{n_count} is estimate
+ *      of \phi, with standard peaked distribution centered on true phase
+ *      Estimator is exact when \phi is a multiple of 1 / 2^{n_count}, otherwise
+ *      it has a spread of a few bins whose width depends on distance from true
+ *      phase to nearest representable value
+ *
+ * Power of U: Controlled-U^{2^i} operators are built once at start via repeated
+ * squaring: pow[0] = U, pow[i] = pow[i - 1] * pow[i - 1]. This gives exact
+ * matrix powers (up to floating-point matrix-multiplication rounding)
+ *
+ * Two entry points:
+ * qpe_run()               applies circuit to a caller-supplied state
+ *                         vector, in place. Both counting and target
+ *                         registers are consumed; caller chooses their
+ *                         initial values
+ * qpe_estimate_phase()    high-level helper: given an eigenstate, prepares
+ *                         full register, runs circuit, marginalizes
+ *                         over target register, and returns full
+ *                         probability distribution over 2^{n_count}
+ *                         counting outcomes along with most-probable
+ *                         phase estimate
+ *
+ * Distribution is essential for physics: even for an exact eigenstate, when
+ * \phi is not dyadic probability mass is spread over several neighboring bins,
+ * and comparing exact distribution to closed-form Dirichlet kernel is how test
+ * suite checks circuit
+ */
 #include "qpe.h"
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -32,17 +73,17 @@ void qpe_run(cvector_t *psi, int n_count, int n_target, const cmatrix_t *U) {
     qstate_apply_gate1(psi, n_qubits, counting[k], hadamard_gate);
   }
 
-  /* Precompute U^(2^i) for i = 0..n_count-1 via repeated squaring:
-   * pow[0] = U, pow[i] = pow[i-1] * pow[i - 1]. */
+  // Precompute U^(2^i) for i = 0..n_count-1 via repeated squaring:
+  //   pow[0] = U, pow[i] = pow[i-1] * pow[i - 1]
   cmatrix_t **pow = malloc((size_t)n_count * sizeof(cmatrix_t *));
   pow[0] = cmatrix_copy(U);
   for (int i = 1; i < n_count; i++) {
     pow[i] = cmatrix_multiply(pow[i - 1], pow[i - 1]);
   }
 
-  /* Counting qubit k (0 = most - significant / first) controls U^(2^(n_count -
-   * 1 - k)), so the first qubit gets the highest power : convention so
-   * inverse-QFT readout comes out as a big-endian binary fraction of \phi. */
+  // Counting qubit k (0 = most - significant / first) controls U^(2^(n_count -
+  // 1 - k)), so first qubit gets highest power : convention so inverse-QFT
+  // readout comes out as a big-endian binary fraction of \phi
   for (int k = 0; k < n_count; k++) {
     int exponent = n_count - 1 - k;
 
@@ -77,9 +118,9 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
     return NULL;
   }
 
-  /* Prepare target register in target_eigenstate: overwrite (counting = 0...0,
-   * target = *) amplitudes directly, all other amplitudes start at zero from
-   * qstate_alloc. */
+  // Prepare target register in target_eigenstate: overwrite (counting = 0...0,
+  // target = *) amplitudes directly, all other amplitudes start at zero from
+  // qstate_alloc
   for (long long s = 0; s < block; s++) {
     psi->data[s] = target_eigenstate[s];
   }
@@ -103,8 +144,8 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
     return NULL;
   }
 
-  /* Marginalize over the target register: \sum |amplitude|^2 over every
-   * target-register configuration for each counting-register bitstring. */
+  // Marginalize over target register: \sum |amplitude|^2 over every
+  // target-register configuration for each counting-register bitstring
   long long dim = 1LL << n_qubits;
   for (long long c = 0; c < n_bins; c++) {
     d->probabilities[c] = 0.0;

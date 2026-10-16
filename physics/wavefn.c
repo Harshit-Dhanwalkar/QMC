@@ -94,7 +94,7 @@ void wavefunction_normalize(wavefunction_t *wavefn) {
   }
 
   norm_sq *= wavefn->dx;
-  if (norm_sq < 1e-30) {
+  if (norm_sq < NORM_TOL) {
     return;
   }
 

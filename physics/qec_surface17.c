@@ -1,7 +1,47 @@
 /*
-Distance-3 rotated surface code ([[9,1,3]]): smallest instance topological
-surface code family
-*/
+ * Distance-3 rotated planar surface code ([[9, 1, 3]], also called "Surface-17"
+ * when ancillas are counted), smallest instance of topological surface code
+ * family
+ *
+ * Physical layout: 9 data qubits arranged in a 3x3 grid, 8 ancillas interleaved
+ * on faces and edges. Data qubits are numbered row-major (q0..q8) and ancillas
+ * are numbered q9..q16, one per stabilizer generator
+ *
+ * Stabilizer set: 4 X-type and 4 Z-type generators, each acting on 2 or 4
+ * data qubits:
+ *
+ *     X0 = X3 X6          Z0 = Z0 Z1
+ *     X1 = X0 X1 X3 X4    Z1 = Z3 Z4 Z6 Z7
+ *     X2 = X4 X5 X7 X8    Z2 = Z1 Z2 Z4 Z5
+ *     X3 = X2 X5          Z3 = Z7 Z8
+ *
+ * (indexing as in qec_surface17_stabilizers[] table). Code space is
+ * simultaneous +1 eigenspace. Because code is distance 3, it corrects any
+ * single-qubit Pauli error and detects any two - exactly same guarantee as
+ * [[5,1,3]] code above, but with advantage that stabilizers are local on a 2D
+ * lattice. tradeoff is that 9 data qubits are needed instead of 5, and code is
+ * not "perfect": some pairs of single-qubit errors alias to same syndrome
+ * (differ by a weight-2 stabilizer element), so decoder must break ties by
+ * convention. Decode table in this file is canonical convention
+ * used by test suite
+ *
+ * Decoding: syndrome is 8-bit integer s formed by stacking eight measurement
+ * outcomes; qec_surface17_decode_table[] maps each of 24 syndromes that can
+ * arise from a weight<=1 error to a canonical (qubit, Pauli) correction.
+ * Syndromes outside this set cannot occur under single-error model this demo
+ * targets, so linear search falls back to "no correction" defensively
+ *
+ * Codewords: |0_L> is a uniform superposition of 16 computational basis states
+ * with amplitude +1/4, listed in qec_surface17_codeword[]. |1_L> is X_L |0_L>
+ * where X_L = X0 X1 X2, so its amplitudes sit at same indices XOR 0x1C0. This
+ * is an explicit amplitude encoding rather than a stabilizer construction;
+ * ancilla circuit verifies it lands in correct eigenspace
+ *
+ * NOTE: Syndrome extraction, error injection, and correction are all explicit
+ * gates on full 2^17 state vector, matching qec.c and qec5.c style. Ancillas
+ * q9..q16 are real qubits; final measured values index data-qubit subspace for
+ * readout, as in qec5.c
+ */
 
 #include "qec_surface17.h"
 #include "../core/complex.h"

@@ -1,3 +1,51 @@
+/*
+ * Quantum Approximate Optimization Algorithm (QAOA)
+ *
+ * A problem is encoded as a classical cost function C(z) over n-bit strings
+ * z in {0, 1}^n, stored as a 2^n table. QAOA variationally prepares
+ *
+ *     |\gamma, \beta> = \prod_{l=1}^{p} \exp(-i \beta_l \sum_q X_q)
+ *                                    \exp(-i \gamma_l C) |+>^{\otimes n}
+ *
+ * with 2p free angles, and minimizes <C> over those angles. Two unitaries
+ * are phase separator (diagonal in computational basis, so its action
+ * is just a per-basis-state phase -gamma * C(z)) and mixer (a product of
+ * independent single-qubit RX rotations since \sum_q X_q is a sum of commuting
+ * terms)
+ *
+ * Two problem constructors are provided:
+ *
+ *   qaoa_problem_maxcut - C(z) = \sum_edges w_e [z_u != z_v]
+ *                         standard MaxCut cost. maximize = 1
+ *   qaoa_problem_ising  - general Ising cost offset + \sum_i h_i z_i +
+ *                         \sum_c J_c z_{i_c} z_{j_c} with z_i = 1 - 2 b_i
+ *                         maximize = 0 (minimize form)
+ *
+ * Because C(z) is a 2^n table, two constructors have same shape and
+ * rest of module is agnostic to which problem it is solving. A third
+ * entry point qaoa_maxcut_p1_expectation() gives closed-form p = 1
+ * expectation value for unweighted simple MaxCut graphs and is only used by
+ * tests as an independent reference for state-vector path
+ *
+ * Angle optimization:
+ * qaoa_run() searches landscape in three stages:
+ *   1. Restart 0 uses an annealing-inspired linear ramp in l, targeting \gamma
+ *      near cost scale (1 / \sigma_C); remaining restarts sample uniformly
+ *   2. Coordinate descent via golden-section, one angle at a time, n_sweeps
+ *      passes. Each coordinate is minimized in a window around its current
+ *      value. This is robust but slow when \gamma and \beta are strongly
+ *      correlated - which they are as soon as p >= 2
+ *   3. BFGS polish with a backtracking Armijo line search. Coordinate descent
+ *      tends to stall in narrow valleys; quasi-Newton step reaches a local
+ *      minimum to ~1e-9 in gradient. This stage is reason qaoa_run() is worth
+ *      using at p >= 2; at p = 1 coordinate stage usually already finds  global
+ *      optimum
+ *
+ * Results are returned in a heap-allocated qaoa_result_t holding best angles
+ * found, expectation <C>, approximation ratio (<C> - C_worst) / (C_best -
+ * C_worst), probability weight on optimal bit strings, and most-probable bit
+ * string
+ */
 #include "qaoa.h"
 #include "../core/complex.h"
 #include "../core/random.h"
@@ -32,6 +80,7 @@ static int qaoa_bit(int n, int k, int qubit) {
 
 static int qaoa_popcount(uint32_t x) {
   int c = 0;
+
   while (x) {
     x &= x - 1U;
     c++;
@@ -254,14 +303,14 @@ cvector_t *qaoa_prepare_state(const qaoa_problem_t *problem, int p,
 
   complex_t rx[4];
   for (int l = 0; l < p; l++) {
-    // Phase separator e^{-i \gamma C}: diagonal in computational basis
+    // Phase separator \exp(-i \gamma C): diagonal in computational basis
     for (int k = 0; k < problem->dim; k++) {
       double phi = -gamma[l] * problem->cost[k];
 
       psi->data[k] = c_mul(psi->data[k], c_new(cos(phi), sin(phi)));
     }
 
-    // Mixer e^{-i \beta \sum X_i} = \prod_i RX_i(2 \beta)
+    // Mixer \exp(-i \beta \sum X_i) = \prod_i RX_i(2 \beta)
     rx_gate(2.0 * beta[l], rx);
     for (int q = 0; q < problem->n; q++) {
       qstate_apply_gate1(psi, problem->n, q, rx);
@@ -337,7 +386,7 @@ double qaoa_approximation_ratio(const qaoa_problem_t *problem,
 
   double best = qaoa_problem_best_cost(problem, NULL);
   double worst = qaoa_problem_worst_cost(problem);
-  if (best == worst) {
+  if (fabs(best - worst) <= 1e-12) {
     return 1.0;
   }
 

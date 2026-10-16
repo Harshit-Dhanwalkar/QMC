@@ -24,6 +24,10 @@ int main(void) {
   printf(" > Particle in a 1D Infinite Square Well\n");
 
   int N = 51;
+  if (N < 4) {
+    return 1;
+  }
+
   double L = 1.0;
   double dx = L / (N - 1);
 

@@ -1,5 +1,5 @@
 /*
- * Test: Landau-Zener sweeps (landau_zener.h)
+ * Test: Landau-Zener sweeps
  *
  * 1. Closed form P_LZ = exp(-pi Omega^2 / (2 rate)) against RK4 integration for
  *    9 (\Omega, rate) pairs, starting in lower adiabatic state
@@ -42,7 +42,7 @@ static double norm3(const double v[3]) {
 // Upper-level population after `passes` passes from lower state
 static double run(double omega, double rate, double amp, int passes) {
   double v[3];
-  double end = (passes % 2 == 1) ? amp : -amp;
+  double end = (passes % 2 != 0) ? amp : -amp;
 
   lz_lower_state(v, omega, -amp);
   if (lz_sweep(v, omega, rate, amp, 0.01, passes) != 0) {

@@ -763,7 +763,6 @@ molecular_dft_result_t *molecular_ks_pbe(basis_function_t **basis, int n_basis,
   double *dens_grad = NULL;
   double *vrho_pot = NULL;
   double *vsigma_pot = NULL;
-  double *vxc_pot = NULL;
 
   S = molecular_overlap_matrix(basis, n);
   Hcore = molecular_core_hamiltonian(basis, n, mol);

@@ -67,7 +67,8 @@ static cmatrix_t *kron_chain_2x2(const complex_t *const *gates, int n) {
 }
 
 static cmatrix_t *jw_operator(int mode, int n_modes, const complex_t *local) {
-  if (mode < 0 || mode >= n_modes || n_modes < 1) {
+  // if (mode < 0 || mode >= n_modes || n_modes < 1) {
+  if (mode < 0 || mode >= n_modes) {
     return NULL;
   }
 
