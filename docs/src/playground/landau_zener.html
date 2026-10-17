@@ -273,6 +273,16 @@
         aspect-ratio: 16 / 5;
         margin-top: 14px;
       }
+      #lc-gl {
+        pointer-events: none;
+      }
+      #lc-ov {
+        cursor: grab;
+        touch-action: none;
+      }
+      #lc-ov.panning {
+        cursor: grabbing;
+      }
       #readout {
         position: absolute;
         right: 12px;
@@ -306,7 +316,8 @@
       <div class="main">
         <div>
           <div class="cv" id="lv">
-            <canvas id="lc"></canvas>
+            <canvas id="lc-gl"></canvas>
+            <canvas id="lc-ov"></canvas>
             <div id="readout"></div>
           </div>
           <div class="cv" id="pp"><canvas id="pc"></canvas></div>
@@ -416,398 +427,684 @@
 
     <script src="wasi-shim.js"></script>
     <script type="module">
-      (async () => {
-        const $ = (id) => document.getElementById(id);
-        const showError = (m) => {
-          const e = $("err");
-          e.style.display = "block";
-          e.innerHTML = m;
-        };
-        const css = (v) =>
-          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+      import { createGL, compileProgram } from "./webgl/context.mjs";
+      import { LineBatch, PointBatch } from "./webgl/batch.mjs";
+      import { OrthoCamera } from "./webgl/camera.mjs";
+      import { Overlay2D } from "./webgl/overlay.mjs";
 
-        // Load WebAssembly
-        let w;
-        let wasmMemory = null;
+      const $ = (id) => document.getElementById(id);
+      const showError = (m) => {
+        const e = $("err");
+        e.style.display = "block";
+        e.innerHTML = m;
+      };
+      const css = (v) =>
+        getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+      // Load WebAssembly
+      let w;
+      let wasmMemory = null;
+      try {
+        const res = await fetch("qmc_lz.wasm");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const { instance } = await WebAssembly.instantiate(
+          await res.arrayBuffer(),
+          makeWasiImports(() => wasmMemory),
+        );
+        w = instance.exports;
+        wasmMemory = w.memory;
+        if (w._initialize) w._initialize();
+      } catch (err) {
+        showError(
+          "Could not load <code>qmc_lz.wasm</code> (" +
+            err.message +
+            "). If you opened this file directly from disk, serve the " +
+            "folder: <code>python3 -m http.server</code> and open " +
+            "<code>http://localhost:8000/landau_zener.html</code>.",
+        );
+        throw err;
+      }
+
+      const AMP = 10;
+      const NSCAN = 56;
+      const scanBuf = () =>
+        new Float64Array(w.memory.buffer, w.qmc_lz_scan_buffer(), 256);
+
+      // WebGL for level diagram
+      const lc = $("lc-gl");
+      let gl;
+      try {
+        gl = createGL(lc);
+      } catch (err) {
+        showError(
+          "This playground needs WebGL2. " +
+            "Try a recent Chrome, Firefox, Edge, or Safari. (" +
+            err.message +
+            ")",
+        );
+        throw err;
+      }
+
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+      const LINE_VS = `#version 300 es
+in vec2 a_pos;
+in vec4 a_color;
+uniform vec4 u_view;
+uniform vec4 u_plot;
+uniform vec2 u_canvas;
+out vec4 v_color;
+void main() {
+  float u = (a_pos.x - u_view.x) / (u_view.z - u_view.x);
+  float v = (a_pos.y - u_view.y) / (u_view.w - u_view.y);
+  float px = u_plot.x + u * u_plot.z;
+  float py = u_plot.y + (1.0 - v) * u_plot.w;
+  gl_Position = vec4(
+    (px / u_canvas.x) * 2.0 - 1.0,
+    1.0 - (py / u_canvas.y) * 2.0,
+    0.0, 1.0);
+  v_color = a_color;
+}`;
+
+      const LINE_FS = `#version 300 es
+precision highp float;
+in vec4 v_color;
+out vec4 outColor;
+void main() { outColor = v_color; }`;
+
+      const POINT_VS = `#version 300 es
+in vec2 a_pos;
+in float a_size;
+in vec4 a_color;
+uniform vec4 u_view;
+uniform vec4 u_plot;
+uniform vec2 u_canvas;
+out vec4 v_color;
+void main() {
+  float u = (a_pos.x - u_view.x) / (u_view.z - u_view.x);
+  float v = (a_pos.y - u_view.y) / (u_view.w - u_view.y);
+  float px = u_plot.x + u * u_plot.z;
+  float py = u_plot.y + (1.0 - v) * u_plot.w;
+  gl_Position = vec4(
+    (px / u_canvas.x) * 2.0 - 1.0,
+    1.0 - (py / u_canvas.y) * 2.0,
+    0.0, 1.0);
+  gl_PointSize = a_size;
+  v_color = a_color;
+}`;
+
+      const POINT_FS = `#version 300 es
+precision highp float;
+in vec4 v_color;
+out vec4 outColor;
+void main() {
+  // Circular mask with a soft edge
+  vec2 c = gl_PointCoord - vec2(0.5);
+  float r = length(c) * 2.0;
+  if (r > 1.0) {
+    discard;
+  }
+  float alpha = 1.0 - smoothstep(0.8, 1.0, r);
+  outColor = vec4(v_color.rgb, v_color.a * alpha);
+}`;
+
+      const lineProgram = compileProgram(gl, LINE_VS, LINE_FS);
+      const pointProgram = compileProgram(gl, POINT_VS, POINT_FS);
+      const lines = new LineBatch(gl);
+      const points = new PointBatch(gl);
+      const overlay = new Overlay2D($("lc-ov"));
+
+      const E_MAX = AMP * 0.55 + 0.3 * 3; // worst case (om = 3)
+      const FULL_VIEW = { x0: -AMP, y0: -E_MAX, x1: AMP, y1: E_MAX };
+      const camera = new OrthoCamera(
+        FULL_VIEW,
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+
+      // Colours in [0,1] RGB
+      const C = {
+        text: [0.84, 0.86, 0.9],
+        muted: [0.54, 0.58, 0.66],
+        line: [0.14, 0.17, 0.24],
+        accent: [0.24, 0.86, 0.59],
+        blue: [0.35, 0.66, 1.0],
+      };
+
+      let dpr = 1;
+      function layoutLevels() {
+        const cw = $("lv").clientWidth;
+        const ch = $("lv").clientHeight;
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+        const W = Math.round(cw * dpr);
+        const H = Math.round(ch * dpr);
+        for (const el of [lc, $("lc-ov")]) {
+          el.width = W;
+          el.height = H;
+        }
+
+        overlay.setSize(W, H);
+        const ml = 40 * dpr;
+        const mr = 14 * dpr;
+        const mt = 14 * dpr;
+        const mb = 24 * dpr;
+        camera.setCanvas({ W, H });
+        camera.setPlotRect({ ml, mt, pw: W - ml - mr, ph: H - mt - mb });
+      }
+
+      // Emit a dashed straight line into a LineBatch
+      function pushDashedLine(batch, x0, y0, x1, y1, rgba, dashes = 30) {
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        for (let i = 0; i < dashes; i++) {
+          const t0 = i / dashes;
+          const t1 = t0 + 0.6 / dashes;
+          if (t1 > 1) {
+            break;
+          }
+          batch.pushSegment(
+            x0 + dx * t0,
+            y0 + dy * t0,
+            x0 + dx * t1,
+            y0 + dy * t1,
+            rgba,
+          );
+        }
+      }
+
+      function drawLevels() {
+        if (!lc.width) {
+          layoutLevels();
+        }
+
+        const W = lc.width;
+        const H = lc.height;
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0.02, 0.03, 0.05, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        lines.reset();
+        points.reset();
+
+        // Adiabatic curves \pm\sqrt{\Omega^2 + \delta^2}/2, sampled densely
+        const NS = 400;
+        for (const s of [1, -1]) {
+          for (let i = 0; i < NS; i++) {
+            const d0 = -AMP + (2 * AMP * i) / NS;
+            const d1 = -AMP + (2 * AMP * (i + 1)) / NS;
+            lines.pushSegment(
+              d0,
+              s * 0.5 * Math.hypot(om, d0),
+              d1,
+              s * 0.5 * Math.hypot(om, d1),
+              [...C.text, 1.0],
+            );
+          }
+        }
+
+        // Diabatic levels \pm\delta/2 as dashed lines
+        pushDashedLine(
+          lines,
+          -AMP,
+          -AMP / 2,
+          AMP,
+          AMP / 2,
+          [...C.muted, 1.0],
+          30,
+        );
+        pushDashedLine(
+          lines,
+          -AMP,
+          AMP / 2,
+          AMP,
+          -AMP / 2,
+          [...C.muted, 1.0],
+          30,
+        );
+
+        // State dots - gl_PointSize is the DIAMETER in device pixels, so
+        const d = w.qmc_lz_delta();
+        const pu = w.qmc_lz_upper();
+        const eb = 0.5 * Math.hypot(om, d);
+        if (1 - pu > 0.004) {
+          points.push(d, -eb, 2 * (4 + 15 * Math.sqrt(1 - pu)) * dpr, [
+            ...C.blue,
+            0.9,
+          ]);
+        }
+        if (pu > 0.004) {
+          points.push(d, eb, 2 * (4 + 15 * Math.sqrt(pu)) * dpr, [
+            ...C.accent,
+            0.9,
+          ]);
+        }
+
+        const uniforms = camera.uniforms();
+        lines.flush(gl, lineProgram, uniforms);
+        points.flush(gl, pointProgram, uniforms);
+
+        // Overlay: axis box, labels, hints
+        const ctx = overlay.ctx;
+        ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = camera.plotRect;
+        const fs = Math.max(11, Math.round(H * 0.038));
+
+        ctx.strokeStyle = "rgba(35,43,61,1)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ml, mt);
+        ctx.lineTo(ml, mt + ph);
+        ctx.lineTo(ml + pw, mt + ph);
+        ctx.stroke();
+
+        ctx.fillStyle = "#8993a8";
+        ctx.font = fs + "px ui-monospace,monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(
+          "detuning \u03b4  (\u2212" + AMP + " \u2192 +" + AMP + ")",
+          ml + pw / 2,
+          mt + ph + fs * 0.3,
+        );
+
+        ctx.textAlign = "left";
+        ctx.fillText("energy", ml + fs * 0.4, mt + 2);
+        ctx.textAlign = "right";
+        ctx.fillText(
+          "dot area = population of that level",
+          ml + pw - fs * 0.4,
+          mt + ph + fs * 0.3,
+        );
+
+        // Zoom indicator
+        const zoom =
+          (FULL_VIEW.x1 - FULL_VIEW.x0) / (camera.view.x1 - camera.view.x0);
+        if (zoom > 1.001) {
+          ctx.fillStyle = "rgba(255,255,255,0.55)";
+          ctx.textAlign = "left";
+          ctx.fillText(
+            zoom.toFixed(1) + "\u00D7",
+            ml + fs * 0.6,
+            mt + fs * 1.6,
+          );
+        }
+
+        $("readout").textContent =
+          "t = " + w.qmc_lz_time().toFixed(1) + "  \u03b4 = " + d.toFixed(2);
+      }
+
+      // Level diagram input: drag pans, wheel zooms, double-click resets
+      const drag = { active: false, lx: 0, ly: 0, moved: 0 };
+
+      function pixelFromEvent(ev) {
+        const r = $("lc-ov").getBoundingClientRect();
+        const sx = $("lc-ov").width / r.width;
+        const sy = $("lc-ov").height / r.height;
+
+        return [(ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy];
+      }
+
+      $("lc-ov").addEventListener("pointerdown", (e) => {
+        drag.active = true;
+        drag.lx = e.clientX;
+        drag.ly = e.clientY;
+        drag.moved = 0;
+        $("lc-ov").setPointerCapture(e.pointerId);
+        $("lc-ov").classList.add("panning");
+      });
+
+      $("lc-ov").addEventListener("pointermove", (e) => {
+        if (!drag.active) {
+          return;
+        }
+        const [px, py] = pixelFromEvent(e);
+        const [pdx, pdy] = pixelFromEvent({
+          clientX: drag.lx,
+          clientY: drag.ly,
+        });
+
+        const ddx = px - pdx;
+        const ddy = py - pdy;
+
+        drag.moved += Math.abs(ddx) + Math.abs(ddy);
+        camera.pan(ddx, ddy);
+        clampLevelCamera();
+        drag.lx = e.clientX;
+        drag.ly = e.clientY;
+        drawLevels();
+      });
+
+      $("lc-ov").addEventListener("pointerup", (e) => {
+        drag.active = false;
+        $("lc-ov").classList.remove("panning");
         try {
-          const res = await fetch("qmc_lz.wasm");
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const { instance } = await WebAssembly.instantiate(
-            await res.arrayBuffer(),
-            makeWasiImports(() => wasmMemory),
-          );
-          w = instance.exports;
-          wasmMemory = w.memory;
-          if (w._initialize) w._initialize();
-        } catch (err) {
-          showError(
-            "Could not load <code>qmc_lz.wasm</code> (" +
-              err.message +
-              "). If you opened this file directly " +
-              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/landau_zener.html</code>.",
-          );
+          $("lc-ov").releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        if (e.detail === 2 && drag.moved < 4) {
+          camera.reset();
+          drawLevels();
+        }
+      });
+
+      $("lc-ov").addEventListener("pointerleave", () => {
+        drag.active = false;
+        $("lc-ov").classList.remove("panning");
+      });
+
+      $("lc-ov").addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const [px, py] = pixelFromEvent(e);
+          camera.zoomAt(px, py, Math.exp(e.deltaY * 0.0015));
+          clampLevelCamera();
+          drawLevels();
+        },
+        { passive: false },
+      );
+
+      function clampLevelCamera() {
+        camera.clamp({
+          minW: 0.3,
+          maxW: 2 * AMP,
+          minH: 0.3,
+          maxH: 2 * E_MAX,
+          bounds: { x0: -AMP, y0: -E_MAX, x1: AMP, y1: E_MAX },
+        });
+      }
+
+      // Demo state and animation
+      let om = 1;
+      let rate = 1;
+      let passes = 1;
+      let speed = 2;
+      let playing = true;
+      let hist = [];
+      let finished = false;
+      let scan = { rate: null, amp: null };
+
+      function reset() {
+        if (w.qmc_lz_reset(om, rate, AMP, passes) !== 0) {
+          showError("reset rejected");
           return;
         }
 
-        const AMP = 10;
-        const NSCAN = 56;
-        const scanBuf = () =>
-          new Float64Array(w.memory.buffer, w.qmc_lz_scan_buffer(), 256);
+        hist = [[0, w.qmc_lz_upper()]];
+        finished = false;
+        render();
+      }
 
-        let om = 1;
-        let rate = 1;
-        let passes = 1;
-        let speed = 2;
-        let playing = true;
-        let hist = [];
-        let finished = false;
-        let scan = { rate: null, amp: null };
-
-        function reset() {
-          if (w.qmc_lz_reset(om, rate, AMP, passes) !== 0) {
-            showError("reset rejected");
-            return;
-          }
-          hist = [[0, w.qmc_lz_upper()]];
-          finished = false;
-          render();
-        }
-        function advance() {
-          if (finished) {
-            playing = false;
-            $("play").textContent = "Replay";
-            return;
-          }
-
-          const total = w.qmc_lz_total_time();
-          const rc = w.qmc_lz_step((total / 400) * speed);
-          if (rc < 0) {
-            showError("step failed");
-            playing = false;
-            return;
-          }
-
-          hist.push([w.qmc_lz_time(), w.qmc_lz_upper()]);
-          if (rc === 1) {
-            finished = true;
-          }
+      function advance() {
+        if (finished) {
+          playing = false;
+          $("play").textContent = "Replay";
+          return;
         }
 
-        function computeScan() {
-          scan = { rate: null, amp: null };
-          if (w.qmc_lz_scan_rate(om, AMP, NSCAN, 0.05, 20) === 0) {
-            const b = scanBuf();
-            scan.rate = Array.from(b.subarray(0, NSCAN));
-          }
-          if (w.qmc_lz_scan_amp(om, rate, 120, 8, 12) === 0) {
-            const b = scanBuf();
-            scan.amp = Array.from(b.subarray(0, 120));
-          }
+        const total = w.qmc_lz_total_time();
+        const rc = w.qmc_lz_step((total / 400) * speed);
+        if (rc < 0) {
+          showError("step failed");
+          playing = false;
+          return;
         }
 
-        function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect();
-          const d = window.devicePixelRatio || 1;
-          canvas.width = Math.max(2, r.width * d);
-          canvas.height = Math.max(2, r.height * d);
-          const g = canvas.getContext("2d");
-          g.setTransform(d, 0, 0, d, 0, 0);
-
-          return { g, W: r.width, H: r.height };
+        hist.push([w.qmc_lz_time(), w.qmc_lz_upper()]);
+        if (rc === 1) {
+          finished = true;
         }
+      }
 
-        function drawLevels() {
-          const { g, W: cw, H: ch } = fit($("lc"));
-          const x0 = 40;
-          const x1 = cw - 14;
-          const y0 = ch - 24;
-          const y1 = 14;
-          const E = AMP * 0.55 + 0.3 * om;
-          const X = (d) => x0 + ((d + AMP) / (2 * AMP)) * (x1 - x0);
-          const Y = (e) => (y0 + y1) / 2 - (e / E) * ((y0 - y1) / 2);
+      function computeScan() {
+        scan = { rate: null, amp: null };
+        if (w.qmc_lz_scan_rate(om, AMP, NSCAN, 0.05, 20) === 0) {
+          const b = scanBuf();
+          scan.rate = Array.from(b.subarray(0, NSCAN));
+        }
+        if (w.qmc_lz_scan_amp(om, rate, 120, 8, 12) === 0) {
+          const b = scanBuf();
+          scan.amp = Array.from(b.subarray(0, 120));
+        }
+      }
 
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
+      // 2D canvas helpers for pop and scan panels
+      function fit(canvas) {
+        const r = canvas.parentElement.getBoundingClientRect();
+        const d = window.devicePixelRatio || 1;
+        canvas.width = Math.max(2, r.width * d);
+        canvas.height = Math.max(2, r.height * d);
+        const g = canvas.getContext("2d");
+        g.setTransform(d, 0, 0, d, 0, 0);
+
+        return { g, W: r.width, H: r.height };
+      }
+
+      function drawPop() {
+        const { g, W: cw, H: ch } = fit($("pc"));
+        const x0 = 34;
+        const x1 = cw - 10;
+        const y0 = ch - 20;
+        const y1 = 10;
+        const T = w.qmc_lz_total_time();
+        const X = (t) => x0 + (t / T) * (x1 - x0);
+        const Y = (p) => y0 - (y0 - y1) * p;
+
+        g.strokeStyle = css("--line");
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(x0, y1);
+        g.lineTo(x0, y0);
+        g.lineTo(x1, y0);
+        g.stroke();
+        g.fillStyle = css("--muted");
+        g.font = "11px ui-monospace,monospace";
+        g.fillText("1", 20, y1 + 8);
+        g.fillText("0", 20, y0);
+        g.fillText("time", x1 - 30, ch - 4);
+
+        const ex = w.qmc_lz_exact();
+        g.setLineDash([5, 4]);
+        g.strokeStyle = css("--accent2");
+        g.beginPath();
+        g.moveTo(x0, Y(ex));
+        g.lineTo(x1, Y(ex));
+        g.stroke();
+        g.setLineDash([]);
+        g.strokeStyle = css("--accent");
+        g.lineWidth = 2;
+        g.beginPath();
+        hist.forEach((h, i) => {
+          const px = X(h[0]),
+            py = Y(h[1]);
+          i ? g.lineTo(px, py) : g.moveTo(px, py);
+        });
+
+        g.stroke();
+      }
+
+      function drawScan() {
+        const { g, W: cw, H: ch } = fit($("sk"));
+        const x0 = 30;
+        const x1 = cw - 8;
+        const y0 = ch - 18;
+        const y1 = 8;
+        const Y = (p) => y0 - (y0 - y1) * p;
+
+        g.strokeStyle = css("--line");
+        g.lineWidth = 1;
+        g.beginPath();
+        g.moveTo(x0, y1);
+        g.lineTo(x0, y0);
+        g.lineTo(x1, y0);
+        g.stroke();
+        g.fillStyle = css("--muted");
+        g.font = "11px ui-monospace,monospace";
+        g.fillText("1", 14, y1 + 8);
+        g.fillText("0", 14, y0);
+
+        if (passes === 1) {
+          $("scanh").textContent = "Jump probability vs sweep rate";
+          $("scanleg").innerHTML =
+            '<span><i style="background:var(--accent2)"></i>exp(\u2212\u03c0\u03a9\u00b2/2v)</span><span><i style="background:var(--accent)"></i>integrated</span>';
+          const lo = Math.log10(0.05);
+          const hi = Math.log10(20);
+          const X = (r) => x0 + ((Math.log10(r) - lo) / (hi - lo)) * (x1 - x0);
+
+          g.fillText("sweep rate v (log scale)", (x0 + x1) / 2 - 62, ch - 4);
+          g.fillText("0.05", x0 + 2, ch - 4);
+          g.fillText("20", x1 - 16, ch - 4);
+          g.strokeStyle = css("--accent2");
+          g.lineWidth = 2;
           g.beginPath();
-          g.moveTo(x0, y0);
-          g.lineTo(x1, y0);
-          g.moveTo(x0, y1);
-          g.lineTo(x0, y0);
+          for (let i = 0; i <= 200; i++) {
+            const r = Math.pow(10, lo + ((hi - lo) * i) / 200);
+            const p = Math.exp((-Math.PI * om * om) / (2 * r));
+            i ? g.lineTo(X(r), Y(p)) : g.moveTo(X(r), Y(p));
+          }
+
           g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText(
-            "detuning \u03b4  (\u2212" + AMP + " \u2192 +" + AMP + ")",
-            x0 + 6,
-            ch - 8,
-          );
-          g.fillText("energy", 6, y1 + 2);
-          g.setLineDash([5, 4]);
-          g.strokeStyle = "#8993a8";
+          if (scan.rate) {
+            g.fillStyle = css("--accent");
+            scan.rate.forEach((p, i) => {
+              const r = Math.pow(10, lo + ((hi - lo) * i) / (NSCAN - 1));
+              g.beginPath();
+              g.arc(X(r), Y(p), 2.6, 0, 7);
+              g.fill();
+            });
+          }
+
+          g.strokeStyle = css("--muted");
+          g.setLineDash([3, 3]);
           g.beginPath();
-          g.moveTo(X(-AMP), Y(-AMP / 2));
-          g.lineTo(X(AMP), Y(AMP / 2));
-          g.moveTo(X(-AMP), Y(AMP / 2));
-          g.lineTo(X(AMP), Y(-AMP / 2));
+          g.moveTo(X(rate), y1);
+          g.lineTo(X(rate), y0);
+
           g.stroke();
           g.setLineDash([]);
-          g.lineWidth = 2;
-          g.strokeStyle = css("--text");
-          for (const s of [1, -1]) {
-            g.beginPath();
-            for (let i = 0; i <= 240; i++) {
-              const d = -AMP + (2 * AMP * i) / 240;
-              const e = s * 0.5 * Math.hypot(om, d);
-              i ? g.lineTo(X(d), Y(e)) : g.moveTo(X(d), Y(e));
-            }
-
-            g.stroke();
-          }
-
-          // state: two dots on the adiabatic levels, area ~ population
-          const d = w.qmc_lz_delta();
-          const pu = w.qmc_lz_upper();
-          const eb = 0.5 * Math.hypot(om, d);
-          const dot = (e, p, col) => {
-            if (p < 0.004) {
-              return;
-            }
-            g.fillStyle = col;
-            g.globalAlpha = 0.9;
-            g.beginPath();
-            g.arc(X(d), Y(e), 4 + 15 * Math.sqrt(p), 0, 7);
-            g.fill();
-            g.globalAlpha = 1;
-          };
-
-          dot(-eb, 1 - pu, css("--blue"));
-          dot(eb, pu, css("--accent"));
-          g.fillStyle = css("--muted");
-          g.fillText("dot area = population of that level", x1 - 225, ch - 8);
-          $("readout").textContent =
-            "t = " + w.qmc_lz_time().toFixed(1) + "  \u03b4 = " + d.toFixed(2);
-        }
-
-        function drawPop() {
-          const { g, W: cw, H: ch } = fit($("pc"));
-          const x0 = 34;
-          const x1 = cw - 10;
-          const y0 = ch - 20;
-          const y1 = 10;
-          const T = w.qmc_lz_total_time();
-          const X = (t) => x0 + (t / T) * (x1 - x0);
-          const Y = (p) => y0 - (y0 - y1) * p;
-
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(x0, y1);
-          g.lineTo(x0, y0);
-          g.lineTo(x1, y0);
-          g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("1", 20, y1 + 8);
-          g.fillText("0", 20, y0);
-          g.fillText("time", x1 - 30, ch - 4);
-
-          const ex = w.qmc_lz_exact();
+        } else {
+          $("scanh").textContent = "Fringes vs sweep amplitude (2 passes)";
+          $("scanleg").innerHTML =
+            '<span><i style="background:var(--accent2)"></i>envelope 4P(1\u2212P)</span><span><i style="background:var(--accent)"></i>upper-level population</span>';
+          const X = (a) => x0 + ((a - 8) / 4) * (x1 - x0);
+          const P = Math.exp((-Math.PI * om * om) / (2 * rate));
+          const env = 4 * P * (1 - P);
+          g.fillText("sweep amplitude (8 \u2192 12)", x0 + 6, ch - 4);
           g.setLineDash([5, 4]);
           g.strokeStyle = css("--accent2");
+          g.lineWidth = 1.5;
           g.beginPath();
-          g.moveTo(x0, Y(ex));
-          g.lineTo(x1, Y(ex));
+          g.moveTo(x0, Y(env));
+          g.lineTo(x1, Y(env));
           g.stroke();
           g.setLineDash([]);
-          g.strokeStyle = css("--accent");
-          g.lineWidth = 2;
-          g.beginPath();
-          hist.forEach((h, i) => {
-            const px = X(h[0]);
-            const py = Y(h[1]);
-            i ? g.lineTo(px, py) : g.moveTo(px, py);
-          });
-
-          g.stroke();
-        }
-
-        function drawScan() {
-          const { g, W: cw, H: ch } = fit($("sk"));
-          const x0 = 30;
-          const x1 = cw - 8;
-          const y0 = ch - 18;
-          const y1 = 8;
-          const Y = (p) => y0 - (y0 - y1) * p;
-
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(x0, y1);
-          g.lineTo(x0, y0);
-          g.lineTo(x1, y0);
-          g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("1", 14, y1 + 8);
-          g.fillText("0", 14, y0);
-          if (passes === 1) {
-            $("scanh").textContent = "Jump probability vs sweep rate";
-            $("scanleg").innerHTML =
-              '<span><i style="background:var(--accent2)"></i>exp(\u2212\u03c0\u03a9\u00b2/2v)</span><span><i style="background:var(--accent)"></i>integrated</span>';
-            const lo = Math.log10(0.05);
-            const hi = Math.log10(20);
-            const X = (r) =>
-              x0 + ((Math.log10(r) - lo) / (hi - lo)) * (x1 - x0);
-            g.fillText("sweep rate v (log scale)", (x0 + x1) / 2 - 62, ch - 4);
-            g.fillText("0.05", x0 + 2, ch - 4);
-            g.fillText("20", x1 - 16, ch - 4);
-            g.strokeStyle = css("--accent2");
+          if (scan.amp) {
+            g.strokeStyle = css("--accent");
             g.lineWidth = 2;
             g.beginPath();
-            for (let i = 0; i <= 200; i++) {
-              const r = Math.pow(10, lo + ((hi - lo) * i) / 200);
-              const p = Math.exp((-Math.PI * om * om) / (2 * r));
-              i ? g.lineTo(X(r), Y(p)) : g.moveTo(X(r), Y(p));
-            }
-
+            scan.amp.forEach((p, i) => {
+              const a = 8 + (4 * i) / (scan.amp.length - 1);
+              i ? g.lineTo(X(a), Y(p)) : g.moveTo(X(a), Y(p));
+            });
             g.stroke();
-
-            if (scan.rate) {
-              g.fillStyle = css("--accent");
-              scan.rate.forEach((p, i) => {
-                const r = Math.pow(10, lo + ((hi - lo) * i) / (NSCAN - 1));
-                g.beginPath();
-                g.arc(X(r), Y(p), 2.6, 0, 7);
-                g.fill();
-              });
-            }
-
-            g.strokeStyle = css("--muted");
-            g.setLineDash([3, 3]);
-            g.beginPath();
-            g.moveTo(X(rate), y1);
-            g.lineTo(X(rate), y0);
-            g.stroke();
-            g.setLineDash([]);
-          } else {
-            $("scanh").textContent = "Fringes vs sweep amplitude (2 passes)";
-            $("scanleg").innerHTML =
-              '<span><i style="background:var(--accent2)"></i>envelope 4P(1\u2212P)</span><span><i style="background:var(--accent)"></i>upper-level population</span>';
-            const X = (a) => x0 + ((a - 8) / 4) * (x1 - x0);
-            const P = Math.exp((-Math.PI * om * om) / (2 * rate));
-            const env = 4 * P * (1 - P);
-
-            g.fillText("sweep amplitude (8 \u2192 12)", x0 + 6, ch - 4);
-            g.setLineDash([5, 4]);
-            g.strokeStyle = css("--accent2");
-            g.lineWidth = 1.5;
-            g.beginPath();
-            g.moveTo(x0, Y(env));
-            g.lineTo(x1, Y(env));
-            g.stroke();
-            g.setLineDash([]);
-            if (scan.amp) {
-              g.strokeStyle = css("--accent");
-              g.lineWidth = 2;
-              g.beginPath();
-              scan.amp.forEach((p, i) => {
-                const a = 8 + (4 * i) / (scan.amp.length - 1);
-                i ? g.lineTo(X(a), Y(p)) : g.moveTo(X(a), Y(p));
-              });
-              g.stroke();
-            }
           }
         }
+      }
 
-        function updateStats() {
-          const P = w.qmc_lz_exact();
-          const pu = w.qmc_lz_upper();
-          $("stats").innerHTML =
-            `<div class="stat"><span>Upper-level population</span><span>${pu.toFixed(4)}</span></div>
+      function updateStats() {
+        const P = w.qmc_lz_exact();
+        const pu = w.qmc_lz_upper();
+        $("stats").innerHTML =
+          `<div class="stat"><span>Upper-level population</span><span>${pu.toFixed(4)}</span></div>
        <div class="stat"><span>Landau\u2013Zener P (one crossing)</span><span>${P.toFixed(4)}</span></div>
        <div class="stat"><span>Interference envelope 4P(1\u2212P)</span><span>${(4 * P * (1 - P)).toFixed(4)}</span></div>
        <div class="stat"><span>Minimum gap \u03a9</span><span>${om.toFixed(2)}</span></div>
        <div class="stat"><span>Sweep rate v</span><span>${rate.toFixed(3)}</span></div>`;
-          $("note").textContent =
-            P < 0.05
-              ? "Slow sweep: adiabatic. The system follows its energy level and stays on the lower curve."
-              : P > 0.95
-                ? "Fast sweep: diabatic. The system cannot follow the gap and jumps across it."
-                : "In between: the state splits, part following the level and part jumping, so both dots appear.";
-        }
+        $("note").textContent =
+          P < 0.05
+            ? "Slow sweep: adiabatic. The system follows its energy level and stays on the lower curve."
+            : P > 0.95
+              ? "Fast sweep: diabatic. The system cannot follow the gap and jumps across it."
+              : "In between: the state splits, part following the level and part jumping, so both dots appear.";
+      }
 
-        function render() {
-          drawLevels();
-          drawPop();
-          drawScan();
-          updateStats();
-        }
+      function render() {
+        drawLevels();
+        drawPop();
+        drawScan();
+        updateStats();
+      }
 
-        function restart() {
-          playing = true;
-          $("play").textContent = "Pause";
-          reset();
-        }
-
-        let timer = null;
-        function rescan() {
-          clearTimeout(timer);
-          timer = setTimeout(() => {
-            computeScan();
-            render();
-          }, 120);
-        }
-
-        $("om").addEventListener("input", (e) => {
-          om = +e.target.value;
-          $("omv").textContent = om.toFixed(2);
-          restart();
-          rescan();
-        });
-        $("rt").addEventListener("input", (e) => {
-          rate = Math.pow(10, +e.target.value);
-          $("rtv").textContent = rate.toFixed(2);
-          restart();
-          rescan();
-        });
-
-        document.querySelectorAll("#passes button").forEach((b) =>
-          b.addEventListener("click", () => {
-            passes = +b.dataset.p;
-            document
-              .querySelectorAll("#passes button")
-              .forEach((x) => x.classList.toggle("on", x === b));
-            restart();
-          }),
-        );
-        $("play").addEventListener("click", () => {
-          if (finished) {
-            restart();
-            return;
-          }
-          playing = !playing;
-          $("play").textContent = playing ? "Pause" : "Play";
-        });
-        $("restart").addEventListener("click", restart);
-        $("spd").addEventListener("input", (e) => {
-          speed = +e.target.value;
-        });
-
-        window.addEventListener("resize", render);
-
-        function frame() {
-          if (playing) {
-            advance();
-            render();
-          }
-
-          requestAnimationFrame(frame);
-        }
-
-        computeScan();
+      function restart() {
+        playing = true;
+        $("play").textContent = "Pause";
+        camera.reset();
         reset();
+      }
+
+      let timer = null;
+      function rescan() {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          computeScan();
+          render();
+        }, 120);
+      }
+
+      $("om").addEventListener("input", (e) => {
+        om = +e.target.value;
+        $("omv").textContent = om.toFixed(2);
+        restart();
+        rescan();
+      });
+      $("rt").addEventListener("input", (e) => {
+        rate = Math.pow(10, +e.target.value);
+        $("rtv").textContent = rate.toFixed(2);
+        restart();
+        rescan();
+      });
+
+      document.querySelectorAll("#passes button").forEach((b) =>
+        b.addEventListener("click", () => {
+          passes = +b.dataset.p;
+          document
+            .querySelectorAll("#passes button")
+            .forEach((x) => x.classList.toggle("on", x === b));
+          restart();
+        }),
+      );
+      $("play").addEventListener("click", () => {
+        if (finished) {
+          restart();
+          return;
+        }
+        playing = !playing;
+        $("play").textContent = playing ? "Pause" : "Play";
+      });
+      $("restart").addEventListener("click", restart);
+      $("spd").addEventListener("input", (e) => {
+        speed = +e.target.value;
+      });
+
+      window.addEventListener("resize", () => {
+        layoutLevels();
+        render();
+      });
+
+      // Kick things off
+      layoutLevels();
+      computeScan();
+      reset();
+      function frame() {
+        if (playing) {
+          advance();
+          render();
+        }
+
         requestAnimationFrame(frame);
-      })();
+      }
+
+      requestAnimationFrame(frame);
     </script>
 
     <script src="nav.js"></script>
