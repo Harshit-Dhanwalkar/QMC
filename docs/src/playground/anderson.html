@@ -466,9 +466,13 @@
       const buf = () =>
         new Float64Array(w.memory.buffer, w.qmc_an_buffer(), 2 * N);
 
-      const STEPS_PER_ROW = 40;
-      const ROWS = 400;
+      const K_X = 8;
+      const RENDER_N = N * K_X;
+      const ROWS = 1600;
       const FLOOR = 6;
+      const STEPS_PER_ROW = 10;
+
+      const img = new ImageData(RENDER_N, ROWS);
 
       const stops = [
         [0, 0, 4],
@@ -489,8 +493,6 @@
           lut[i * 3 + c] = stops[k][c] + (stops[k + 1][c] - stops[k][c]) * f;
         }
       }
-
-      const img = new ImageData(N, ROWS);
 
       // WebGL setup
       const LINE_VS = `#version 300 es
@@ -641,18 +643,59 @@
         }
 
         const lm = Math.log10(m);
+        const vals = new Float32Array(N);
         for (let j = 0; j < N; j++) {
-          const v = (Math.log10(Math.max(b[j], 1e-300)) - lm + FLOOR) / FLOOR;
-          const idx = Math.max(0, Math.min(255, (v * 255) | 0));
-          const p = (row * N + j) * 4;
+          vals[j] = Math.log10(Math.max(b[j], 1e-300));
+        }
 
-          img.data[p] = lut[idx * 3];
-          img.data[p + 1] = lut[idx * 3 + 1];
-          img.data[p + 2] = lut[idx * 3 + 2];
+        for (let j = 0; j < N - 1; j++) {
+          const v0 = vals[j];
+          const v1 = vals[j + 1];
+          for (let dx = 0; dx < K_X; dx++) {
+            const f = dx / K_X;
+            const v = v0 * (1 - f) + v1 * f;
+            const normV = (v - lm + FLOOR) / FLOOR;
+            const idx = Math.max(0, Math.min(255, (normV * 255) | 0));
+            const p = (row * RENDER_N + j * K_X + dx) * 4;
+
+            img.data[p] = lut[idx * 3];
+            img.data[p + 1] = lut[idx * 3 + 1];
+            img.data[p + 2] = lut[idx * 3 + 2];
+            img.data[p + 3] = 255;
+          }
+        }
+
+        // Last pixel
+        const vLast = vals[N - 1];
+        const normVLast = (vLast - lm + FLOOR) / FLOOR;
+        const idxLast = Math.max(0, Math.min(255, (normVLast * 255) | 0));
+        for (let dx = 0; dx < K_X; dx++) {
+          const p = (row * RENDER_N + (N - 1) * K_X + dx) * 4;
+
+          img.data[p] = lut[idxLast * 3];
+          img.data[p + 1] = lut[idxLast * 3 + 1];
+          img.data[p + 2] = lut[idxLast * 3 + 2];
           img.data[p + 3] = 255;
         }
 
-        wfImg.upload(img.data, N, ROWS);
+        // Only upload the single new row
+        const rowData = img.data.subarray(
+          row * RENDER_N * 4,
+          (row + 1) * RENDER_N * 4,
+        );
+        wfGl.bindTexture(wfGl.TEXTURE_2D, wfImg.texture);
+        wfGl.pixelStorei(wfGl.UNPACK_FLIP_Y_WEBGL, false);
+        wfGl.texSubImage2D(
+          wfGl.TEXTURE_2D,
+          0,
+          0,
+          ROWS - 1 - row,
+          RENDER_N,
+          1,
+          wfGl.RGBA,
+          wfGl.UNSIGNED_BYTE,
+          rowData,
+        );
       }
 
       function reset() {
@@ -669,7 +712,8 @@
           img.data[i] = 255;
         }
 
-        wfImg.upload(img.data, N, ROWS);
+        wfImg.upload(img.data, RENDER_N, ROWS);
+
         paintRow();
         render();
       }
@@ -786,11 +830,15 @@
         const b = buf();
         let m = 0;
         for (let j = 0; j < N; j++) {
-          if (b[j] > m) m = b[j];
+          if (b[j] > m) {
+            m = b[j];
+          }
         }
 
         const lm = Math.log10(m || 1);
         const Wt = Math.max(W, 1e-9);
+
+        // On-site energies (amber)
         let prevX = null;
         let prevY = null;
         for (let j = 0; j < N; j++) {
@@ -804,19 +852,30 @@
           prevY = py;
         }
 
+        // Interpolated density profile
         prevX = null;
         prevY = null;
-        for (let j = 0; j < N; j++) {
-          const px = j;
-          const v = (Math.log10(Math.max(b[j], 1e-300)) - lm + FLOOR) / FLOOR;
-          const py = Math.max(0, Math.min(1, v));
-          if (prevX !== null) {
-            pcLines.pushSegment(prevX, prevY, px, py, [...C.accent, 1.0]);
-          }
+        for (let j = 0; j < N - 1; j++) {
+          const v0 = Math.log10(Math.max(b[j], 1e-300));
+          const v1 = Math.log10(Math.max(b[j + 1], 1e-300));
+          for (let dx = 0; dx < K_X; dx++) {
+            const f = dx / K_X;
+            const px = j + f;
+            const v = v0 * (1 - f) + v1 * f;
+            const py = Math.max(0, Math.min(1, (v - lm + FLOOR) / FLOOR));
+            if (prevX !== null) {
+              pcLines.pushSegment(prevX, prevY, px, py, [...C.accent, 1.0]);
+            }
 
-          prevX = px;
-          prevY = py;
+            prevX = px;
+            prevY = py;
+          }
         }
+
+        // Finish last segment
+        const vLast = Math.log10(Math.max(b[N - 1], 1e-300));
+        const pyLast = Math.max(0, Math.min(1, (vLast - lm + FLOOR) / FLOOR));
+        pcLines.pushSegment(prevX, prevY, N - 1, pyLast, [...C.accent, 1.0]);
 
         pcLines.flush(pcGl, pcProgram, pcCam.uniforms());
 
