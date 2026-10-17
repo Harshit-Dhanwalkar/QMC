@@ -381,6 +381,7 @@
               <button id="restart">Restart</button>
               <button id="newdis">New disorder</button>
               <button id="resetView">⟲ Reset views</button>
+              <button id="png" class="primary">Download PNG</button>
               <label style="width: auto"
                 ><span style="min-width: 0">Speed</span
                 ><input
@@ -430,6 +431,7 @@
       import { Image2D, IMAGE_VS, IMAGE_FS } from "./webgl/texture.mjs";
       import { OrthoCamera } from "./webgl/camera.mjs";
       import { Overlay2D } from "./webgl/overlay.mjs";
+      import { exportPNG } from "./webgl/export.mjs";
 
       const $ = (id) => document.getElementById(id);
       const showError = (m) => {
@@ -1052,9 +1054,227 @@
         dcUserZoomed = false;
         render();
       });
+      $("png").addEventListener("click", exportCurrent);
       $("spd").addEventListener("input", (e) => {
         spf = +e.target.value;
       });
+
+      function exportCurrent() {
+        const W = 1600;
+        const H = 1800;
+        const wfH = 1100;
+        const pcH = 350;
+        const dcH = 350;
+
+        exportPNG({
+          width: W,
+          height: H,
+          filename: "anderson_localisation.png",
+          renderGL: async (canvas) => {
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#06080d";
+            ctx.fillRect(0, 0, W, H);
+
+            const drawPanel = (height, drawFn, offsetY) => {
+              const c = document.createElement("canvas");
+              c.width = W;
+              c.height = height;
+              const gl = createGL(c);
+              drawFn(gl, c);
+              ctx.drawImage(c, 0, offsetY);
+            };
+
+            // 1. Waterfall
+            drawPanel(
+              wfH,
+              (gl, c) => {
+                gl.viewport(0, 0, W, wfH);
+                gl.clearColor(0.02, 0.03, 0.05, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                const prog = compileProgram(gl, IMAGE_VS, IMAGE_FS);
+                const imgObj = new Image2D(gl);
+                imgObj.upload(img.data, RENDER_N, ROWS);
+                imgObj.flush(gl, prog, {
+                  u_view: [0, 0, N, ROWS],
+                  u_data: [0, 0, N, ROWS],
+                  u_plot: [0, 0, W, wfH],
+                  u_canvas: [W, wfH],
+                });
+              },
+              0,
+            );
+
+            // 2. Profile
+            drawPanel(
+              pcH,
+              (gl, c) => {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                gl.viewport(0, 0, W, pcH);
+                gl.clearColor(0.02, 0.03, 0.05, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                const prog = compileProgram(gl, LINE_VS, LINE_FS);
+                const lines = new LineBatch(gl);
+                const cam = new OrthoCamera(
+                  { x0: 0, y0: 0, x1: N, y1: 1 },
+                  { ml: 40, mt: 20, pw: W - 80, ph: pcH - 60 },
+                  { W, H: pcH },
+                );
+
+                const b = buf();
+                let m = 0;
+                for (let j = 0; j < N; j++) {
+                  if (b[j] > m) m = b[j];
+                }
+                const lm = Math.log10(m || 1);
+                const Wt = Math.max(W, 1e-9);
+
+                let prevX = null;
+                let prevY = null;
+                for (let j = 0; j < N; j++) {
+                  const px = j;
+                  const py = 0.5 + 0.4 * (b[N + j] / Wt);
+                  if (prevX !== null)
+                    lines.pushSegment(prevX, prevY, px, py, [
+                      ...C.accent2,
+                      0.45,
+                    ]);
+                  prevX = px;
+                  prevY = py;
+                }
+
+                prevX = null;
+                prevY = null;
+                for (let j = 0; j < N - 1; j++) {
+                  const v0 = Math.log10(Math.max(b[j], 1e-300));
+                  const v1 = Math.log10(Math.max(b[j + 1], 1e-300));
+                  for (let dx = 0; dx < K_X; dx++) {
+                    const f = dx / K_X;
+                    const px = j + f;
+                    const v = v0 * (1 - f) + v1 * f;
+                    const py = Math.max(
+                      0,
+                      Math.min(1, (v - lm + FLOOR) / FLOOR),
+                    );
+                    if (prevX !== null)
+                      lines.pushSegment(prevX, prevY, px, py, [
+                        ...C.accent,
+                        1.0,
+                      ]);
+                    prevX = px;
+                    prevY = py;
+                  }
+                }
+                const vLast = Math.log10(Math.max(b[N - 1], 1e-300));
+                const pyLast = Math.max(
+                  0,
+                  Math.min(1, (vLast - lm + FLOOR) / FLOOR),
+                );
+                lines.pushSegment(prevX, prevY, N - 1, pyLast, [
+                  ...C.accent,
+                  1.0,
+                ]);
+                lines.flush(gl, prog, cam.uniforms());
+              },
+              wfH,
+            );
+
+            // 3. Width
+            drawPanel(
+              dcH,
+              (gl, c) => {
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                gl.viewport(0, 0, W, dcH);
+                gl.clearColor(0.02, 0.03, 0.05, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                const prog = compileProgram(gl, LINE_VS, LINE_FS);
+                const lines = new LineBatch(gl);
+
+                const tMax = ROWS * STEPS_PER_ROW * DT;
+                let yMax = Math.SQRT2 * tMax;
+                yMax = Math.max(10, Math.min(yMax, N / 2));
+                const cam = new OrthoCamera(
+                  { x0: 0, y0: 0, x1: tMax, y1: yMax },
+                  { ml: 60, mt: 20, pw: W - 120, ph: dcH - 50 },
+                  { W, H: dcH },
+                );
+
+                for (let i = 0; i < 40; i++) {
+                  const t0 = (i / 40) * tMax;
+                  const t1 = ((i + 0.6) / 40) * tMax;
+                  if (t1 > tMax) break;
+                  lines.pushSegment(t0, Math.SQRT2 * t0, t1, Math.SQRT2 * t1, [
+                    ...C.gray,
+                    0.8,
+                  ]);
+                }
+
+                let prevX = null;
+                let prevY = null;
+                widths.forEach((p) => {
+                  if (prevX !== null)
+                    lines.pushSegment(prevX, prevY, p[0], p[1], [
+                      ...C.accent,
+                      1.0,
+                    ]);
+                  prevX = p[0];
+                  prevY = p[1];
+                });
+                lines.flush(gl, prog, cam.uniforms());
+              },
+              wfH + pcH,
+            );
+
+            // 4. Text Overlays
+            const drawText = (text, x, y, align = "left", baseline = "top") => {
+              ctx.fillStyle = "#8993a8";
+              ctx.font = "24px ui-monospace,monospace";
+              ctx.textAlign = align;
+              ctx.textBaseline = baseline;
+              ctx.fillText(text, x, y);
+            };
+
+            drawText("time \u2193", 20, wfH - 40);
+            drawText("max speed 2t", W / 2 + 20, 30);
+            drawText(
+              "|\u03c8|\u00b2 log scale (" +
+                FLOOR +
+                " decades), disorder in amber",
+              40,
+              wfH + 20,
+            );
+            drawText("width (sites)", 60, wfH + pcH + 20);
+            drawText("0", 40, wfH + pcH + dcH - 20, "center", "top");
+            drawText(
+              "\u03c4 = " + (ROWS * STEPS_PER_ROW * DT).toFixed(0),
+              W - 40,
+              wfH + pcH + dcH - 20,
+              "right",
+              "top",
+            );
+
+            // Dashed lightcone
+            ctx.strokeStyle = "rgba(255,255,255,.35)";
+            ctx.setLineDash([8, 8]);
+            ctx.lineWidth = 2;
+            const centerX = N / 2;
+            const tMax = ROWS * STEPS_PER_ROW * DT;
+            const xBotRight = centerX + 2 * tMax;
+            const xBotLeft = centerX - 2 * tMax;
+
+            const px = (x) => (x / N) * W;
+            const py = (y) => (y / ROWS) * wfH;
+
+            ctx.beginPath();
+            ctx.moveTo(px(centerX), py(ROWS));
+            ctx.lineTo(px(xBotRight), py(0));
+            ctx.moveTo(px(centerX), py(ROWS));
+            ctx.lineTo(px(xBotLeft), py(0));
+            ctx.stroke();
+          },
+        });
+      }
 
       function attachCameraInteraction(
         overlayEl,
