@@ -54,6 +54,7 @@ conductance when the Fermi level sits in that gap. The explorer labels every
 gap, so you can see the topology and not only the picture.
 
 [Open the demo](playground/butterfly.html)
+[Background: tight-binding models and topology](physics/tight_binding.md)
 
 ## Klein paradox and Zitterbewegung
 
@@ -114,6 +115,7 @@ $\sqrt{2} \cdot t \cdot \tau$, and the weak-disorder localisation length is
 checked against a transfer-matrix calculation in the test suite.
 
 [Open the demo](playground/anderson.html)
+[Background: Anderson localisation](physics/anderson.md)
 
 ## The quantum walk
 
@@ -129,6 +131,7 @@ the exact form $\sqrt{1 - \sin(\theta)} \cdot t$. This is the same mechanism
 behind quantum-walk search algorithms.
 
 [Open the demo](playground/quantum_walk.html)
+[Background: quantum walk](physics/quantum_walk.md)
 
 ## Landau-Zener: jumping across an avoided crossing
 
@@ -145,6 +148,7 @@ back so the two paths interfere: the fringes stay inside the envelope
 superconducting and spin-qubit experiments.
 
 [Open the demo](playground/landau_zener.html)
+[Background: Landau-Zener sweeps](physics/landau_zener.md)
 
 ## The kicked rotor: where quantum mechanics tames chaos
 
@@ -178,9 +182,9 @@ energy exponentially close to zero. The page diagonalises the finite chain
 live, so you can drag the hopping through the transition and watch the pair
 peel off the band edge, then switch on random hopping and see that the edge
 states do not move: chiral symmetry protects them. Break that symmetry with
-a staggered potential and they shift to ±m. The test suite checks the edge
-energy, the decay length 1/ln(w/v), the winding number and the Zak phase
-against their closed forms.
+a staggered potential and they shift to $\pm m$. The test suite checks the
+edge energy, the decay length $1/\ln(w/v)$, the winding number and the Zak
+phase against their closed forms.
 
 [Open the demo](playground/ssh_chain.html)
 
@@ -195,7 +199,7 @@ and the region the news has not reached stays exactly as it was. That is a
 light cone, and it appears here as a picture of $\langle \sigma^z_0 \sigma^z_r
 \rangle$ against distance and time. If the quench crosses the critical point,
 the probability to find the chain back in its initial state passes through
-zero at isolated times, and the rate function $-\ln L(t)/N$ has kinks there:
+zero at isolated times, and the rate function $-\ln(L(t)/N)$ has kinks there:
 dynamical quantum phase transitions. The solution is exact, with no truncation,
 because the chain maps to free fermions: each pair of momenta is a spin that
 precesses about the new field, correlations are Pfaffians of the resulting
