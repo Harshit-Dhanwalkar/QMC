@@ -1,11 +1,14 @@
 /*
- * No-op plot backend
+ * No-op plotting backend
  *
- * PLOT_BACKEND=NONE
+ * All graphical plot requests succeed silently without writing any files
+ * PLOT_FORMAT_TEXT (CSV) output is still honoured so headless consumers and
+ * tests can still extract numerical data
  *
- * All plot calls succeed silently without generating any output
- * For headless CI, benchmarking or not ploting backend is available
- * All other formats succeed silently without producing any file
+ * Used for benchmarking or CI environments where no graphical libraries are
+ * installed and only numerical results matter
+ *
+ * NOTE: Compiled only when library is built with `PLOT_BACKEND=NONE`
  */
 
 #include "plot.h"

@@ -1,3 +1,10 @@
+/*
+ * CSV export backend
+ *
+ * Streams tabular data and metadata to standard comma-separated value files
+ * Handles RFC 4180 string escaping, configurable delimiters and numerical
+ * precision, and optional policy for writing non-finite values (NaN/Inf)
+ */
 #include "csv_writer.h"
 
 #include <fcntl.h>
@@ -122,9 +129,9 @@ csv_status_t csv_status(csv_writer_t *writer) {
   return writer ? writer->last_error : CSV_ERR_INVALID_ARGUMENT;
 }
 
-/* Quote a field if it contains the delimiter, a quote, CR, or LF.
+/* Quote a field if it contains delimiter, a quote, CR, or LF
  * RFC 4180: fields containing these must be double-quoted, and inner
- * quotes doubled. */
+ * quotes doubled */
 static csv_status_t csv_write_escaped(csv_writer_t *writer, const char *s) {
   if (!writer || !writer->file) {
     return CSV_ERR_INVALID_ARGUMENT;

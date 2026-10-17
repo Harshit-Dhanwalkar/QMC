@@ -1,3 +1,10 @@
+/*
+ * JSON export backend
+ *
+ * A streaming JSON writer for metadata and structured output. Supports nested
+ * objects, arrays, scalars, and arrays of scalars. Handles string escaping,
+ * pretty-printing, and configurable handling of non-finite numbers (NaN/Inf)
+ */
 #include "json_writer.h"
 #include "export_schema.h"
 

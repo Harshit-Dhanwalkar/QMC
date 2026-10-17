@@ -1,3 +1,13 @@
+/*
+ * HDF5 export backend
+ *
+ * Writes multidimensional arrays, matrices, groups, and metadata attributes to
+ * binary HDF5 files. Also supports appending to extensible datasets
+ *
+ * NOTE: Requires `USE_HDF5` to be defined at compile time
+ * When built without HDF5 support, this file compiles to a stub that returns
+ * HDF5_ERR_NOT_SUPPORTED for all operations
+ */
 #include "hdf5_writer.h"
 
 #include <stdio.h>
@@ -781,11 +791,10 @@ static int legacy_write_dataset(const char *filename, const char *dataset,
     return HDF5_ERR_PATH_TOO_LONG;
   }
 
-  // Open an existing file if present (so prior datasets survive), else create a
-  // new one
-  // Subsequent dataset write replaces any dataset cf same name, but does not
-  // touch other datasets chid_t file = H5Fopen(path, H5F_ACC_RDWR,
-  // H5P_DEFAULT);
+  // NOTE: Open an existing file if present (so prior datasets survive), else
+  // create a new one. A subsequent dataset write replaces any dataset of same
+  // name but does not touch other datasets
+  hid_t file = H5Fopen(path, H5F_ACC_RDWR, H5P_DEFAULT);
   if (file < 0) {
     file = H5Fcreate(path, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   }

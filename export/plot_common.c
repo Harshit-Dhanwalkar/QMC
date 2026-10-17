@@ -1,6 +1,9 @@
 /*
- * Shared helpers for all plot backends: strerror, output-path resolution,
- * and PLOT_FORMAT_TEXT fallback writer
+ * Shared plotting utilities for all backends
+ *
+ * Provides common logic for resolving output file paths and extensions, mapping
+ * status codes to human-readable error strings, and implementing
+ * PLOT_FORMAT_TEXT (CSV) fallback used when graphical backends are unavailable.
  */
 
 #include "plot.h"

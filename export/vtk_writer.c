@@ -1,3 +1,10 @@
+/*
+ * VTK export backend
+ *
+ * Writes 3D scalar fields to legacy ASCII VTK files using `STRUCTURED_POINTS`
+ * dataset format
+ * Suitable for visualization in ParaView or other VTK-compatible tools
+ */
 #include "vtk_writer.h"
 
 #include <fcntl.h>
@@ -47,6 +54,7 @@ int vtk_write_structured_points(const char *filename, const char *varname,
   FILE *f = fdopen(fd, "w");
   if (!f) {
     close(fd);
+
     return -1;
   }
 

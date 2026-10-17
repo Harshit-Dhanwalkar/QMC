@@ -1,9 +1,11 @@
 /*
- * GR framework backend
- * NOTE: Compiled with -DUSE_GR flag
+ * GR Framework plotting backend
  *
- * PLOT_FORMAT_TEXT is handled locally so that a GR-built binary still produces
- * CSV output for headless consumers.
+ * Interfaces directly with C library `libGR` to generate 2D plots
+ * Provides most reliable interactive window support and high-quality graphical
+ * output
+ *
+ * NOTE: Compiled only when library is built with `-DUSE_GR`
  */
 
 #include "gr/gr_plot.h"

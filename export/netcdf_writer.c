@@ -1,3 +1,14 @@
+/*
+ * NetCDF export backend
+ *
+ * Writes multidimensional arrays to NetCDF4 (HDF5-backed) files
+ * Handles defining dimensions and variables, and safely overwriting existing
+ * variables if their shape matches
+ *
+ * NOTE: Requires `USE_NETCDF` to be defined at compile time
+ * When built without NetCDF support, this file compiles to a stub that returns
+ * NETCDF_ERR_NOT_SUPPORTED for all operations
+ */
 #include "netcdf_writer.h"
 
 #include <stdio.h>
@@ -54,16 +65,16 @@ struct netcdf_writer {
 // mine to implement but due to underlying NetCDF C API only grew tool for it
 // (nc_del_var, nc_del_dim) in version 4.9.0. So version of my intent cannot
 // link on the CI runner either
-// /*
-//  * Define (or redefine) a variable and write its data
-//  *
-//  * Each variable owns a private set of dimensions named "<varname>_dim0",
-//  * "<varname>_dim1", ... so that two variables with same shape do not collide
-//  * on dimension names, and so that replacing a variable is a well-defined
-//  * delete-then-redefine operation
-//  *
-//  * Caller must not have the file in define mode on entry
-//  */
+/*
+ * Define (or redefine) a variable and write its data
+ *
+ * Each variable owns a private set of dimensions named "<varname>_dim0",
+ * "<varname>_dim1", ... so that two variables with same shape do not collide
+ * on dimension names, and so that replacing a variable is a well-defined
+ * delete-then-redefine operation
+ *
+ * Caller must not have the file in define mode on entry
+ */
 // static netcdf_status_t define_and_write_variable(netcdf_writer_t *w,
 //                                                  const char *varname,
 //                                                  const double *data, int

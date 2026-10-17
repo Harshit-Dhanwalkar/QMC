@@ -1,7 +1,13 @@
 /*
- * Matplotlib (Python subprocess pipe) backend
- * Compiled with PLOT_BACKEND=MATPLOTLIB flag
+ * Matplotlib plotting (Python subprocess pipe) backend
  *
+ * Spawns a Python3 subprocess and streams `matplotlib.pyplot` commands to it,
+ * generating standard image formats (PNG, PDF, SVG). Acts as a fallback when
+ * native plotting libraries like GR or gnuplot are unavailable but Python is
+ * installed
+ *
+ * NOTE: Compiled only when library is built with `PLOT_BACKEND=MATPLOTLIB`
+ * WARN: Does not support interactive window display
  * TODO: Implement PLOT_FORMAT_WINDOW for matplotlib's interactive
  * plt.show() GUI backend (TkAgg/Qt5Agg)
  * Returns -1 for WINDOW mode

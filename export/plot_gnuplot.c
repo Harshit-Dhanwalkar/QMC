@@ -1,8 +1,12 @@
 /*
- * GNUplot pipe backend
- * Compiled with -DUSE_GNUPLOT flag
+ * GNUplot plotting backend
  *
- * Requires gnuplot on PATH
+ * Pipes plot commands and data to an external `gnuplot` subprocess to generate
+ * 2D line plots in formats such as PNG, PDF, SVG, and EPS, or to open an
+ * interactive window
+ *
+ * NOTE: Requires `gnuplot` to be installed on system and available on PATH
+ * NOTE: Compiled only when library is built with `-DUSE_GNUPLOT`
  */
 
 #include "plot.h"
