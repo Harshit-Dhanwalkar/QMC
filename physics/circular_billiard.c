@@ -174,7 +174,7 @@ int cb_modes(double k_max, cb_mode_t *modes, int max_modes) {
         all[count].sine = s;
         all[count].k = k;
 
-        // NOTE: Normalization factor for the unit disc
+        // NOTE: Normalization factor for unit disc
         all[count].norm =
             1.0 / sqrt(0.5 * jm1 * jm1 * (m == 0 ? 2.0 * M_PI : M_PI));
         count++;
@@ -182,9 +182,12 @@ int cb_modes(double k_max, cb_mode_t *modes, int max_modes) {
     }
   }
 
-  qsort(all, (size_t)count, sizeof *all, cmp);
-  for (int i = 0; i < count && i < max_modes; i++) {
-    modes[i] = all[i];
+  if (count > 0) {
+    qsort(all, (size_t)count, sizeof *all, cmp);
+
+    for (int i = 0; i < count && i < max_modes; i++) {
+      modes[i] = all[i];
+    }
   }
 
   free(all);
