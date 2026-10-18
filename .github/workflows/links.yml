@@ -21,7 +21,7 @@ jobs:
   internal:
     name: internal links (blocking)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: lycheeverse/lychee-action@v2
