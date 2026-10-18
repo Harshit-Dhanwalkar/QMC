@@ -38,7 +38,9 @@ class InstanceBatchBase {
     this.floatsPerInstance = floatsPerInstance;
     this.attributes = attributes;
     this.program = null;
-    this.uniformLocs = {};
+    // Cache uniform locations per program using a Map to prevent
+    // cache-loss on program switches
+    this.programUniformLocs = new Map();
     this.buffer = gl.createBuffer();
     this.vao = gl.createVertexArray();
     this.data = new Float32Array(4096 * floatsPerInstance);
@@ -86,8 +88,8 @@ class InstanceBatchBase {
 
     gl.useProgram(program);
     gl.bindVertexArray(this.vao);
-
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+
     if (this.dirty) {
       const view = this.data.subarray(0, this.count * this.floatsPerInstance);
       if (view.byteLength > this.gpuBytes) {
@@ -95,7 +97,6 @@ class InstanceBatchBase {
         this.gpuBytes = this.data.byteLength;
         gl.bufferData(gl.ARRAY_BUFFER, this.data, gl.DYNAMIC_DRAW);
       } else {
-        // otherwise overwrite in place, no driver-side realloc
         gl.bufferSubData(gl.ARRAY_BUFFER, 0, view);
       }
 
@@ -126,16 +127,21 @@ class InstanceBatchBase {
       }
 
       this.program = program;
-      this.uniformLocs = {};
     }
 
-    // Uniforms: cache locations across calls
+    // Retrieve or initialize uniform location cache for active program
+    let uniformLocs = this.programUniformLocs.get(program);
+    if (!uniformLocs) {
+      uniformLocs = {};
+      this.programUniformLocs.set(program, uniformLocs);
+    }
+
     for (const [k, v] of Object.entries(uniforms)) {
-      if (!(k in this.uniformLocs)) {
-        this.uniformLocs[k] = gl.getUniformLocation(program, k);
+      if (!(k in uniformLocs)) {
+        uniformLocs[k] = gl.getUniformLocation(program, k);
       }
 
-      setUniform(gl, this.uniformLocs[k], v);
+      setUniform(gl, uniformLocs[k], v);
     }
 
     if (setup) {
@@ -189,6 +195,7 @@ export class RectBatch extends InstanceBatchBase {
         gl.vertexAttribPointer(qLoc, 2, gl.FLOAT, false, 0, 0);
         gl.vertexAttribDivisor(qLoc, 0);
       }
+
       gl.bindVertexArray(null);
     }
 
@@ -197,6 +204,11 @@ export class RectBatch extends InstanceBatchBase {
 
   _draw(gl) {
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, this.count);
+  }
+
+  dispose() {
+    this.gl.deleteBuffer(this._quadBuf);
+    super.dispose();
   }
 }
 

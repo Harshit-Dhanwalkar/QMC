@@ -1035,7 +1035,7 @@ void main() { outColor = v_color; }`;
           height: H,
           filename: "hofstadter_butterfly.png",
           renderGL: async (canvas) => {
-            const g2 = createGL(canvas);
+            const g2 = createGL(canvas, { preserveDrawingBuffer: true });
             const prog2 = compileProgram(g2, VS, FS);
             const batch2 = new RectBatch(g2);
             const cam2 = new OrthoCamera(viewSnapshot, plotRect, { W, H });

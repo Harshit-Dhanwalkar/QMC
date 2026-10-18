@@ -64,6 +64,7 @@ export class OrthoCamera {
     // Keep anchor at same relative position
     const u = (ax - v.x0) / (v.x1 - v.x0);
     const s = (ay - v.y0) / (v.y1 - v.y0);
+
     v.x0 = ax - u * w;
     v.x1 = v.x0 + w;
     v.y0 = ay - s * h;
@@ -75,6 +76,7 @@ export class OrthoCamera {
     const v = this.view;
     const sx = (v.x1 - v.x0) / this.plotRect.pw;
     const sy = (v.y1 - v.y0) / this.plotRect.ph;
+
     v.x0 -= dxPix * sx;
     v.x1 -= dxPix * sx;
     v.y0 += dyPix * sy;
@@ -91,30 +93,41 @@ export class OrthoCamera {
     bounds = null,
   } = {}) {
     const v = this.view;
+
     let w = v.x1 - v.x0;
     if (w < minW) {
       const c = 0.5 * (v.x0 + v.x1);
+
       v.x0 = c - minW / 2;
       v.x1 = c + minW / 2;
     } else if (w > maxW) {
       const c = 0.5 * (v.x0 + v.x1);
+
       v.x0 = c - maxW / 2;
       v.x1 = c + maxW / 2;
     }
 
-    let h = v.y1 - v.y0;
+    let h = Math.abs(v.y1 - v.y0);
+    let sign = v.y1 > v.y0 ? 1 : -1;
+
     if (h < minH) {
       const c = 0.5 * (v.y0 + v.y1);
-      v.y0 = c - minH / 2;
-      v.y1 = c + minH / 2;
+
+      v.y0 = c - (sign * minH) / 2;
+      v.y1 = c + (sign * minH) / 2;
     } else if (h > maxH) {
       const c = 0.5 * (v.y0 + v.y1);
-      v.y0 = c - maxH / 2;
-      v.y1 = c + maxH / 2;
+
+      v.y0 = c - (sign * maxH) / 2;
+      v.y1 = c + (sign * maxH) / 2;
     }
+
     if (bounds) {
       const w2 = v.x1 - v.x0,
-        h2 = v.y1 - v.y0;
+        h2 = Math.abs(v.y1 - v.y0);
+      const minY = Math.min(bounds.y0, bounds.y1);
+      const maxY = Math.max(bounds.y0, bounds.y1);
+
       if (v.x0 < bounds.x0) {
         v.x0 = bounds.x0;
         v.x1 = v.x0 + w2;
@@ -123,13 +136,22 @@ export class OrthoCamera {
         v.x1 = bounds.x1;
         v.x0 = v.x1 - w2;
       }
-      if (v.y0 < bounds.y0) {
-        v.y0 = bounds.y0;
-        v.y1 = v.y0 + h2;
+
+      if (v.y0 < minY) {
+        v.y0 = minY;
+        v.y1 = v.y0 + sign * h2;
       }
-      if (v.y1 > bounds.y1) {
-        v.y1 = bounds.y1;
-        v.y0 = v.y1 - h2;
+      if (v.y1 > maxY) {
+        v.y1 = maxY;
+        v.y0 = v.y1 - sign * h2;
+      }
+      if (v.y1 < minY) {
+        v.y1 = minY;
+        v.y0 = v.y1 - sign * h2;
+      }
+      if (v.y0 > maxY) {
+        v.y0 = maxY;
+        v.y1 = v.y0 + sign * h2;
       }
     }
   }

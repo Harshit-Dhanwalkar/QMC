@@ -1,5 +1,7 @@
 // 2D-canvas overlay for axes, ticks, crosshairs and text on top of
-// WebGL canvas. Uses a separate <canvas> element; no WebGL state here
+// WebGL canvas
+// Uses a separate <canvas> element; no WebGL state here
+// with High-DPI (Retina) support
 
 export class Overlay2D {
   constructor(canvas) {
@@ -8,11 +10,10 @@ export class Overlay2D {
   }
 
   setSize(W, H) {
-    if (this.canvas.width !== W) {
+    if (this.canvas.width !== W || this.canvas.height !== H) {
       this.canvas.width = W;
-    }
-    if (this.canvas.height !== H) {
       this.canvas.height = H;
+      this.ctx.resetTransform();
     }
   }
 
@@ -28,7 +29,8 @@ export class Overlay2D {
   //   opts:    { font, color, tickLen, xLabel, yLabel, topRight }
   drawAxes(camera, xTicks, yTicks, opts = {}) {
     const c = this.ctx;
-    const { W, H } = this.canvas;
+    const W = this.canvas.width;
+    const H = this.canvas.height;
     const { ml, mt, pw, ph } = camera.plotRect;
     const v = camera.view;
 
@@ -103,7 +105,10 @@ export class Overlay2D {
     const [px, py] = camera.dataToPix(x, y);
 
     c.strokeStyle = solid ? "rgba(255,255,255,.95)" : "rgba(255,255,255,.55)";
-    c.lineWidth = Math.max(1, this.canvas.height / 500);
+    c.lineWidth = Math.max(
+      1,
+      this.canvas.height / window.devicePixelRatio / 500,
+    );
     c.setLineDash(solid ? [] : [5, 4]);
     c.beginPath();
     c.moveTo(px, mt);
@@ -120,6 +125,7 @@ export class Overlay2D {
   // Free text, in device pixels
   drawText(str, x, y, opts = {}) {
     const c = this.ctx;
+
     c.font = `${opts.size ?? 13}px ${opts.family ?? "system-ui,sans-serif"}`;
     c.fillStyle = opts.color ?? "#d7dce5";
     c.textAlign = opts.align ?? "left";

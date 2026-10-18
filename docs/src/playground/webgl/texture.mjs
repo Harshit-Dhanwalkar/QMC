@@ -1,13 +1,6 @@
 // 2D image texture renderer. Uploads RGBA8 pixels and draws them into
 // plot area with a shader that maps visible view (u_view) into full data
 // extent (u_data) to compute UVs
-//
-// Use this for scalar-field demos: quantum carpet, Wigner function, Anderson
-// density, Ising correlations, Dirac density
-//
-// Colours are baked in on CPU before upload, so no LUT texture is
-// needed. If you later want shader-side colormapping, add a u_lut
-// sampler and remap s.r instead of sampling s directly
 
 export const IMAGE_VS = `#version 300 es
 in vec2 a_quad;
@@ -65,6 +58,7 @@ export class Image2D {
     const gl = this.gl;
     this.width = width;
     this.height = height;
+
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(
@@ -78,6 +72,7 @@ export class Image2D {
       gl.UNSIGNED_BYTE,
       pixels,
     );
+
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -135,6 +130,7 @@ export class Image2D {
     if (setup) {
       setup(gl, program);
     }
+
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.bindVertexArray(null);
   }
