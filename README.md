@@ -384,6 +384,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_88_bell_chsh.c</code></li>
   <li><code>eg_89_box_revival.c</code></li>
   <li><code>eg_90_zeno.c</code></li>
+  <li><code>eg_91_circular_billiard.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -448,6 +449,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_anderson.c</code></li>
   <li><code>test_quantum_walk.c</code></li>
   <li><code>test_landau_zener.c</code></li>
+  <li><code>test_circular_billiard.c</code></li>
   <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_ssh_chain.c</code></li>
   <li><code>test_tfim_quench.c</code></li>

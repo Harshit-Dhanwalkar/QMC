@@ -47,6 +47,7 @@ static void check_true(int cond, const char *label) {
 static cb_mode_t modes[400];
 
 int main(void) {
+  // Validate core Bessel J_m(x) values and a standard three-term recurrence
   printf("  === Test: Bessel function ===\n");
   {
     check_close(cb_bessel_j(0, 1.0), 0.7651976865579666, 1e-13, "J0(1)");
@@ -54,12 +55,14 @@ int main(void) {
     check_close(cb_bessel_j(10, 5.0), 0.0014678026473, 1e-12, "J10(5)");
     check_close(cb_bessel_j(0, 0.0), 1.0, 0.0, "J0(0)");
     check_close(cb_bessel_j(3, 0.0), 0.0, 0.0, "J3(0)");
+
     double worst = 0.0;
 
+    // Sweep m and x to measure worst recurrence residual over a broad range
     for (int m = 1; m < 20; m++) {
       for (double x = 0.3; x < 30.0; x += 1.7) {
-        double lhs = cb_bessel_j(m - 1, x) + cb_bessel_j(m + 1, x),
-               rhs = 2.0 * m * cb_bessel_j(m, x) / x;
+        double lhs = cb_bessel_j(m - 1, x) + cb_bessel_j(m + 1, x);
+        double rhs = 2.0 * m * cb_bessel_j(m, x) / x;
 
         worst = fmax(worst, fabs(lhs - rhs));
       }
@@ -68,6 +71,7 @@ int main(void) {
     check_close(worst, 0.0, 1e-12, "recurrence J_{m-1} + J_{m+1} = 2m J_m / x");
   }
 
+  // Validate known roots j_{m,n} and interlacing property of zeros
   printf("  === Test: Bessel zeros ===");
   {
     check_close(cb_bessel_zero(0, 1), 2.404825557695773, 1e-12, "j_{0,1}");
@@ -79,6 +83,7 @@ int main(void) {
 
     int interlace = 1;
 
+    // Check j_{m,n} < j_{m+1,n} < j_{m,n+1} over a small grid of (m,n)
     for (int m = 0; m < 8; m++) {
       for (int n = 1; n < 5; n++) {
         double a = cb_bessel_zero(m, n), b = cb_bessel_zero(m + 1, n),
@@ -121,9 +126,9 @@ int main(void) {
                 "ground state k = j_{0,1}");
     check_true(modes[1].m == 1 && modes[2].m == 1 &&
                    fabs(modes[1].k - modes[2].k) < 1e-12,
-               "first excited level is the doubly degenerate m = 1");
+               "first excited level is doubly degenerate m = 1");
     check_true(cb_modes(30.0, modes, 10) > 10,
-               "returns the full count when the buffer is small");
+               "returns full count when buffer is small");
   }
 
   printf("  === Test: Orthonormality ===\n");
