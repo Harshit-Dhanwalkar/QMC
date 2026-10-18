@@ -271,6 +271,16 @@
         cursor: ns-resize;
         touch-action: none;
       }
+      #cpc-gl {
+        pointer-events: none;
+      }
+      #cpc-ov {
+        cursor: ns-resize;
+        touch-action: none;
+      }
+      #cpc-ov.panning {
+        cursor: grabbing;
+      }
       #sl {
         aspect-ratio: 16 / 7;
       }
@@ -314,7 +324,8 @@
       <div class="main">
         <div>
           <div class="cv" id="cp">
-            <canvas id="cpc"></canvas>
+            <canvas id="cpc-gl"></canvas>
+            <canvas id="cpc-ov"></canvas>
             <div id="readout"></div>
           </div>
         </div>
@@ -323,16 +334,19 @@
           <div class="panel">
             <h2>Cursor</h2>
             <div class="row" id="jumps">
-              <button data-f="0">0</button><button data-f="0.125">T/8</button
-              ><button data-f="0.25">T/4</button
-              ><button data-f="0.5">T/2</button
-              ><button data-f="0.75">3T/4</button><button data-f="1">T</button>
+              <button data-f="0">0</button>
+              <button data-f="0.125">T/8</button>
+              <button data-f="0.25">T/4</button>
+              <button data-f="0.5">T/2</button>
+              <button data-f="0.75">3T/4</button>
+              <button data-f="1">T</button>
               <button id="play" class="primary">Play</button>
+              <button id="reset">⟲ Reset view</button>
             </div>
             <div class="row">
               <label
-                ><span>time t/T</span
-                ><input
+                ><span>time t/T</span>
+                <input
                   id="tt"
                   type="range"
                   min="0"
@@ -346,8 +360,8 @@
             <h2>Packet</h2>
             <div class="row">
               <label
-                ><span>centre x<sub>0</sub></span
-                ><input
+                ><span>centre x<sub>0</sub></span>
+                <input
                   id="x0"
                   type="range"
                   min="0.1"
@@ -370,8 +384,8 @@
             </div>
             <div class="row">
               <label
-                ><span>mode n<sub>0</sub></span
-                ><input
+                ><span>mode n<sub>0</sub></span>
+                <input
                   id="n0"
                   type="range"
                   min="-40"
@@ -420,376 +434,585 @@
 
     <script src="wasi-shim.js"></script>
     <script type="module">
-      (async () => {
-        const $ = (id) => document.getElementById(id);
-        const showError = (m) => {
-          const e = $("err");
-          e.style.display = "block";
-          e.innerHTML = m;
+      import { createGL, compileProgram } from "./webgl/context.mjs";
+      import { Image2D, IMAGE_VS, IMAGE_FS } from "./webgl/texture.mjs";
+      import { OrthoCamera } from "./webgl/camera.mjs";
+      import { Overlay2D } from "./webgl/overlay.mjs";
+
+      const $ = (id) => document.getElementById(id);
+      const showError = (m) => {
+        const e = $("err");
+        e.style.display = "block";
+        e.innerHTML = m;
+      };
+      const css = (v) =>
+        getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+      // Load WebAssembly
+      let w;
+      let wasmMemory = null;
+      try {
+        const res = await fetch("qmc_carpet.wasm");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const { instance } = await WebAssembly.instantiate(
+          await res.arrayBuffer(),
+          makeWasiImports(() => wasmMemory),
+        );
+        w = instance.exports;
+        wasmMemory = w.memory;
+        if (w._initialize) w._initialize();
+      } catch (err) {
+        showError(
+          "Could not load <code>qmc_carpet.wasm</code> (" +
+            err.message +
+            "). If you opened this file directly from disk, serve the " +
+            "folder: <code>python3 -m http.server</code> and open " +
+            "<code>http://localhost:8000/carpet.html</code>.",
+        );
+        throw err;
+      }
+
+      const NX = w.qmc_qc_nx();
+      const NT = w.qmc_qc_nt();
+      const NC = w.qmc_qc_curve_len();
+
+      const CAR = () =>
+        new Float64Array(w.memory.buffer, w.qmc_qc_carpet_buffer(), NX * NT);
+      const SLB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_qc_slice_buffer(), NX);
+      const CVB = () =>
+        new Float64Array(w.memory.buffer, w.qmc_qc_curve_buffer(), NC);
+
+      // WebGL
+      let gl;
+      try {
+        gl = createGL($("cpc-gl"));
+      } catch (err) {
+        showError(
+          "This playground needs WebGL2. " +
+            "Try a recent Chrome, Firefox, Edge, or Safari. (" +
+            err.message +
+            ")",
+        );
+        throw err;
+      }
+
+      const imgProgram = compileProgram(gl, IMAGE_VS, IMAGE_FS);
+      const img = new Image2D(gl);
+      const ov = new Overlay2D($("cpc-ov"));
+
+      // Camera over data coordinates.
+      // x in [0, 1] : position in the well
+      // y in [0, 1] : 1 - t/T, so y=1 at top (t=0), y=0 at bottom (t=T)
+      const FULL_VIEW = { x0: 0, y0: 0, x1: 1, y1: 1 };
+      const camera = new OrthoCamera(
+        FULL_VIEW,
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+
+      // magma-like colormap
+      const stops = [
+        [0, [4, 4, 14]],
+        [0.25, [70, 20, 110]],
+        [0.5, [190, 55, 95]],
+        [0.75, [250, 140, 60]],
+        [1, [252, 245, 190]],
+      ];
+      function ramp(t) {
+        t = Math.max(0, Math.min(1, t));
+        for (let i = 1; i < stops.length; i++) {
+          if (t <= stops[i][0]) {
+            const a = stops[i - 1];
+            const b = stops[i];
+            const u = (t - a[0]) / (b[0] - a[0]);
+
+            return [0, 1, 2].map((k) => a[1][k] + (b[1][k] - a[1][k]) * u);
+          }
+        }
+
+        return stops[stops.length - 1][1];
+      }
+
+      const pixels = new Uint8ClampedArray(NX * NT * 4);
+
+      function buildCarpetPixels() {
+        const c = CAR();
+        let top = 1e-9;
+        for (let i = 0; i < c.length; i++) {
+          top = Math.max(top, c[i]);
+        }
+
+        top *= 0.55;
+        for (let i = 0; i < c.length; i++) {
+          const col = ramp(Math.pow(c[i] / top, 0.6));
+          pixels[i * 4] = col[0];
+          pixels[i * 4 + 1] = col[1];
+          pixels[i * 4 + 2] = col[2];
+          pixels[i * 4 + 3] = 255;
+        }
+
+        img.upload(pixels, NX, NT);
+      }
+
+      // Layout
+      function layoutCarpet() {
+        const cw = $("cp").clientWidth;
+        const ch = $("cp").clientHeight;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const W = Math.round(cw * dpr);
+        const H = Math.round(ch * dpr);
+        for (const el of [$("cpc-gl"), $("cpc-ov")]) {
+          el.width = W;
+          el.height = H;
+        }
+        ov.setSize(W, H);
+        camera.setCanvas({ W, H });
+        camera.setPlotRect({ ml: 0, mt: 0, pw: W, ph: H });
+      }
+
+      // Draw
+      let frac = 0.25;
+      let p0 = null;
+      let raf = 0;
+      let last = 0;
+      let ret = 1;
+
+      // Convert t/T fraction to data-space y, and back
+      const tToY = (t) => 1 - t;
+      const yToT = (y) => 1 - y;
+
+      function drawCarpet() {
+        const W = $("cpc-gl").width;
+        const H = $("cpc-gl").height;
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0.02, 0.03, 0.05, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        img.flush(gl, imgProgram, {
+          u_view: [
+            camera.view.x0,
+            camera.view.y0,
+            camera.view.x1,
+            camera.view.y1,
+          ],
+          u_data: [0, 0, 1, 1],
+          u_plot: [
+            camera.plotRect.ml,
+            camera.plotRect.mt,
+            camera.plotRect.pw,
+            camera.plotRect.ph,
+          ],
+          u_canvas: [W, H],
+        });
+
+        // Overlay: guide lines, labels, cursor
+        const ctx = ov.ctx;
+        ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = camera.plotRect;
+        const fs = Math.max(11, Math.round(H * 0.028));
+        const v = camera.view;
+
+        // Vertical dashed lines at fractional revivals
+        ctx.strokeStyle = "rgba(255,255,255,0.18)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+        for (const [t, label] of [
+          [0.25, "T/4"],
+          [0.5, "T/2"],
+          [0.75, "3T/4"],
+        ]) {
+          const yData = tToY(t);
+          if (yData < v.y0 || yData > v.y1) continue;
+          const [, py] = camera.dataToPix(0, yData);
+          ctx.beginPath();
+          ctx.moveTo(ml, py);
+          ctx.lineTo(ml + pw, py);
+          ctx.stroke();
+          ctx.fillStyle = "rgba(255,255,255,0.7)";
+          ctx.font = fs + "px ui-monospace,monospace";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(label, ml + pw - fs * 0.6, py - fs * 0.3);
+        }
+        ctx.setLineDash([]);
+
+        // Corner hints
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.font = fs + "px ui-monospace,monospace";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText("x →", ml + pw - fs * 0.6, mt + fs * 0.4);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText("t ↓", ml + fs * 0.6, mt + ph - fs * 0.4);
+
+        // Cursor line
+        const yCur = tToY(frac);
+        if (yCur >= v.y0 && yCur <= v.y1) {
+          const [, py] = camera.dataToPix(0, yCur);
+          ctx.strokeStyle = css("--accent");
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(ml, py);
+          ctx.lineTo(ml + pw, py);
+          ctx.stroke();
+        }
+
+        // Zoom factor indicator
+        const zoom = 1 / (v.x1 - v.x0);
+        if (zoom > 1.001) {
+          ctx.fillStyle = "rgba(255,255,255,0.55)";
+          ctx.font = fs + "px ui-monospace,monospace";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          ctx.fillText(zoom.toFixed(1) + "×", ml + fs * 0.6, mt + fs * 0.4);
+        }
+
+        $("readout").innerHTML =
+          "t = " +
+          frac.toFixed(3) +
+          " T<br>return = " +
+          (100 * ret).toFixed(1) +
+          "%";
+      }
+
+      // Sub-panels (unchanged)
+      function fit(canvas) {
+        const r = canvas.parentElement.getBoundingClientRect();
+        const d = window.devicePixelRatio || 1;
+        canvas.width = Math.max(2, r.width * d);
+        canvas.height = Math.max(2, r.height * d);
+        const g = canvas.getContext("2d");
+        g.setTransform(d, 0, 0, d, 0, 0);
+
+        return { g, W: r.width, H: r.height };
+      }
+
+      function drawSlice() {
+        const { g, W: cw, H: ch } = fit($("slc"));
+        const x0 = 36;
+        const x1 = cw - 10;
+        const y0 = ch - 20;
+        const y1 = 10;
+        const s = SLB();
+        let top = 1e-9;
+        for (let j = 0; j < NX; j++) {
+          top = Math.max(top, s[j], p0 ? p0[j] : 0);
+        }
+
+        const X = (j) => x0 + ((j + 0.5) / NX) * (x1 - x0);
+        const Y = (v) => y0 - (v / top) * (y0 - y1 - 4);
+
+        g.strokeStyle = css("--line");
+        g.lineWidth = 1;
+        g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+        if (p0) {
+          g.strokeStyle = "#8993a8";
+          g.setLineDash([4, 4]);
+          g.beginPath();
+          for (let j = 0; j < NX; j++) {
+            j ? g.lineTo(X(j), Y(p0[j])) : g.moveTo(X(j), Y(p0[j]));
+          }
+
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        g.fillStyle = "rgba(61,220,151,0.25)";
+        g.strokeStyle = css("--accent");
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(X(0), y0);
+        for (let j = 0; j < NX; j++) {
+          g.lineTo(X(j), Y(s[j]));
+        }
+        g.lineTo(X(NX - 1), y0);
+        g.closePath();
+        g.fill();
+        g.stroke();
+
+        g.fillStyle = css("--muted");
+        g.font = "11px ui-monospace,monospace";
+        g.fillText("|\u03c8(x, t)|\u00b2 (dashed: t = 0)", x0 + 6, y1 + 13);
+        g.fillText("0", x0, ch - 5);
+        g.fillText("x", (x0 + x1) / 2 - 3, ch - 5);
+        g.fillText("1", x1 - 6, ch - 5);
+      }
+
+      function drawReturn() {
+        const { g, W: cw, H: ch } = fit($("rcc"));
+        const x0 = 36;
+        const x1 = cw - 10;
+        const y0 = ch - 20;
+        const y1 = 10;
+        const c = CVB();
+        const X = (i) => x0 + (i / (NC - 1)) * (x1 - x0);
+        const Y = (v) => y0 - v * (y0 - y1 - 4);
+
+        g.strokeStyle = css("--line");
+        g.lineWidth = 1;
+        g.strokeRect(x0, y1, x1 - x0, y0 - y1);
+
+        g.strokeStyle = css("--accent");
+        g.lineWidth = 2;
+        g.beginPath();
+        for (let i = 0; i < NC; i++) {
+          i ? g.lineTo(X(i), Y(c[i])) : g.moveTo(X(i), Y(c[i]));
+        }
+        g.stroke();
+
+        g.strokeStyle = "#3ddc97";
+        g.globalAlpha = 0.5;
+        g.beginPath();
+        g.moveTo(X(frac * (NC - 1)), y1);
+        g.lineTo(X(frac * (NC - 1)), y0);
+        g.stroke();
+        g.globalAlpha = 1;
+
+        g.fillStyle = "#fff";
+        g.beginPath();
+        g.arc(X(frac * (NC - 1)), Y(ret), 4, 0, 7);
+        g.fill();
+
+        g.fillStyle = css("--muted");
+        g.font = "11px ui-monospace,monospace";
+        g.fillText("1", x0 - 12, Y(1) + 4);
+        g.fillText("0", x0 - 12, y0 + 3);
+        g.fillText("0", x0, ch - 5);
+        g.fillText("T", x1 - 6, ch - 5);
+        g.fillText("t", (x0 + x1) / 2, ch - 5);
+      }
+
+      function note() {
+        const near = (f) => Math.abs(frac - f) < 0.004;
+        $("note").textContent =
+          near(1) || near(0)
+            ? "Full revival: the packet is exactly back where it started."
+            : near(0.5)
+              ? "Half revival: the mirror image of the starting packet (see the dashed curve reflected)."
+              : near(0.25) || near(0.75)
+                ? "Quarter revival: the packet and its mirror image at once, with return probability 1/2."
+                : "Weight in the 160 retained modes: " +
+                  (100 * w.qmc_qc_weight()).toFixed(3) +
+                  "%";
+      }
+
+      // Refresh pipeline
+      function refreshSlice() {
+        ret = w.qmc_qc_slice(frac);
+        $("ttv").textContent = frac.toFixed(3) + " T";
+        drawCarpet();
+        drawSlice();
+        drawReturn();
+        note();
+      }
+
+      function setPacket() {
+        const p = {
+          x0: +$("x0").value,
+          s: +$("sg").value,
+          n0: +$("n0").value,
         };
-        const css = (v) =>
-          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-
-        // Load WebAssembly
-        let w;
-        let wasmMemory = null;
-        try {
-          const res = await fetch("qmc_carpet.wasm");
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const { instance } = await WebAssembly.instantiate(
-            await res.arrayBuffer(),
-            makeWasiImports(() => wasmMemory),
-          );
-          w = instance.exports;
-          wasmMemory = w.memory;
-          if (w._initialize) w._initialize();
-        } catch (err) {
-          showError(
-            "Could not load <code>qmc_carpet.wasm</code> (" +
-              err.message +
-              "). If you opened this file directly " +
-              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/carpet.html</code>.",
-          );
-
+        $("x0v").textContent = p.x0.toFixed(2);
+        $("sgv").textContent = p.s.toFixed(3);
+        $("n0v").textContent = String(p.n0);
+        if (w.qmc_qc_set(p.x0, p.s, p.n0) !== 0) {
+          showError("parameters rejected");
           return;
         }
+        $("err").style.display = "none";
+        w.qmc_qc_slice(0);
+        p0 = Float64Array.from(SLB());
+        buildCarpetPixels();
+        layoutCarpet();
+        refreshSlice();
+      }
 
-        const NX = w.qmc_qc_nx();
-        const NT = w.qmc_qc_nt();
-        const NC = w.qmc_qc_curve_len();
-
-        // views are created after the calls that touch memory (memory can grow)
-        const CAR = () =>
-          new Float64Array(w.memory.buffer, w.qmc_qc_carpet_buffer(), NX * NT);
-        const SLB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_qc_slice_buffer(), NX);
-        const CVB = () =>
-          new Float64Array(w.memory.buffer, w.qmc_qc_curve_buffer(), NC);
-
-        let frac = 0.25;
-        let p0 = null;
-        let raf = 0;
-        let last = 0;
-        let ret = 1;
-        let packet = { x0: 0.3, s: 0.07, n0: 8 };
-
-        const off = document.createElement("canvas");
-        off.width = NX;
-        off.height = NT;
-        const og = off.getContext("2d");
-        const img = og.createImageData(NX, NT);
-
-        function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect();
-          const d = window.devicePixelRatio || 1;
-          canvas.width = Math.max(2, r.width * d);
-          canvas.height = Math.max(2, r.height * d);
-          const g = canvas.getContext("2d");
-          g.setTransform(d, 0, 0, d, 0, 0);
-
-          return { g, W: r.width, H: r.height };
+      let pending = 0;
+      const schedule = () => {
+        if (!pending) {
+          pending = requestAnimationFrame(() => {
+            pending = 0;
+            setPacket();
+          });
         }
+      };
 
-        // magma-like: black -> purple -> orange -> pale yellow
-        const stops = [
-          [0, [4, 4, 14]],
-          [0.25, [70, 20, 110]],
-          [0.5, [190, 55, 95]],
-          [0.75, [250, 140, 60]],
-          [1, [252, 245, 190]],
-        ];
-
-        function ramp(t) {
-          t = Math.max(0, Math.min(1, t));
-          for (let i = 1; i < stops.length; i++)
-            if (t <= stops[i][0]) {
-              const a = stops[i - 1];
-              const b = stops[i];
-              const u = (t - a[0]) / (b[0] - a[0]);
-
-              return [0, 1, 2].map((k) => a[1][k] + (b[1][k] - a[1][k]) * u);
-            }
-
-          return stops[stops.length - 1][1];
-        }
-
-        function buildCarpet() {
-          const c = CAR();
-          let top = 1e-9;
-          for (let i = 0; i < c.length; i++) {
-            top = Math.max(top, c[i]);
-          }
-
-          top *= 0.55;
-          for (let i = 0; i < c.length; i++) {
-            const col = ramp(Math.pow(c[i] / top, 0.6));
-            img.data[i * 4] = col[0];
-            img.data[i * 4 + 1] = col[1];
-            img.data[i * 4 + 2] = col[2];
-            img.data[i * 4 + 3] = 255;
-          }
-
-          og.putImageData(img, 0, 0);
-        }
-
-        const G = { x0: 0, y0: 0, w: 0, h: 0 };
-        function drawCarpet() {
-          const { g, W: cw, H: ch } = fit($("cpc"));
-          G.x0 = 0;
-          G.y0 = 0;
-          G.w = cw;
-          G.h = ch;
-          g.imageSmoothingEnabled = true;
-          g.imageSmoothingQuality = "high";
-          g.drawImage(off, 0, 0, cw, ch);
-          g.strokeStyle = "rgba(255,255,255,0.18)";
-          g.lineWidth = 1;
-          g.setLineDash([3, 4]);
-          for (const f of [0.25, 0.5, 0.75]) {
-            g.beginPath();
-            g.moveTo(0, f * ch);
-            g.lineTo(cw, f * ch);
-            g.stroke();
-          }
-          g.setLineDash([]);
-          g.fillStyle = "rgba(255,255,255,0.7)";
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("T/4", cw - 28, 0.25 * ch - 4);
-          g.fillText("T/2", cw - 28, 0.5 * ch - 4);
-          g.fillText("3T/4", cw - 34, 0.75 * ch - 4);
-          g.fillText("x \u2192", cw - 36, 14);
-          g.fillText("t \u2193", 8, ch - 8);
-          g.strokeStyle = "#3ddc97";
-          g.lineWidth = 2;
-          g.beginPath();
-          g.moveTo(0, frac * ch);
-          g.lineTo(cw, frac * ch);
-          g.stroke();
-          $("readout").innerHTML =
-            "t = " +
-            frac.toFixed(3) +
-            " T<br>return = " +
-            (100 * ret).toFixed(1) +
-            "%";
-        }
-
-        function drawSlice() {
-          const { g, W: cw, H: ch } = fit($("slc"));
-          const x0 = 36;
-          const x1 = cw - 10;
-          const y0 = ch - 20;
-          const y1 = 10;
-          const s = SLB();
-          let top = 1e-9;
-          for (let j = 0; j < NX; j++) {
-            top = Math.max(top, s[j], p0 ? p0[j] : 0);
-          }
-
-          const X = (j) => x0 + ((j + 0.5) / NX) * (x1 - x0);
-          const Y = (v) => y0 - (v / top) * (y0 - y1 - 4);
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
-          if (p0) {
-            g.strokeStyle = "#8993a8";
-            g.setLineDash([4, 4]);
-            g.beginPath();
-            for (let j = 0; j < NX; j++) {
-              j ? g.lineTo(X(j), Y(p0[j])) : g.moveTo(X(j), Y(p0[j]));
-            }
-            g.stroke();
-            g.setLineDash([]);
-          }
-
-          g.fillStyle = "rgba(61,220,151,0.25)";
-          g.strokeStyle = css("--accent");
-          g.lineWidth = 2;
-          g.beginPath();
-          g.moveTo(X(0), y0);
-          for (let j = 0; j < NX; j++) {
-            g.lineTo(X(j), Y(s[j]));
-          }
-          g.lineTo(X(NX - 1), y0);
-          g.closePath();
-          g.fill();
-          g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("|\u03c8(x, t)|\u00b2 (dashed: t = 0)", x0 + 6, y1 + 13);
-          g.fillText("0", x0, ch - 5);
-          g.fillText("x", (x0 + x1) / 2 - 3, ch - 5);
-          g.fillText("1", x1 - 6, ch - 5);
-        }
-
-        function drawReturn() {
-          const { g, W: cw, H: ch } = fit($("rcc"));
-          const x0 = 36;
-          const x1 = cw - 10;
-          const y0 = ch - 20;
-          const y1 = 10;
-          const c = CVB();
-          const X = (i) => x0 + (i / (NC - 1)) * (x1 - x0);
-          const Y = (v) => y0 - v * (y0 - y1 - 4);
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.strokeRect(x0, y1, x1 - x0, y0 - y1);
-          g.strokeStyle = css("--accent");
-          g.lineWidth = 2;
-          g.beginPath();
-          for (let i = 0; i < NC; i++) {
-            i ? g.lineTo(X(i), Y(c[i])) : g.moveTo(X(i), Y(c[i]));
-          }
-          g.stroke();
-          g.strokeStyle = "#3ddc97";
-          g.globalAlpha = 0.5;
-          g.beginPath();
-          g.moveTo(X(frac * (NC - 1)), y1);
-          g.lineTo(X(frac * (NC - 1)), y0);
-          g.stroke();
-          g.globalAlpha = 1;
-          g.fillStyle = "#fff";
-          g.beginPath();
-          g.arc(X(frac * (NC - 1)), Y(ret), 4, 0, 7);
-          g.fill();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("1", x0 - 12, Y(1) + 4);
-          g.fillText("0", x0 - 12, y0 + 3);
-          g.fillText("0", x0, ch - 5);
-          g.fillText("T", x1 - 6, ch - 5);
-          g.fillText("t", (x0 + x1) / 2, ch - 5);
-        }
-
-        function note() {
-          const near = (f) => Math.abs(frac - f) < 0.004;
-          $("note").textContent =
-            near(1) || near(0)
-              ? "Full revival: the packet is exactly back where it started."
-              : near(0.5)
-                ? "Half revival: the mirror image of the starting packet (see the dashed curve reflected)."
-                : near(0.25) || near(0.75)
-                  ? "Quarter revival: the packet and its mirror image at once, with return probability 1/2."
-                  : "Weight in the 160 retained modes: " +
-                    (100 * w.qmc_qc_weight()).toFixed(3) +
-                    "%";
-        }
-
-        function refreshSlice() {
-          ret = w.qmc_qc_slice(frac);
-          $("ttv").textContent = frac.toFixed(3) + " T";
-          drawCarpet();
-          drawSlice();
-          drawReturn();
-          note();
-        }
-
-        function setPacket(initial) {
-          const p = {
-            x0: +$("x0").value,
-            s: +$("sg").value,
-            n0: +$("n0").value,
-          };
-          $("x0v").textContent = p.x0.toFixed(2);
-          $("sgv").textContent = p.s.toFixed(3);
-          $("n0v").textContent = String(p.n0);
-          if (w.qmc_qc_set(p.x0, p.s, p.n0) !== 0) {
-            showError("parameters rejected");
-            return;
-          }
-          $("err").style.display = "none";
-          packet = p;
-          w.qmc_qc_slice(0);
-          p0 = Float64Array.from(SLB());
-          buildCarpet();
-          refreshSlice();
-        }
-
-        let pending = 0;
-        const schedule = () => {
-          if (!pending)
-            pending = requestAnimationFrame(() => {
-              pending = 0;
-              setPacket();
-            });
-        };
-
-        ["x0", "sg", "n0"].forEach((id) =>
-          $(id).addEventListener("input", () => {
-            stop();
-            schedule();
-          }),
-        );
-        $("tt").addEventListener("input", (e) => {
+      // Controls
+      ["x0", "sg", "n0"].forEach((id) =>
+        $(id).addEventListener("input", () => {
           stop();
-          frac = +e.target.value;
+          schedule();
+        }),
+      );
+      $("tt").addEventListener("input", (e) => {
+        stop();
+        frac = +e.target.value;
+        refreshSlice();
+      });
+
+      document.querySelectorAll("#jumps button[data-f]").forEach((b) =>
+        b.addEventListener("click", () => {
+          stop();
+          frac = +b.dataset.f;
+          $("tt").value = frac;
           refreshSlice();
-        });
+        }),
+      );
 
-        document.querySelectorAll("#jumps button[data-f]").forEach((b) =>
-          b.addEventListener("click", () => {
-            stop();
-            frac = +b.dataset.f;
-            $("tt").value = frac;
-            refreshSlice();
-          }),
-        );
-
-        function stop() {
-          if (raf) {
-            cancelAnimationFrame(raf);
-          }
-          raf = 0;
-          $("play").textContent = "Play";
+      function stop() {
+        if (raf) {
+          cancelAnimationFrame(raf);
         }
+        raf = 0;
+        $("play").textContent = "Play";
+      }
 
-        function tick(t) {
-          if (!last) {
-            last = t;
-          }
-          frac += ((t - last) / 1000) * 0.05;
+      function tick(t) {
+        if (!last) {
           last = t;
-          if (frac > 1) {
-            frac -= 1;
-          }
-          $("tt").value = frac;
-          refreshSlice();
-          raf = requestAnimationFrame(tick);
         }
-
-        $("play").addEventListener("click", () => {
-          if (raf) {
-            stop();
-            return;
-          }
-          $("play").textContent = "Pause";
-          last = 0;
-          raf = requestAnimationFrame(tick);
-        });
-
-        function drag(ev) {
-          const r = $("cpc").getBoundingClientRect();
-          frac = Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height));
-          $("tt").value = frac;
-          refreshSlice();
+        frac += ((t - last) / 1000) * 0.05;
+        last = t;
+        if (frac > 1) {
+          frac -= 1;
         }
+        $("tt").value = frac;
+        refreshSlice();
+        raf = requestAnimationFrame(tick);
+      }
 
-        let down = false;
-        $("cpc").addEventListener("pointerdown", (e) => {
+      $("play").addEventListener("click", () => {
+        if (raf) {
           stop();
-          down = true;
-          $("cpc").setPointerCapture(e.pointerId);
-          drag(e);
-        });
-        $("cpc").addEventListener("pointermove", (e) => {
-          if (down) { drag(e); }
-        });
-        $("cpc").addEventListener("pointerup", () => {
-          down = false;
-        });
+          return;
+        }
+        $("play").textContent = "Pause";
+        last = 0;
+        raf = requestAnimationFrame(tick);
+      });
 
-        window.addEventListener("resize", () => refreshSlice());
-        setPacket(true);
-      })();
+      // Reset view button
+      $("reset").addEventListener("click", () => {
+        camera.reset();
+        drawCarpet();
+      });
+
+      // Pointer / wheel on carpet canvas
+      //   drag              -> scrub time
+      //   shift + drag      -> pan
+      //   wheel             -> zoom (anchored at cursor)
+      //   double click      -> reset view
+      const drag = {
+        active: false,
+        panning: false,
+        lx: 0,
+        ly: 0,
+        moved: 0,
+      };
+
+      function pixelFromEvent(ev) {
+        const r = $("cpc-ov").getBoundingClientRect();
+        const sx = $("cpc-ov").width / r.width;
+        const sy = $("cpc-ov").height / r.height;
+
+        return [(ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy];
+      }
+
+      $("cpc-ov").addEventListener("pointerdown", (e) => {
+        stop();
+        drag.active = true;
+        drag.panning = e.shiftKey;
+        drag.lx = e.clientX;
+        drag.ly = e.clientY;
+        drag.moved = 0;
+        $("cpc-ov").setPointerCapture(e.pointerId);
+        if (drag.panning) {
+          $("cpc-ov").classList.add("panning");
+        } else {
+          // immediately scrub on pointer-down for direct feel
+          scrubFromEvent(e);
+        }
+      });
+
+      $("cpc-ov").addEventListener("pointermove", (e) => {
+        if (!drag.active) return;
+        const [px, py] = pixelFromEvent(e);
+        if (drag.panning) {
+          const [pdx, pdy] = pixelFromEvent({
+            clientX: drag.lx,
+            clientY: drag.ly,
+          });
+          const ddx = px - pdx;
+          const ddy = py - pdy;
+          drag.moved += Math.abs(ddx) + Math.abs(ddy);
+          camera.pan(ddx, ddy);
+          clampCamera();
+          drag.lx = e.clientX;
+          drag.ly = e.clientY;
+          drawCarpet();
+        } else {
+          drag.moved += 1;
+          scrubFromEvent(e);
+        }
+      });
+
+      $("cpc-ov").addEventListener("pointerup", (e) => {
+        drag.active = false;
+        if (drag.panning) {
+          $("cpc-ov").classList.remove("panning");
+        }
+        try {
+          $("cpc-ov").releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        // double-click reset (tracked via detail)
+        if (e.detail === 2 && !drag.panning && drag.moved < 4) {
+          camera.reset();
+          drawCarpet();
+        }
+      });
+
+      $("cpc-ov").addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const [px, py] = pixelFromEvent(e);
+          camera.zoomAt(px, py, Math.exp(e.deltaY * 0.0015));
+          clampCamera();
+          drawCarpet();
+        },
+        { passive: false },
+      );
+
+      function clampCamera() {
+        camera.clamp({
+          minW: 0.02,
+          maxW: 1,
+          minH: 0.02,
+          maxH: 1,
+          bounds: { x0: 0, y0: 0, x1: 1, y1: 1 },
+        });
+      }
+
+      function scrubFromEvent(ev) {
+        const [px, py] = pixelFromEvent(ev);
+        const [, yData] = camera.pixToData(px, py);
+        const t = yToT(yData);
+        if (t < 0 || t > 1) return;
+        frac = t;
+        $("tt").value = frac;
+        refreshSlice();
+      }
+
+      window.addEventListener("resize", () => {
+        layoutCarpet();
+        drawCarpet();
+      });
+
+      // Go
+      layoutCarpet();
+      setPacket();
     </script>
 
     <script src="nav.js"></script>

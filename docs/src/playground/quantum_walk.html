@@ -137,6 +137,19 @@
         pointer-events: none;
         line-height: 1.5;
       }
+      #pc-gl,
+      #sc-gl {
+        pointer-events: none;
+      }
+      #pc-ov,
+      #sc-ov {
+        cursor: grab;
+        touch-action: none;
+      }
+      #pc-ov.panning,
+      #sc-ov.panning {
+        cursor: grabbing;
+      }
       .panel {
         background: var(--panel);
         border: 1px solid var(--line);
@@ -304,10 +317,14 @@
       <div class="main">
         <div>
           <div class="cv" id="pl">
-            <canvas id="pc"></canvas>
+            <canvas id="pc-gl"></canvas>
+            <canvas id="pc-ov"></canvas>
             <div id="readout"></div>
           </div>
-          <div class="cv" id="sg"><canvas id="sc"></canvas></div>
+          <div class="cv" id="sg">
+            <canvas id="sc-gl"></canvas>
+            <canvas id="sc-ov"></canvas>
+          </div>
           <div class="legend">
             <span
               ><i style="background: var(--accent)"></i>quantum walk P(x)</span
@@ -355,6 +372,7 @@
             <div class="row">
               <button id="play" class="primary">Pause</button>
               <button id="restart">Restart</button>
+              <button id="resetView">⟲ Reset view</button>
               <label style="width: auto"
                 ><span style="min-width: 0">Speed</span
                 ><input
@@ -398,318 +416,591 @@
 
     <script src="wasi-shim.js"></script>
     <script type="module">
-      (async () => {
-        const $ = (id) => document.getElementById(id);
-        const showError = (m) => {
-          const e = $("err");
-          e.style.display = "block";
-          e.innerHTML = m;
-        };
-        const css = (v) =>
-          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+      import { createGL, compileProgram } from "./webgl/context.mjs";
+      import { LineBatch } from "./webgl/batch.mjs";
+      import { OrthoCamera } from "./webgl/camera.mjs";
+      import { Overlay2D } from "./webgl/overlay.mjs";
 
-        // Load WebAssembly
-        let w;
-        let wasmMemory = null;
-        try {
-          const res = await fetch("qmc_qwalk.wasm");
-          if (!res.ok) throw new Error("HTTP " + res.status);
-          const { instance } = await WebAssembly.instantiate(
-            await res.arrayBuffer(),
-            makeWasiImports(() => wasmMemory),
+      const $ = (id) => document.getElementById(id);
+      const showError = (m) => {
+        const e = $("err");
+        e.style.display = "block";
+        e.innerHTML = m;
+      };
+      const css = (v) =>
+        getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+      // Load WebAssembly
+      let w;
+      let wasmMemory = null;
+      try {
+        const res = await fetch("qmc_qwalk.wasm");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const { instance } = await WebAssembly.instantiate(
+          await res.arrayBuffer(),
+          makeWasiImports(() => wasmMemory),
+        );
+        w = instance.exports;
+        wasmMemory = w.memory;
+        if (w._initialize) w._initialize();
+      } catch (err) {
+        showError(
+          "Could not load <code>qmc_qwalk.wasm</code> (" +
+            err.message +
+            "). If you opened this file directly " +
+            "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/quantum_walk.html</code>.",
+        );
+        throw err;
+      }
+
+      const N = w.qmc_qw_n();
+      const TMAX = w.qmc_qw_tmax();
+      const MID = N / 2;
+      const buf = () =>
+        new Float64Array(w.memory.buffer, w.qmc_qw_buffer(), 2 * N);
+
+      // WebGL setup
+      const LINE_VS = `#version 300 es
+in vec2 a_pos;
+in vec4 a_color;
+uniform vec4 u_view;
+uniform vec4 u_plot;
+uniform vec2 u_canvas;
+out vec4 v_color;
+void main() {
+  float u = (a_pos.x - u_view.x) / (u_view.z - u_view.x);
+  float v = (a_pos.y - u_view.y) / (u_view.w - u_view.y);
+  float px = u_plot.x + u * u_plot.z;
+  float py = u_plot.y + (1.0 - v) * u_plot.w;
+  gl_Position = vec4(
+    (px / u_canvas.x) * 2.0 - 1.0,
+    1.0 - (py / u_canvas.y) * 2.0,
+    0.0, 1.0);
+  v_color = a_color;
+}`;
+
+      const LINE_FS = `#version 300 es
+precision highp float;
+in vec4 v_color;
+out vec4 outColor;
+void main() { outColor = v_color; }`;
+
+      function makeRenderer(canvasId) {
+        const canvas = $(canvasId);
+        const gl = createGL(canvas);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        const program = compileProgram(gl, LINE_VS, LINE_FS);
+
+        return { gl, canvas, program, lines: new LineBatch(gl) };
+      }
+
+      const pcGl = makeRenderer("pc-gl");
+      const scGl = makeRenderer("sc-gl");
+      const pcOv = new Overlay2D($("pc-ov"));
+      const scOv = new Overlay2D($("sc-ov"));
+
+      const C = {
+        accent: [0.24, 0.86, 0.59],
+        accent2: [1.0, 0.71, 0.33],
+        gray: [0.54, 0.58, 0.66],
+        line: [0.14, 0.17, 0.24],
+      };
+
+      const pcCam = new OrthoCamera(
+        { x0: -TMAX, y0: 0, x1: TMAX, y1: 1 },
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+      const scCam = new OrthoCamera(
+        { x0: 0, y0: 0, x1: TMAX, y1: 30 },
+        { ml: 0, mt: 0, pw: 1, ph: 1 },
+        { W: 1, H: 1 },
+      );
+
+      let pcUserZoomed = false;
+      let scUserZoomed = false;
+      let dpr = 1;
+
+      function layoutPanels() {
+        dpr = Math.min(2, window.devicePixelRatio || 1);
+
+        {
+          const cw = $("pl").clientWidth;
+          const ch = $("pl").clientHeight;
+          const W = Math.round(cw * dpr);
+          const H = Math.round(ch * dpr);
+          for (const el of [$("pc-gl"), $("pc-ov")]) {
+            el.width = W;
+            el.height = H;
+          }
+          pcOv.setSize(W, H);
+          const ml = 14 * dpr;
+          const mr = 12 * dpr;
+          const mt = 18 * dpr;
+          const mb = 26 * dpr;
+          pcCam.setCanvas({ W, H });
+          pcCam.setPlotRect({ ml, mt, pw: W - ml - mr, ph: H - mt - mb });
+        }
+
+        {
+          const cw = $("sg").clientWidth;
+          const ch = $("sg").clientHeight;
+          const W = Math.round(cw * dpr);
+          const H = Math.round(ch * dpr);
+          for (const el of [$("sc-gl"), $("sc-ov")]) {
+            el.width = W;
+            el.height = H;
+          }
+          scOv.setSize(W, H);
+          const ml = 34 * dpr;
+          const mr = 10 * dpr;
+          const mt = 8 * dpr;
+          const mb = 18 * dpr;
+          scCam.setCanvas({ W, H });
+          scCam.setPlotRect({ ml, mt, pw: W - ml - mr, ph: H - mt - mb });
+        }
+      }
+
+      function pushDashedLine(batch, x0, y0, x1, y1, rgba, dashes = 30) {
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        for (let i = 0; i < dashes; i++) {
+          const t0 = i / dashes;
+          const t1 = t0 + 0.6 / dashes;
+          if (t1 > 1) {
+            break;
+          }
+
+          batch.pushSegment(
+            x0 + dx * t0,
+            y0 + dy * t0,
+            x0 + dx * t1,
+            y0 + dy * t1,
+            rgba,
           );
-          w = instance.exports;
-          wasmMemory = w.memory;
-          if (w._initialize) w._initialize();
-        } catch (err) {
-          showError(
-            "Could not load <code>qmc_qwalk.wasm</code> (" +
-              err.message +
-              "). If you opened this file directly " +
-              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/quantum_walk.html</code>.",
-          );
+        }
+      }
+
+      // Demo state
+      let theta = 45;
+      let coin = 2;
+      let playing = true;
+      let spf = 2;
+      let hist = [];
+
+      function reset() {
+        if (w.qmc_qw_reset((theta * Math.PI) / 180, coin) !== 0) {
+          showError("reset rejected");
 
           return;
         }
 
-        const N = w.qmc_qw_n();
-        const TMAX = w.qmc_qw_tmax();
-        const MID = N / 2;
-        const buf = () =>
-          new Float64Array(w.memory.buffer, w.qmc_qw_buffer(), 2 * N);
+        hist = [[0, 0, 0]];
+        pcUserZoomed = false;
+        scUserZoomed = false;
+        render();
+      }
 
-        let theta = 45;
-        let coin = 2;
-        let playing = true;
-        let spf = 2;
-        let hist = [];
+      function advance() {
+        if (w.qmc_qw_time() >= TMAX) {
+          playing = false;
+          $("play").textContent = "Play";
 
-        function reset() {
-          if (w.qmc_qw_reset((theta * Math.PI) / 180, coin) !== 0) {
-            showError("reset rejected");
+          return;
+        }
+
+        const n = Math.min(spf, TMAX - w.qmc_qw_time());
+        if (w.qmc_qw_step(n) !== 0) {
+          showError("step failed");
+          playing = false;
+
+          return;
+        }
+
+        const t = w.qmc_qw_time();
+        hist.push([t, Math.sqrt(w.qmc_qw_variance()), Math.sqrt(t)]);
+      }
+
+      function drawPlot() {
+        const b = buf();
+        const t = w.qmc_qw_time();
+        const half = Math.max(12, Math.ceil(t * 1.08));
+
+        let m = 1e-9;
+        for (let x = -half; x <= half; x++) {
+          const j = MID + x;
+          if (j >= 0 && j < N) {
+            m = Math.max(m, b[j], b[N + j]);
+          }
+        }
+        m *= 1.1;
+
+        if (!pcUserZoomed) {
+          pcCam.view.x0 = -half;
+          pcCam.view.x1 = half;
+          pcCam.view.y0 = 0;
+          pcCam.view.y1 = m;
+        }
+        pcCam.clamp({ bounds: { x0: -TMAX, y0: 0, x1: TMAX, y1: 1.5 } });
+
+        const { gl, canvas, program, lines } = pcGl;
+        const W = canvas.width;
+        const H = canvas.height;
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0.02, 0.03, 0.05, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        lines.reset();
+
+        // Light cone
+        const cone = t * Math.cos((theta * Math.PI) / 180);
+        for (const s of [-1, 1]) {
+          pushDashedLine(lines, s * cone, 0, s * cone, m, [1, 1, 1, 0.25], 15);
+        }
+
+        const pushCurve = (off, rgba) => {
+          let prevX = null;
+          let prevY = null;
+          for (let x = -half; x <= half; x++) {
+            if ((((x - t) % 2) + 2) % 2 !== 0) {
+              continue;
+            }
+
+            const j = MID + x;
+            if (j < 0 || j >= N) {
+              continue;
+            }
+
+            const px = x;
+            const py = b[off + j];
+            if (prevX !== null) {
+              lines.pushSegment(prevX, prevY, px, py, rgba);
+            }
+
+            prevX = px;
+            prevY = py;
+          }
+        };
+
+        pushCurve(N, [...C.accent2, 1.0]);
+        pushCurve(0, [...C.accent, 1.0]);
+
+        lines.flush(gl, program, pcCam.uniforms());
+
+        const ctx = pcOv.ctx;
+        ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = pcCam.plotRect;
+        const fs = Math.max(11, Math.round(H * 0.032));
+        const fam = "ui-monospace,monospace";
+
+        ctx.strokeStyle = "rgba(35,43,61,1)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ml, mt);
+        ctx.lineTo(ml, mt + ph);
+        ctx.lineTo(ml + pw, mt + ph);
+        ctx.stroke();
+
+        ctx.fillStyle = "#8993a8";
+        ctx.font = fs + "px " + fam;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("P(x)", ml + 4, mt + 4);
+
+        const v = pcCam.view;
+        const [zeroX] = pcCam.dataToPix(0, 0);
+        if (zeroX >= ml && zeroX <= ml + pw) {
+          ctx.textAlign = "center";
+          ctx.fillText("0", zeroX, mt + ph + 4);
+        }
+
+        ctx.textAlign = "left";
+        ctx.fillText(Math.round(v.x0) + " sites", ml + 4, mt + ph + 4);
+        ctx.textAlign = "right";
+        ctx.fillText(
+          "+" + Math.round(v.x1) + " sites",
+          ml + pw - 4,
+          mt + ph + 4,
+        );
+
+        $("readout").textContent = "t = " + t;
+      }
+
+      function drawSigma() {
+        const { gl, canvas, program, lines } = scGl;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const maxY = Math.max(
+          8,
+          Math.sqrt(1 - Math.sin((theta * Math.PI) / 180)) * TMAX * 1.05,
+          Math.sqrt(TMAX) * 1.1,
+        );
+
+        scCam.clamp({ bounds: { x0: 0, y0: 0, x1: TMAX, y1: maxY } });
+        if (!scUserZoomed) {
+          scCam.view.x0 = 0;
+          scCam.view.x1 = TMAX;
+          scCam.view.y0 = 0;
+          scCam.view.y1 = maxY;
+        }
+
+        gl.viewport(0, 0, W, H);
+        gl.clearColor(0.02, 0.03, 0.05, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        lines.reset();
+
+        const slope = Math.sqrt(1 - Math.sin((theta * Math.PI) / 180));
+        pushDashedLine(lines, 0, 0, TMAX, slope * TMAX, [...C.gray, 1.0], 40);
+
+        const pushHist = (idx, rgba) => {
+          let prevX = null;
+          let prevY = null;
+          hist.forEach((h) => {
+            const px = h[0];
+            const py = h[idx];
+            if (prevX !== null) {
+              lines.pushSegment(prevX, prevY, px, py, rgba);
+            }
+
+            prevX = px;
+            prevY = py;
+          });
+        };
+
+        pushHist(2, [...C.accent2, 1.0]);
+        pushHist(1, [...C.accent, 1.0]);
+
+        lines.flush(gl, program, scCam.uniforms());
+
+        const ctx = scOv.ctx;
+        ctx.clearRect(0, 0, W, H);
+        const { ml, mt, pw, ph } = scCam.plotRect;
+        const fs = Math.max(11, Math.round(H * 0.036));
+        const fam = "ui-monospace,monospace";
+
+        ctx.strokeStyle = "rgba(35,43,61,1)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(ml, mt);
+        ctx.lineTo(ml, mt + ph);
+        ctx.lineTo(ml + pw, mt + ph);
+        ctx.stroke();
+
+        ctx.fillStyle = "#8993a8";
+        ctx.font = fs + "px " + fam;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.fillText("width (sites)", ml + 4, mt + 4);
+
+        const [zeroX] = scCam.dataToPix(0, 0);
+        if (zeroX >= ml && zeroX <= ml + pw) {
+          ctx.textAlign = "center";
+          ctx.fillText("0", zeroX, mt + ph + 4);
+        }
+
+        const [maxX] = scCam.dataToPix(TMAX, 0);
+        if (maxX >= ml && maxX <= ml + pw) {
+          ctx.textAlign = "right";
+          ctx.fillText("t = " + TMAX, maxX, mt + ph + 4);
+        }
+      }
+
+      function updateStats() {
+        const t = w.qmc_qw_time();
+        const sq = Math.sqrt(w.qmc_qw_variance() || 0);
+        const sc = Math.sqrt(t);
+        const as = Math.sqrt(w.qmc_qw_asymptote());
+
+        $("stats").innerHTML =
+          `<div class="stat"><span>Steps t</span><span>${t}</span></div>
+     <div class="stat"><span>Quantum width</span><span>${sq.toFixed(2)} sites</span></div>
+     <div class="stat"><span>Classical width \u221at</span><span>${sc.toFixed(2)} sites</span></div>
+     <div class="stat"><span>Quantum / classical</span><span>${t ? (sq / sc).toFixed(2) : "\u2014"}</span></div>
+     <div class="stat"><span>Asymptotic width / t</span><span>${as.toFixed(4)}</span></div>
+     <div class="stat"><span>Mean position</span><span>${w.qmc_qw_mean().toFixed(2)}</span></div>
+     <div class="stat"><span>Norm</span><span>${w.qmc_qw_norm().toFixed(9)}</span></div>`;
+        $("note").textContent =
+          coin === 2
+            ? "Symmetric start: the two fronts are mirror images. Try the \u2191 start to see the walk drift to one side."
+            : "Biased start: the coin breaks the left-right symmetry, so the walk drifts although each step is 'fair'.";
+      }
+
+      function render() {
+        drawPlot();
+        drawSigma();
+        updateStats();
+      }
+
+      function restart() {
+        playing = true;
+        $("play").textContent = "Pause";
+        reset();
+      }
+
+      function setTheta(v) {
+        theta = v;
+        $("th").value = v;
+        $("thv").innerHTML = v + "&deg;";
+        document
+          .querySelectorAll("#presets button")
+          .forEach((b) => b.classList.toggle("on", +b.dataset.th === v));
+        restart();
+      }
+
+      document
+        .querySelectorAll("#presets button")
+        .forEach((b) =>
+          b.addEventListener("click", () => setTheta(+b.dataset.th)),
+        );
+      $("th").addEventListener("input", (e) => setTheta(+e.target.value));
+
+      document.querySelectorAll("#starts button").forEach((b) =>
+        b.addEventListener("click", () => {
+          coin = +b.dataset.c;
+          document
+            .querySelectorAll("#starts button")
+            .forEach((x) => x.classList.toggle("on", x === b));
+          restart();
+        }),
+      );
+
+      $("play").addEventListener("click", () => {
+        if (w.qmc_qw_time() >= TMAX) {
+          restart();
+
+          return;
+        }
+
+        playing = !playing;
+        $("play").textContent = playing ? "Pause" : "Play";
+      });
+      $("restart").addEventListener("click", restart);
+      $("resetView").addEventListener("click", () => {
+        pcUserZoomed = false;
+        scUserZoomed = false;
+        render();
+      });
+      $("spd").addEventListener("input", (e) => {
+        spf = +e.target.value;
+      });
+
+      function attachCameraInteraction(
+        overlayEl,
+        camera,
+        clampFn,
+        redraw,
+        setUserZoomed,
+      ) {
+        const drag = { active: false, lx: 0, ly: 0, moved: 0 };
+
+        function pixelFromEvent(ev) {
+          const r = overlayEl.getBoundingClientRect();
+          const sx = overlayEl.width / r.width;
+          const sy = overlayEl.height / r.height;
+
+          return [(ev.clientX - r.left) * sx, (ev.clientY - r.top) * sy];
+        }
+
+        overlayEl.addEventListener("pointerdown", (e) => {
+          drag.active = true;
+          drag.lx = e.clientX;
+          drag.ly = e.clientY;
+          drag.moved = 0;
+          overlayEl.setPointerCapture(e.pointerId);
+          overlayEl.classList.add("panning");
+        });
+
+        overlayEl.addEventListener("pointermove", (e) => {
+          if (!drag.active) {
             return;
           }
 
-          hist = [[0, 0, 0]];
+          const [px, py] = pixelFromEvent(e);
+          const [pdx, pdy] = pixelFromEvent({
+            clientX: drag.lx,
+            clientY: drag.ly,
+          });
+          const ddx = px - pdx;
+          const ddy = py - pdy;
+
+          drag.moved += Math.abs(ddx) + Math.abs(ddy);
+          camera.pan(ddx, ddy);
+          clampFn();
+          setUserZoomed(true);
+          drag.lx = e.clientX;
+          drag.ly = e.clientY;
+          redraw();
+        });
+
+        overlayEl.addEventListener("pointerup", (e) => {
+          drag.active = false;
+          overlayEl.classList.remove("panning");
+          try {
+            overlayEl.releasePointerCapture(e.pointerId);
+          } catch (_) {}
+
+          if (e.detail === 2 && drag.moved < 4) {
+            camera.reset();
+            setUserZoomed(false);
+            redraw();
+          }
+        });
+
+        overlayEl.addEventListener("pointerleave", () => {
+          drag.active = false;
+          overlayEl.classList.remove("panning");
+        });
+
+        overlayEl.addEventListener(
+          "wheel",
+          (e) => {
+            e.preventDefault();
+            const [px, py] = pixelFromEvent(e);
+            camera.zoomAt(px, py, Math.exp(e.deltaY * 0.0015));
+            clampFn();
+            setUserZoomed(true);
+            redraw();
+          },
+          { passive: false },
+        );
+      }
+
+      attachCameraInteraction(
+        $("pc-ov"),
+        pcCam,
+        () => pcCam.clamp({ bounds: { x0: -TMAX, y0: 0, x1: TMAX, y1: 1.5 } }),
+        drawPlot,
+        (v) => (pcUserZoomed = v),
+      );
+      attachCameraInteraction(
+        $("sc-ov"),
+        scCam,
+        () => scCam.clamp({ bounds: { x0: 0, y0: 0, x1: TMAX, y1: 50 } }),
+        drawSigma,
+        (v) => (scUserZoomed = v),
+      );
+
+      window.addEventListener("resize", () => {
+        layoutPanels();
+        render();
+      });
+
+      layoutPanels();
+      reset();
+
+      function frame() {
+        if (playing) {
+          advance();
           render();
         }
 
-        function advance() {
-          if (w.qmc_qw_time() >= TMAX) {
-            playing = false;
-            $("play").textContent = "Play";
-            return;
-          }
-
-          const n = Math.min(spf, TMAX - w.qmc_qw_time());
-          if (w.qmc_qw_step(n) !== 0) {
-            showError("step failed");
-            playing = false;
-            return;
-          }
-
-          const t = w.qmc_qw_time();
-          hist.push([t, Math.sqrt(w.qmc_qw_variance()), Math.sqrt(t)]);
-        }
-
-        function fit(canvas) {
-          const r = canvas.parentElement.getBoundingClientRect();
-          const d = window.devicePixelRatio || 1;
-          canvas.width = Math.max(2, r.width * d);
-          canvas.height = Math.max(2, r.height * d);
-          const g = canvas.getContext("2d");
-          g.setTransform(d, 0, 0, d, 0, 0);
-
-          return { g, W: r.width, H: r.height };
-        }
-
-        function drawPlot() {
-          const { g, W: cw, H: ch } = fit($("pc"));
-          const b = buf();
-          const t = w.qmc_qw_time();
-          const half = Math.max(12, Math.ceil(t * 1.08));
-          const x0 = 14;
-          const x1 = cw - 12;
-          const y0 = ch - 26;
-          const y1 = 18;
-          const X = (x) => x0 + ((x + half) / (2 * half)) * (x1 - x0);
-          let m = 1e-9;
-          for (let x = -half; x <= half; x++) {
-            const j = MID + x;
-            if (j >= 0 && j < N) {
-              m = Math.max(m, b[j], b[N + j]);
-            }
-          }
-
-          m *= 1.08;
-          const Y = (p) => y0 - (y0 - y1) * (p / m);
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(x0, y0);
-          g.lineTo(x1, y0);
-          g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("\u2212" + half, x0, ch - 8);
-          g.fillText("0", X(0) - 3, ch - 8);
-          g.fillText("+" + half + "  (sites)", x1 - 78, ch - 8);
-
-          // light cone of the quantum walk: |x| <= t cos(theta)
-          const cone = t * Math.cos((theta * Math.PI) / 180);
-          g.setLineDash([4, 4]);
-          g.strokeStyle = "rgba(255,255,255,.25)";
-          for (const s of [-1, 1]) {
-            g.beginPath();
-            g.moveTo(X(s * cone), y0);
-            g.lineTo(X(s * cone), y1);
-            g.stroke();
-          }
-
-          g.setLineDash([]);
-          const series = (off, col, fill) => {
-            g.beginPath();
-            let first = true;
-            let lastX = X(-half);
-            for (let x = -half; x <= half; x++) {
-              if ((((x - t) % 2) + 2) % 2 !== 0) {
-                continue;
-              }
-
-              const j = MID + x;
-              if (j < 0 || j >= N) {
-                continue;
-              }
-
-              const px = X(x);
-              const py = Y(b[off + j]);
-              first ? g.moveTo(px, py) : g.lineTo(px, py);
-              first = false;
-              lastX = px;
-            }
-
-            g.strokeStyle = col;
-            g.lineWidth = 1.8;
-            g.stroke();
-            if (fill) {
-              g.lineTo(lastX, y0);
-              g.lineTo(X(-half), y0);
-              g.closePath();
-              g.globalAlpha = 0.18;
-              g.fillStyle = col;
-              g.fill();
-              g.globalAlpha = 1;
-            }
-          };
-
-          series(N, css("--accent2"), false);
-          series(0, css("--accent"), true);
-          g.fillStyle = css("--muted");
-          g.fillText(
-            "probability per site (every other site is occupied)",
-            14,
-            12,
-          );
-          $("readout").textContent = "t = " + t;
-        }
-
-        function drawSigma() {
-          const { g, W: cw, H: ch } = fit($("sc"));
-          const x0 = 34;
-          const x1 = cw - 10;
-          const y0 = ch - 18;
-          const y1 = 8;
-          const yMax = Math.max(
-            8,
-            Math.sqrt(1 - Math.sin((theta * Math.PI) / 180)) * TMAX * 1.05,
-            Math.sqrt(TMAX) * 1.1,
-          );
-          const X = (t) => x0 + (t / TMAX) * (x1 - x0);
-          const Y = (v) => y0 - (y0 - y1) * Math.min(1, v / yMax);
-
-          g.strokeStyle = css("--line");
-          g.lineWidth = 1;
-          g.beginPath();
-          g.moveTo(x0, y1);
-          g.lineTo(x0, y0);
-          g.lineTo(x1, y0);
-          g.stroke();
-          g.fillStyle = css("--muted");
-          g.font = "11px ui-monospace,monospace";
-          g.fillText("width (sites)", x0 + 6, 16);
-          g.fillText("t = " + TMAX, x1 - 52, ch - 4);
-          g.fillText("0", x0 - 3, ch - 4);
-
-          const slope = Math.sqrt(1 - Math.sin((theta * Math.PI) / 180));
-          g.setLineDash([5, 4]);
-          g.strokeStyle = "#8993a8";
-          g.beginPath();
-          g.moveTo(X(0), Y(0));
-          g.lineTo(X(TMAX), Y(slope * TMAX));
-          g.stroke();
-          g.setLineDash([]);
-
-          const line = (idx, col) => {
-            g.strokeStyle = col;
-            g.lineWidth = 2;
-            g.beginPath();
-            hist.forEach((h, i) => {
-              const px = X(h[0]);
-              const py = Y(h[idx]);
-              i ? g.lineTo(px, py) : g.moveTo(px, py);
-            });
-
-            g.stroke();
-          };
-
-          line(2, css("--accent2"));
-          line(1, css("--accent"));
-        }
-
-        function updateStats() {
-          const t = w.qmc_qw_time();
-          const sq = Math.sqrt(w.qmc_qw_variance() || 0);
-          const sc = Math.sqrt(t);
-          const as = Math.sqrt(w.qmc_qw_asymptote());
-          $("stats").innerHTML =
-            `<div class="stat"><span>Steps t</span><span>${t}</span></div>
-       <div class="stat"><span>Quantum width</span><span>${sq.toFixed(2)} sites</span></div>
-       <div class="stat"><span>Classical width \u221at</span><span>${sc.toFixed(2)} sites</span></div>
-       <div class="stat"><span>Quantum / classical</span><span>${t ? (sq / sc).toFixed(2) : "\u2014"}</span></div>
-       <div class="stat"><span>Asymptotic width / t</span><span>${as.toFixed(4)}</span></div>
-       <div class="stat"><span>Mean position</span><span>${w.qmc_qw_mean().toFixed(2)}</span></div>
-       <div class="stat"><span>Norm</span><span>${w.qmc_qw_norm().toFixed(9)}</span></div>`;
-          $("note").textContent =
-            coin === 2
-              ? "Symmetric start: the two fronts are mirror images. Try the \u2191 start to see the walk drift to one side."
-              : "Biased start: the coin breaks the left-right symmetry, so the walk drifts although each step is 'fair'.";
-        }
-
-        function render() {
-          drawPlot();
-          drawSigma();
-          updateStats();
-        }
-
-        function restart() {
-          playing = true;
-          $("play").textContent = "Pause";
-          reset();
-        }
-
-        function setTheta(v, fromPreset) {
-          theta = v;
-          $("th").value = v;
-          $("thv").innerHTML = v + "&deg;";
-          document
-            .querySelectorAll("#presets button")
-            .forEach((b) => b.classList.toggle("on", +b.dataset.th === v));
-          restart();
-        }
-
-        document
-          .querySelectorAll("#presets button")
-          .forEach((b) =>
-            b.addEventListener("click", () => setTheta(+b.dataset.th)),
-          );
-        $("th").addEventListener("input", (e) => setTheta(+e.target.value));
-
-        document.querySelectorAll("#starts button").forEach((b) =>
-          b.addEventListener("click", () => {
-            coin = +b.dataset.c;
-            document
-              .querySelectorAll("#starts button")
-              .forEach((x) => x.classList.toggle("on", x === b));
-            restart();
-          }),
-        );
-
-        $("play").addEventListener("click", () => {
-          if (w.qmc_qw_time() >= TMAX) {
-            restart();
-            return;
-          }
-          playing = !playing;
-          $("play").textContent = playing ? "Pause" : "Play";
-        });
-        $("restart").addEventListener("click", restart);
-        $("spd").addEventListener("input", (e) => {
-          spf = +e.target.value;
-        });
-        window.addEventListener("resize", render);
-
-        function frame() {
-          if (playing) {
-            advance();
-            render();
-          }
-
-          requestAnimationFrame(frame);
-        }
-
-        reset();
         requestAnimationFrame(frame);
-      })();
+      }
+
+      requestAnimationFrame(frame);
     </script>
 
     <script src="nav.js"></script>
