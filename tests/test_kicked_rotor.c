@@ -44,24 +44,30 @@ enum { N = 4096, NP = 20000 };
 static double g_theta[NP];
 static double g_p[NP];
 
+// End-to-end validation driver for kicked rotor behavior across analytically
+// tractable, numerical-stability, and invalid-input cases
 int main(void) {
   printf(" > Kicked rotor tests:\n");
 
   cvector_t *psi = cvector_alloc(N);
-
   if (!psi) {
     return 1;
   }
 
+  // Quantum resonance benchmark: for \hbar = 4*\pi, <m^2> follows exact closed
+  // form (n * K / \hbar)^2 / 2 at integer kick counts
   printf("  === Test: Quantum resonance (\\hbar = 4 \\pi) ===\n");
   const double hres = 4.0 * M_PI;
 
   krotor_init(psi);
-  int done = 0;
+  int done = 0; // Records latest completed kick for loop-completion check
 
   for (int n = 1; n <= 20; n++) {
     krotor_step(psi, 5.0, hres, 1);
+
+    // Verify at representative early/mid/late kicks
     done = n;
+
     if (n == 1 || n == 4 || n == 20) {
       double x = n * 5.0 / hres;
       char label[48];
@@ -71,8 +77,10 @@ int main(void) {
     }
   }
 
+  // Sanity check that full resonance loop executed
   check_true(done == 20, "20 kicks applied");
 
+  // Norm preservation (unitarity) and K=0 free-rotor invariants
   printf("  === Test: Unitarity and free rotor ===\n");
   krotor_init(psi);
   krotor_step(psi, 7.0, 1.3, 400);
@@ -145,6 +153,7 @@ int main(void) {
              "NULL \\theta");
   check_true(isnan(krotor_classical_p2(NULL, 3)), "p2 NULL");
 
+  // Clean up
   cvector_free(bad);
   cvector_free(psi);
 

@@ -133,6 +133,7 @@ static void test_time_independent_limit(void) {
   check_close(max_err, 0.0, 1e-8,
               "time-dependent path matches static path pointwise");
 
+  // Clean up
   free(x);
   free(V);
   free(diag);
@@ -142,7 +143,7 @@ static void test_time_independent_limit(void) {
 }
 
 static void test_norm_conserved_no_cap(void) {
-  printf("  === Test Norm conservation (no CAP) ===\n");
+  printf("  === Test: Norm conservation (no CAP) ===\n");
 
   int N = 300;
   double x_min = -15.0;
@@ -172,13 +173,14 @@ static void test_norm_conserved_no_cap(void) {
   double n_final = norm_sq(psi, dx);
   check_close(n_final, 1.0, 1e-6, "norm conserved over 200 CN steps");
 
+  // Clean up
   free(x);
   cvector_free(psi);
 }
 
 // Group velocity v = \hbar* k0 / m = 3.0 (natural units)
 static void test_cap_absorbs(void) {
-  printf("  === Test CAP absorbs outgoing wavepacket ===\n");
+  printf("  === Test: CAP absorbs outgoing wavepacket ===\n");
 
   int N = 400;
   double x_min = -20.0;
@@ -229,18 +231,22 @@ static void test_cap_absorbs(void) {
   printf("  final norm, NO-CAP control: %.6f (expect ~1)\n", n_free);
 
   check(n_cap < 0.3,
-        "CAP absorbs most of the wavepacket norm"); // packet crosses CAP layer
+        "CAP absorbs most of wavepacket norm"); // packet crosses CAP layer
   check_close(n_free, 1.0, 1e-3, "no-CAP control stays normalized");
 
+  // Clean up
   free(x);
   free(absorb);
   cvector_free(psi_cap);
   cvector_free(psi_free);
 }
 
+// Verify that an energy eigenstate only acquires a global phase under time
+// evolution, so its probability density |\phi(x,t)|^2 remains invariant
 static void test_stationary_state_probability_invariant(void) {
-  printf("  === Test |\\phi(t)|^2 invariant for energy eigenstate ===\n");
+  printf("  === Test: |\\phi(t)|^2 invariant for energy eigenstate ===\n");
 
+  // Build spatial grid and allocate static harmonic potential V(x)=x^2/2
   int N = 201;
   double xmin = -5.0;
   double xmax = 5.0;
@@ -278,6 +284,7 @@ static void test_stationary_state_probability_invariant(void) {
   if (!eig) {
     check(0, "eigensolver failed");
 
+    // Clean up
     cmatrix_free(H);
     free(x);
     free(V);
@@ -334,6 +341,7 @@ static void test_stationary_state_probability_invariant(void) {
   check(max_prob_err < 1e-4,
         "|\\phi(T)|^2 == |\\phi(0)|^2 after one period T = 2 * \\pi/E_0");
 
+  // Clean up
   cmatrix_free(H);
   free(prob0);
   free(diag);

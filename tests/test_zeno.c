@@ -42,20 +42,30 @@ static void check_true(int cond, const char *label) {
   }
 }
 
+// Integration-style test driver for Zeno module
+// Verifies closed-form pulsed survival, time-resolved pulsed survival and
+// continuous-measurement behavior
+// Each failed check increments global `failures` counter and is summarized at
+// process exit
 int main(void) {
-  const double omega = 1.0, T = M_PI;
+  const double omega = 1.0;
+  const double T = M_PI;
 
+  // Pulsed-measurement baseline checks and asymptotic Zeno behavior
   printf("  === Test: Pulsed measurements ===\n");
   {
+    // Exact/reference values for small N at T = \pi/\Omega
     check_close(zeno_survival_pulsed(omega, T, 1), 0.0, 1e-30,
-                "N = 1 at T = pi/Omega: complete flip");
+                "N = 1 at T = \\pi/\\Omega: complete flip");
     check_close(zeno_survival_pulsed(omega, T, 2), 0.25, 1e-14,
-                "N = 2: cos^4(pi/4) = 1/4");
+                "N = 2: \\cos^4(\\pi/4) = 1/4");
     check_close(zeno_survival_pulsed(omega, T, 4), pow(cos(M_PI / 8.0), 8.0),
                 1e-14, "N = 4");
 
     int mono = 1;
 
+    // For fixed total time T, increasing measurement count should not reduce
+    // survival
     for (int n = 2; n < 400; n++) {
       if (zeno_survival_pulsed(omega, T, n + 1) <
           zeno_survival_pulsed(omega, T, n)) {
@@ -69,9 +79,11 @@ int main(void) {
                 "N = 1000: nearly frozen");
     check_close(zeno_survival_pulsed(omega, T, 1000),
                 exp(-omega * omega * T * T / 4000.0), 1e-5,
-                "large-N law exp(-(Omega T)^2 / 4N)");
+                "large-N law \\exp(-(\\Omega T)^2 / 4N)");
   }
 
+  // Time-resolved pulsed survival should match boundary and mid-interval
+  // formulas
   printf("  === Test: Survival during pulsed run ===\n");
   {
     check_close(zeno_survival_pulsed_at(omega, T, 5, 0.0), 1.0, 1e-15, "t = 0");
@@ -87,6 +99,7 @@ int main(void) {
                 1e-12, "mid-interval after one measurement");
   }
 
+  // Continuous-measurement model checks (Bloch-equation implementation)
   printf("  === Test: Continuous measurement: Bloch equations ===\n");
   {
     double worst = 0.0;
@@ -98,7 +111,7 @@ int main(void) {
                                pow(cos(omega * t / 2.0), 2.0)));
     }
 
-    check_close(worst, 0.0, 1e-9, "gamma = 0: cos^2(Omega t / 2)");
+    check_close(worst, 0.0, 1e-9, "\\gamma = 0: \\cos^2(\\Omega t / 2)");
     check_close(zeno_survival_continuous(omega, 0.7, 80.0), 0.5, 1e-6,
                 "long-time limit 1/2");
   }
@@ -142,7 +155,7 @@ int main(void) {
     }
 
     check_close(zeno_continuous_rate(omega, 2.0), omega, 1e-14,
-                "fastest decay at gamma = 2 \\Omega equals \\Omega");
+                "fastest decay at \\gamma = 2 \\Omega equals \\Omega");
     check_close(zeno_continuous_rate(omega, 1000.0) * 1000.0, omega * omega,
                 1e-3, "strong measurement: \\Omega^2 / \\gamma");
     check_true(zeno_continuous_rate(omega, 3.0) <
@@ -158,10 +171,11 @@ int main(void) {
 
     zeno_sample_pulsed(omega, T, n, ntraj, 99u, alive);
     check_close((double)alive[n] / ntraj, zeno_survival_pulsed(omega, T, n),
-                5.0 * 0.5 / sqrt(ntraj), "N = 20 survival within 5 sigma");
+                5.0 * 0.5 / sqrt(ntraj), "N = 20 survival within 5 \\sigma");
     check_close((double)alive[1] / ntraj, pow(cos(M_PI / 40.0), 2.0),
                 5.0 * 0.5 / sqrt(ntraj), "first measurement");
     check_true(alive[0] == ntraj, "all alive before first measurement");
+
     int mono = 1;
 
     for (int k = 1; k <= n; k++) {

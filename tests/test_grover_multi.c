@@ -52,11 +52,16 @@ static void mark(int n, int m) {
   }
 }
 
+// Integration-style validation of multi-target Grover behavior
 int main(void) {
-  printf("  --- state vector vs \\sin^2((2k+1) \\theta) ---\n");
+
+  // Simulated success probability follows \sin^2((2k+1) \theta)
+  // and norm stays 1
+  printf("  === Test: State vector vs \\sin^2((2k+1) \\theta) ===\n");
   {
     int cases[][2] = {{6, 1}, {8, 3}, {10, 5}, {10, 40}, {12, 17}};
 
+    // Sweep through and slightly beyond optimum to cover periodic behavior
     for (unsigned c = 0; c < sizeof cases / sizeof cases[0]; c++) {
       int n = cases[c][0];
       int m = cases[c][1];
@@ -71,6 +76,7 @@ int main(void) {
 
         worst = fmax(worst, fabs(grover_multi_success(amp, n, marked) -
                                  grover_multi_success_exact(n, m, k)));
+
         for (int i = 0; i < (1 << n); i++) {
           s += amp[i] * amp[i];
         }
@@ -89,7 +95,7 @@ int main(void) {
     }
   }
 
-  printf("  --- optimal iteration count and overshoot ---\n");
+  printf("  === Test: Optimal iteration count and overshoot ===\n");
   {
     int n = 10;
     int m = 1;
@@ -107,7 +113,7 @@ int main(void) {
     check_close(grover_multi_theta(n, m), asin(1.0 / 32.0), 1e-15, "theta");
   }
 
-  printf("  --- special cases ---\n");
+  printf("  === Test: Special cases ===\n");
   {
     mark(8, 64);
     grover_multi_init(amp, 8);
@@ -133,7 +139,7 @@ int main(void) {
                 "M = N/2: stuck at 1/2");
   }
 
-  printf("  --- symmetry among marked items ---\n");
+  printf("  === Test: Symmetry among marked items ===\n");
   {
     int n = 8;
     int m = 5;
@@ -156,7 +162,7 @@ int main(void) {
     check_close(hi - lo, 0.0, 1e-13, "all marked amplitudes equal");
   }
 
-  printf("  --- agreement with grover_search ---\n");
+  printf("  === Test: Agreement with grover_search ===\n");
   {
     grover_result_t g = grover_search(6, 21, 4);
 
@@ -170,7 +176,7 @@ int main(void) {
     }
   }
 
-  printf("  --- invalid input ---\n");
+  printf("  === Test: Invalid input ===\n");
   {
     check_true(grover_multi_init(NULL, 4) == -1, "NULL state rejected");
     check_true(grover_multi_init(amp, 0) == -1, "zero qubits rejected");

@@ -5,7 +5,7 @@
  * 2. Unitarity: norm stays 1 over hundreds of steps and every coin angle
  * 3. Ballistic spreading: <x^2>/t^2 -> 1 - \sin(\theta) (three angles)
  * 4. Symmetry and structure: symmetric start gives a symmetric distribution,
- *    peaks near +/- t/sqrt(2), light cone |x| <= t, low centre
+ *    peaks near +/- t / \sqrt(2), light cone |x| <= t, low centre
  * 5. Biased start (|up>): drift <x> -> (1 - 1 / \sqrt(2)) t
  * 6. Classical walk: binomial probabilities, variance t, quantum much wider
  * 7. Invalid input
@@ -47,12 +47,19 @@ static double g_c[N];
 
 /*
  * Validation for discrete-time quantum walk behavior
- * Each section below checks one physical/statistical property, while preserving
- * a single executable test entrypoint
+ * This single test entrypoint runs a sequence of physics/statistics checks
+ * against walk implementation and reports aggregated pass/fail status through
+ * global `failures` counter
+ * NOTE:
+ * - `up` and `down` hold two coin components over 1D lattice
+ * - `g_p` is reused as a probability workspace; `g_c` is reused for
+ *   classical-reference probabilities
+ * - Each section below targets one property listed in file header
  */
 int main(void) {
   printf(" > Quantum walk on a line test:\n");
 
+  // Allocate state vectors once and reuse them across all subtests
   cvector_t *up = cvector_alloc(N);
   cvector_t *down = cvector_alloc(N);
   if (!up || !down) {
@@ -78,7 +85,8 @@ int main(void) {
     check_close(qwalk_norm(up, down), 1.0, 1e-12, "norm after 600 steps");
   }
 
-  printf("  === Test: Ballistic spreading <x^2>/t^2 -> 1 - \\sin(\\theta) ===\n");
+  printf(
+      "  === Test: Ballistic spreading <x^2>/t^2 -> 1 - \\sin(\\theta) ===\n");
   for (int k = 0; k < 3; k++) {
     qwalk_init(up, down, QWALK_COIN_SYM);
     qwalk_step(up, down, angles[k], 800);
@@ -109,10 +117,9 @@ int main(void) {
 
   check_close(qwalk_mean(up, down), 0.0, 1e-9, "mean");
   check_close(asym, 0.0, 1e-12, "P(x) = P(-x)");
-  check_close(outside, 0.0, 1e-14, "nothing outside the light cone");
+  check_close(outside, 0.0, 1e-14, "nothing outside light cone");
   check_close(peak - N / 2, 400.0 / sqrt(2.0), 8.0, "front near t/\\sqrt(2)");
-  check_true(g_p[N / 2] < 0.2 * g_p[peak],
-             "front is much higher than the centre");
+  check_true(g_p[N / 2] < 0.2 * g_p[peak], "front is much higher than centre");
 
   printf("  === Test: Biased start |up> ===\n");
   qwalk_init(up, down, QWALK_COIN_UP);
@@ -149,6 +156,7 @@ int main(void) {
   check_true(qwalk_classical(g_c, N, N / 2) == -1, "t too large");
   check_true(isnan(qwalk_norm(NULL, NULL)), "norm NULL");
 
+  // Clean up
   cvector_free(up);
   cvector_free(down);
 

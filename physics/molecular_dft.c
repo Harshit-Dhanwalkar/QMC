@@ -127,12 +127,16 @@ static void gauss_chebyshev_radial(int n, double r_m, double *r, double *w) {
 molecular_grid_t *molecular_grid_build(const molecule_t *mol, int n_radial,
                                        int n_polar, int n_azimuthal,
                                        double radial_scale) {
+  // Validate all user-controlled inputs up front; this keeps downstream
+  // allocation and indexing code free from repeated defensive checks
   if (!mol || mol->n_atoms <= 0 || n_radial <= 0 || n_polar <= 0 ||
       n_azimuthal <= 0 || radial_scale <= 0.0) {
     return NULL;
   }
 
-  // Gauss-Legendre nodes/weights in \cos(\theta) in (-1,1)
+  // Angular quadrature in polar angle:
+  // Gauss-Legendre nodes/weights are generated in x = \cos(\theta) over (-1, 1)
+  // These arrays are reused for every atom and radial shell
   double *gl_x = malloc((size_t)n_polar * sizeof(double));
   double *gl_w = malloc((size_t)n_polar * sizeof(double));
   if (!gl_x || !gl_w) {
