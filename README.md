@@ -166,7 +166,6 @@
     </td>
   </tr>
   <tr>
-    <td width="33%"></td>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/zeno.html">
         <img src="docs/src/playground/thumbs/zeno.jpg" alt="Quantum Zeno effect: survival probability under pulsed and continuous measurement" width="260" height="260">
@@ -176,9 +175,17 @@
       <br>
       <sub>A driven qubit watched too closely stops flipping: pulsed measurements and continuous dephasing</sub>
     </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/corral.html">
+        <img src="docs/src/playground/corral.gif" alt="Quantum corral: Bessel-function eigenmodes of a circular billiard" width="260" height="260">
+      </a>
+      <br>
+      <b>Quantum corral</b>
+      <br>
+      <sub>Electrons trapped in a circular billiard: Bessel-function modes and a Gaussian packet that reflects off the boundary</sub>
+    </td>
     <td width="33%"></td>
   </tr>
-</table>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -384,6 +391,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_88_bell_chsh.c</code></li>
   <li><code>eg_89_box_revival.c</code></li>
   <li><code>eg_90_zeno.c</code></li>
+  <li><code>eg_91_circular_billiard.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -448,6 +456,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_anderson.c</code></li>
   <li><code>test_quantum_walk.c</code></li>
   <li><code>test_landau_zener.c</code></li>
+  <li><code>test_circular_billiard.c</code></li>
   <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_ssh_chain.c</code></li>
   <li><code>test_tfim_quench.c</code></li>

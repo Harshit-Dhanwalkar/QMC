@@ -240,3 +240,16 @@ else
   echo "FAIL: Zeno WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Quantum corral: Bessel eigenmodes of a disc and packet evolution, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/corral_ref.c wasm/qmc_corral.c physics/circular_billiard.c \
+  -lm -o "$TMP/qmc_corral_ref"
+"$TMP/qmc_corral_ref" > "$TMP/qmc_corral_native.txt"
+cat "$TMP/qmc_corral_native.txt"
+node wasm/test/corral_check.mjs > "$TMP/qmc_corral_wasm.txt"
+if diff -u "$TMP/qmc_corral_native.txt" "$TMP/qmc_corral_wasm.txt"; then
+  echo "OK: corral WASM matches native"
+else
+  echo "FAIL: corral WASM and native results differ" >&2
+  exit 1
+fi
