@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-17 interactive demos, all computed live by the same C library you can read
+18 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -24,6 +24,7 @@ what the C code returns.
 | [Bell test](playground/bell.html)                  | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
 | [Quantum carpet](playground/carpet.html)           | A packet in a box that reassembles itself             | `box_wavefunction`                  | 17 KB |
 | [Quantum Zeno effect](playground/zeno.html)        | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
+| [Quantum corral](playground/corral.html)           | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -336,6 +337,26 @@ against $\cos^2(\Omega t/2)$ and the analytic rate for both regimes and the
 trajectory statistics.
 
 [Open the demo](playground/zeno.html)
+
+## The quantum corral: standing waves in a circle
+
+[![Quantum corral](playground/corral.gif)](playground/corral.html)
+
+Confine a particle to a disc and its allowed states are the standing waves
+of a drum: J<sub>m</sub>(kr)cos(mθ) and J<sub>m</sub>(kr)sin(mθ), with k the
+zeros of the Bessel function J<sub>m</sub> and energy k². Each state has
+n−1 circular nodes and 2m radial nodal lines; every level with m ≥ 1 is
+doubly degenerate because the cosine and the sine can be rotated into each
+other. The same picture is what scanning-tunnelling microscopists saw when
+they built rings of iron atoms on copper. The page lets you step through the
+modes and also fires a Gaussian packet into the disc, expanded in 156
+modes, to watch it ricochet off the wall and interfere with itself. The
+test suite checks the Bessel function and its zeros against tabulated
+values, the orthonormality of the modes on a polar grid, the node counts of
+every mode with k ≤ 20, the boundary condition, the eigen-equation by finite
+differences and Weyl's law for the number of levels.
+
+[Open the demo](playground/corral.html)
 
 ## Run it yourself
 

@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Quantum corral</title>
+    <meta
+      name="description"
+      content="Flip through the Bessel-function eigenmodes of a circular quantum drum, then fire a wave packet and watch it bounce off the wall, refocus and revive. Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="A quantum particle in a circular corral, in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Bessel modes of a circular billiard, and a wave packet you can launch and watch bounce."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/corral.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #disc {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+      }
+      #spec {
+        aspect-ratio: 16 / 3.4;
+        margin-top: 14px;
+        cursor: pointer;
+        touch-action: none;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .sw {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        vertical-align: -1px;
+        margin-right: 5px;
+      }
+      #loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        background: #06080d;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Quantum corral</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        A particle confined to a circular wall has eigenstates &psi; =
+        J<sub>m</sub>(kr)&middot;cos(m&theta;) or sin(m&theta;), where the wall
+        forces J<sub>m</sub>(k)&nbsp;=&nbsp;0 and the energy is
+        E&nbsp;=&nbsp;k&sup2;. <b>Modes</b>: step through the spectrum - every
+        m&nbsp;&gt;&nbsp;0 level is a degenerate cos/sin pair. <b>Packet</b>:
+        click to place a Gaussian, drag to give it momentum, and watch it
+        bounce; its evolution is the exact sum of the modes with phases
+        e<sup>&minus;ik&sup2;t</sup>, computed by the QMC library
+        (<code>circular_billiard.c</code>).
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="disc">
+            <canvas id="dc"></canvas>
+            <div id="readout"></div>
+            <div id="loading">building mode table&hellip;</div>
+          </div>
+          <div class="legend" id="leg"></div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h2>Mode</h2>
+            <div class="row">
+              <button id="modes" class="on">Modes</button>
+              <button id="packet">Packet</button>
+            </div>
+            <div id="pmode">
+              <div class="row">
+                <button id="prev">&larr;</button>
+                <button id="next">&rarr;</button>
+                <label>
+                  <span>Level</span>
+                  <input
+                    id="lvl"
+                    type="range"
+                    min="0"
+                    max="0"
+                    step="1"
+                    value="3"
+                  />
+                  <b id="lvlv"></b>
+                </label>
+              </div>
+              <div id="note"></div>
+            </div>
+            <div id="ppacket" style="display: none">
+              <div class="row">
+                <label>
+                  <span>Spread</span>
+                  <input
+                    id="sig"
+                    type="range"
+                    min="0.05"
+                    max="0.3"
+                    step="0.01"
+                    value="0.12"
+                  />
+                  <b id="sigv"></b>
+                </label>
+              </div>
+              <div class="row">
+                <label>
+                  <span>Speed</span>
+                  <input
+                    id="spd"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.25"
+                  />
+                  <b id="spdv"></b>
+                </label>
+              </div>
+              <div class="row">
+                <button id="play" class="primary">Pause</button>
+                <button id="rst">Restart</button>
+              </div>
+              <div id="note2">
+                Click the disc to place the packet, drag to set its momentum
+                (the arrow).
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h2>Readout</h2>
+            <div id="stats"></div>
+          </div>
+
+          <div class="cv" id="spec"><canvas id="sc"></canvas></div>
+          <div class="legend">
+            <span>
+              spectrum: one tick per eigenvalue k (tall = degenerate pair),
+              click to select &middot; green dashed: packet &lang;E&rang;<sup
+                >1/2</sup
+              >
+            </span>
+          </div>
+        </div>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        The Dirichlet eigenvalues are the zeros of Bessel functions,
+        j<sub>m,n</sub>, and the mean level count follows Weyl's law
+        N(k)&nbsp;&asymp;&nbsp;k&sup2;/4&nbsp;&minus;&nbsp;k/2 (area term minus
+        a perimeter correction). The packet is projected on the ~150 modes with
+        k&nbsp;&lt;&nbsp;26, so very fast or very narrow packets lose a little
+        weight (shown as &ldquo;kept&rdquo;). Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/circular_billiard.c"
+          ><code>physics/circular_billiard.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_corral.c"
+          ><code>wasm/qmc_corral.c</code></a
+        >; zeros, orthonormality and nodal structure are verified in
+        <code>tests/test_circular_billiard.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_corral.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_corral.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/corral.html</code>.",
+          );
+
+          return;
+        }
+
+        await new Promise((r) => setTimeout(r, 30));
+        const NM = w.qmc_cb_mode_count();
+        const N = w.qmc_cb_n();
+
+        $("loading").style.display = "none";
+
+        const FB = () =>
+          new Float64Array(w.memory.buffer, w.qmc_cb_field_buffer(), N * N);
+        const ks = [];
+        for (let i = 0; i < NM; i++) {
+          ks.push(w.qmc_cb_mode_k(i));
+        }
+
+        $("lvl").max = NM - 1;
+
+        let mode = "modes";
+        let idx = 3;
+        let t = 0;
+        let playing = true;
+        let last = 0;
+        let sp = 0.25;
+        let pk = null;
+        let drag = null;
+        let kept = NaN;
+        let E = NaN;
+        const off = document.createElement("canvas");
+        off.width = off.height = N;
+        const og = off.getContext("2d");
+        const img = og.createImageData(N, N);
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        function paint(f, packet) {
+          let top = 1e-9;
+          for (let i = 0; i < N * N; i++) {
+            top = Math.max(top, packet ? f[i] : Math.abs(f[i]));
+          }
+
+          const d = img.data;
+          for (let iy = 0; iy < N; iy++) {
+            for (let ix = 0; ix < N; ix++) {
+              const v = f[iy * N + ix] / top;
+              const p = ((N - 1 - iy) * N + ix) * 4;
+              let r;
+              let g;
+              let b;
+              if (packet) {
+                const u = Math.pow(Math.max(0, v), 0.6);
+                r = 20 + 235 * Math.min(1, 1.4 * u);
+                g = 24 + 170 * u * u + 40 * u;
+                b = 40 + 30 * u - 20 * u * u;
+              } else {
+                const u = Math.abs(v);
+                const a = Math.pow(u, 0.8);
+                if (u < 0.01) {
+                  r = 14;
+                  g = 18;
+                  b = 28;
+                } else if (v > 0) {
+                  r = 30 + 225 * a;
+                  g = 30 + 150 * a;
+                  b = 30 + 20 * a;
+                } else {
+                  r = 20 + 20 * a;
+                  g = 40 + 140 * a;
+                  b = 50 + 205 * a;
+                }
+              }
+
+              d[p] = r;
+              d[p + 1] = g;
+              d[p + 2] = b;
+              d[p + 3] = 255;
+            }
+          }
+
+          og.putImageData(img, 0, 0);
+        }
+
+        let geo = { cx: 0, cy: 0, R: 1 };
+        function draw() {
+          const { g, W, H } = fit($("dc"));
+          const R = Math.min(W, H) / 2 - 8;
+          const cx = W / 2;
+          const cy = H / 2;
+
+          geo = { cx, cy, R };
+          g.save();
+          g.beginPath();
+          g.arc(cx, cy, R, 0, 7);
+          g.clip();
+          g.imageSmoothingEnabled = true;
+          g.drawImage(off, cx - R, cy - R, 2 * R, 2 * R);
+          g.restore();
+          g.strokeStyle = "#8993a8";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.arc(cx, cy, R, 0, 7);
+          g.stroke();
+          if (mode === "packet" && drag) {
+            const x = cx + drag.x0 * R;
+            const y = cy - drag.y0 * R;
+            const ex = cx + drag.x1 * R;
+            const ey = cy - drag.y1 * R;
+
+            g.strokeStyle = "#3ddc97";
+            g.fillStyle = "#3ddc97";
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(ex, ey);
+            g.stroke();
+            g.beginPath();
+            g.arc(x, y, 4, 0, 7);
+            g.fill();
+          }
+        }
+
+        function stats(rows) {
+          $("stats").innerHTML = rows
+            .map(
+              ([a, b]) =>
+                `<div class="stat"><span>${a}</span><span>${b}</span></div>`,
+            )
+            .join("");
+        }
+
+        function drawSpec() {
+          const { g, W, H } = fit($("sc"));
+          const kmax = ks[NM - 1] + 0.3;
+          const px = (k) => 10 + ((W - 20) * k) / kmax;
+          const base = H - 22;
+
+          g.strokeStyle = "#232b3d";
+          g.beginPath();
+          g.moveTo(10, base);
+          g.lineTo(W - 10, base);
+          g.stroke();
+          g.fillStyle = "#8993a8";
+          g.font = "11px system-ui";
+          g.textAlign = "center";
+
+          for (let k = 0; k <= kmax; k += 5) {
+            g.fillText("k=" + k, px(k), H - 6);
+          }
+
+          for (let i = 0; i < NM; i++) {
+            const deg =
+              (i + 1 < NM && Math.abs(ks[i + 1] - ks[i]) < 1e-9) ||
+              (i > 0 && Math.abs(ks[i - 1] - ks[i]) < 1e-9);
+            const h = deg ? H - 40 : (H - 40) * 0.55;
+            g.strokeStyle =
+              mode === "modes" && i === idx
+                ? "#3ddc97"
+                : deg
+                  ? "#ffb454"
+                  : "#5aa9ff";
+            g.lineWidth = mode === "modes" && i === idx ? 2.5 : 1.2;
+            g.beginPath();
+            g.moveTo(px(ks[i]), base);
+            g.lineTo(px(ks[i]), base - h);
+            g.stroke();
+          }
+
+          if (mode === "packet" && pk) {
+            const kk = Math.sqrt(E);
+            g.strokeStyle = "#3ddc97";
+            g.setLineDash([4, 3]);
+            g.beginPath();
+            g.moveTo(px(kk), base);
+            g.lineTo(px(kk), 6);
+            g.stroke();
+            g.setLineDash([]);
+          }
+
+          drawSpec.px = px;
+          drawSpec.kmax = kmax;
+          drawSpec.W = W;
+        }
+
+        function showMode() {
+          w.qmc_cb_show_mode(idx);
+          paint(FB(), false);
+          draw();
+          drawSpec();
+          const m = w.qmc_cb_mode_m(idx);
+          const n = w.qmc_cb_mode_n(idx);
+          const s = w.qmc_cb_mode_sine(idx);
+          const k = ks[idx];
+          $("lvlv").textContent = idx + 1 + "/" + NM;
+          $("readout").textContent =
+            `m=${m} n=${n}${m ? (s ? " sin" : " cos") : ""}`;
+          $("note").innerHTML =
+            m === 0
+              ? `Rotationally symmetric: ${n - 1} radial node ring${n === 2 ? "" : "s"}.`
+              : `${m} nodal diameter${m === 1 ? "" : "s"} and ${n - 1} nodal ring${n === 2 ? "" : "s"}; its ${s ? "cos" : "sin"} partner has the same energy.`;
+          stats([
+            ["m, n", `${m}, ${n}`],
+            ["k = j<sub>m,n</sub>", k.toFixed(5)],
+            ["E = k&sup2;", (k * k).toFixed(4)],
+            ["degeneracy", m ? 2 : 1],
+            [
+              "Weyl count N(k)",
+              Math.max(0, (k * k) / 4 - k / 2).toFixed(1) + " vs " + (idx + 1),
+            ],
+          ]);
+          $("leg").innerHTML =
+            '<span><i class="sw" style="background:#ffb454"></i>&psi; &gt; 0</span><span><i class="sw" style="background:#4fb8ff"></i>&psi; &lt; 0</span>';
+        }
+
+        function launch(x0, y0, px, py) {
+          const s = +$("sig").value;
+
+          kept = w.qmc_cb_launch(x0, y0, s, px, py);
+          if (kept < 0) {
+            $("note2").textContent =
+              "Packet rejected (too close to the wall or too fast).";
+            pk = null;
+
+            return;
+          }
+
+          pk = { x0, y0, px, py };
+          E = w.qmc_cb_energy();
+          t = 0;
+          frame();
+          $("note2").textContent =
+            "Click to place a new packet, drag to set momentum.";
+        }
+
+        function frame() {
+          if (!pk) {
+            return;
+          }
+
+          const tot = w.qmc_cb_evolve(t);
+          paint(FB(), true);
+          draw();
+          drawSpec();
+          $("readout").textContent = "t = " + t.toFixed(4);
+          stats([
+            ["kept weight", (100 * kept).toFixed(2) + " %"],
+            ["⟨E⟩", E.toFixed(2)],
+            ["momentum |p|", Math.hypot(pk.px, pk.py).toFixed(1)],
+            ["total probability", tot.toFixed(4)],
+            ["time t", t.toFixed(4)],
+          ]);
+          $("leg").innerHTML =
+            '<span><i class="sw" style="background:#ffb454"></i>|&psi;|&sup2; (brighter = more probable)</span>';
+        }
+
+        function tick(ts) {
+          if (mode === "packet" && pk && playing) {
+            if (last) {
+              t += Math.min(0.05, (ts - last) / 1000) * sp * sp * 1.2;
+            }
+
+            last = ts;
+            frame();
+          } else {
+            last = 0;
+          }
+
+          requestAnimationFrame(tick);
+        }
+
+        function setMode(m) {
+          mode = m;
+          $("modes").classList.toggle("on", m === "modes");
+          $("packet").classList.toggle("on", m === "packet");
+          $("pmode").style.display = m === "modes" ? "" : "none";
+          $("ppacket").style.display = m === "packet" ? "" : "none";
+          if (m === "modes") {
+            showMode();
+          } else {
+            if (!pk) {
+              launch(-0.45, -0.3, 8, 6);
+            } else {
+              frame();
+            }
+          }
+        }
+
+        $("modes").onclick = () => setMode("modes");
+        $("packet").onclick = () => setMode("packet");
+        const sel = (i) => {
+          idx = Math.max(0, Math.min(NM - 1, i));
+          $("lvl").value = idx;
+          showMode();
+        };
+        $("lvl").oninput = (e) => sel(+e.target.value);
+        $("prev").onclick = () => sel(idx - 1);
+        $("next").onclick = () => sel(idx + 1);
+        $("sig").oninput = () => {
+          $("sigv").textContent = (+$("sig").value).toFixed(2);
+          if (pk) launch(pk.x0, pk.y0, pk.px, pk.py);
+        };
+        $("spd").oninput = () => {
+          sp = +$("spd").value;
+          $("spdv").textContent = sp.toFixed(2);
+        };
+        $("play").onclick = () => {
+          playing = !playing;
+          $("play").textContent = playing ? "Pause" : "Play";
+        };
+        $("rst").onclick = () => {
+          if (pk) {
+            t = 0;
+            frame();
+          }
+        };
+        $("sigv").textContent = (+$("sig").value).toFixed(2);
+        $("spdv").textContent = sp.toFixed(2);
+        $("sc").onpointerdown = (e) => {
+          const r = $("sc").getBoundingClientRect();
+          const x = e.clientX - r.left;
+          if (!drawSpec.px) {
+            return;
+          }
+
+          const k = ((x - 10) / (drawSpec.W - 20)) * drawSpec.kmax;
+          let b = 0;
+          for (let i = 0; i < NM; i++) {
+            if (Math.abs(ks[i] - k) < Math.abs(ks[b] - k)) {
+              b = i;
+            }
+          }
+          if (mode !== "modes") {
+            setMode("modes");
+          }
+
+          sel(b);
+        };
+
+        const toDisc = (e) => {
+          const r = $("dc").getBoundingClientRect();
+
+          return [
+            (e.clientX - r.left - geo.cx) / geo.R,
+            -(e.clientY - r.top - geo.cy) / geo.R,
+          ];
+        };
+
+        $("disc").onpointerdown = (e) => {
+          if (mode !== "packet") {
+            return;
+          }
+          const [x, y] = toDisc(e);
+          if (Math.hypot(x, y) > 0.95) {
+            return;
+          }
+
+          drag = { x0: x, y0: y, x1: x, y1: y };
+          $("disc").setPointerCapture(e.pointerId);
+          draw();
+        };
+
+        $("disc").onpointermove = (e) => {
+          if (!drag) {
+            return;
+          }
+          [drag.x1, drag.y1] = toDisc(e);
+          draw();
+        };
+        $("disc").onpointerup = (e) => {
+          if (!drag) {
+            return;
+          }
+
+          const d = drag;
+          drag = null;
+          let px = (d.x1 - d.x0) * 25;
+          const py = (d.y1 - d.y0) * 25;
+          const p = Math.hypot(px, py);
+          if (p < 2) {
+            px = 8 * Math.cos(1.0);
+            py = 8 * Math.sin(1.0);
+          }
+          if (p > 19) {
+            px *= 19 / p;
+            py *= 19 / p;
+          }
+
+          launch(d.x0, d.y0, px, py);
+        };
+
+        window.addEventListener("resize", () => {
+          if (mode === "modes") {
+            showMode();
+          } else {
+            frame();
+          }
+        });
+
+        sel(3);
+
+        requestAnimationFrame(tick);
+        window.__corral = {
+          setMode,
+          sel,
+          setT: (v) => {
+            t = v;
+            frame();
+          },
+        };
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

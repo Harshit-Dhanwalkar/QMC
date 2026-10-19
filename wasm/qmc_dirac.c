@@ -6,12 +6,12 @@
  * (dirac_packet_1d), split-operator propagation (dirac_evolve_1d), observables,
  * and analytic step transmission (dirac_step_transmission). This file only owns
  * one global simulation (N = 2048 points, dx = 0.1, units hbar = m = c = 1) and
- * scratch buffer JavaScript reads densities from.
+ * scratch buffer JavaScript reads densities from
  *
  * Scenes:
  *   qmc_dc_klein(k0, V0)  positive-energy packet at x = -50 hitting a sharp
  *                         step of height V0 at x = 0
- *   qmc_dc_zitter()       wide packet of spinor (1, i)/sqrt(2) at rest, no
+ *   qmc_dc_zitter()       wide packet of spinor (1, i)/\sqrt(2) at rest, no
  *                         potential
  */
 

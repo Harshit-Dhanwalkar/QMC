@@ -16,7 +16,7 @@ if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(5);
 
-// memory can grow, so make the views after the calls that touch it
+// memory can grow, so make views after calls that touch it
 const CAR = () =>
   new Float64Array(w.memory.buffer, w.qmc_qc_carpet_buffer(), 384 * 192);
 const SL = () =>

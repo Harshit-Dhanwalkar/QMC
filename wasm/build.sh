@@ -21,6 +21,7 @@
 #   docs/src/playground/qmc_bell.wasm       CHSH Bell-test on a Werner state demo
 #   docs/src/playground/qmc_carpet.wasm     quantum-carpet / revival demo
 #   docs/src/playground/qmc_zeno.wasm       quantum-Zeno demo
+#   docs/src/playground/qmc_corral.wasm     quantum-corral (circular well) demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -183,3 +184,8 @@ build_module "$OUT/qmc_zeno.wasm" \
 qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \ 
 qmc_zn_continuous qmc_zn_rates qmc_zn_rate qmc_zn_sample" \
   wasm/qmc_zeno.c physics/zeno.c
+
+build_module "$OUT/qmc_corral.wasm" \
+  "qmc_cb_n qmc_cb_mode_count qmc_cb_field_buffer qmc_cb_mode_m qmc_cb_mode_n qmc_cb_mode_sine qmc_cb_mode_k \
+qmc_cb_show_mode qmc_cb_launch qmc_cb_energy qmc_cb_evolve" \
+  wasm/qmc_corral.c physics/circular_billiard.c
