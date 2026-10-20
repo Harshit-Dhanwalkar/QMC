@@ -25,7 +25,9 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/grover.html"><img class="thumb" loading="lazy" alt="Grover search amplitudes" src="playground/thumbs/grover.jpg"><span class="meta"><b>Grover search</b><small>Amplitude amplification, and overshooting it</small></span></a>
 <a class="card" href="playground/bell.html"><img class="thumb" loading="lazy" alt="CHSH Bell test correlation curves" src="playground/thumbs/bell.jpg"><span class="meta"><b>Bell test</b><small>Quantum correlations beating the classical bound</small></span></a>
 <a class="card" href="playground/zeno.html"><img class="thumb" loading="lazy" alt="Quantum Zeno survival curves" src="playground/thumbs/zeno.jpg"><span class="meta"><b>Quantum Zeno effect</b><small>Watching a qubit stops it moving</small></span></a>
+<a class="card" href="playground/hubbard.html"><img class="thumb" loading="lazy" alt="Hubbard dimer Mott crossover" src="playground/thumbs/hubbard.jpg"><span class="meta"><b>Hubbard dimer</b><small>Two electrons, solved exactly: from band to Mott</small></span></a>
 <a class="card" href="playground/corral.html"><img class="thumb" loading="lazy" alt="Quantum corral circular drum modes" src="playground/thumbs/corral.jpg"><span class="meta"><b>Quantum corral</b><small>Bessel modes of a circular drum and a bouncing packet</small></span></a>
+
 </div>
 
 This book documents both the physics and the implementation - derivations

@@ -184,7 +184,15 @@
       <br>
       <sub>Electrons trapped in a circular billiard: Bessel-function modes and a Gaussian packet that reflects off the boundary</sub>
     </td>
-    <td width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/hubbard.html">
+        <img src="docs/src/playground/thumbs/hubbard.jpg" alt="Two-site Hubbard model exact diagonalisation" width="260" height="260">
+      </a>
+      <br>
+      <b>Hubbard dimer</b>
+      <br>
+      <sub>Two interacting fermions on a lattice: half-filling spectrum, doublons, spin correlations, and thermal averages</sub>
+    </td>
   </tr>
 </table>
 
@@ -290,7 +298,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
 - 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP), exact Talbot-carpet time evolution of a Gaussian packet in a box, with closed-form revival identities checked against the state vector.
-- Many-Body & Chemistry: Identical particles (Slater determinants), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
+- Many-Body & Chemistry: Identical particles (Slater determinants), exact diagonalisation of the two-site Hubbard model (doublons, spin correlations, canonical thermodynamics), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
 - Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.

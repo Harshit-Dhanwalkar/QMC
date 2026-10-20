@@ -47,12 +47,12 @@ jobs:
         qmc_orbital.wasm qmc_qwalk.wasm qmc_lz.wasm qmc_rotor.wasm
         qmc_ssh.wasm qmc_tfim.wasm qmc_haldane.wasm qmc_wigner.wasm
         qmc_grover.wasm qmc_bell.wasm qmc_carpet.wasm qmc_zeno.wasm
-        qmc_corral.wasm
+        qmc_corral.wasm qmc_hubbard.wasm
       PLAYGROUND_HTML: >-
         index.html anderson.html bloch.html butterfly.html dirac.html
         orbitals.html quantum_walk.html landau_zener.html kicked_rotor.html
-        ssh_chain.html ising_quench.html haldane.html wigner.html
-        grover.html bell.html carpet.html zeno.html corral.html
+        ssh_chain.html ising_quench.html haldane.html wigner.html grover.html
+        bell.html carpet.html zeno.html corral.html hubbard.html
         wasi-shim.js nav.js
 
     steps:

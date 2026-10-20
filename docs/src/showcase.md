@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-18 interactive demos, all computed live by the same C library you can read
+19 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -25,6 +25,7 @@ what the C code returns.
 | [Quantum carpet](playground/carpet.html)           | A packet in a box that reassembles itself             | `box_wavefunction`                  | 17 KB |
 | [Quantum Zeno effect](playground/zeno.html)        | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
 | [Quantum corral](playground/corral.html)           | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
+| [Hubbard dimer](playground/hubbard.html)           | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -343,20 +344,40 @@ trajectory statistics.
 [![Quantum corral](playground/corral.gif)](playground/corral.html)
 
 Confine a particle to a disc and its allowed states are the standing waves
-of a drum: J<sub>m</sub>(kr)cos(mθ) and J<sub>m</sub>(kr)sin(mθ), with k the
-zeros of the Bessel function J<sub>m</sub> and energy k². Each state has
-n−1 circular nodes and 2m radial nodal lines; every level with m ≥ 1 is
-doubly degenerate because the cosine and the sine can be rotated into each
+of a drum: $J_m(kr)\cos(m \theta)$ and $J_m(kr)\sin(m \theta)$, with $k$ the
+zeros of the Bessel function J<sub>m</sub> and energy $k^$. Each state has
+$n−1$ circular nodes and $2m$ radial nodal lines; every level with $m \geq 1$
+is doubly degenerate because the cosine and the sine can be rotated into each
 other. The same picture is what scanning-tunnelling microscopists saw when
 they built rings of iron atoms on copper. The page lets you step through the
-modes and also fires a Gaussian packet into the disc, expanded in 156
-modes, to watch it ricochet off the wall and interfere with itself. The
-test suite checks the Bessel function and its zeros against tabulated
-values, the orthonormality of the modes on a polar grid, the node counts of
-every mode with k ≤ 20, the boundary condition, the eigen-equation by finite
-differences and Weyl's law for the number of levels.
+modes and also fires a Gaussian packet into the disc, expanded in 156 modes,
+to watch it ricochet off the wall and interfere with itself. The test suite
+checks the Bessel function and its zeros against tabulated values, the
+orthonormality of the modes on a polar grid, the node counts of every mode with
+$k \leq 20$, the boundary condition, the eigen-equation by finite differences and
+Weyl's law for the number of levels.
 
 [Open the demo](playground/corral.html)
+
+## The Hubbard dimer: where a band becomes a magnet
+
+[![Hubbard dimer](playground/hubbard.gif)](playground/hubbard.html)
+
+Two sites, two electrons, hopping t and an on-site repulsion U: the smallest
+model of strongly correlated matter, small enough to diagonalise exactly. At
+$U = 0$ the electrons share a band orbital and half the weight sits on doubly
+occupied sites. As U grows the ground-state energy $U/2 − \sqrt{(U^2/4 + 4t^2)}$
+tends to $−4t^2/U$, double occupancy dies, one electron settles on each site and
+the pair becomes a Heisenberg singlet with exchange
+$J = 4t^2/U$ ($\langle S_1 \cdot S^2 \rangle$ goes from −3/8 to −3/4). The
+entanglement entropy of one site climbs from charge fluctuations to the pure-spin
+value $\ln(2)$. The page also quenches the Néel state $|uparrow,\downarrow\rangle$,
+whose staggered moment oscillates at J and shows how thermal excitation across the
+singlet–triplet gap melts the correlation. The tests check the spectrum and ground
+state against their closed forms, the large-U Heisenberg limit, energy and norm
+conservation in the quench and the infinite-temperature averages.
+
+[Open the demo](playground/hubbard.html)
 
 ## Run it yourself
 

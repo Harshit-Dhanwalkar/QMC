@@ -253,3 +253,16 @@ else
   echo "FAIL: corral WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Hubbard dimer: exact diagonalisation, quench and thermal curves, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/hubbard_ref.c wasm/qmc_hubbard.c physics/hubbard_dimer.c \
+  -lm -o "$TMP/qmc_hubbard_ref"
+"$TMP/qmc_hubbard_ref" > "$TMP/qmc_hubbard_native.txt"
+cat "$TMP/qmc_hubbard_native.txt"
+node wasm/test/hubbard_check.mjs > "$TMP/qmc_hubbard_wasm.txt"
+if diff -u "$TMP/qmc_hubbard_native.txt" "$TMP/qmc_hubbard_wasm.txt"; then
+  echo "OK: Hubbard WASM matches native"
+else
+  echo "FAIL: Hubbard WASM and native results differ" >&2
+  exit 1
+fi
