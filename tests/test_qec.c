@@ -1,11 +1,11 @@
 /*
- * Test: 3-qubit bit-flip and phase-flip quantum error correction codes.
+ * Test: 3-qubit bit-flip and phase-flip quantum error correction codes
  *
  * For both codes, every possible single-qubit error (none, or on data qubit 0,
  * 1, or 2) must be correctly diagnosed by syndrome (matching the known syndrome
  * table) and exactly corrected : then recovered logical qubit must equal to
  * original (\alpha, \beta) to machine precision, regardless of which qubit (if
- * any) was hit.
+ * any) was hit
  */
 
 #include "../core/complex.h"
@@ -36,7 +36,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void run_code_all_errors(qec_code_t code, const char *name) {
-  printf("test_qec_%s:\n", name);
+  printf("  === Test QEC_%s ===\n", name);
 
   complex_t alpha = c_real(0.6);
   complex_t beta = c_new(0.7368487952023082, 0.31153467384692046);
@@ -52,7 +52,10 @@ static void run_code_all_errors(qec_code_t code, const char *name) {
     qec_result_t r = qec_run(code, alpha, beta, e, 0.3, 0.7);
 
     int idx = e + 1;
-    char label_syn[64], label_corr[64], label_a[64], label_b[64];
+    char label_syn[128];
+    char label_corr[128];
+    char label_a[128];
+    char label_b[128];
 
     snprintf(label_syn, sizeof label_syn,
              "error_qubit=%d: syndrome=(%d,%d) matches expected", e,
@@ -85,7 +88,7 @@ static void run_code_all_errors(qec_code_t code, const char *name) {
 // of i. This is expected, standard behavior for independent Pauli-frame
 // correction, so Y-error cases are checked up to global phase; X, Z, and
 // no-error cases recover the exact original alpha/beta with zero phase
-// ambiguity and are checked directly.
+// ambiguity and are checked directly
 static double cabs2_diff(complex_t a, complex_t b) {
   complex_t d = c_sub(a, b);
 
@@ -127,7 +130,7 @@ static void check_state_up_to_phase(complex_t got_a, complex_t got_b,
 }
 
 static void test_shor_code(void) {
-  printf("test_qec_shor:\n");
+  printf("  === Test QEC shor ===\n");
 
   complex_t alpha = c_new(0.6, 0.2);
   complex_t beta = c_new(0.5, -0.3);
@@ -180,7 +183,7 @@ static void test_shor_code(void) {
   }
 
   // Every single-qubit Y error: both syndromes fire (bit-flip and phase-flip),
-  // recovering the state up to the expected global phase of i.
+  // recovering the state up to the expected global phase of i
   for (int q = 0; q < 9; q++) {
     qec_shor_result_t r = qec_shor_run(alpha, beta, q, QEC_ERROR_Y, u);
     char label[96];
