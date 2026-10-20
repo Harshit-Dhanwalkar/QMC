@@ -597,11 +597,17 @@ qaoa_result_t qaoa_run(const qaoa_problem_t *problem, int p, int n_restarts,
                        int n_sweeps, double window, uint64_t seed) {
   qaoa_result_t result = {0};
 
+  // Validate all externally supplied configuration values up front
+  // On invalid input we return a zero-initialized result (all pointers NULL,
+  // all scalars 0), which is safe for qaoa_result_free()
   if (!problem || p < 1 || n_restarts < 1 || n_sweeps < 1 || !(window > 0.0) ||
       !isfinite(window)) {
     return result;
   }
 
+  // QAOA with depth p has 2p variational angles: (\gamma_0..\gamma_{p-1},
+  // \beta_0..\beta_{p-1})
+  // Keep one working vector and one best-so-far copy
   int n_params = 2 * p;
   double *x = malloc((size_t)n_params * sizeof *x);
   double *best_x = malloc((size_t)n_params * sizeof *best_x);
@@ -612,6 +618,8 @@ qaoa_result_t qaoa_run(const qaoa_problem_t *problem, int p, int n_restarts,
     return result;
   }
 
+  // Seed deterministic RNG for restart initialization/jitter sampling
+  // \sigma is a scale proxy for objective values used by acceptance logic
   rng_state_t rng;
   rng_seed(&rng, seed);
   double sigma = qaoa_cost_sigma(problem);
@@ -619,11 +627,12 @@ qaoa_result_t qaoa_run(const qaoa_problem_t *problem, int p, int n_restarts,
 
   for (int r = 0; r < n_restarts; r++) {
     if (r == 0) {
-      // Linear-ramp (annealing-inspired) start. Minimizing C is maximizing
-      // -C, which flips sign of gamma.
+      // Linear-ramp (annealing-inspired) start
+      // Minimizing C is maximizing -C, which flips sign of \gamma
       double sign = problem->maximize ? 1.0 : -1.0;
       for (int l = 0; l < p; l++) {
         double t = ((double)l + 0.5) / (double)p;
+
         x[l] = sign * (1.5 / sigma) * t;
         x[p + l] = 0.8 * (1.0 - t);
       }

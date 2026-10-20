@@ -1,20 +1,20 @@
 /*
- * General Molecular Integrals (McMurchie-Davidson) : H2/STO-3G Restricted
+ * General Molecular Integrals (McMurchie-Davidson): H2/STO-3G Restricted
  * Hartree-Fock
  *
  * HACK: physics/molecular_integrals.c is a general Gaussian-type-orbital (GTO)
  * integrals engine (arbitrary angular momentum, arbitrary contraction), built
  * specifically so second_quant.c + vqe.c can eventually tackle a real molecule
  * instead of only toy fermionic-lattice Hamiltonians
- * second_quant_build_hopping_hamiltonian() provides.
+ * second_quant_build_hopping_hamiltonian() provides
  *
- * This example runs complete pipeline end to end on the smallest real molecule,
- * H2, in smallest real basis, STO-3G: build the basis, compute
+ * This example runs complete pipeline end to end on smallest real molecule, H2,
+ * in smallest real basis, STO-3G: build basis, compute
  * overlap/kinetic/nuclear/two-electron integrals, run a restricted-HF SCF, and
- * report total energy.
- * The Theoretical reference result for exactly this system/basis/geometry
+ * report total energy
+ * Theoretical reference result for exactly this system/basis/geometry
  * (Reference: Szabo & Ostlund, "Modern Quantum Chemistry") is -1.1167 Hartree
- * at R=1.4 bohr : this example should land within a few 1e-5 Hartree of that.
+ * at R=1.4 bohr: this example should land within a few 1e-5 Hartree of that
  */
 
 #include "../core/complex.h"
@@ -26,18 +26,23 @@
 #include <stdlib.h>
 
 static double h2_sto3g_rhf(double R_bond, int verbose) {
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
+  // Build a minimal H2/STO-3G basis: one contracted 1s function on each atom
+  double A[3] = {0, 0, 0};
+  double B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
 
+  // Define molecular geometry and nuclear charges for integral evaluation
   const double charge[2] = {1.0, 1.0};
   double centers[2][3] = {{0, 0, 0}, {0, 0, R_bond}};
   molecule_t *mol = molecule_alloc(2, charge, centers);
 
+  // Assemble AO integrals: overlap S, one-electron core Hamiltonian and ERIs
   cmatrix_t *S = molecular_overlap_matrix(funcs, 2);
   cmatrix_t *Hcore = molecular_core_hamiltonian(funcs, 2, mol);
   double *eri = molecular_eri_tensor(funcs, 2);
 
+  // Diagnostic printout for validating integral values
   if (verbose) {
     printf("  Overlap matrix S:\n");
     printf("    [ %.6f  %.6f ]\n", CMAT(S, 0, 0).re, CMAT(S, 0, 1).re);
@@ -52,6 +57,8 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
            MOLINT_ERI(eri, 2, 0, 1, 0, 1), MOLINT_ERI(eri, 2, 0, 0, 0, 1));
   }
 
+  // Symmetric orthogonalization matrix X = S^{-1/2}, built from
+  // eigendecomposition S = U s U^T, then X = U s^{-1/2} U^T
   eigen_t *eig_S = cmatrix_eigh_complex(S);
   cmatrix_t *Shalf = cmatrix_alloc(2, 2);
   for (int i = 0; i < 2; i++) {
@@ -68,8 +75,10 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
     }
   }
 
+  // Initial RHF state: zero density and electronic energy accumulator
   double D[2][2] = {{0, 0}, {0, 0}};
-  double E_elec = 0.0, E_elec_old = 0.0;
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
   int it;
 
   for (it = 0; it < 50; it++) {

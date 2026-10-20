@@ -551,6 +551,14 @@ dmc_result_t dmc_run_parallel(int n_replicas, double Z_charge, double Zeff,
                              block_size, master_seed);
 }
 
+/*
+ * Run multiple independent DMC replicas and combine their statistics
+ *
+ * Each replica evolves its own walker population with an independent RNG stream
+ * derived from master_seed via rng_jump, then executes same DMC schedule
+ * (equilibration + block sampling). Final observables are merged across
+ * replicas to reduce variance while keeping populations independent
+ */
 dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
                                  double param_b, int target_population,
                                  int max_population, double tau, double kappa,
@@ -559,12 +567,14 @@ dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
 
   dmc_result_t result = {0};
 
+  // Validate basic runtime parameters; on invalid input return zeroed result
   if (n_replicas < 1 || target_population < 1 ||
       max_population < target_population || tau <= 0.0 || kappa <= 0.0 ||
       n_blocks < 1 || block_size < 1) {
     return result;
   }
 
+  // Allocate one RNG stream and one per-replica result container per replica
   // One independent DMC population per replica (one population per MPI
   // rank/thread, statistics combined across independent populations at end)
   rng_state_t *streams = malloc((size_t)n_replicas * sizeof(rng_state_t));
@@ -577,6 +587,7 @@ dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
     return result;
   }
 
+  // Initialize disjoint RNG streams for each replica using jump-ahead
   rng_seed(&streams[0], master_seed);
   for (int i = 1; i < n_replicas; i++) {
     streams[i] = streams[i - 1];
@@ -584,8 +595,10 @@ dmc_result_t dmc_run_parallel_ex(int n_replicas, double Z_charge, double Zeff,
     rng_jump(&streams[i]);
   }
 
+  // Shared block configuration passed to each independent replica run
   dmc_block_config_t blk_cfg = {n_blocks, block_size};
 
+  // Execute replicas in parallel; each iteration writes only its own slot
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_replicas; i++) {
     replica_results[i] = dmc_run_with_rng(

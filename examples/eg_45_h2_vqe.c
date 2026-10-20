@@ -1,29 +1,28 @@
 /*
  * H2 VQE: from Atomic-Orbital Integrals to a Quantum Circuit
  *
- * This is fdemo tying together three modules built : molecular_integrals.c (AO
+ * This is demo tying together 3 modules built: molecular_integrals.c (AO
  * integrals), second_quant.c (Jordan-Wigner mapping of molecular electronic
- * Hamiltonian), and vqe.c (variational quantum eigensolver).
+ * Hamiltonian), and vqe.c (variational quantum eigensolver)
  *
  * Pipeline:
  *   1. Build STO-3G AO integrals for H2 (molecular_integrals.c)
  *   2. Restricted Hartree-Fock -> MO coefficients C
  *   3. AO -> MO integral transform
- *   4. Jordan-Wigner: build the 16x16 (4-qubit) second-quantized
+ *   4. Jordan-Wigner: build 16x16 (4-qubit) second-quantized
  *      Hamiltonian on interleaved spin-orbitals (second_quant.c)
- *   5. Exact diagonalization: the FCI ground state, for comparison
+ *   5. Exact diagonalization: FCI ground state, for comparison
  *   6. VQE: hardware-efficient ansatz, coordinate-descent optimizer
  *      (vqe.c), starting from a random 4-qubit state with NO knowledge
- *      of the answer, converging toward the same ground state via
- *      only energy expectation values -- exactly the classical-optimizer-
- *      in-the-loop workflow a real quantum computer would run, just
- *      simulated classically here.
+ *      of answer, converging toward same ground state via  only energy
+ *      expectation values, exactly classical-optimizer-in-the-loop workflow a
+ *      real quantum computer would run, just simulated classically here
  *
  * NOTE: global minimum of full unrestricted-particle-number 16-dimensional
  * Hamiltonian sits in physical 2-electron sector for this system, so VQE's
  * hardware-efficient ansatz, which does not itself conserve particle number,
  * can be run directly with no penalty term and still find right answer, which
- * this example checks explicitly.
+ * this example checks explicitly
  */
 
 #include "../core/complex.h"
@@ -36,8 +35,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* RHF returning both electronic energy and MO coefficients C, needed for the
- * AO->MO transform. */
+// RHF returning both electronic energy and MO coefficients C, needed for AO->MO
+// transform
 static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
                   cmatrix_t *S) {
   eigen_t *eig_S = cmatrix_eigh_complex(S);
@@ -58,9 +57,16 @@ static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
     }
   }
 
+  // Closed-shell initial density (zero guess) and SCF energy trackers
   double D[2][2] = {{0, 0}, {0, 0}};
-  double E_elec = 0.0, E_elec_old = 0.0;
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
 
+  // Self-consistent-field loop:
+  // 1) build F(D)
+  // 2) solve Roothaan equations
+  // 3) rebuild D
+  // 4) test energy convergence
   for (int it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
 
@@ -140,6 +146,7 @@ static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
     E_elec_old = E_elec;
   }
 
+  // Release orthogonalization eigensystem and transform matrix allocated above
   eigen_free(eig_S);
   cmatrix_free(Shalf);
 
@@ -190,7 +197,8 @@ int main(void) {
   printf(" > Real H2 VQE: Atomic Integrals -> Jordan-Wigner -> VQE\n\n");
 
   double R_bond = 1.4;
-  double A[3] = {0, 0, 0}, B[3] = {0, 0, R_bond};
+  double A[3] = {0, 0, 0};
+  double B[3] = {0, 0, R_bond};
   basis_function_t *funcs[2] = {molint_basis_sto3g_h(A),
                                 molint_basis_sto3g_h(B)};
   const double charge[2] = {1.0, 1.0};
@@ -224,16 +232,18 @@ int main(void) {
   for (int i = 0; i < 16 * 16; i++) {
     H_copy->data[i] = H->data[i];
   }
+
   eigen_t *eig = cmatrix_eigh_complex(H_copy);
   double E_fci = eig->eigenvalues[0];
-
   double N_expect = 0.0;
+
   for (int state = 0; state < 16; state++) {
     complex_t amp = CMAT(eig->eigenvectors, state, 0);
     double p = amp.re * amp.re + amp.im * amp.im;
 
     N_expect += p * __builtin_popcount((unsigned)state);
   }
+
   printf(" FCI ground state: %.6f Hartree  (<N electrons> = %.4f)\n\n", E_fci,
          N_expect);
 

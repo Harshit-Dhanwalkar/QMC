@@ -1,7 +1,7 @@
 /*
-Path Integral Monte Carlo for a two-electron atom/ion, Kelbg-regularized Coulomb
-pair actions, bisection sampling.
-*/
+ * Path Integral Monte Carlo for a two-electron atom/ion, Kelbg-regularized
+ * Coulomb pair actions, bisection sampling
+ */
 
 #include "pimc.h"
 #include "../core/random.h"
@@ -402,31 +402,46 @@ static pimc_result_t pimc_run_with_rng(rng_state_t *rng, double Z, int P,
                                        double tau, int level,
                                        int n_equilibration, int n_blocks,
                                        int block_size) {
+  // Run a full PIMC simulation using a caller-provided RNG state
+  //   1) parameter/invariant checks
+  //   2) walker allocation and initialization
+  //   3) equilibration sweeps (discarded)
+  //   4) production sweeps grouped into blocks for statistics
+  // Returns a zero-initialized result on invalid input or allocation failure
   pimc_result_t result = {0};
 
+  // L is such that 2^L >= P; used to validate admissible bisection level
   int L = 0;
   while ((1 << L) < P) {
     L++;
   }
 
+  // Input constraints:
+  // - P must be a power of two (required by bisection hierarchy)
+  // - tau and sampling sizes must be positive
+  // - level must be within available hierarchy depth
   if (!is_power_of_two(P) || tau <= 0.0 || n_blocks < 1 || block_size < 1 ||
       level < 1 || level > L) {
     return result;
   }
 
+  // Segment length for a level-l bisection move and ring coverage per sweep
   int seg = 1 << level;
   int moves_per_sweep_per_electron = P / seg; // covers ring once
   if (moves_per_sweep_per_electron < 1) {
     moves_per_sweep_per_electron = 1;
   }
 
+  // Allocate one walker containing both electron worldlines
   pimc_walker_t *w = pimc_walker_alloc(P);
   if (!w) {
     return result;
   }
+
   pimc_walker_init(w, rng, Z);
 
-  long accept_sum = 0, move_count = 0;
+  long accept_sum = 0;
+  long move_count = 0;
 
   for (int sweep = 0; sweep < n_equilibration; sweep++) {
     for (int m = 0; m < moves_per_sweep_per_electron; m++) {

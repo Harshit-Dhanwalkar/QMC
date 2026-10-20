@@ -12,11 +12,10 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* Direct (bit-manipulation) fermionic operators: To build RDMs directly from a
- * CI vector without constructing full operator matrices
- * MSB-first bit convention: mode 0 is leftmost/most significant bit of an
- * n_modes-bit Fock-space index
- */
+// Direct (bit-manipulation) fermionic operators: To build RDMs directly from a
+// CI vector without constructing full operator matrices
+// MSB-first bit convention: mode 0 is leftmost/most significant bit of an
+// n_modes-bit Fock-space index
 static int casscf_count_bits_before(int state, int mode, int n_modes) {
   int count = 0;
 
@@ -59,10 +58,9 @@ static int casscf_direct_create(int state, int mode, int n_modes,
   return state | (1 << bitpos);
 }
 
-/* Small dense linear algebra helpers (matrix exponential via
- * scaling-and-squaring + Taylor series). cmatrix_t is used throughout with zero
- * imaginary parts
- */
+// Small dense linear algebra helpers (matrix exponential via
+// scaling-and-squaring + Taylor series)
+// cmatrix_t is used throughout with zero imaginary parts
 static cmatrix_t *casscf_identity(int n) {
   cmatrix_t *I = cmatrix_alloc(n, n);
   if (!I) {
@@ -93,11 +91,10 @@ static double casscf_matrix_max_abs(const cmatrix_t *A) {
   return m;
 }
 
-/* \exp(K) for a small real matrix K, via scaling-and-squaring:
- *    \exp(K) = (\exp(K / 2^s)^(2^s)
- * with inner exponential evaluated by a truncated Taylor series once ||K/2^s||
- * is small enough for series to converge rapidly. andard
- */
+// \exp(K) for a small real matrix K, via scaling-and-squaring:
+//    \exp(K) = (\exp(K / 2^s)^(2^s)
+// with inner exponential evaluated by a truncated Taylor series once ||K/2^s||
+// is small enough for series to converge rapidly
 static cmatrix_t *casscf_matrix_exp(const cmatrix_t *K) {
   int n = K->nrows;
   double norm = casscf_matrix_max_abs(K);
@@ -141,9 +138,7 @@ static cmatrix_t *casscf_matrix_exp(const cmatrix_t *K) {
   return result;
 }
 
-/*
- * Active-space CI + RDM construction
- */
+// Active-space CI + RDM construction
 typedef struct {
   double energy; /* active-space CI ground energy, INCLUDING nuclear
                   * repulsion + frozen-core contribution */
@@ -195,6 +190,14 @@ static int casscf_active_space_ci(int n_basis, int n_frozen, int n_active,
                                   const double *eri_mo,
                                   double nuclear_repulsion,
                                   casscf_active_ci_t *out) {
+  // Define orbital subspace and copy MO integrals into compact active-space
+  // tensors
+  //
+  // Conventions used by this routine:
+  //  - Orbitals are ordered as [frozen | active | (unused virtual...)]
+  //  - CI problem is built in first n_sub = n_frozen + n_active orbitals only
+  //  - Memory is allocated densely for h_sub (n_sub^2) and eri_sub (n_sub^4)
+  //    in row-major flattened indexing
   int n_sub = n_frozen + n_active;
 
   double *h_sub = malloc((size_t)n_sub * n_sub * sizeof(double));
@@ -207,6 +210,7 @@ static int casscf_active_space_ci(int n_basis, int n_frozen, int n_active,
     return 0;
   }
 
+  // Extract leading sub-block integrals for frozen+active orbitals
   casscf_slice_integrals(n_basis, n_sub, h_mo, eri_mo, h_sub, eri_sub);
 
   cmatrix_t *H = second_quant_build_molecular_hamiltonian_frozen_core(
@@ -527,12 +531,10 @@ static void casscf_free_active_ci(casscf_active_ci_t *ci) {
   free(ci->D2);
 }
 
-/*
- * C_new = C @ \exp(K),
- * Where
- *  K is built from a flat n_basis x n_basis (row-major) array of real
- * rotation-generator entries.
- */
+// C_new = C @ \exp(K),
+// Where
+//   K is built from a flat n_basis x n_basis (row-major) array of real
+// rotation-generator entries
 static cmatrix_t *casscf_rotate(const cmatrix_t *C, const double *kappa_flat,
                                 int n) {
   cmatrix_t *K = cmatrix_alloc(n, n);
@@ -545,12 +547,14 @@ static cmatrix_t *casscf_rotate(const cmatrix_t *C, const double *kappa_flat,
   }
 
   cmatrix_t *U = casscf_matrix_exp(K);
+
   cmatrix_free(K);
   if (!U) {
     return NULL;
   }
 
   cmatrix_t *C_new = cmatrix_multiply(C, U);
+
   cmatrix_free(U);
 
   return C_new;
@@ -624,6 +628,7 @@ casscf_result_t *casscf_run(basis_function_t **basis, int n_basis,
 
       break;
     }
+
     E_ci = ci.energy;
     casscf_extend_rdms(n_basis, n_frozen, n_active, ci.D1, ci.D2, D_full,
                        d_full);
@@ -641,11 +646,13 @@ casscf_result_t *casscf_run(basis_function_t **basis, int n_basis,
         for (size_t i = 0; i < n2; i++) {
           kappa_flat[i] = 0.0;
         }
+
         kappa_flat[p * n_basis + q] = FD_EPS;
         kappa_flat[q * n_basis + p] = -FD_EPS;
 
         cmatrix_t *Cp = casscf_rotate(C, kappa_flat, n_basis);
         molecular_ao_to_mo(h_ao, eri_ao, Cp, n_basis, h_mo, eri_mo);
+
         double E_plus = casscf_energy_from_rdm(
             n_basis, h_mo, eri_mo, nuclear_repulsion, D_full, d_full);
 
@@ -656,6 +663,7 @@ casscf_result_t *casscf_run(basis_function_t **basis, int n_basis,
 
         cmatrix_t *Cm = casscf_rotate(C, kappa_flat, n_basis);
         molecular_ao_to_mo(h_ao, eri_ao, Cm, n_basis, h_mo, eri_mo);
+
         double E_minus = casscf_energy_from_rdm(
             n_basis, h_mo, eri_mo, nuclear_repulsion, D_full, d_full);
 

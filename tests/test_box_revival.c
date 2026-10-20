@@ -55,6 +55,11 @@ static double max_diff(const complex_t *a, const complex_t *b, int n) {
   return d;
 }
 
+// End-to-end regression test for wave-packet dynamics in a 1D infinite well
+// Test intentionally runs multiple physics checks in one flow:
+// coefficient quality, normalization over time, revival identities
+// (T, T/2, T/4), overlap probabilities, mirror-position expectation and
+// invalid-argument handling
 int main(void) {
   complex_t c[NM];
   complex_t psi0[NX];
@@ -63,17 +68,19 @@ int main(void) {
   double x[NX];
   double xm[NX];
 
+  // Build direct and mirrored spatial grids on [0, 1]
   for (int j = 0; j < NX; j++) {
     x[j] = j / (double)(NX - 1);
     xm[j] = 1.0 - x[j];
   }
 
+  // Reference packet parameters and coefficient generation
   const double x0 = 0.3;
   const double sigma = 0.04;
   const double n0 = 25.0;
   double kept = box_gaussian_coefficients(c, NM, x0, sigma, n0);
 
-  printf("  --- coefficients ---\n");
+  printf("  === Test: Coefficients ===\n");
   check_close(kept, 1.0, 1e-6, "weight inside the first 200 modes");
   box_wavefunction(c, NM, 0.0, x, NX, psi0);
   box_wavefunction(c, NM, 0.0, xm, NX, mirror);
@@ -88,7 +95,7 @@ int main(void) {
                 "<E> / ((k0^2 + 1 / 4 \\sigma^2) / \\pi^2)");
   }
 
-  printf("  --- norm ---\n");
+  printf("  === Test: Norm ===\n");
   {
     double worst = 0.0;
 
@@ -107,7 +114,7 @@ int main(void) {
     check_close(worst, 0.0, 1e-4, "norm at 12 times");
   }
 
-  printf("  --- revivals ---\n");
+  printf("  === Test: Revivals ===\n");
   {
     box_wavefunction(c, NM, BOX_REVIVAL_TIME, x, NX, psi);
     check_close(max_diff(psi, psi0, NX), 0.0, 1e-9,
@@ -137,7 +144,7 @@ int main(void) {
                 "<x> of the mirror image = 1 - x0");
   }
 
-  printf("  --- return probability ---\n");
+  printf("  Test: Return probability ===\n");
   {
     check_close(c_abs2(box_overlap(c, NM, BOX_REVIVAL_TIME)), 1.0, 1e-12,
                 "t = 2 \\pi");
@@ -150,7 +157,7 @@ int main(void) {
     check_close(c_abs2(box_overlap(c, NM, 0.0)), 1.0, 1e-12, "t = 0");
   }
 
-  printf("  --- density map equals box_wavefunction ---\n");
+  printf("  === Test: Density map equals box_wavefunction ===\n");
   {
     static double rho[9 * NX];
     double worst = 0.0;
@@ -171,7 +178,7 @@ int main(void) {
                "single time step rejected");
   }
 
-  printf("  --- invalid input ---\n");
+  printf("  === Test: Invalid input ===\n");
   {
     complex_t t[4];
     const double xx[2] = {0.2, 0.4};

@@ -47,7 +47,11 @@ int main(void) {
   const double B = M_PI / 4.0;
   const double B2 = 3.0 * M_PI / 4.0;
 
-  printf("  --- correlation from the density matrix ---\n");
+  // Validate analytical Werner-state correlation formula
+  // E(a,b) = -V \cos(a-b) across a sweep of representative angles/visibilities
+  // Also check two anchor points (perfect anticorrelation for V=1 on same axis,
+  // and zero correlation for maximally mixed case V=0)
+  printf("  === Test: Correlation from the density matrix ===\n");
   {
     double worst = 0.0;
 
@@ -66,7 +70,11 @@ int main(void) {
                 "pure noise: no correlation");
   }
 
-  printf("  --- Tsirelson bound ---\n");
+  // Verify CHSH behavior at canonical settings:
+  // - magnitude equals 2*sqrt(2)*V at the standard optimal angles
+  // - grid search reproduces the same maximum
+  // - violation threshold occurs only above V > 1/\sqrt(2)
+  printf("  === Test: Tsirelson bound ===\n");
   {
     check_close(fabs(bell_chsh(1.0, A, A2, B, B2)), 2.0 * M_SQRT2, 1e-14,
                 "S at the standard angles, V = 1");
@@ -83,7 +91,10 @@ int main(void) {
                "V = 0.72 > 1/sqrt 2: violation");
   }
 
-  printf("  --- local models ---");
+  // Cross-check local realistic baselines:
+  // deterministic strategies must satisfy |S| <= 2 and hidden-angle local model
+  // should not exceed this classical CHSH bound
+  printf("  === Test: Local models ===\n");
   {
     double worst = 0.0;
 
@@ -121,7 +132,7 @@ int main(void) {
                 "sawtooth correlation = model average");
   }
 
-  printf("  --- sampling ---\n");
+  printf("  === Test: Sampling ===\n");
   {
     double sums[4];
     int n = 200000;
@@ -142,7 +153,7 @@ int main(void) {
     check_close(s2, s, 0.0, "same seed reproduces the sample");
   }
 
-  printf("  --- invalid input ---\n");
+  printf("  === Test: Invalid input ===\n");
   {
     double sums[4];
 

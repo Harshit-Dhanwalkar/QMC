@@ -15,8 +15,8 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* Bare 2x2 site operators, basis order [up, down], S^z_up=+1/2,
- * S^z_down=-1/2, S^+ raises down->up */
+// Bare 2x2 site operators, basis order [up, down], S^z_up=+1/2, S^z_down=-1/2,
+// S^+ raises down->up
 static cmatrix_t *site_sz(void) {
   cmatrix_t *m = cmatrix_alloc(2, 2);
   if (!m) {
@@ -75,11 +75,9 @@ static cmatrix_t *add_scaled(const cmatrix_t *a, const cmatrix_t *b,
   return out;
 }
 
-/*
- * Enlarge block `b` by one bare site: new dim = b->dim * 2. Identical
- * construction to dmrg.c's enlarge_block. Returns NULL on allocation
- * failure; frees none of its inputs
- */
+// Enlarge block `b` by one bare site: new dim = b->dim * 2. Identical
+// construction to dmrg.c's enlarge_block. Returns NULL on allocation
+// failure; frees none of its inputs
 static dmrg_block_t *enlarge_block(const dmrg_block_t *b, double Jz, double Jxy,
                                    const cmatrix_t *sz, const cmatrix_t *sp,
                                    const cmatrix_t *sm) {
@@ -155,22 +153,20 @@ fail:
   return NULL;
 }
 
-/*
- * Matrix-free application of a superblock Hamiltonian built from two distinct
- * blocks (system `sys`, environment `env`, dims D1 and D2) to V (D1 x D2,
- * system index x environment index):
- *
- *   H_super = H_sys(x)I_env + I_sys(x)H_env + Jz * (Sz_sys(x)Sz_env)
- *                  + (Jxy/2) * (Sp_sys(x)Sm_env + Sm_sys(x)Sp_env)
- *
- * Using (A(x)B) applied to V (reshaped as a matrix) = A @ V @ B^T, and that
- * H_env, Sz_env are real-symmetric (B^T=B) while Sm_env = Sp_env^T:
- *
- *   H_super(V) = H_sys@V + V@H_env + Jz * (Sz_sys@V@Sz_env)
- *                        + (Jxy/2) * (Sp_sys@V@Sp_env + Sm_sys@V@Sm_env)
- *
- * Returns NULL on allocation failure
- */
+// Matrix-free application of a superblock Hamiltonian built from two distinct
+// blocks (system `sys`, environment `env`, dims D1 and D2) to V (D1 x D2,
+// system index x environment index):
+//
+//   H_super = H_sys(x)I_env + I_sys(x)H_env + Jz * (Sz_sys(x)Sz_env)
+//                  + (Jxy/2) * (Sp_sys(x)Sm_env + Sm_sys(x)Sp_env)
+//
+// Using (A(x)B) applied to V (reshaped as a matrix) = A @ V @ B^T, and that
+// H_env, Sz_env are real-symmetric (B^T=B) while Sm_env = Sp_env^T:
+//
+//   H_super(V) = H_sys@V + V@H_env + Jz * (Sz_sys@V@Sz_env)
+//                        + (Jxy/2) * (Sp_sys@V@Sp_env + Sm_sys@V@Sm_env)
+//
+// Returns NULL on allocation failure
 static cmatrix_t *apply_superblock_general(const dmrg_block_t *sys,
                                            const dmrg_block_t *env, double Jz,
                                            double Jxy, const cmatrix_t *V) {
@@ -247,19 +243,34 @@ static void axpy_inplace(cmatrix_t *y, double alpha, const cmatrix_t *x) {
   }
 }
 
-/*
- * Ground state of (sys, env) superblock via Lanczos with full
- * reorthogonalization
- * NOTE: Generalized from dmrg.c's lanczos_ground_state to allow sys->dim !=
- * env->dim
- *
- * Returns a normalized D1 x D2 ground-state matrix and sets *E0_out, or NULL on
- * allocation/breakdown failure
- */
+// Ground state of (sys, env) superblock via Lanczos with full
+// reorthogonalization
+// NOTE: Generalized from dmrg.c's lanczos_ground_state to allow sys->dim !=
+// env->dim
+//
+// High-level algorithm:
+//  1) Build an orthonormal Krylov basis {q_k} in matrix form (D1 x D2 states)
+//  2) At each iteration, apply H to q_k and project to get tridiagonal
+//     coefficients alpha_k (diagonal) and beta_k (off-diagonal)
+//  3) Reorthogonalize against all prior basis vectors for numerical stability
+//  4) Diagonalize k x k tridiagonal projection to obtain Ritz values; take
+//     smallest as current ground-state estimate
+//  5) Stop on convergence/breakdown, then reconstruct and normalize
+//     corresponding Ritz vector in original D1 x D2 space
+//
+// Returns a normalized D1 x D2 ground-state matrix and sets *E0_out, or NULL on
+// allocation/breakdown failure
 static cmatrix_t *lanczos_ground_state_general(const dmrg_block_t *sys,
                                                const dmrg_block_t *env,
                                                double Jz, double Jxy,
                                                double *E0_out) {
+  // Effective superblock dimensions:
+  // - D1: system block Hilbert-space dimension
+  // - D2: environment block Hilbert-space dimension
+  // - dim: total superblock dimension (operator acts on D1 x D2 states)
+  //
+  // Lanczos is capped to keep each diagonalization step bounded; for small
+  // spaces we allow full dimension iterations
   int D1 = sys->dim;
   int D2 = env->dim;
   int dim = D1 * D2;
@@ -383,15 +394,13 @@ lanczos_fail:
   return NULL;
 }
 
-/*
- * Truncate D x D `raw` block (just-enlarged system side) down to at most m_max
- * states, using reduced density matrix of ground state \Psi (D x D2, D2 =
- * environment dim) on raw/system (row) side:
- *   \rho = \Psi @ \Psi^\dagger
- *
- * Returns a freshly allocated truncated dmrg_block_t and sets *trunc_err_out,
- * or NULL on allocation failure
- */
+// Truncate D x D `raw` block (just-enlarged system side) down to at most m_max
+// states, using reduced density matrix of ground state \Psi (D x D2, D2 =
+// environment dim) on raw/system (row) side:
+//   \rho = \Psi @ \Psi^\dagger
+//
+// Returns a freshly allocated truncated dmrg_block_t and sets *trunc_err_out,
+// or NULL on allocation failure
 static dmrg_block_t *truncate_block(const dmrg_block_t *raw,
                                     const cmatrix_t *Psi, int m_max,
                                     double *trunc_err_out) {
@@ -481,11 +490,9 @@ static dmrg_block_t *truncate_block(const dmrg_block_t *raw,
   return nb;
 }
 
-/*
- * One diagonalize+truncate step: enlarge cache[l-1], diagonalize
- * againstcache[r] as environment, truncate to m_max, and store into cache[l]
- * Read-only in `env`; on failure cache[l] is left as it was and 0 is returned
- */
+// One diagonalize+truncate step: enlarge cache[l-1], diagonalize
+// againstcache[r] as environment, truncate to m_max, and store into cache[l]
+// Read-only in `env`; on failure cache[l] is left as it was and 0 is returned
 static int sweep_step(dmrg_block_t **cache, int l, int r, double Jz, double Jxy,
                       const cmatrix_t *sz, const cmatrix_t *sp,
                       const cmatrix_t *sm, int m_max, double *E0_out,
@@ -632,7 +639,8 @@ finite_dmrg_result_t *finite_dmrg_run(int N_target, double Jz, double Jxy,
       goto fail;
     }
 
-    double E0, terr;
+    double E0;
+    double terr;
     cmatrix_t *Psi = lanczos_ground_state_general(eb, eb, Jz, Jxy, &E0);
     if (!Psi) {
       dmrg_block_free(eb);
@@ -654,7 +662,8 @@ finite_dmrg_result_t *finite_dmrg_run(int N_target, double Jz, double Jxy,
   // re-truncating growing side at every step from cache's current
   // (increasingly well-optimized) opposite-side blocks
   int direction = 1; // +1: l runs 2..N-1 upward; -1: l runs N-2..1 downward
-  double last_E0 = 0.0, last_terr = 0.0;
+  double last_E0 = 0.0;
+  double last_terr = 0.0;
   for (int s = 0; s < n_sweeps; s++) {
     int l_start = (direction == 1) ? 2 : N - 2;
     int l_end = (direction == 1) ? N - 1 : 1;
@@ -666,7 +675,8 @@ finite_dmrg_result_t *finite_dmrg_run(int N_target, double Jz, double Jxy,
         continue;
       }
 
-      double E0, terr;
+      double E0;
+      double terr;
       if (!sweep_step(cache, l, r, Jz, Jxy, sz, sp, sm, m_max, &E0, &terr)) {
         goto fail;
       }

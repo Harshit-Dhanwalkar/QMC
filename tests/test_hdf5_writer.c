@@ -20,6 +20,7 @@
 #endif
 
 static int failures = 0;
+static const double FLOAT_CMP_EPS = 1e-12;
 
 static void check_true(int cond, const char *label) {
   printf("  %s: %s\n", label, cond ? "ok" : "FAIL");
@@ -58,7 +59,7 @@ static void test_1d_round_trip(void) {
 
   int all_match = 1;
   for (int i = 0; i < 5; i++) {
-    if (readback[i] != data[i]) {
+    if (fabs(readback[i] - data[i]) > FLOAT_CMP_EPS) {
       all_match = 0;
     }
   }
@@ -95,7 +96,7 @@ static void test_matrix_round_trip(void) {
 
   int all_match = 1;
   for (int i = 0; i < 6; i++) {
-    if (readback[i] != data[i]) {
+    if (fabs(readback[i] - data[i]) > FLOAT_CMP_EPS) {
       all_match = 0;
     }
   }
@@ -168,7 +169,7 @@ static void test_groups_and_generic_types(void) {
 
     int all_match = 1;
     for (int i = 0; i < 4; i++) {
-      if (readback[i] != positions_f32[i]) {
+      if (memcmp(&readback[i], &positions_f32[i], sizeof(float)) != 0) {
         all_match = 0;
       }
     }

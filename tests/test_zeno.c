@@ -166,7 +166,7 @@ int main(void) {
   printf("  === Test: Monte-Carlo trajectories ===\n");
   {
     int n = 20;
-    double ntraj = 200000;
+    int ntraj = 200000;
     static int alive[64];
 
     zeno_sample_pulsed(omega, T, n, ntraj, 99u, alive);

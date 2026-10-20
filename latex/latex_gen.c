@@ -222,18 +222,28 @@ int latex_tools_available(void) {
   return latex_compiler_available() && latex_png_converter_available();
 }
 
-/*
- * Process execution
- *
- * argv must be NULL-terminated; argv[0] is tool name
- * cwd, stdout_path, stderr_path may be NULL
-
- * Returns 0 if process exited with status 0, -1 otherwise
- */
+// Process execution
+//
+// argv must be NULL-terminated; argv[0] is tool name
+// cwd, stdout_path, stderr_path may be NULL
+//
+// 1) Optionally switch to `cwd` so tools that emit sidecar files do so in a
+//    predictable directory
+// 2) Optionally redirect stdout/stderr to files for diagnostic capture
+// 3) Spawn tool and wait for completion
+// 4) Restore original stdout/stderr handles and working directory
+//
+// Error handling policy:
+//  - Any setup/launch failure returns -1
+//  - Best-effort restoration is performed for resources that were already
+//    changed before the failure happened (stdio and cwd)
+//
+// Returns 0 if process exited with status 0, -1 otherwise
 static int run_tool(const char *tool, char *const argv[], const char *cwd,
                     const char *stdout_path, const char *stderr_path) {
 #ifdef _WIN32
 
+  // Save/optionally switch working directory for tool execution
   char saved_cwd[1024];
   int have_cwd = 0;
   if (cwd && *cwd) {
@@ -247,6 +257,7 @@ static int run_tool(const char *tool, char *const argv[], const char *cwd,
     have_cwd = 1;
   }
 
+  // Save and redirect stdout/stderr only when capture paths are provided
   int saved_out = -1;
   int saved_err = -1;
   if (stdout_path) {
@@ -276,8 +287,10 @@ static int run_tool(const char *tool, char *const argv[], const char *cwd,
     }
   }
 
+  // Execute synchronously and collect exit status
   intptr_t rc = _spawnvp(_P_WAIT, tool, (const char *const *)argv);
 
+  // Restore process-global state modified above
   if (saved_out >= 0) {
     _dup2(saved_out, _fileno(stdout));
     _close(saved_out);
@@ -514,25 +527,42 @@ static void capture_log(const char *log_path, const char *tag) {
 }
 
 // Rendering functions (compiler + pdftoppm)
+// Render a LaTeX math expression to a PNG file
+//
+// 1) Validate user input and reject unsafe output paths
+// 2) Normalize rendering options (fall back to defaults when needed)
+// 3) Generate a temporary .tex document with selected packages
+// 4) Invoke LaTeX compiler to produce a PDF
+// 5) Convert PDF to PNG via pdftoppm at requested DPI
+// 6) Move/copy generated PNG to outpath and clean temporary artifacts
+//
+// Error handling:
+//  - Returns 0 on success and a negative code on failure
+//  - Populates g_last_error with a human-readable diagnostic
 int latex_render_to_png_ex(const char *expr, const char *outpath,
                            const latex_render_options_t *options) {
+  // Validate required inputs before creating temporary files or running tools
   if (!expr || !outpath) {
     set_last_error("latex_render_to_png: NULL argument");
 
     return -1;
   }
 
+  // Harden shell command construction by rejecting metacharacters in output
+  // path
   if (has_unsafe_shell_metachars(outpath)) {
     set_last_error("latex_render_to_png: unsafe output path");
 
     return -5;
   }
 
+  // Normalize options: use defaults when caller passes NULL
   latex_render_options_t default_opts = latex_render_options_default();
   if (!options) {
     options = &default_opts;
   }
 
+  // Resolve effective compiler and rasterization DPI
   const char *compiler =
       options->compiler ? options->compiler : QMC_LATEX_COMPILER;
   int dpi = (options->dpi > 0) ? options->dpi : 200;

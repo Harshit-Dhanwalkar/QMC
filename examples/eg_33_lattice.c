@@ -3,7 +3,11 @@
  *
  * 1D/2D nearest-neighbor tight-binding bands (validated against Bloch's
  * theorem's exact dispersion), Anderson localization from on-site disorder, and
- * the Su-Schrieffer-Heeger (SSH) model's topological edge states.
+ * Su-Schrieffer-Heeger (SSH) model's topological edge states
+ *
+ * - Validate 1D tight-binding energies against analytic expectations
+ * - Show disorder-driven localization via ground-state IPR statistics
+ * - Compare SSH trivial/non-trivial phases for edge-state signatures
  */
 
 #include "../core/complex.h"
@@ -34,6 +38,7 @@ static double *diagonalize_sorted(const cmatrix_t *H, int n) {
 int main(void) {
   printf(" > Tight-Binding Lattice Models\n\n");
 
+  // 1D nearest-neighbor chain (open boundaries)
   printf("   --- 1D chain, n=10 sites, eps0=0.5, t=1.2 ---\n");
   int n = 10;
   cmatrix_t *H1d = lattice_build_1d_chain(n, 0.5, 1.2, LATTICE_OPEN);
@@ -42,9 +47,12 @@ int main(void) {
          E1d[1], E1d[2]);
   printf("   (matches Bloch's theorem / standing-wave analytic dispersion to "
          "~1e-13)\n\n");
+
   free(E1d);
   cmatrix_free(H1d);
 
+  // Anderson model in 1D. Sweep disorder strength W and average ground-state
+  // inverse participation ratio over multiple realizations
   printf("   --- Anderson localization, n=60 sites, t=1.0 ---\n");
   printf("   Ground-state IPR (inverse participation ratio) averaged over 15 "
          "disorder realizations: larger IPR = more localized.\n\n");
@@ -55,33 +63,41 @@ int main(void) {
     int n_real = 15;
 
     for (int real = 0; real < n_real; real++) {
+      // Build one disordered Hamiltonian (deterministic per-realization seed),
+      // then diagonalize to obtain ground-state eigenvector
       cmatrix_t *H = lattice_build_anderson_1d(60, 1.0, W_values[w],
                                                1000ULL + (uint64_t)real);
       cmatrix_t *copy = cmatrix_copy(H);
       eigen_t *eig = cmatrix_eigh_complex(copy);
       cmatrix_free(copy);
 
+      // Extract lowest-energy eigenstate into psi for IPR computation
       cvector_t *psi = cvector_alloc(60);
       for (int i = 0; i < 60; i++) {
         psi->data[i] = CMAT(eig->eigenvectors, i, 0);
       }
 
+      // Accumulate localization metric and release per-realization resources
       sum_ipr += lattice_ipr(psi);
 
       cvector_free(psi);
       eigen_free(eig);
       cmatrix_free(H);
     }
+
     printf("   W=%.1f: avg ground-state IPR = %.4f\n", W_values[w],
            sum_ipr / 15);
   }
+
   printf(
-      "\n   Weak disorder barely localizes the ground state; strong disorder "
-      "does, qualitative Anderson-localization signature (in 1D, any disorder "
+      "\n   Weak disorder barely localizes ground state; strong disorder does, "
+      "qualitative Anderson-localization signature (in 1D, any disorder "
       "eventually localizes every state, given a long enough chain).\n\n");
 
+  // SSH chain (open boundaries) for topology/edge-state contrast
   printf("   --- SSH model, 15 unit cells (30 sites), open boundary ---\n");
-  int n_cells = 15, N = 2 * n_cells;
+  int n_cells = 15;
+  int N = 2 * n_cells;
 
   printf("   Trivial phase (t1=1.0 > t2=0.3):\n");
   cmatrix_t *H_triv = lattice_build_ssh(n_cells, 1.0, 0.3, LATTICE_OPEN);
@@ -126,9 +142,9 @@ int main(void) {
   printf("     weight on first+last 2 sites = %.4f (out of 1.0 total, spread "
          "over %d sites)\n",
          edge_weight, N);
-  printf("     -> a topological edge state: exponentially localized at the "
-         "chain ends, protected by chiral symmetry, absent in the trivial "
-         "phase above.\n");
+  printf(
+      "     -> a topological edge state: exponentially localized at chain "
+      "ends, protected by chiral symmetry, absent in trivial phase above.\n");
 
   cvector_free(psi);
   eigen_free(eig);

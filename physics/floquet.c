@@ -14,10 +14,11 @@
  *
  *   for a generic real shift s. Real and imaginary parts of U commute with each
  *   other and share A's eigenvectors, so a generic s separates all n
- *   eigenphases. Eigenvalues are recovered by Rayleigh quotient <v|U|v> on each
- *   eigenvector; achieved residual max |U v - \lambda v| is stored as
- *   eigen_residual and is used to select between several trial shifts s when a
- *   near-degeneracy makes one  choice unreliable
+ *   eigenphases
+ *   Eigenvalues are recovered by Rayleigh quotient <v|U|v> on each eigenvector;
+ *   achieved residual max |U v - \lambda v| is stored as eigen_residual and is
+ *   used to select between several trial shifts s when a near-degeneracy makes
+ *   one  choice unreliable
  *
  *   Unitarity error max |U^\dagger U - I| is reported separately so caller can
  *   see at a glance whether RK4 step count was enough
@@ -27,31 +28,35 @@
  *   Hamiltonian on (harmonic index a, system index i) space
  *
  *     [H_F]_{(a i),(b j)} = (H_{a - b})_{i j}
- *                           + a \omega \delta_{ab} \delta_{ij},
+ *                           + a \omega \delta_{ab} \delta_{ij}
  *
  *   truncated to |a|, |b| <= K and diagonalized by cmatrix_eigh_complex
  *   Exact spectrum is a periodic sequence of n quasi-energy classes (one
  *   replica per period \omega), so any n consecutive eigenvalues contain each
- *   class exactly once. n eigenvalues in middle of truncated spectrum (indices
- *   K n .. K n + n - 1) are used, where truncation errors are smallest. Floquet
- *   modes at t = 0 are sum of selected eigenvector's harmonic blocks; this is
- *   replica-independent because m -> m + 1 only relabels blocks
+ *   class exactly once
+ *   n eigenvalues in middle of truncated spectrum (indices K n .. K n + n - 1)
+ *   are used, where truncation errors are smallest. Floquet modes at t = 0 are
+ *   sum of selected eigenvector's harmonic blocks; this is replica-independent
+ *   because m -> m + 1 only relabels blocks
  *
  *   truncation_weight is largest probability any selected eigenvector places on
  *   two outermost harmonic blocks; increase K until it reaches ~0
  *
  * Analytic references:
  *   floquet_circular_rabi_quasienergy - exact two-level quasi-energies for
- *       circularly driven qubit (no RWA, valid at any drive strength)
+ *                                       circularly driven qubit (no RWA, valid
+ *                                       at any drive strength)
  *   floquet_bessel_j0                 - J_0 by trapezoid rule on smooth
- *       periodic integral representation
- *   floquet_cdt_splitting             - \Delta |J_0(A/\omega)|, high-
- *       frequency coherent-destruction-of-tunneling prediction
+ *                                       periodic integral representation
+ * floquet_cdt_splitting               - \Delta |J_0(A/\omega)|, high- frequency
+ *                                       coherent-destruction-of-tunneling
+ *                                       prediction
  */
 #include "floquet.h"
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
 #include "matrix.h"
+#include "vector.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -429,14 +434,30 @@ floquet_result_t *floquet_solve_time(int n, floquet_hamiltonian_fn H,
   return res;
 }
 
-/* Sambe-space solver */
+//
+// Sambe-space Floquet solver
+//
+// Builds truncated extended-space (Sambe) Hamiltonian for Fourier components
+// H_m (m=-M..M), solves for quasienergies/modes, and returns states folded to
+// first Floquet Brillouin zone
+//
+// Input conventions:
+//   - harmonics[m + M] corresponds to H_m
+//   - Physical Hermiticity constraint H_{-m} = H_m^\dagger is required
+//   - K is Sambe truncation index, producing total dimension
+//       dim = n * (2K + 1)
+//
+//   - Early returns are used for invalid inputs and non-finite data
+//   - A hard dimension cap protects memory/runtime and size arithmetic
 floquet_result_t *floquet_solve_sambe(int n, cmatrix_t *const *harmonics, int M,
                                       double omega, int K) {
+  // Basic argument/domain validation before any allocation
   if (n < 1 || n > FLOQUET_MAX_DIM || !harmonics || M < 0 || K < M + 1 ||
       !(omega > 0.0) || !isfinite(omega)) {
     return NULL;
   }
 
+  // Truncated Sambe dimension n*(2K+1), bounded to keep work/memory sane
   long dim_l = (long)n * (2L * K + 1L);
   if (dim_l > FLOQUET_MAX_SAMBE_DIM) {
     return NULL;
@@ -444,7 +465,8 @@ floquet_result_t *floquet_solve_sambe(int n, cmatrix_t *const *harmonics, int M,
 
   int dim = (int)dim_l;
 
-  // Validate harmonics: shapes, finiteness, and H_{-m} = H_m^\dagger
+  // Validate harmonics (shape/finiteness) and estimate magnitude scale  and
+  // H_{-m} = H_m^\dagger
   double scale = 1.0;
   for (int m = -M; m <= M; m++) {
     const cmatrix_t *h = harmonics[m + M];
@@ -461,10 +483,12 @@ floquet_result_t *floquet_solve_sambe(int n, cmatrix_t *const *harmonics, int M,
   for (int m = 0; m <= M; m++) {
     const cmatrix_t *hp = harmonics[M + m];
     const cmatrix_t *hm = harmonics[M - m];
+
     for (int a = 0; a < n; a++) {
       for (int b = 0; b < n; b++) {
         complex_t d = c_sub(hm->data[(size_t)a * n + b],
                             c_conj(hp->data[(size_t)b * n + a]));
+
         if (hypot(d.re, d.im) > 1e-9 * scale) {
           return NULL;
         }
@@ -527,6 +551,7 @@ floquet_result_t *floquet_solve_sambe(int n, cmatrix_t *const *harmonics, int M,
             eig->eigenvectors->data[(size_t)(blk * n + i) * dim + (size_t)col];
         res->modes->data[(size_t)i * n + j] =
             c_add(res->modes->data[(size_t)i * n + j], v);
+
         if (blk == 0 || blk == n_blocks - 1) {
           edge += c_abs2(v);
         }
@@ -545,7 +570,7 @@ floquet_result_t *floquet_solve_sambe(int n, cmatrix_t *const *harmonics, int M,
   return res;
 }
 
-/* Stroboscopic evolution and analytic references */
+// Stroboscopic evolution and analytic references
 cvector_t *floquet_stroboscopic_state(const floquet_result_t *result,
                                       const cvector_t *psi0, long n_periods) {
   if (!result || !psi0 || !psi0->data || psi0->n != result->n ||
