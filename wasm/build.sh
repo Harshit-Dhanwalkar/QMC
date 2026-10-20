@@ -22,6 +22,7 @@
 #   docs/src/playground/qmc_carpet.wasm     quantum-carpet / revival demo
 #   docs/src/playground/qmc_zeno.wasm       quantum-Zeno demo
 #   docs/src/playground/qmc_corral.wasm     quantum-corral (circular well) demo
+#   docs/src/playground/qmc_hubbard.wasm    Hubbard-dimer demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -189,3 +190,10 @@ build_module "$OUT/qmc_corral.wasm" \
   "qmc_cb_n qmc_cb_mode_count qmc_cb_field_buffer qmc_cb_mode_m qmc_cb_mode_n qmc_cb_mode_sine qmc_cb_mode_k \
 qmc_cb_show_mode qmc_cb_launch qmc_cb_energy qmc_cb_evolve" \
   wasm/qmc_corral.c physics/circular_billiard.c
+
+build_module "$OUT/qmc_hubbard.wasm" \
+  "qmc_hb_curve_len qmc_hb_time_len qmc_hb_spec_buffer qmc_hb_gs_d_buffer qmc_hb_gs_ss_buffer qmc_hb_gs_s_buffer \
+qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer qmc_hb_th_d_buffer qmc_hb_th_ss_buffer \
+qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer qmc_hb_levels_buffer qmc_hb_curves qmc_hb_levels \
+qmc_hb_quench qmc_hb_probs qmc_hb_thermal" \
+  wasm/qmc_hubbard.c physics/hubbard_dimer.c
