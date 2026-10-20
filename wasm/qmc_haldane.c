@@ -53,8 +53,10 @@ double *qmc_hd_mean_buffer(void) { return g_mean; }
 QMC_EXPORT(qmc_hd_prob_buffer)
 double *qmc_hd_prob_buffer(void) { return g_prob; }
 
-/* Set t2 in [0, 1/3], \phi in [-\pi, \pi] and sublattice mass M in [-3, 3]
- * (t1 = 1). Returns 0 on success */
+// Set t2 in [0, 1/3], \phi in [-\pi, \pi] and sublattice mass M in [-3, 3] (t1
+// = 1)
+//
+// Returns 0 on success
 QMC_EXPORT(qmc_hd_set)
 int qmc_hd_set(double t2, double phi, double mass) {
   if (!(t2 >= 0.0 && t2 <= 1.0 / 3.0 + 1e-12) || !(fabs(phi) <= M_PI + 1e-12) ||
@@ -90,7 +92,9 @@ int qmc_hd_set(double t2, double phi, double mass) {
   return 0;
 }
 
-// Ribbon bands at n_k wave numbers k1 = 2 pi i / (n_k - 1). Returns 0
+// Ribbon bands at n_k wave numbers k1 = 2 \pi i / (n_k - 1)
+//
+// Returns 0
 QMC_EXPORT(qmc_hd_compute)
 int qmc_hd_compute(int n_k) {
   if (!g_model || n_k < 2 || n_k > HD_NK_MAX) {
