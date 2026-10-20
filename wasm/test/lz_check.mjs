@@ -16,6 +16,7 @@ if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(9);
 const g = (x) => x.toFixed(6);
+
 w.qmc_lz_reset(1, 1, 12, 1);
 let rc = 0;
 while (rc === 0) rc = w.qmc_lz_step(0.5);

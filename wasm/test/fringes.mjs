@@ -24,6 +24,7 @@ const sep = 6.0;
 const slitW = 1.6;
 const wallX = 2.0;
 const screenX = 14.0;
+
 w.qmc_init(N, BOX, DT);
 w.qmc_build_slits(wallX, 1.0, 2, sep, slitW, 60.0);
 w.qmc_wavepacket(-12, 0, k, 0, 2.0);

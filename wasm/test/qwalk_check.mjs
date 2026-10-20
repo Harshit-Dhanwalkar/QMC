@@ -15,10 +15,10 @@ const w = instance.exports;
 if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(9);
+
 w.qmc_qw_reset(0.7853981633974483, 2);
 w.qmc_qw_step(300);
 const b = new Float64Array(w.memory.buffer, w.qmc_qw_buffer(), 2048);
-
 console.log(
   `hadamard t=${w.qmc_qw_time()} var=${f(w.qmc_qw_variance())} ratio=${f(w.qmc_qw_variance() / 90000)} asym=${f(w.qmc_qw_asymptote())} norm=${w.qmc_qw_norm().toFixed(12)}`,
 );

@@ -15,6 +15,7 @@ const w = instance.exports;
 if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(5);
+
 // memory can grow, so make views after calls that touch it
 const buf = (fn, n) => new Float64Array(w.memory.buffer, fn(), n);
 console.log(

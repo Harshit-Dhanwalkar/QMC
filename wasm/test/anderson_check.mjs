@@ -14,6 +14,7 @@ memory = instance.exports.memory;
 const w = instance.exports;
 if (w._initialize) w._initialize();
 
+// memory can grow, so make views after calls that touch it
 const f = (x) => x.toFixed(9);
 w.qmc_an_reset(0, 1);
 w.qmc_an_step(1000);

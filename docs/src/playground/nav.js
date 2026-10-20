@@ -21,6 +21,7 @@
     ["bell", "CHSH Bell test", "Quantum correlations beating the classical bound, Werner-state entanglement and inequality violation"],
     ["carpet", "Quantum carpet", "A packet in a box that reassembles itself, quantum carpet wave packet revival"],
     ["zeno", "Quantum Zeno effect", "Watching a qubit stops it moving"],
+    ["hubbard", "Hubbard dimer", "Two electrons, solved exactly: from band to Mott"],
     ["corral", "Quantum corral", "Bessel modes of a circular drum and a bouncing packet"],
   ];
   const GH =

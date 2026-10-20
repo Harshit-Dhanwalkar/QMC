@@ -15,6 +15,7 @@ const w = instance.exports;
 if (w._initialize) w._initialize();
 
 const f = (x) => x.toFixed(5);
+
 // memory can grow, so make the views after the calls that touch it
 const Z = () => new Float64Array(w.memory.buffer, w.qmc_tq_zz_buffer(), 41);
 w.qmc_tq_set(0.3, 2.0);
