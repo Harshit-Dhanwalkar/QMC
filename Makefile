@@ -275,6 +275,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/box_revival.c \
                $(PHYSICS_DIR)/zeno.c \
                $(PHYSICS_DIR)/circular_billiard.c \
+               $(PHYSICS_DIR)/hubbard_dimer.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
