@@ -1,6 +1,46 @@
 /*
-Relativistic QM: Klein-Gordon and Dirac 1D solvers.
-*/
+ * 1D and radial solvers for relativistic wave equations
+ *
+ * Physics: Klein-Gordon (spin-0, scalar potential) and Dirac (spin-1/2)
+ * equations, discretized on a finite-difference grid
+ *
+ * Klein-Gordon: 1D Klein-Gordon equation with a scalar potential V(x) is
+ *   [ -\hbar^2 c^2 d^2/dx^2 + m^2 c^4 ] \psi = (E - V(x))^2 \psi
+ *
+ * 2 solvers:
+ *   1. klein_gordon_1d (fast path): diagonalizes free operator (V-independent)
+ *      and applies a first-order perturbative shift <n|V|n> to each level
+ *      Exact for constant V, good for well-separated levels, but can fail at
+ *      near-degeneracies
+ *   2. klein_gordon_1d_self_consistent: solves full non-linear eigenvalue
+ *      problem via fixed-point iteration, updating diagonal H(E) at each step
+ *      and tracking level closest to previous E^2
+ *      This is accurate path, at cost of a few diagonalizations per call
+ *
+ * 1D Dirac equation is
+ *   [ c \sigma_x p + m c^2 \sigma_z + V(x) ] \phi = E \phi
+ * solved via central differences on a 2N x 2N complex Hermitian matrix
+ * (N spatial points x 2 spinor components)
+ *
+ * Radial Dirac equation for a central potential V(r) and a fixed relativistic
+ * quantum number \kappa is built same way, with 2N x 2N matrix acting on large
+ * (G) and small (F) components
+ * Radial grid must start at r > 0 to avoid \kappa/r singularity
+ *
+ * Exact reference: dirac_hydrogen_energy_level provides Sommerfeld
+ * fine-structure formula, so that numerical eigensolvers can be cross-checked
+ * against exact hydrogenic spectrum
+ *
+ * Numerical conventions:
+ * - Length is measured in whatever units caller passes for x and r;
+ *   solvers only use dx and dr, so a rescaling of grid rescales energies
+ *   consistently
+ * - For self-consistent Klein-Gordon solve, a fixed-point iteration is declared
+ *   converged when |E_new - E| < tol. If it exhausts max_iter, last iterate is
+ *   returned with converged = 0; callers must check sol->converged
+ * - Dirac eigensolvers return both positive and negative energy branches; bound
+ *   states in a confining potential are positive eigenvalues below m c^2
+ */
 
 #include "relativistic.h"
 #include "../core/complex.h"
@@ -22,14 +62,14 @@ eigen_t *klein_gordon_1d(const double *x, int N, const double *V, double m,
 
   // Discretize: (-\hbar^2 * c^2 d^2/dx^2 + m^2 * c^4 )\psi = ((E - V)^2)\psi
   //
-  // The matrix below is the FREE (V-independent) operator -\hbar^2 c^2 d^2/dx^2
-  // + m^2 c^4; it does not itself encode any spatial structure of V(x). Each
-  // level n have expectation value :
+  // Matrix below is free (V-independent) operator -\hbar^2 c^2 d^2/dx^2 + m^2
+  // c^4; it does not itself encode any spatial structure of V(x) Each level n
+  // have expectation value:
   //   <V>_n = sum_i |c_i^(n)|^2 * V(x_i)
   // computed from level's (V-independent) eigenvector(i.e.1st-order
-  // perturbative correction using free-particle-like modes as 0th-order basis).
+  // perturbative correction using free-particle-like modes as 0th-order basis)
   // Constant V(x) (every level reduces to <V>_n = V_avg identically, since
-  // \sum_i |c_i|^2 = 1), and V(x) has real spatial structure
+  // \sum_i |c_i|^2 = 1) and V(x) has real spatial structure
   //
   // NOTE: Know limitation : This is plain non-degenerate perturbation theory,
   // applied per level with no coupling between levels. For well-separated
@@ -39,10 +79,10 @@ eigen_t *klein_gordon_1d(const double *x, int N, const double *V, double m,
   // near-degenerate pair. On same test potential, ground state
   // (quasi-degenerate with first excited state) got worse under fix (~0.16 vs
   // ~0.05 Hartree-analog error vs. self-consistent reference) even though
-  // levels 1,2,3,5 improved.
+  // levels 1,2,3,5 improved
   // HACK:  If one need reliable ground-state accuracy on potential suspect has
   // close-lying levels, use klein_gordon_1d_self_consistent directly rather
-  // than trusting this fast path's shift for that specific level.
+  // than trusting this fast path's shift for that specific level
   double dx = x[1] - x[0];
   double coeff = hbar * hbar * c * c / (dx * dx);
   double mc2 = m * c * c;
@@ -118,6 +158,7 @@ klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
   int level = -1;
   int converged = 0;
   int iter;
+  int iterations_done = 0;
 
   for (iter = 0; iter < max_iter; iter++) {
     // H(E)_diag[i] = 2 * coeff + m^2 * c^4 + V(x_i)^2 - 2 * E * V(x_i)
@@ -156,13 +197,18 @@ klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
     if (fabs(E_new - E) < tol) {
       E = E_new;
       converged = 1;
-      iter++;
+      iterations_done = iter + 1;
 
       break;
     }
 
     E = E_new;
     lambda_target = E * E;
+    iterations_done = iter + 1;
+  }
+
+  if (!converged) {
+    iterations_done = iter;
   }
 
   free(diag);
@@ -212,7 +258,7 @@ klein_gordon_1d_self_consistent(const double *x, int N, const double *V,
   sol->energy = E;
   sol->psi = psi;
   sol->converged = converged;
-  sol->iterations = iter;
+  sol->iterations = iterations_done;
 
   return sol;
 }
@@ -225,8 +271,8 @@ void klein_gordon_solution_free(klein_gordon_solution_t *sol) {
   free(sol);
 }
 
-eigen_t *dirac_1d(const double *x, int N, const double *V, double m, double hbar,
-                  double c) {
+eigen_t *dirac_1d(const double *x, int N, const double *V, double m,
+                  double hbar, double c) {
   // Build 2N x 2N Hermitian matrix:
   // [ V(x) + mc^2,          -i * \hbar * c d/dx ]
   // [ -i * hbar * c * d/dx,  V(x) - mc^2        ]

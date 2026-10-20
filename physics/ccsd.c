@@ -1,3 +1,69 @@
+/*
+ * Coupled Cluster Singles and Doubles (CCSD)
+ *
+ * Equation-of-motion ansatz (Reference: Purvis & Bartlett 1982; Gauss & Stanton
+ * in "Advances in Chemical Physics" 123 for diagrammatic formulation used
+ * below):
+ *
+ *   |\Psi_CCSD> = \exp(T1 + T2) |\Phi_0>
+ *
+ * Where
+ *  |\Phi_0> is closed-shell RHF reference and
+ *
+ *   T1 = \sum_{i,a} t_i^a c^\dagger_a c_i
+ *   T2 = 1/4 \sum_{i,j,a,b} t_{ij}^{ab} c^\dagger_a c^\dagger_b c_j c_i
+ *
+ * are cluster operators in second quantization
+ * Correlation energy is
+ *
+ *   E_corr = <\Phi_0| (H_N \exp(T1 + T2))_c |\Phi_0>
+ *
+ * and amplitudes solve projected equations
+ *
+ *   <\Phi_i^a| H_N \exp(T1 + T2) |\Phi_0>_c = 0
+ *   <\Phi_{ij}^{ab}| H_N \exp(T1 + T2) |\Phi_0>_c = 0
+ *
+ * iterated to convergence with a fixed-point (DIIS-free) update. Since
+ * CCSD is exact through fourth order in MP perturbation theory and its
+ * energy is a sum of terms up to (T2)^2, amplitude equations terminate
+ * at finite diagrams
+ *
+ * Everything is in spin-orbital basis (nso = 2 * n_spatial):
+ *   - MO integrals come in as spatial chemist-notation (pq|rs) on n_spatial
+ *     orbitals; spin-orbital physicist-notation antisymmetrized tensor
+ *     <pq||rs> = (pr|qs) - (ps|qr) is evaluated on demand via v_elem, so
+ *     nothing nso^4 = 16 n_spatial^4 ever has to be resident during iterative
+ *     solve
+ *   - occ[] and virt[] are explicit spin-orbital index lists over active window
+ *     (frozen-core orbitals excluded from both)
+ *   - Fso is diagonal (canonical RHF), so amplitude energy denominator
+ *     d_ij^ab = F_ii + F_jj - F_aa - F_bb is built from 4 scalars
+ *   - 2 T1-dependent τ intermediates are antisymmetrized products
+ *     \tau_{ij}^{ab}         = t_{ij}^{ab} + t_i^a t_j^b - t_i^b t_j^a
+ *     \tilde{\tau}_{ij}^{ab} = t_{ij}^{ab} + 1/2 (t_i^a t_j^b - t_i^b t_j^a)
+ *     used in standard CCSD diagrams
+ *
+ * Intermediates: Each iteration rebuilds Fae, Fmi, Fme, Wmnij and Wmbej from
+ * current (T1, T2); Wabef is never stored, only computed on demand for (ab|ef)
+ * contractions of T2 equation. This mirrors standard "5-intermediate" CCSD
+ * factorization and keeps persistent memory budget at O(nso^2) plus T2 tensor
+ * itself, at cost of recomputing a few of smaller intermediates once per outer
+ * RHS evaluation
+ *
+ * Convergence: MP2 amplitude is used as initial guess. Iteration is declared
+ * converged when correlation energy changes by less than conv_tol between two
+ * consecutive sweeps (no amplitude-norm criterion). At second order MP2 alone
+ * would already be an upper bound of CCSD correlation energy; outer loop
+ * reaches CCSD fixed point in a handful of iterations for small systems this
+ * module targets (typically H2/STO-3G through LiH/STO-3G, n_spatial <= 8)
+ *
+ * Amplitudes exit: ccsd_run_ex() can optionally hand back converged amplitudes
+ * for post-CCSD methods like perturbative triples correction in ccsd_t.c. Exit
+ * path materializes full antisymmetrized V tensor here (it is only nso^4 for
+ * small active spaces this is used on) so that perturbative_triples() can index
+ * it directly without paying v_elem's cost inside innermost triple loop
+ */
+
 #include "ccsd.h"
 #include "molecular_integrals.h"
 #include <math.h>
@@ -131,6 +197,20 @@ static inline double d_ijab(const ccsd_ctx_t *ctx, int i, int j, int a, int b) {
          IDX2(Fso, nso, b, b);
 }
 
+// Build standard CCSD one- and two-body intermediates from current amplitudes
+// (t1, t2) in spin-orbital basis
+//
+// Inputs:
+// - ctx: orbital partitions (occ/virt), diagonal Fock matrix, and MO ERIs
+// - t1, t2: current singles/doubles amplitudes
+//
+// Outputs (caller-allocated):
+// - Fae(a,e), Fmi(m,i), Fme(m,e)
+// - Wmnij(m,n,i,j), Wmbej(m,b,e,j)
+//
+// - Index lists occ[] / virt[] are explicit spin-orbital indices
+// - Antisymmetrized two-electron elements are evaluated on demand via v_elem
+//   to avoid storing a full nso^4 tensor
 static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
                                 const double *t2, double *Fae, double *Fmi,
                                 double *Fme, double *Wmnij, double *Wmbej) {
@@ -143,6 +223,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
+// Build Fae(a,e): virtual-virtual dressed Fock-like intermediate
 #pragma omp parallel for schedule(dynamic)
   for (int ai = 0; ai < nv; ai++) {
     int a = virt[ai];
@@ -174,6 +255,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+// Build next intermediate block (Fmi/Fme/Wmnij/Wmbej as coded below)
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];

@@ -1,5 +1,41 @@
+/*
+ * Perturbative triples correction to CCSD, "(T)" in CCSD(T)
+ *
+ * After CCSD has converged, triples contribution is evaluated at 4^{th} order
+ * in perturbation theory (non-iterative, spin-orbital formulation) following
+ * standard closed formula (Reference: Raghavachari, Trucks, Pople & Head-Gordon
+ * 1989; Watts, Gauss & Bartlett 1993 for spin-orbital version used here):
+ *
+ *   E_(T) = 1/36 \sum_{ijk,abc} T_{ijk}^{abc} (T_{ijk}^{abc} + T_{ijk}^{abc,
+ * disc})
+ *
+ * Where connected T3 amplitude is
+ *
+ *   T_{ijk}^{abc, conn} = P(i/jk) P(a/bc) [ \sum_e t_{jk}^{ae} <ei||bc>
+ *                                          - \sum_m t_{im}^{bc} <ma||jk> ]
+ *                                       / (f_i + f_j + f_k - f_a - f_b - f_c)
+ *
+ * and disconnected piece T3^{disc} = P(i/jk) P(a/bc) [ t_i^a <jk||bc> ] comes
+ * from T1 * W2 contraction. P(i/jk) and P(a/bc) are 3-element cyclic
+ * antisymmetrizers over occupied and virtual spin-orbitals respectively, so
+ * each "base" term expands to 9 signed permutations
+ *
+ * (T) correction is what makes CCSD(T) "gold standard" of single-reference
+ * quantum chemistry: CCSD alone misses triples contribution that dominates for
+ * stretched bonds and near-degenerate systems, but perturbatively adding it
+ * without re-diagonalizing costs only a single extra pass and recovers most of
+ * missing correlation energy
+ *
+ * This file only computes triples energy; singles and doubles come from ccsd.c
+ * via ccsd_run_ex() with amplitudes_out set. Full V tensor <pq||rs> is
+ * materialized there so that innermost (ijk,abc) loop here never has to call
+ * spin-orbital antisymmetrizer on fly: for n_spatial <= 8 systems targeted,
+ * nso^4 = 65536 doubles is negligible
+ */
+
 #include "ccsd_t.h"
 #include "ccsd.h"
+#include "ccsd_t.h"
 #include <stdlib.h>
 
 #define IDX2(arr, nso, p, q) (arr)[(size_t)(p) * (nso) + (q)]

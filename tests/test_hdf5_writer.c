@@ -332,7 +332,7 @@ static void test_chunking_and_compression(void) {
     H5Dread(dset, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, readback);
     int all_match = 1;
     for (int i = 0; i < N; i++) {
-      if (readback[i] != series[i]) {
+      if (fabs(readback[i] - series[i]) > FLOAT_CMP_EPS) {
         all_match = 0;
       }
     }

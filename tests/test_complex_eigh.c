@@ -170,6 +170,24 @@ static void test_random_hermitian(void) {
 // An 8-fold degenerate eigenvalue (+1) and a 2-fold one (-1) in a random
 // unitary basis
 static void test_large_degeneracy(void) {
+  /*
+   * Stress-test cmatrix_eigh_complex on a highly degenerate Hermitian matrix
+   * Degeneracies are numerically delicate because any orthonormal basis in
+   * degenerate subspace is valid, so to verify decomposition properties
+   * (residual and orthonormality) rather than comparing eigenvectors directly
+   *
+   * Construction:
+   *   1) Build diagonal D with spectrum {+1 (x8), -1 (x2)}
+   *   2) Build a random complex matrix and orthonormalize columns
+   * (Gram-Schmidt) to obtain a unitary-ish Q. 3) Form H = Q D Q^{\dagger},
+   * which preserves eigenvalues while producing a non-trivial Hermitian matrix
+   * (not already diagonal in canonical basis)
+   *
+   * Validation:
+   *   - For each computed eigenpair (\lambda_k, v_k),
+   *     check ||H v_k - \lambda_k v_k||
+   *   - Check orthonormality V^{\dagger}V ~= I for returned eigenvectors V
+   */
   printf("  === Test: 8-fold degenerate 10x10 Hermitian (residual + "
          "orthonormality) ===\n");
 
@@ -179,13 +197,14 @@ static void test_large_degeneracy(void) {
     D->data[i] = c_zero();
   }
 
+  // Target spectrum with large degeneracy
   const double eigvals_true[10] = {1, 1, 1, 1, 1, 1, 1, 1, -1, -1};
   for (int i = 0; i < n; i++) {
     CMAT(D, i, i) = c_real(eigvals_true[i]);
   }
 
   // NOTE: Random unitary-ish basis change via Gram-Schmidt on a random complex
-  // matrix, to avoid testing only the trivial already-diagonal case
+  // matrix, to avoid testing only trivial already-diagonal case
   cmatrix_t *Q = cmatrix_alloc(n, n);
   unsigned int seed = 42;
 

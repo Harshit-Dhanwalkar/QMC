@@ -178,9 +178,9 @@ static int has_unsafe_shell_metachars(const char *s) {
   return strpbrk(s, ";&|`$()<>\"'\\\n") != NULL;
 }
 
-/* Runs `command -v <tool>` (POSIX) or `where <tool>` (Windows)
- *
- * Returns 1 if tool is on PATH */
+// Runs `command -v <tool>` (POSIX) or `where <tool>` (Windows)
+//
+// Returns 1 if tool is on PATH
 static int check_tool_on_path(const char *tool) {
   if (!tool) {
     return 0;
@@ -206,10 +206,6 @@ static int check_tool_on_path(const char *tool) {
   return system(cmd) == 0;
 }
 
-// int latex_compiler_available(void) {
-//   return check_tool_on_path(QMC_LATEX_COMPILER) &&
-//          check_tool_on_path("pdftoppm");
-// }
 int latex_compiler_available(void) {
   return check_tool_on_path(QMC_LATEX_COMPILER);
 }
@@ -527,14 +523,14 @@ static void capture_log(const char *log_path, const char *tag) {
 }
 
 // Rendering functions (compiler + pdftoppm)
-// Render a LaTeX math expression to a PNG file
+// Render a \LaTeX math expression to a PNG file
 //
-// 1) Validate user input and reject unsafe output paths
-// 2) Normalize rendering options (fall back to defaults when needed)
-// 3) Generate a temporary .tex document with selected packages
-// 4) Invoke LaTeX compiler to produce a PDF
-// 5) Convert PDF to PNG via pdftoppm at requested DPI
-// 6) Move/copy generated PNG to outpath and clean temporary artifacts
+// - Validate user input and reject unsafe output paths
+// - Normalize rendering options (fall back to defaults when needed)
+// - Generate a temporary .tex document with selected packages
+// - Invoke \LaTeX compiler to produce a PDF
+// - Convert PDF to PNG via pdftoppm at requested DPI
+// - Move/copy generated PNG to outpath and clean temporary artifacts
 //
 // Error handling:
 //  - Returns 0 on success and a negative code on failure
@@ -1162,7 +1158,7 @@ char *latex_display_math(const char *expr) {
 }
 
 /*
- * Build a LaTeX matrix environment string from a 2D string table
+ * Build a \LaTeX matrix environment string from a 2D string table
  *
  * - `type` selects environment and must be one of:
  *     bmatrix, pmatrix, Bmatrix, vmatrix, Vmatrix
@@ -1475,22 +1471,34 @@ int latex_table_set_placement(latex_table_t *t, const char *placement) {
 }
 
 // NOTE: Shared by latex_table_write() and latex_document_add_table() - appends
-// table's LaTeX to `out` rather than writing a file directly, so a table can be
-// embedded in a document's body
+// table's \LaTeX to `out` rather than writing a file directly, so a table can
+// be embedded in a document's body
 static int latex_table_render(latex_table_t *t, latex_string_t *out) {
+  // Render contract:
+  // - Append a complete \LaTeX table environment to `out`
+  // - Return 0 on success, -1 on any append/formatting failure
+  // - Never write files directly; callers decide where output goes
   if (!t || !out) {
     return -1;
   }
 
+  // `ok` accumulates append success across all emitted fragments
+  // `booktabs` toggles rule/format behavior between booktabs and standard
+  // tables
   int ok = 1;
   int booktabs = (t->style == LATEX_TABLE_STYLE_BOOKTABS);
 
+  // Begin floating table with caller-provided placement (default "h"), then
+  // center
   ok &= latex_string_appendf(out, "\\begin{table}[%s]\n\\centering\n",
                              t->placement ? t->placement : "h") == 0;
 
   char generated_format[256];
   const char *col_format = t->col_format;
   if (!col_format) {
+    // If no explicit column format is provided, synthesize one:
+    // - booktabs: "ccc..."
+    // - non-booktabs: "|c|c|c|..." to include vertical separators
     char *p = generated_format;
     const char *end = generated_format + sizeof generated_format - 2;
 
@@ -1498,6 +1506,7 @@ static int latex_table_render(latex_table_t *t, latex_string_t *out) {
       *p++ = '|';
     }
 
+    // Bound writes using `end` so we always leave room for final terminator
     for (size_t i = 0; i < t->cols && p < end; i++) {
       *p++ = 'c';
       if (!booktabs) {
@@ -1901,16 +1910,26 @@ int latex_document_add_table(latex_document_t *doc, latex_table_t *table) {
   return rc;
 }
 
+// Render and write a complete \LaTeX document to `texpath`
+//
+//  - Validate inputs and initialize a temporary output buffer
+//  - Assemble the final .tex content (document class, preamble, body, ending)
+//  - Persist the assembled text to disk
+//
+// Returns 0 on success, -1 on any validation, allocation, append, or I/O error
 int latex_document_write(latex_document_t *doc, const char *texpath) {
+  // API contract validation
   if (!doc || !texpath) {
     return -1;
   }
 
+  // Build output into a temporary string before writing to file
   latex_string_t s;
   latex_string_init(&s);
 
   int ok = 1;
 
+  // Emit documentclass with optional class options
   if (doc->class_options) {
     ok &= latex_string_appendf(&s, "\\documentclass[%s]{%s}\n",
                                doc->class_options, doc->document_class) == 0;
