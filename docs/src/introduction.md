@@ -27,6 +27,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/zeno.html"><img class="thumb" loading="lazy" alt="Quantum Zeno survival curves" src="playground/thumbs/zeno.jpg"><span class="meta"><b>Quantum Zeno effect</b><small>Watching a qubit stops it moving</small></span></a>
 <a class="card" href="playground/hubbard.html"><img class="thumb" loading="lazy" alt="Hubbard dimer Mott crossover" src="playground/thumbs/hubbard.jpg"><span class="meta"><b>Hubbard dimer</b><small>Two electrons, solved exactly: from band to Mott</small></span></a>
 <a class="card" href="playground/corral.html"><img class="thumb" loading="lazy" alt="Quantum corral circular drum modes" src="playground/thumbs/corral.jpg"><span class="meta"><b>Quantum corral</b><small>Bessel modes of a circular drum and a bouncing packet</small></span></a>
+<a class="card" href="playground/ring.html"><img class="thumb" loading="lazy" alt="Aharonov-Bohm ring transmission map" src="playground/thumbs/ring.jpg"><span class="meta"><b>Aharonov&ndash;Bohm ring</b><small>Flux through a ring: levels, current and interference</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations
