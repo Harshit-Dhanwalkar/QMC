@@ -438,7 +438,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_89_box_revival \
               $(BUILD_DIR)/eg_90_zeno \
               $(BUILD_DIR)/eg_91_circular_billiard \
-              $(BUILD_DIR)/eg_92_hubbard_dimer
+              $(BUILD_DIR)/eg_92_hubbard_dimer \
+              $(BUILD_DIR)/eg_93_ab_ring
 
 TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
@@ -468,6 +469,7 @@ TESTS       = $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_zeno \
               $(BUILD_DIR)/test_circular_billiard \
               $(BUILD_DIR)/test_hubbard_dimer \
+              $(BUILD_DIR)/test_ab_ring \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
