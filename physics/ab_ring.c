@@ -11,12 +11,6 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#include "ab_ring.h"
-#include <math.h>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 enum { AR_MAX = 64 };
 
@@ -99,9 +93,13 @@ double ar_energy(int n_sites, int ne, double flux, double t) {
     return NAN;
   }
 
+  // for (int k = 0; k < ne; k++) {
+  //   s +=
+  //       4.0 * M_PI * t / n_sites * sin(2.0 * M_PI * (pick[k] - flux) /
+  //       n_sites);
+  // }
   for (int k = 0; k < ne; k++) {
-    s +=
-        4.0 * M_PI * t / n_sites * sin(2.0 * M_PI * (pick[k] - flux) / n_sites);
+    s += ar_level(n_sites, pick[k], flux, t);
   }
 
   return s;

@@ -98,13 +98,12 @@ int main(void) {
 
       for (int ne = 1; ne <= n; ne++) {
         for (int k = 0; k < 9; k++) {
-          double phi =
-              0.0211 + 0.0523 * k +
-              (k % 2 ? 0.0037
-                     : 0.0); /* generic, 0 < phi < 1/2, off degeneracies */
-          double h = 1e-6, fd = -(ar_energy(n, ne, phi + h, 1.0) -
-                                  ar_energy(n, ne, phi - h, 1.0)) /
-                                (2 * h);
+          // generic, 0 < \phi < 1/2, off degeneracies
+          double phi = 0.0211 + 0.0523 * k + (k % 2 ? 0.0037 : 0.0);
+          double h = 1e-6;
+          double fd = -(ar_energy(n, ne, phi + h, 1.0) -
+                        ar_energy(n, ne, phi - h, 1.0)) /
+                      (2 * h);
 
           worst_fd = fmax(worst_fd, fabs(fd - ar_current(n, ne, phi, 1.0)));
           if (ne < n) {
