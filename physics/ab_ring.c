@@ -55,11 +55,12 @@ int ar_levels_sorted(int n_sites, double flux, double t, double *e) {
 // Indices of ne lowest levels, ties (within 1e-12) broken by small distance of
 // n
 static int lowest(int n_sites, int ne, double flux, double t, int *pick) {
-  int used[4096] = {0};
-
-  if (n_sites > 4096) {
+  if (n_sites < 1 || n_sites > 4096 || ne < 0 || ne > n_sites) {
     return -1;
   }
+
+  int used[4096] = {0};
+
   for (int k = 0; k < ne; k++) {
     int best = -1;
     double eb = 0.0;
@@ -71,6 +72,11 @@ static int lowest(int n_sites, int ne, double flux, double t, int *pick) {
         best = n;
         eb = e;
       }
+    }
+
+    // If all sites are used, best remains -1.
+    if (best < 0) {
+      return -1;
     }
 
     used[best] = 1;
@@ -89,9 +95,13 @@ double ar_energy(int n_sites, int ne, double flux, double t) {
   int pick[4096];
   double s = 0.0;
 
-  lowest(n_sites, ne, flux, t, pick);
+  if (lowest(n_sites, ne, flux, t, pick) != 0) {
+    return NAN;
+  }
+
   for (int k = 0; k < ne; k++) {
-    s += ar_level(n_sites, pick[k], flux, t);
+    s +=
+        4.0 * M_PI * t / n_sites * sin(2.0 * M_PI * (pick[k] - flux) / n_sites);
   }
 
   return s;
