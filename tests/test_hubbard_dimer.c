@@ -55,9 +55,17 @@ static double norm2(const double *re, const double *im) {
   return s;
 }
 
+// Main test driver for Hubbard dimer exact-diagonalisation routines
+//
+// Checks below validate:
+// - analytical N=2 spectrum at representative U values
+// - global Hamiltonian invariants (trace in full Fock space)
+// - eigenvector orthonormality from numerical solver
+// - additional observable/state tests in later sections of this function
 int main(void) {
   const double us[] = {0.0, 1.0, 4.0, 10.0};
 
+  // Compare computed N=2 energies against known closed-form spectrum
   printf("  === Test: Spectrum ===\n");
   for (int c = 0; c < 4; c++) {
     double u = us[c];
@@ -70,7 +78,7 @@ int main(void) {
     hd_n2_states(&s, idx);
     double want[6] = {u / 2 - d, 0, 0, 0, u, u / 2 + d};
 
-    // sort expected
+    // Sort they can be compared index-by-index
     for (int i = 0; i < 6; i++) {
       for (int j = i + 1; j < 6; j++) {
         if (want[j] < want[i]) {
@@ -89,6 +97,7 @@ int main(void) {
       check_close(s.e[idx[i]], want[i], 1e-10, lab);
     }
 
+    // Trace(H) equals U times number of doublon-containing basis states
     double tr = 0.0;
 
     for (int k = 0; k < HD_DIM; k++) {
@@ -98,6 +107,8 @@ int main(void) {
     check_close(tr, 8 * u, 1e-9,
                 "trace of H over Fock space (8 configs hold a doublon)");
   }
+
+  // Verify that eigenvectors returned by solver form an orthonormal basis
   {
     hd_solution_t s;
     double worst = 0.0;

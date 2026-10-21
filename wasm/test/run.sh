@@ -266,3 +266,16 @@ else
   echo "FAIL: Hubbard WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Aharonov-Bohm ring: spectrum, persistent current and transmission, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/ring_ref.c wasm/qmc_ring.c physics/ab_ring.c \
+  -lm -o "$TMP/qmc_ring_ref"
+"$TMP/qmc_ring_ref" > "$TMP/qmc_ring_native.txt"
+cat "$TMP/qmc_ring_native.txt"
+node wasm/test/ring_check.mjs > "$TMP/qmc_ring_wasm.txt"
+if diff -u "$TMP/qmc_ring_native.txt" "$TMP/qmc_ring_wasm.txt"; then
+  echo "OK: ring WASM matches native"
+else
+  echo "FAIL: ring WASM and native results differ" >&2
+  exit 1
+fi

@@ -23,6 +23,7 @@
 #   docs/src/playground/qmc_zeno.wasm       quantum-Zeno demo
 #   docs/src/playground/qmc_corral.wasm     quantum-corral (circular well) demo
 #   docs/src/playground/qmc_hubbard.wasm    Hubbard-dimer demo
+#   docs/src/playground/qmc_ring.wasm       Aharonov-Bohm ring demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -197,3 +198,9 @@ qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer qmc_hb_
 qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer qmc_hb_levels_buffer qmc_hb_curves qmc_hb_levels \
 qmc_hb_quench qmc_hb_probs qmc_hb_thermal" \
   wasm/qmc_hubbard.c physics/hubbard_dimer.c
+
+build_module "$OUT/qmc_ring.wasm" \
+  "qmc_ar_curve_len qmc_ar_map_n qmc_ar_max_sites qmc_ar_spec_buffer qmc_ar_cur_buffer qmc_ar_tf_buffer qmc_ar_te_buffer \
+qmc_ar_map_buffer qmc_ar_levels_buffer qmc_ar_spectrum qmc_ar_current qmc_ar_levels qmc_ar_current_at qmc_ar_point \
+qmc_ar_last_reflection qmc_ar_trans_flux qmc_ar_trans_energy qmc_ar_map" \
+  wasm/qmc_ring.c physics/ab_ring.c

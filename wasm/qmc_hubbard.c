@@ -180,8 +180,6 @@ int qmc_hb_probs(double u, int mode, double time) {
   hd_solution_t s;
   double re[HD_DIM];
   double im[HD_DIM];
-  double re0[HD_DIM];
-  double im0[HD_DIM];
 
   if (!u_ok(u) || (mode != 0 && mode != 1) || !isfinite(time)) {
     return -1;
@@ -191,6 +189,9 @@ int qmc_hb_probs(double u, int mode, double time) {
   if (mode == 0) {
     gs_state(&s, re, im);
   } else {
+    double re0[HD_DIM];
+    double im0[HD_DIM];
+
     hd_basis_state(HB_NEEL, re0, im0);
     hd_evolve(&s, re0, im0, time, re, im);
   }

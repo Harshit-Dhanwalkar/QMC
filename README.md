@@ -194,6 +194,19 @@
       <sub>Two interacting fermions on a lattice: half-filling spectrum, doublons, spin correlations, and thermal averages</sub>
     </td>
   </tr>
+  <tr>
+    <td width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ring.html">
+        <img src="docs/src/playground/thumbs/ring.jpg" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
+      </a>
+      <br>
+      <b>Aharonov-Bohm ring</b>
+      <br>
+      <sub>Flux threading a quantum ring: persistent currents and the oscillating transmission of the two arms</sub>
+    </td>
+    <td width="33%"></td>
+  </tr>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -303,6 +316,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
   - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
+  - Quantum rings: Persistent currents and Aharonov-Bohm transmission (scattering matrix via Green's functions).
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - Optimised linear algebra (LAPACK/BLAS backend).
 
@@ -401,6 +415,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_90_zeno.c</code></li>
   <li><code>eg_91_circular_billiard.c</code></li>
   <li><code>eg_92_hubbard_dimer.c</code></li>
+  <li><code>eg_93_ab_ring.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -467,6 +482,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_landau_zener.c</code></li>
   <li><code>test_circular_billiard.c</code></li>
   <li><code>test_hubbard_dimer.c</code></li>
+  <li><code>test_ab_ring.c</code></li>
   <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_ssh_chain.c</code></li>
   <li><code>test_tfim_quench.c</code></li>
