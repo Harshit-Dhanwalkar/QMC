@@ -200,17 +200,28 @@ static inline double d_ijab(const ccsd_ctx_t *ctx, int i, int j, int a, int b) {
 // Build standard CCSD one- and two-body intermediates from current amplitudes
 // (t1, t2) in spin-orbital basis
 //
+// This routine assembles intermediates used by CCSD amplitude updates:
+// - Fae(a,e)      : dressed virtual-virtual Fock block
+// - Fmi(m,i)      : dressed occupied-occupied Fock block
+// - Fme(m,e)      : occupied-virtual coupling block
+// - Wmnij(m,n,i,j): occupied-occupied two-body intermediate
+// - Wmbej(m,b,e,j): mixed occupied/virtual two-body intermediate
+//
 // Inputs:
-// - ctx: orbital partitions (occ/virt), diagonal Fock matrix, and MO ERIs
+// - ctx: orbital partitions (occ/virt), spin-orbital Fock matrix, and MO ERIs
 // - t1, t2: current singles/doubles amplitudes
 //
 // Outputs (caller-allocated):
-// - Fae(a,e), Fmi(m,i), Fme(m,e)
-// - Wmnij(m,n,i,j), Wmbej(m,b,e,j)
+// - Fae, Fmi, Fme, Wmnij, Wmbej (all overwritten by this routine)
 //
-// - Index lists occ[] / virt[] are explicit spin-orbital indices
-// - Antisymmetrized two-electron elements are evaluated on demand via v_elem
-//   to avoid storing a full nso^4 tensor
+// Indexing / conventions:
+// - occ[] and virt[] store explicit spin-orbital indices
+// - i,j,m,n refer to occupied spin orbitals; a,b,e,f refer to virtual ones
+// - V(p,q,r,s) expands to <pq||rs> evaluated on demand from spatial ERIs with
+//   spin selection rules (via v_elem), avoiding persistent nso^4 storage
+//
+// NOTE:: Routine is intentionally monolithic for performance (tight nested
+// loops and minimal temporary allocations)
 static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
                                 const double *t2, double *Fae, double *Fmi,
                                 double *Fme, double *Wmnij, double *Wmbej) {
@@ -428,6 +439,27 @@ static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
   return s;
 }
 
+/*
+ * Perform one CCSD amplitude update step
+ *
+ * Inputs:
+ * - ctx: system dimensions, orbital partitions, Fock matrix, and ERIs
+ * - t1, t2: current singles/doubles amplitudes
+ *
+ * Outputs:
+ * - new_t1, new_t2: next-iteration amplitudes (same indexing as t1/t2)
+ * - Fae, Fmi, Fme, Wmnij, Wmbej: reusable intermediates populated for this step
+ *
+ * High-level flow:
+ * 1) Build CCSD intermediates from current amplitudes
+ * 2) Update T1 amplitudes over occupied/virtual pairs
+ * 3) Update T2 amplitudes over occupied/occupied/virtual/virtual tuples
+ * 4) Apply orbital-energy denominators to form final residual updates
+ *
+ * NOTE: Heavy tensor contractions are parallelized with OpenMP
+ * Kept antisymmetrized two-electron integrals on-demand through V(...) to avoid
+ * persistent nso^4 storage in iterative path
+ */
 static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
                               const double *t2, double *new_t1, double *new_t2,
                               double *Fae, double *Fmi, double *Fme,
@@ -441,8 +473,10 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
+  // Build all intermediates needed by T1/T2 residual expressions
   build_intermediates(ctx, t1, t2, Fae, Fmi, Fme, Wmnij, Wmbej);
 
+// T1 update: loop over occupied i and virtual a spin-orbitals
 #pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
