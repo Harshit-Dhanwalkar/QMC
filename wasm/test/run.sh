@@ -279,3 +279,16 @@ else
   echo "FAIL: ring WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Resonant tunnelling: double-barrier transmission, dwell time and wavefunction, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/tunnel_ref.c wasm/qmc_tunnel.c physics/double_barrier.c \
+  -lm -o "$TMP/qmc_tunnel_ref"
+"$TMP/qmc_tunnel_ref" > "$TMP/qmc_tunnel_native.txt"
+cat "$TMP/qmc_tunnel_native.txt"
+node wasm/test/tunnel_check.mjs > "$TMP/qmc_tunnel_wasm.txt"
+if diff -u "$TMP/qmc_tunnel_native.txt" "$TMP/qmc_tunnel_wasm.txt"; then
+  echo "OK: tunnel WASM matches native"
+else
+  echo "FAIL: tunnel WASM and native results differ" >&2
+  exit 1
+fi

@@ -34,6 +34,10 @@
 
 `qmc_corral.c` wraps the circular-well eigenmodes (`physics/circular_billiard.c`): `docs/src/playground/corral.html` shows the Bessel modes and a packet bouncing in the disc.
 
+`qmc_ring.c` wraps the tight-binding Aharonov-Bohm ring (`physics/ab_ring.c`): `docs/src/playground/ring.html` shows the flux-dependent spectrum, persistent current and two-terminal transmission.
+
+`qmc_tunnel.c` wraps the transfer-matrix double barrier (`physics/double_barrier.c`): `docs/src/playground/tunnel.html` shows resonant transmission, the dwell time and the wavefunction in the well.
+
 ## Build
 
 ```sh
@@ -135,6 +139,10 @@ Bell module (`qmc_bell.wasm`, no imports): `qmc_bl_set(a, a2, b, b2, V)` fixes t
 Zeno module (`qmc_zeno.wasm`, no imports): the drive is $\Omega = 1$ and the run lasts $T = \pi$. `qmc_zn_pulsed_curves(n)` fills the survival-versus-time curve for `n` projective measurements and the survival-versus-N curve, `qmc_zn_continuous(gamma)` the survival curve under continuous dephasing, `qmc_zn_rates(gmax)` the decay rate versus dephasing, and `qmc_zn_sample(n, n_traj, seed)` simulates trajectories (`qmc_zn_alive_buffer()`).
 
 Corral module (`qmc_corral.wasm`, no imports): the first call builds a table of every mode of the unit disc with k <= 26 on an 80 x 80 grid (about 10 MB, ~0.3 s). `qmc_cb_show_mode(i)` fills `qmc_cb_field_buffer()` with mode `i` (quantum numbers from `qmc_cb_mode_m/n/sine/k`), `qmc_cb_launch(x0, y0, s, px, py)` expands a Gaussian packet in the modes and `qmc_cb_evolve(t)` writes its density at time t into the same buffer.
+
+Ring module (`qmc_ring.wasm`, no imports): t = 1, rings of 4 .. 32 sites with leads at sites 0 and b. `qmc_ar_spectrum(n)` fills the sorted levels against flux in [-1, 1], `qmc_ar_current(n, ne)` the persistent current of ne electrons, `qmc_ar_trans_flux(n, b, e)` and `qmc_ar_trans_energy(n, b, flux)` the transmission curves, `qmc_ar_map(n, b)` a 64 x 64 transmission map over flux and energy and `qmc_ar_point(n, b, flux, e)` one value (`qmc_ar_last_reflection` gives R).
+
+Tunnel module (`qmc_tunnel.wasm`, no imports): units hbar^2/2m = 1. `qmc_dt_set(v1, b1, w, b2, v2, vw)` defines barrier, well and barrier, `qmc_dt_curves(emax)` fills T(E) and the dwell time, `qmc_dt_point(e)` returns T at one energy (`qmc_dt_last_reflection` gives R) and `qmc_dt_profile(e, xmin, xmax)` fills |psi|^2 and the potential along x.
 
 Regenerate the butterfly images:
 

@@ -28,6 +28,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/hubbard.html"><img class="thumb" loading="lazy" alt="Hubbard dimer Mott crossover" src="playground/thumbs/hubbard.jpg"><span class="meta"><b>Hubbard dimer</b><small>Two electrons, solved exactly: from band to Mott</small></span></a>
 <a class="card" href="playground/corral.html"><img class="thumb" loading="lazy" alt="Quantum corral circular drum modes" src="playground/thumbs/corral.jpg"><span class="meta"><b>Quantum corral</b><small>Bessel modes of a circular drum and a bouncing packet</small></span></a>
 <a class="card" href="playground/ring.html"><img class="thumb" loading="lazy" alt="Aharonov-Bohm ring transmission map" src="playground/thumbs/ring.jpg"><span class="meta"><b>Aharonov&ndash;Bohm ring</b><small>Flux through a ring: levels, current and interference</small></span></a>
+<a class="card" href="playground/tunnel.html"><img class="thumb" loading="lazy" alt="Resonant tunnelling transmission peaks" src="playground/thumbs/tunnel.jpg"><span class="meta"><b>Resonant tunnelling</b><small>Two thin barriers, transmission jumps to 1</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations

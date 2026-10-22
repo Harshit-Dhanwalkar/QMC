@@ -69,7 +69,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-// Flat 2-index / 4-index accessors over the spin-orbital dimension nso
+// Flat 2-index / 4-index accessors over spin-orbital dimension nso
 #define IDX2(arr, nso, p, q) (arr)[(size_t)(p) * (nso) + (q)]
 #define IDX4(arr, nso, p, q, r, s)                                             \
   (arr)[(((size_t)(p) * (nso) + (q)) * (nso) + (r)) * (nso) + (s)]
@@ -78,15 +78,13 @@ static int spin_of(int orb_idx) { return orb_idx % 2; }
 
 static int spatial_of(int orb_idx) { return orb_idx / 2; }
 
-/*
- * Single-element on-the-fly version of build_antisymmetrized (below): same
- * <pq||rs> formula, computed directly from the n_spatial-sized chemist eri_mo
- * tensor for one (p,q,r,s).
- *
- * NOTE: Antisymmetrized integrals never need nso^4 = 16*n_spatial^4 of
- * persistent storage during the iterative solve - only n_spatial^4 is ever
- * resident
- */
+// Single-element on-the-fly version of build_antisymmetrized (below): same
+// <pq||rs> formula, computed directly from n_spatial-sized chemist eri_mo
+// tensor for one (p,q,r,s).
+//
+// NOTE: Antisymmetrized integrals never need nso^4 = 16 * n_spatial^4 of
+// persistent storage during iterative solve - only n_spatial^4 is ever
+// resident
 static inline double v_elem(int n_spatial, const double *eri_mo, int p_idx,
                             int q_idx, int r_idx, int s_idx) {
   int spin_p = spin_of(p_idx), spatial_p = spatial_of(p_idx);
@@ -106,15 +104,13 @@ static inline double v_elem(int n_spatial, const double *eri_mo, int p_idx,
   return v1_val - v2_val;
 }
 
-/*
- * Antisymmetrized physicist-notation spin-orbital integrals from the
- * spatial chemist-notation MO integrals:
- *   <pq|rs> = (pr|qs)                    [chemist -> physicist]
- *   <pq||rs> = <pq|rs> - <pq|sr>         [antisymmetrize]
- * with spin conservation (pq|rs)'s spin-orbital version is nonzero only when
- * spin_p = spin_r and spin_q = spin_s (for <pq|rs>), or spin_p = spin_s and
- * spin_q = spin_r (for <pq|sr>)
- */
+// Antisymmetrized physicist-notation spin-orbital integrals from spatial
+// chemist-notation MO integrals:
+//   <pq|rs> = (pr|qs)                    [chemist -> physicist]
+//   <pq||rs> = <pq|rs> - <pq|sr>         [antisymmetrize]
+// with spin conservation (pq|rs)'s spin-orbital version is nonzero only when
+// spin_p = spin_r and spin_q = spin_s (for <pq|rs>), or spin_p = spin_s and
+// spin_q = spin_r (for <pq|sr>)
 static double *build_antisymmetrized(int n_spatial, const double *eri_mo,
                                      int nso) {
   double *v_tensor =
@@ -400,11 +396,9 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 #undef V
 }
 
-/*
- * Single element of Wabef, computed on demand rather than cached in a
- * persistent nv^4 array. Wabef-building loop body, evaluated for one (a,b,e,f)
- * at point of use
- */
+// Single element of Wabef, computed on demand rather than cached in a
+// persistent nv^4 array. Wabef-building loop body, evaluated for one (a,b,e,f)
+// at point of use
 static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
                          const double *t2, int a, int b, int e, int f) {
   int nso = ctx->nso;
@@ -439,27 +433,25 @@ static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
   return s;
 }
 
-/*
- * Perform one CCSD amplitude update step
- *
- * Inputs:
- * - ctx: system dimensions, orbital partitions, Fock matrix, and ERIs
- * - t1, t2: current singles/doubles amplitudes
- *
- * Outputs:
- * - new_t1, new_t2: next-iteration amplitudes (same indexing as t1/t2)
- * - Fae, Fmi, Fme, Wmnij, Wmbej: reusable intermediates populated for this step
- *
- * High-level flow:
- * 1) Build CCSD intermediates from current amplitudes
- * 2) Update T1 amplitudes over occupied/virtual pairs
- * 3) Update T2 amplitudes over occupied/occupied/virtual/virtual tuples
- * 4) Apply orbital-energy denominators to form final residual updates
- *
- * NOTE: Heavy tensor contractions are parallelized with OpenMP
- * Kept antisymmetrized two-electron integrals on-demand through V(...) to avoid
- * persistent nso^4 storage in iterative path
- */
+// Perform one CCSD amplitude update step
+//
+// Inputs:
+// - ctx: system dimensions, orbital partitions, Fock matrix, and ERIs
+// - t1, t2: current singles/doubles amplitudes
+//
+// Outputs:
+// - new_t1, new_t2: next-iteration amplitudes (same indexing as t1/t2)
+// - Fae, Fmi, Fme, Wmnij, Wmbej: reusable intermediates populated for this step
+//
+// High-level flow:
+// 1. Build CCSD intermediates from current amplitudes
+// 2. Update T1 amplitudes over occupied/virtual pairs
+// 3. Update T2 amplitudes over occupied/occupied/virtual/virtual tuples
+// 4. Apply orbital-energy denominators to form final residual updates
+//
+// NOTE: Heavy tensor contractions are parallelized with OpenMP
+// Kept antisymmetrized two-electron integrals on-demand through V(...) to avoid
+// persistent nso^4 storage in iterative path
 static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
                               const double *t2, double *new_t1, double *new_t2,
                               double *Fae, double *Fmi, double *Fme,
@@ -473,10 +465,16 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
-  // Build all intermediates needed by T1/T2 residual expressions
+  // Build reusable intermediates once per iteration
+  // These tensors factor repeated contractions in T1/T2 equations and
+  // reduce amount of work inside deepest loops
   build_intermediates(ctx, t1, t2, Fae, Fmi, Fme, Wmnij, Wmbej);
 
-// T1 update: loop over occupied i and virtual a spin-orbitals
+// T1 update:
+// - iterate occupied i and virtual a spin-orbitals
+// - assemble T1 residual numerator term-by-term
+// - apply denominator (\epsilon_i - \epsilon_a) after accumulation
+// Parallelization is safe because each (i,a) writes a unique new_t1 element
 #pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
@@ -735,9 +733,9 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
     return NULL;
   }
 
-  (void)h_mo; /* canonical RHF: off-diagonal core Hamiltonian in the MO basis is
-                 zero by Brillouin's theorem, only orbital energies (diagonal)
-                 are needed. */
+  // canonical RHF: off-diagonal core Hamiltonian in MO basis is zero by
+  // Brillouin's theorem, only orbital energies (diagonal) are needed
+  (void)h_mo;
 
   int nso = 2 * n_spatial;
   ccsd_ctx_t ctx;

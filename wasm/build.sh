@@ -24,6 +24,7 @@
 #   docs/src/playground/qmc_corral.wasm     quantum-corral (circular well) demo
 #   docs/src/playground/qmc_hubbard.wasm    Hubbard-dimer demo
 #   docs/src/playground/qmc_ring.wasm       Aharonov-Bohm ring demo
+#   docs/src/playground/qmc_tunnel.wasm     resonant-tunnelling (double barrier) demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -204,3 +205,8 @@ build_module "$OUT/qmc_ring.wasm" \
 qmc_ar_map_buffer qmc_ar_levels_buffer qmc_ar_spectrum qmc_ar_current qmc_ar_levels qmc_ar_current_at qmc_ar_point \
 qmc_ar_last_reflection qmc_ar_trans_flux qmc_ar_trans_energy qmc_ar_map" \
   wasm/qmc_ring.c physics/ab_ring.c
+
+build_module "$OUT/qmc_tunnel.wasm" \
+  "qmc_dt_curve_len qmc_dt_te_buffer qmc_dt_dwell_buffer qmc_dt_psi_buffer qmc_dt_pot_buffer qmc_dt_set qmc_dt_length \
+qmc_dt_well_level qmc_dt_curves qmc_dt_point qmc_dt_last_reflection qmc_dt_dwell qmc_dt_profile" \
+  wasm/qmc_tunnel.c physics/double_barrier.c

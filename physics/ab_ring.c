@@ -93,11 +93,6 @@ double ar_energy(int n_sites, int ne, double flux, double t) {
     return NAN;
   }
 
-  // for (int k = 0; k < ne; k++) {
-  //   s +=
-  //       4.0 * M_PI * t / n_sites * sin(2.0 * M_PI * (pick[k] - flux) /
-  //       n_sites);
-  // }
   for (int k = 0; k < ne; k++) {
     s += ar_level(n_sites, pick[k], flux, t);
   }

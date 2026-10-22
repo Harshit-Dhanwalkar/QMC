@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Resonant tunnelling</title>
+    <meta
+      name="description"
+      content="Two thin barriers around a well: drag the energy and watch the transmission jump to exactly 1 at the quasi-bound levels while the wavefunction piles up in the well. Transfer matrices computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Resonant tunnelling through a double barrier, in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="Fabry-Perot resonances of matter waves: transmission peaks, dwell time and the wavefunction in the well."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/tunnel.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #stage {
+        aspect-ratio: 4 / 3;
+        cursor: ns-resize;
+        touch-action: none;
+      }
+      #readout {
+        position: absolute;
+        right: 14px;
+        top: 8px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .plots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      @media (max-width: 800px) {
+        .plots {
+          grid-template-columns: 1fr;
+        }
+      }
+      .plots .cv {
+        aspect-ratio: 16 / 9;
+      }
+      #tcv {
+        cursor: ew-resize;
+        touch-action: none;
+      }
+      .ttl {
+        position: absolute;
+        left: 12px;
+        top: 8px;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .sw {
+        display: inline-block;
+        width: 12px;
+        height: 3px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; resonant tunnelling</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        A single thin barrier almost always reflects a slow particle. Put
+        <b>two barriers around a well</b> and at a few special energies the
+        particle goes straight through with probability exactly 1: the waves
+        bouncing between the barriers interfere constructively, a
+        Fabry&ndash;Perot cavity for matter. <b>Drag the energy</b> (click and
+        drag in the stage or on the transmission plot) and watch |&psi;|&sup2;
+        pile up in the well on resonance. Transfer matrices computed by the QMC
+        library (<code>double_barrier.c</code>), units
+        &hbar;&sup2;/2m&nbsp;=&nbsp;1 so E&nbsp;=&nbsp;k&sup2;.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="stage">
+            <canvas id="sc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background: #8993a8"></i>potential</span>
+            <span
+              ><i class="sw" style="background: #ffb454"></i>|&psi;|&sup2; (unit
+              incident wave from the left)</span
+            >
+            <span><i class="sw" style="background: #3ddc97"></i>energy E</span>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Structure</h2>
+            <div class="row">
+              <label
+                ><span>Barrier V</span
+                ><input
+                  id="v"
+                  type="range"
+                  min="5"
+                  max="100"
+                  step="1"
+                  value="30" /><b id="vv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Barrier width</span
+                ><input
+                  id="b"
+                  type="range"
+                  min="0.1"
+                  max="1.5"
+                  step="0.01"
+                  value="0.3" /><b id="bv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Well width</span
+                ><input
+                  id="w"
+                  type="range"
+                  min="0.5"
+                  max="6"
+                  step="0.05"
+                  value="3" /><b id="wv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Right barrier &times;</span
+                ><input
+                  id="asy"
+                  type="range"
+                  min="0.3"
+                  max="3"
+                  step="0.05"
+                  value="1" /><b id="asyv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Energy E</span
+                ><input
+                  id="e"
+                  type="range"
+                  min="0.05"
+                  max="40"
+                  step="0.005"
+                  value="1" /><b id="ev"></b
+              ></label>
+            </div>
+            <div class="row" id="rb"></div>
+            <div id="note"></div>
+          </div>
+          <div class="panel">
+            <h2>Readout</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="cv" id="tcv">
+          <canvas id="tc"></canvas>
+          <div class="ttl">Transmission T(E), log scale</div>
+        </div>
+        <div class="cv">
+          <canvas id="dc"></canvas>
+          <div class="ttl">Dwell time in the structure, log scale</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sw" style="background: #3ddc97"></i>T(E)</span>
+        <span><i class="sw" style="background: #5aa9ff"></i>dwell time</span>
+        <span
+          ><i class="sw" style="background: #ff6b81"></i>infinite-well levels
+          (n&pi;/w)&sup2;</span
+        >
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        In each layer the pair (&psi;,&nbsp;&psi;&prime;) is carried by the
+        unimodular matrix
+        [[cos&nbsp;qd,&nbsp;sin&nbsp;qd/q],&nbsp;[&minus;q&nbsp;sin&nbsp;qd,&nbsp;cos&nbsp;qd]]
+        (cosh/sinh under a barrier), and
+        T&nbsp;=&nbsp;4/[(M<sub>11</sub>+M<sub>22</sub>)&sup2;&nbsp;+&nbsp;(kM<sub>12</sub>&minus;M<sub>21</sub>/k)&sup2;].
+        Resonances sit just below the levels (n&pi;/w)&sup2; of the well (the
+        wavefunction leaks into the barriers, making the well effectively
+        wider); their width shrinks exponentially with barrier thickness and the
+        dwell time (&int;|&psi;|&sup2;dx over the structure, divided by the
+        incident flux 2k) grows as the inverse width. With unequal barriers the
+        peak transmission falls below 1 &mdash; the right barrier &times;
+        control makes that visible. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/double_barrier.c"
+          ><code>physics/double_barrier.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_tunnel.c"
+          ><code>wasm/qmc_tunnel.c</code></a
+        >; closed forms, probability conservation and the resonance conditions
+        are verified in <code>tests/test_double_barrier.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_tunnel.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_tunnel.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/tunnel.html</code>.",
+          );
+
+          return;
+        }
+
+        const C = w.qmc_dt_curve_len();
+        const B = (fn, n) =>
+          Array.from(new Float64Array(w.memory.buffer, fn(), n)); // copies: memory can grow
+        const COL = {
+          g: "#3ddc97",
+          a: "#ffb454",
+          bl: "#5aa9ff",
+          red: "#ff6b81",
+          mut: "#8993a8",
+        };
+
+        let V = 30;
+        let bw = 0.3;
+        let ww = 3;
+        let asy = 1;
+        let E = 1;
+        let emax = 40;
+        let tcurve = [];
+        let dwell = [];
+        let peaks = [];
+        let psi = [];
+        let pot = [];
+        let xr = [-1.2, 5];
+        const NT = 2400;
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        const L = 46;
+        const R = 12;
+        const Tp = 28;
+        const Bt = 34;
+        function axes(g, W, H, o) {
+          const X = (x) => L + ((W - L - R) * (x - o.x0)) / (o.x1 - o.x0);
+          const Y = (y) =>
+            H - Bt - ((H - Bt - Tp) * (y - o.y0)) / (o.y1 - o.y0);
+
+          g.font = "11px system-ui";
+          g.strokeStyle = "#232b3d";
+          g.lineWidth = 1;
+          g.fillStyle = COL.mut;
+          for (const [v, lab] of o.yt) {
+            g.beginPath();
+            g.moveTo(L, Y(v));
+            g.lineTo(W - R, Y(v));
+            g.stroke();
+            g.textAlign = "right";
+            g.fillText(lab, L - 5, Y(v) + 4);
+          }
+
+          g.textAlign = "center";
+          for (let i = 0; i <= 5; i++) {
+            const v = o.x0 + ((o.x1 - o.x0) * i) / 5;
+            g.fillText(+v.toFixed(1), X(v), H - 20);
+          }
+
+          g.fillText(o.xlabel, (L + W - R) / 2, H - 5);
+
+          return { X, Y };
+        }
+
+        const geo = {};
+        function drawStage() {
+          const { g, W, H } = fit($("sc"));
+          const len = ww + 2 * bw;
+          const ymax = Math.max(1.2 * V * Math.max(1, asy), E * 1.25);
+          const a = axes(g, W, H, {
+            x0: xr[0],
+            x1: xr[1],
+            y0: 0,
+            y1: ymax,
+            xlabel: "position x",
+            yt: [0, 0.25, 0.5, 0.75, 1].map((f) => [
+              f * ymax,
+              +(f * ymax).toFixed(0),
+            ]),
+          });
+
+          geo.stage = { ...a, ymax, W, H };
+
+          // potential
+          g.fillStyle = "rgba(137,147,168,0.18)";
+          g.strokeStyle = COL.mut;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < C; i++) {
+            const x = xr[0] + ((xr[1] - xr[0]) * i) / (C - 1);
+            const px = a.X(x);
+            const py = a.Y(pot[i]);
+            i ? g.lineTo(px, py) : g.moveTo(px, py);
+          }
+
+          g.stroke();
+          g.lineTo(a.X(xr[1]), a.Y(0));
+          g.lineTo(a.X(xr[0]), a.Y(0));
+          g.closePath();
+          g.fill();
+          // energy line
+          g.strokeStyle = COL.g;
+          g.lineWidth = 1.5;
+          g.setLineDash([6, 4]);
+          g.beginPath();
+          g.moveTo(L, a.Y(E));
+          g.lineTo(W - R, a.Y(E));
+          g.stroke();
+          g.setLineDash([]);
+          // |\psi|^2 curve on energy line
+          let pm = 1e-9;
+          for (const v of psi) {
+            pm = Math.max(pm, v);
+          }
+
+          const sc = (0.3 * ymax) / Math.max(pm, 2);
+          g.fillStyle = "rgba(255,180,84,0.28)";
+          g.strokeStyle = COL.a;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < C; i++) {
+            const x = xr[0] + ((xr[1] - xr[0]) * i) / (C - 1);
+            const px = a.X(x);
+            const py = a.Y(E + sc * psi[i]);
+            i ? g.lineTo(px, py) : g.moveTo(px, py);
+          }
+
+          g.stroke();
+          g.lineTo(a.X(xr[1]), a.Y(E));
+          g.lineTo(a.X(xr[0]), a.Y(E));
+          g.closePath();
+          g.fill();
+          g.fillStyle = COL.g;
+          g.textAlign = "left";
+          g.fillText("E = " + E.toFixed(3), L + 6, a.Y(E) - 5);
+        }
+
+        function drawT() {
+          const { g, W, H } = fit($("tc"));
+          const lo = -6;
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: emax,
+            y0: lo,
+            y1: 0,
+            xlabel: "energy E",
+            yt: [0, -1, -2, -3, -4, -5, -6].map((v) => [
+              v,
+              v === 0 ? "1" : "1e" + v,
+            ]),
+          });
+
+          geo.t = { ...a, W, H };
+          g.strokeStyle = "rgba(255,107,129,0.55)";
+          g.lineWidth = 1;
+          g.setLineDash([2, 4]);
+          for (let n = 1; ; n++) {
+            const e = w.qmc_dt_well_level(n);
+            if (e > emax) {
+              break;
+            }
+
+            g.beginPath();
+            g.moveTo(a.X(e), Tp);
+            g.lineTo(a.X(e), H - Bt);
+            g.stroke();
+          }
+
+          g.setLineDash([]);
+          g.strokeStyle = COL.g;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < tcurve.length; i++) {
+            const e = (emax * (i + 1)) / tcurve.length;
+            const y = Math.max(lo, Math.log10(Math.max(tcurve[i], 1e-12)));
+            i ? g.lineTo(a.X(e), a.Y(y)) : g.moveTo(a.X(e), a.Y(y));
+          }
+
+          g.stroke();
+          g.fillStyle = COL.g;
+          for (const p of peaks) {
+            g.beginPath();
+            g.arc(a.X(p.e), a.Y(Math.max(lo, Math.log10(p.t))), 3.5, 0, 7);
+            g.fill();
+          }
+
+          g.strokeStyle = "#fff";
+          g.lineWidth = 1;
+          g.setLineDash([4, 3]);
+          g.beginPath();
+          g.moveTo(a.X(E), Tp);
+          g.lineTo(a.X(E), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        function drawD() {
+          const { g, W, H } = fit($("dc"));
+          let hi = -1;
+          let lo = 5;
+          for (const v of dwell) {
+            const l = Math.log10(Math.max(v, 1e-6));
+            hi = Math.max(hi, l);
+            lo = Math.min(lo, l);
+          }
+
+          hi = Math.ceil(hi);
+          lo = Math.floor(Math.max(lo, hi - 8));
+          const yt = [];
+          for (let v = lo; v <= hi; v++) {
+            yt.push([v, "1e" + v]);
+          }
+
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: emax,
+            y0: lo,
+            y1: hi,
+            xlabel: "energy E",
+            yt,
+          });
+
+          g.strokeStyle = COL.bl;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < dwell.length; i++) {
+            const e = (emax * (i + 1)) / dwell.length;
+            const y = Math.max(lo, Math.log10(Math.max(dwell[i], 1e-9)));
+            i ? g.lineTo(a.X(e), a.Y(y)) : g.moveTo(a.X(e), a.Y(y));
+          }
+
+          g.stroke();
+          g.strokeStyle = "#fff";
+          g.lineWidth = 1;
+          g.setLineDash([4, 3]);
+          g.beginPath();
+          g.moveTo(a.X(E), Tp);
+          g.lineTo(a.X(E), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        function findPeaks() {
+          peaks = [];
+          const t = tcurve;
+          for (let i = 1; i < t.length - 1; i++) {
+            if (t[i] > t[i - 1] && t[i] >= t[i + 1] && t[i] > 1e-3) {
+              let a = (emax * i) / t.length;
+              let c = (emax * (i + 2)) / t.length;
+              for (let k = 0; k < 60; k++) {
+                const m1 = a + 0.382 * (c - a);
+                const m2 = a + 0.618 * (c - a);
+                if (w.qmc_dt_point(m1) > w.qmc_dt_point(m2)) {
+                  c = m2;
+                } else {
+                  a = m1;
+                }
+              }
+
+              const e = 0.5 * (a + c);
+              peaks.push({ e, t: w.qmc_dt_point(e) });
+            }
+          }
+        }
+
+        function apply() {
+          w.qmc_dt_set(V, bw, ww, bw, V * asy, 0);
+          emax = Math.max(
+            8,
+            Math.min(60, Math.round((1.3 * V * Math.max(1, asy)) / 5) * 5),
+          );
+
+          $("e").max = emax;
+          if (E > emax) {
+            E = emax;
+          }
+
+          tcurve = [];
+          for (let i = 0; i < NT; i++) {
+            tcurve.push(w.qmc_dt_point((emax * (i + 1)) / NT));
+          }
+
+          w.qmc_dt_curves(emax);
+          dwell = B(w.qmc_dt_dwell_buffer, C);
+          findPeaks();
+          profile();
+        }
+
+        function profile() {
+          const len = ww + 2 * bw;
+          xr = [-0.25 * len - 0.5, 1.25 * len + 0.5];
+          w.qmc_dt_profile(E, xr[0], xr[1]);
+          psi = B(w.qmc_dt_psi_buffer, C);
+          pot = B(w.qmc_dt_pot_buffer, C);
+        }
+
+        function stats() {
+          const T = w.qmc_dt_point(E);
+          const Rr = w.qmc_dt_last_reflection();
+          const dwl = w.qmc_dt_dwell(E);
+
+          $("vv").textContent = V;
+          $("bv").textContent = bw.toFixed(2);
+          $("wv").textContent = ww.toFixed(2);
+          $("asyv").textContent = asy.toFixed(2);
+          $("ev").textContent = E.toFixed(3);
+
+          const near = peaks.length
+            ? peaks.reduce((p, q) =>
+                Math.abs(q.e - E) < Math.abs(p.e - E) ? q : p,
+              )
+            : null;
+
+          const rows = [
+            ["transmission T", T < 1e-3 ? T.toExponential(2) : T.toFixed(4)],
+            ["reflection R", Rr.toFixed(4)],
+            ["dwell time", dwl < 0.01 ? dwl.toExponential(2) : dwl.toFixed(3)],
+            ["resonances found", peaks.length],
+            [
+              "nearest resonance",
+              near
+                ? near.e.toFixed(4) + "  (T = " + near.t.toFixed(3) + ")"
+                : "\u2013",
+            ],
+            [
+              "well levels (n\u03c0/w)\u00b2",
+              [1, 2, 3]
+                .map((n) => w.qmc_dt_well_level(n).toFixed(2))
+                .join(", "),
+            ],
+          ];
+
+          $("stats").innerHTML = rows
+            .map(
+              ([a, c]) =>
+                `<div class="stat"><span>${a}</span><span>${c}</span></div>`,
+            )
+            .join("");
+          $("readout").textContent =
+            "T = " + (T < 1e-3 ? T.toExponential(1) : T.toFixed(3));
+          $("note").textContent = peaks.length
+            ? "Click a resonance button to jump to it; T reaches 1 only when the barriers are identical."
+            : "No resonance below the barrier top at this setting: make the well wider or the barriers thicker.";
+          $("rb").innerHTML = peaks
+            .slice(0, 6)
+            .map((p, i) => `<button data-e="${p.e}">n = ${i + 1}</button>`)
+            .join("");
+          for (const bt of $("rb").querySelectorAll("button")) {
+            bt.onclick = () => {
+              E = +bt.dataset.e;
+              $("e").value = E;
+              refresh();
+            };
+          }
+        }
+
+        function refresh() {
+          profile();
+          drawStage();
+          drawT();
+          drawD();
+          stats();
+        }
+
+        for (const [id, fn] of [
+          ["v", (x) => (V = x)],
+          ["b", (x) => (bw = x)],
+          ["w", (x) => (ww = x)],
+          ["asy", (x) => (asy = x)],
+        ]) {
+          $(id).oninput = (e) => {
+            fn(+e.target.value);
+            apply();
+            refresh();
+          };
+        }
+
+        $("e").oninput = (e) => {
+          E = +e.target.value;
+          refresh();
+        };
+
+        const setE = (e) => {
+          E = Math.max(0.05, Math.min(emax, e));
+          $("e").value = E;
+          refresh();
+        };
+
+        $("stage").onpointerdown = $("stage").onpointermove = (ev) => {
+          if (ev.type === "pointermove" && !(ev.buttons & 1)) return;
+          const r = $("sc").getBoundingClientRect();
+          const s = geo.stage;
+          const y = ev.clientY - r.top;
+          setE(H2E(s, y));
+        };
+
+        const H2E = (s, y) => (s.ymax * (s.H - Bt - y)) / (s.H - Bt - Tp);
+        $("tcv").onpointerdown = $("tcv").onpointermove = (ev) => {
+          if (ev.type === "pointermove" && !(ev.buttons & 1)) {
+            return;
+          }
+
+          const r = $("tc").getBoundingClientRect();
+          const s = geo.t;
+          const f = (ev.clientX - r.left - L) / (s.W - L - R);
+          setE(f * emax);
+        };
+
+        window.addEventListener("resize", refresh);
+        apply();
+        if (peaks.length) {
+          E = peaks[0].e;
+          $("e").value = E;
+        }
+
+        refresh();
+        window.__tun = {
+          set: (o) => {
+            if ("V" in o) {
+              V = o.V;
+              $("v").value = V;
+            }
+            if ("bw" in o) {
+              bw = o.bw;
+              $("b").value = bw;
+            }
+            if ("ww" in o) {
+              ww = o.ww;
+              $("w").value = ww;
+            }
+            if ("asy" in o) {
+              asy = o.asy;
+              $("asy").value = asy;
+            }
+            if ("E" in o) {
+              E = o.E;
+              $("e").value = E;
+            }
+            apply();
+            refresh();
+          },
+          peaks: () => peaks,
+        };
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>
