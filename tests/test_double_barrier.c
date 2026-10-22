@@ -179,8 +179,8 @@ int main(void) {
 
   printf("  === Test: Current conservation and dwell time at resonance ===\n");
   {
-    double v[3] = {40.0, 0.0, 40.0};
-    double d[3] = {0.5, 3.0, 0.5};
+    const double v[3] = {40.0, 0.0, 40.0};
+    const double d[3] = {0.5, 3.0, 0.5};
     double at;
 
     peak(3, v, d, 0.75, 1.05, &at);

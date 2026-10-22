@@ -824,6 +824,7 @@
                 Math.abs(q.e - E) < Math.abs(p.e - E) ? q : p,
               )
             : null;
+
           const rows = [
             ["transmission T", T < 1e-3 ? T.toExponential(2) : T.toFixed(4)],
             ["reflection R", Rr.toFixed(4)],
@@ -842,6 +843,7 @@
                 .join(", "),
             ],
           ];
+
           $("stats").innerHTML = rows
             .map(
               ([a, c]) =>
@@ -900,9 +902,9 @@
 
         $("stage").onpointerdown = $("stage").onpointermove = (ev) => {
           if (ev.type === "pointermove" && !(ev.buttons & 1)) return;
-          const r = $("sc").getBoundingClientRect(),
-            s = geo.stage,
-            y = ev.clientY - r.top;
+          const r = $("sc").getBoundingClientRect();
+          const s = geo.stage;
+          const y = ev.clientY - r.top;
           setE(H2E(s, y));
         };
 
