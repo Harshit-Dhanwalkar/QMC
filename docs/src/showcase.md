@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-19 interactive demos, all computed live by the same C library you can read
+20 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -26,6 +26,7 @@ what the C code returns.
 | [Quantum Zeno effect](playground/zeno.html)        | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
 | [Quantum corral](playground/corral.html)           | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
 | [Hubbard dimer](playground/hubbard.html)           | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
+| [Resonant tunnelling](playground/tunnel.html)      | Two thin barriers, transmission jumps to 1            | `db_transmission`                   | 22 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -378,6 +379,27 @@ state against their closed forms, the large-U Heisenberg limit, energy and norm
 conservation in the quench and the infinite-temperature averages.
 
 [Open the demo](playground/hubbard.html)
+
+## Resonant tunnelling: a trap you can walk through
+
+[![Resonant tunnelling](playground/tunnel.gif)](playground/tunnel.html)
+
+One thin barrier reflects a slow particle almost completely. Put two of them
+around a well and, at a few special energies, the particle gets through with
+probability exactly 1: the waves bouncing between the barriers interfere
+constructively, just as light does in a Fabry–Perot cavity. Those energies are
+the quasi-bound levels of the well, a little below the infinite-well values
+(nπ/w)², and the more opaque the barriers the narrower the peaks and the
+longer the particle dwells inside. The page lets you set the heights and
+thicknesses of the barriers, the well width and its floor, then drag the
+energy to see the wavefunction pile up in the well at resonance. This is the
+principle of the resonant-tunnelling diode. The tests compare the single
+barrier with its closed forms (below, at and above the top), check
+probability conservation by independent wave matching, reciprocity, the peak
+height of 1 for symmetric barriers (and less for asymmetric ones), and that
+the dwell time peaks on resonance.
+
+[Open the demo](playground/tunnel.html)
 
 ## Run it yourself
 

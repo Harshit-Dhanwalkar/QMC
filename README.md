@@ -207,6 +207,28 @@
     </td>
     <td width="33%"></td>
   </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ring.html">
+        <img src="docs/src/playground/thumbs/ring.jpg" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
+      </a>
+      <br>
+      <b>Aharonov-Bohm ring</b>
+      <br>
+      <sub>Flux threading a quantum ring: persistent currents and the oscillating transmission of the two arms</sub>
+    </td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/tunnel.html">
+        <img src="docs/src/playground/tunnel.gif" alt="Resonant tunneling through a double barrier" width="260" height="260">
+      </a>
+      <br>
+      <b>Resonant tunneling</b>
+      <br>
+      <sub>Fabry-Perot resonances, quasi-bound states, and dwell time in a double-barrier structure</sub>
+    </td>
+    <td width="33%"></td>
+  </tr>
+</table>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
@@ -309,7 +331,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 
 - Core Math : Complex vectors/matrices, special functions (Hermite, Laguerre, Legendre, Spherical Harmonics, Bessel)
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
-- 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, tunneling barriers, radial hydrogen, general 3D central potentials.
+- 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, single and double tunneling barriers (transfer matrix), radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP), exact Talbot-carpet time evolution of a Gaussian packet in a box, with closed-form revival identities checked against the state vector.
 - Many-Body & Chemistry: Identical particles (Slater determinants), exact diagonalisation of the two-site Hubbard model (doublons, spin correlations, canonical thermodynamics), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
