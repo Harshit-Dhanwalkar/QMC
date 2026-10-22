@@ -81,3 +81,7 @@ coverage/
 # Web Assembly
 /docs/src/playground/*.wasm
 /wasm/zig/
+
+
+# Release build/staging used by `make install` / `make check-install`
+build-install/

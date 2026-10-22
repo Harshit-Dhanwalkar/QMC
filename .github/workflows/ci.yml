@@ -191,6 +191,32 @@ jobs:
           make run-tests PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 \
             EXTRA_CFLAGS="-O1 -fsanitize=address,undefined -fno-omit-frame-pointer"
 
+  install-check:
+    needs: changes
+    if: |
+      !cancelled() &&
+      (needs.changes.outputs.core     == 'true' ||
+       needs.changes.outputs.physics  == 'true' ||
+       needs.changes.outputs.makefile == 'true' ||
+       needs.changes.outputs.workflows == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/setup-deps
+        with:
+          extra: clang
+
+      - name: Install and build a downstream consumer
+        run: make check-install CC=${{ matrix.compiler }} PLOT_BACKEND=NONE -j"$(nproc)"
+
   wasm-check:
     needs: changes
     if: |
@@ -249,7 +275,7 @@ jobs:
   # count as success, a failed or cancelled one does not
   ci-ok:
     if: always()
-    needs: [build-and-test, static-analysis, sanitizers, wasm-check]
+    needs: [build-and-test, static-analysis, sanitizers, install-check, wasm-check]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

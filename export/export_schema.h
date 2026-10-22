@@ -17,9 +17,8 @@ extern "C" {
 
 #define QMC_LIBRARY_NAME "QMC"
 
-/* Override at build time,
- * NOTE: e.g. CFLAGS += '-DQMC_LIBRARY_VERSION="\"0.1.0\""'
- */
+/* Set by Makefile from its VERSION variable (single source of truth, also used
+ * for qmc.pc); "dev" only when compiled outside Makefile */
 #ifndef QMC_LIBRARY_VERSION
 #define QMC_LIBRARY_VERSION "dev"
 #endif

@@ -2,6 +2,9 @@ CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
 
+VERSION ?= 0.1.0
+CFLAGS += -DQMC_LIBRARY_VERSION=\"$(VERSION)\"
+
 # Auto-detect Homebrew GCC and LAPACK
 ifeq ($(shell uname -s),Darwin)
     ifeq ($(shell command -v brew >/dev/null 2>&1 && echo yes),yes)
@@ -619,21 +622,25 @@ BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
 
 ## Library / install targets
 ## Usage: make lib                          - build build/libqmc.a
+##        make shared                       - build build/libqmc.so
 ##        make install PREFIX=/usr/local    - install lib, headers, qmc.pc
+##        make install DESTDIR=/tmp/pkg     - staged install for packagers
 ##        make uninstall PREFIX=/usr/local  - remove/uninstall lib
-## NOTE: PREFIX defaults to /usr/local. The generated qmc.pc's Libs: line records
-## whatever USE_LAPACK/PLOT_BACKEND this build was made with, so a downstream 
-## `pkg-config --libs qmc` gets right flags (including -llapacke -lblas -llapack
-## when applicable) without caller needing to know internal optional-dependency choices
-PREFIX      ?= /usr/local
-LIBDIR      := $(PREFIX)/lib
-INCDIR      := $(PREFIX)/include/qmc
-PKGCONFDIR  := $(LIBDIR)/pkgconfig
-LIB_NAME    := libqmc.a
-LIB_PATH    := $(BUILD_DIR)/$(LIB_NAME)
-SHLIB_NAME  := libqmc.so
-SHLIB_PATH  := $(BUILD_DIR)/$(SHLIB_NAME)
-PC_PATH     := $(BUILD_DIR)/qmc.pc
+##        make check-install                - install to a scratch prefix and
+##                                            build+run a downstream consumer
+PREFIX            ?= /usr/local
+DESTDIR           ?=
+LIBDIR            := $(PREFIX)/lib
+INCDIR            := $(PREFIX)/include/qmc
+PKGCONFDIR        := $(LIBDIR)/pkgconfig
+LIB_NAME          := libqmc.a
+LIB_PATH          := $(BUILD_DIR)/$(LIB_NAME)
+SHLIB_NAME        := libqmc.so
+SHLIB_PATH        := $(BUILD_DIR)/$(SHLIB_NAME)
+PC_PATH           := $(BUILD_DIR)/qmc.pc
+INSTALL_BUILD_DIR := build-install
+CHECK_PREFIX      ?= $(CURDIR)/$(INSTALL_BUILD_DIR)/stage
+
 
 $(LIB_PATH): directories $(ALL_OBJS)
 	ar rcs $@ $(ALL_OBJS)
@@ -646,38 +653,52 @@ $(SHLIB_PATH): directories $(ALL_OBJS)
 
 shared: $(SHLIB_PATH)
 
+# Sanitizer flags are a dev-only concern: never advertise them to consumers
+PC_LIBS = $(filter-out -fsanitize=%,$(LDFLAGS))
+
 $(PC_PATH): directories
 	@printf '%s\n' \
 	  'prefix=$(PREFIX)' \
 	  'exec_prefix=$${prefix}' \
 	  'libdir=$${exec_prefix}/lib' \
-	  'includedir=$${prefix}/include/qmc' \
+	  'includedir=$${prefix}/include' \
 	  '' \
 	  'Name: QMC' \
 	  'Description: Pure-C quantum mechanics and quantum chemistry library' \
-	  'Version: 0.1.0' \
-	  'Libs: -L$${libdir} -lqmc $(LDFLAGS)' \
+	  'Version: $(VERSION)' \
+	  'Libs: -L$${libdir} -lqmc -fopenmp $(PC_LIBS)' \
 	  'Cflags: -I$${includedir}' \
 	  > $@
 
 pkgconfig: $(PC_PATH)
 
-install: lib shared pkgconfig
-	install -d $(LIBDIR) $(INCDIR) $(PKGCONFDIR)
-	install -m644 $(LIB_PATH) $(LIBDIR)/$(LIB_NAME)
-	install -m644 $(SHLIB_PATH) $(LIBDIR)/$(SHLIB_NAME)
-	install -m644 $(PC_PATH) $(PKGCONFDIR)/qmc.pc
-	cd $(CORE_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/core/{}' \;
-	cd $(PHYSICS_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/physics/{}' \;
-	cd $(EXPORT_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/export/{}' \;
-	cd $(LATEX_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(INCDIR)/latex/{}' \;
-	@echo "Installed $(LIB_NAME), $(SHLIB_NAME), headers under $(INCDIR), and qmc.pc to $(PKGCONFDIR)"
-	@echo "Downstream projects: pkg-config --cflags --libs qmc"
+ifeq ($(SANITIZE),1)
+# Default dev build is sanitized: build and install a clean release instead
+install uninstall:
+	$(MAKE) $@ SANITIZE=0 BUILD_DIR=$(INSTALL_BUILD_DIR)
+else
+install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
+	install -m644 $(LIB_PATH) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
+	install -m755 $(SHLIB_PATH) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME)
+	install -m644 $(PC_PATH) $(DESTDIR)$(PKGCONFDIR)/qmc.pc
+	cd $(CORE_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/core/{}' \;
+	cd $(PHYSICS_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/physics/{}' \;
+	cd $(EXPORT_DIR) && find . -name '*.h' ! -name '*_internal.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/export/{}' \;
+	cd $(LATEX_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/latex/{}' \;
+	@echo "Installed $(LIB_NAME), $(SHLIB_NAME), headers under $(DESTDIR)$(INCDIR), and qmc.pc to $(DESTDIR)$(PKGCONFDIR)"
+	@echo "Downstream projects: pkg-config --cflags --libs qmc  (#include <qmc/physics/hydrogen.h>)"
 
 uninstall:
-	rm -f $(LIBDIR)/$(LIB_NAME) $(LIBDIR)/$(SHLIB_NAME) $(PKGCONFDIR)/qmc.pc
-	rm -rf $(INCDIR)
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME) $(DESTDIR)$(PKGCONFDIR)/qmc.pc
+	rm -rf $(DESTDIR)$(INCDIR)
+endif
 
+## Install into a scratch prefix, then compile and run a downstream consumer
+## against it (headers standalone, pkg-config, shared + static linking)
+check-install:
+	rm -rf $(CHECK_PREFIX)
+	$(MAKE) install PREFIX=$(CHECK_PREFIX)
+	sh tests/consumer/run.sh $(CHECK_PREFIX) $(CC)
 
 ## Run targets
 examples:   directories $(OUTPUT_DIR) $(EXAMPLES)
@@ -806,7 +827,7 @@ wasm:
 wasm-test: wasm
 	./wasm/test/run.sh
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall wasm wasm-test
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall check-install wasm wasm-test
 
 # Info target: print external dependency
 info:
@@ -850,6 +871,6 @@ info:
 
 # Clean build,test and examples outputs
 clean:
-	rm -rf $(BUILD_DIR) $(OUTPUT_DIR)
+	rm -rf $(BUILD_DIR) $(INSTALL_BUILD_DIR) $(OUTPUT_DIR)
 	rm -f *.png *.pdf *.svg *.jpg *.dat
 	rm -f *.aux *.log *.out *.toc *.tex
