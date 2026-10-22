@@ -40,7 +40,7 @@ w.qmc_dt_profile(2.2, -2.0, 6.0);
 const ps = buf(w.qmc_dt_psi_buffer, 401);
 const pt = buf(w.qmc_dt_pot_buffer, 401);
 console.log(
-  `psi ${f(ps[0])} ${f(ps[100])} ${f(ps[200])} ${f(ps[300])} ${f(ps[400])} | pot ${f(pt[0])} ${f(pt[150])} ${f(pt[200])}`,
+  `\\psi ${f(ps[0])} ${f(ps[100])} ${f(ps[200])} ${f(ps[300])} ${f(ps[400])} | pot ${f(pt[0])} ${f(pt[150])} ${f(pt[200])}`,
 );
 
 w.qmc_dt_set(20.0, 0.3, 2.0, 0.6, 35.0, -3.0);

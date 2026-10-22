@@ -115,8 +115,8 @@ int main(void) {
   printf("  === Test: Matching amplitudes vs transfer matrix, probability "
          "conservation\n");
   {
-    double v[3] = {12.0, 0.0, 12.0};
-    double d[3] = {0.5, 2.0, 0.7};
+    const double v[3] = {12.0, 0.0, 12.0};
+    const double d[3] = {0.5, 2.0, 0.7};
     double worst = 0.0;
     double worst_u = 0.0;
 
@@ -140,10 +140,10 @@ int main(void) {
   {
     double v0 = 0.0;
     double d0 = 3.0;
-    double v[3] = {5.0, 0.0, 9.0};
-    double d[3] = {0.4, 1.5, 0.3};
-    double vr[3] = {9.0, 0.0, 5.0};
-    double dr[3] = {0.3, 1.5, 0.4};
+    const double v[3] = {5.0, 0.0, 9.0};
+    const double d[3] = {0.4, 1.5, 0.3};
+    const double vr[3] = {9.0, 0.0, 5.0};
+    const double dr[3] = {0.3, 1.5, 0.4};
 
     check_close(db_transmission(1, &v0, &d0, 2.5), 1.0, 1e-12, "free T");
     check_close(db_dwell_time(1, &v0, &d0, 4.0), 3.0 / (2 * 2.0), 1e-9,
@@ -154,8 +154,8 @@ int main(void) {
 
   printf("  === Test: Symmetric double barrier resonances ===\n");
   {
-    double v[3] = {40.0, 0.0, 40.0};
-    double d[3] = {0.5, 3.0, 0.5};
+    const double v[3] = {40.0, 0.0, 40.0};
+    const double d[3] = {0.5, 3.0, 0.5};
     double w = 3.0;
 
     for (int n = 1; n <= 3; n++) {
@@ -169,8 +169,8 @@ int main(void) {
                  "resonance just below infinite-well level");
     }
 
-    double v2[3] = {40.0, 0.0, 40.0};
-    double d2[3] = {0.5, 3.0, 0.8};
+    const double v2[3] = {40.0, 0.0, 40.0};
+    const double d2[3] = {0.5, 3.0, 0.8};
     double at;
     double p = peak(3, v2, d2, 0.75, 1.05, &at);
 
@@ -184,7 +184,7 @@ int main(void) {
     double at;
 
     peak(3, v, d, 0.75, 1.05, &at);
-    // current ~ Im(\psi* \psi'); check via |psi|^2 slope-free test:
+    // current ~ Im(\psi* \psi'); check via |\psi|^2 slope-free test:
     // transmitted
     // |\psi|^2 equals T in right lead
     double xs[2];
@@ -207,7 +207,7 @@ int main(void) {
     check_true(on > 20.0 * off, "dwell time peaks at resonance");
 
     // density in well exceeds incident density at resonance
-    double mid[1];
+    double mid[2];
 
     db_profile(3, v, d, at, 2.0, 2.0 + 1e-9, 2, mid);
     check_true(mid[0] > 5.0, "density in well builds up");
