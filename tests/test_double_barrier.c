@@ -79,7 +79,13 @@ static double peak(int n, const double *v, const double *d, double lo,
   return db_transmission(n, v, d, *at);
 }
 
+// Regression tests for transfer-matrix double-barrier routines
+// Blocks below mirror numbered scenarios listed in file header:
+// - analytic single-barrier limits, amplitude/probability consistency
+// - reciprocity, resonance behavior, current conservation, asymptotics
+// - invalid-input handling
 int main(void) {
+  // Single square barrier: compare against closed forms for E<V, E=V, E>V
   printf("  === Test: Single barrier ===\n");
   {
     double v = 10.0;
@@ -91,18 +97,18 @@ int main(void) {
       double want = 1.0 / (1.0 + v * v * sinh(kap * a) * sinh(kap * a) /
                                      (4 * e * (v - e)));
 
-      check_close(db_transmission(1, &v, &a, e), want, 1e-12, "below the top");
+      check_close(db_transmission(1, &v, &a, e), want, 1e-12, "below top");
     }
 
     check_close(db_transmission(1, &v, &a, v), 1.0 / (1.0 + v * a * a / 4.0),
-                1e-12, "at the top E = V");
+                1e-12, "at top E = V");
     for (int i = 0; i < 3; i++) {
       double e = (double[]){10.5, 14.0, 30.0}[i];
       double q = sqrt(e - v);
       double want =
           1.0 / (1.0 + v * v * sin(q * a) * sin(q * a) / (4 * e * (e - v)));
 
-      check_close(db_transmission(1, &v, &a, e), want, 1e-12, "above the top");
+      check_close(db_transmission(1, &v, &a, e), want, 1e-12, "above top");
     }
   }
 
@@ -126,7 +132,7 @@ int main(void) {
     printf("  max |T(matching) - T(formula)| = %.2e, max |T + R - 1| = %.2e\n",
            worst, worst_u);
 
-    check_true(worst < 1e-9, "matching agrees with the formula");
+    check_true(worst < 1e-9, "matching agrees with formula");
     check_true(worst_u < 1e-9, "T + R = 1");
   }
 
@@ -178,7 +184,8 @@ int main(void) {
     double at;
 
     peak(3, v, d, 0.75, 1.05, &at);
-    // current ~ Im(\psi* \psi'); check via |psi|^2 slope-free test: transmitted
+    // current ~ Im(\psi* \psi'); check via |psi|^2 slope-free test:
+    // transmitted
     // |\psi|^2 equals T in right lead
     double xs[2];
     double p2[2];
