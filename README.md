@@ -195,19 +195,6 @@
     </td>
   </tr>
   <tr>
-    <td width="33%"></td>
-    <td align="center" width="33%">
-      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ring.html">
-        <img src="docs/src/playground/thumbs/ring.jpg" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
-      </a>
-      <br>
-      <b>Aharonov-Bohm ring</b>
-      <br>
-      <sub>Flux threading a quantum ring: persistent currents and the oscillating transmission of the two arms</sub>
-    </td>
-    <td width="33%"></td>
-  </tr>
-  <tr>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ring.html">
         <img src="docs/src/playground/thumbs/ring.jpg" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
@@ -228,7 +215,6 @@
     </td>
     <td width="33%"></td>
   </tr>
-</table>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
