@@ -9,8 +9,8 @@
  * layer of potential V is q = \sqrt(E - V)
  *
  * Implementation: Core primitive is `layer()`, which returns 2x2 real transfer
- * matrix mapping (\psi, \psi') across a single layer of thickness d. It handles
- * 3 regimes explicitly:
+ * matrix mapping (\psi, \psi') across a single layer of thickness d
+ * It handles 3 regimes explicitly:
  *   - E > V:   oscillatory (cos/sin)
  *   - E < V:   evanescent (cosh/sinh)
  *   - E = V:   linear (1, d; 0, 1)  - handled separately to avoid a 1/0
@@ -208,7 +208,6 @@ int db_profile(int n, const double *v, const double *d, double energy,
   for (int p = 0; p < count; p++) {
     double x = xmin + (xmax - xmin) * p / (count - 1);
     cx psi;
-    cx dpsi;
 
     if (x <= 0.0) {
       // \exp(ikx) + r \exp(-ikx)
@@ -217,6 +216,8 @@ int db_profile(int n, const double *v, const double *d, double energy,
 
       psi = cadd(a, b);
     } else {
+      cx dpsi;
+
       // propagate (\psi, \psi') from 0 to x
       psi = (cx){1.0 + r.re, r.im};
       dpsi = (cx){k * r.im, k * (1.0 - r.re)};
@@ -235,7 +236,7 @@ int db_profile(int n, const double *v, const double *d, double energy,
         pos += step;
       }
 
-      if (x > len) { /* free propagation in the right lead */
+      if (x > len) { // free propagation in right lead
         mat2 m = layer(0.0, x - len, energy);
 
         psi = cadd(cscale(psi, m.m11), cscale(dpsi, m.m12));
