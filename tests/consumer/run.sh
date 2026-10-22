@@ -39,7 +39,12 @@ done
 
 echo "== shared link"
 $CC -Wall "$HERE/consumer.c" $CFLAGS $LIBS -o "$TMP/consumer_shared"
-LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$TMP/consumer_shared"
+LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$TMP/consumer_shared" | tee "$TMP/shared.out"
+# qmc.pc, headers and library must all report same version
+pcver=$(pkg-config --modversion qmc)
+if ! grep -qx "qmc version $pcver" "$TMP/shared.out"; then
+  echo "FAIL: qmc.pc says $pcver but linked library reports:"; head -1 "$TMP/shared.out"; exit 1
+fi
 
 echo "== static link"
 STATIC_LIBS=$(echo "$LIBS" | sed 's/-lqmc//')

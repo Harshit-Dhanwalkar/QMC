@@ -2,7 +2,11 @@ CC     = gcc # or cc
 CFLAGS = -Wall -Wextra -O2 -fPIC -fopenmp
 # CFLAGS += -Wno-error=implicit-function-declaration
 
-VERSION ?= 0.1.0
+VERSION       := $(shell sed -n 's/^\#define QMC_VERSION_STRING "\(.*\)"/\1/p' core/qmc_version.h)
+VERSION_MAJOR := $(word 1,$(subst ., ,$(VERSION)))
+ifeq ($(VERSION),)
+$(error could not read QMC_VERSION_STRING from core/qmc_version.h)
+endif
 CFLAGS += -DQMC_LIBRARY_VERSION=\"$(VERSION)\"
 
 # Auto-detect Homebrew GCC and LAPACK
@@ -228,6 +232,7 @@ BUILD_DIR    = build
 CORE_SRCS    = $(CORE_DIR)/vector.c \
                $(CORE_DIR)/matrix.c \
                $(CORE_DIR)/utils.c \
+               $(CORE_DIR)/version.c \
                $(CORE_DIR)/random.c \
                $(CORE_DIR)/sparse.c \
                $(CORE_DIR)/shift_invert.c \
@@ -446,7 +451,9 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_93_ab_ring \
               $(BUILD_DIR)/eg_94_double_barrier
 
-TESTS       = $(BUILD_DIR)/test_complex \
+
+TESTS       = $(BUILD_DIR)/test_version \
+              $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
               $(BUILD_DIR)/test_numerov \
               $(BUILD_DIR)/test_rk4 \
@@ -648,8 +655,14 @@ $(LIB_PATH): directories $(ALL_OBJS)
 lib: $(LIB_PATH)
 
 # All objects are built with -fPIC, so same object set links into a shared object
+# ELF SONAME libqmc.so.<MAJOR>: binaries record it at link time, so a later
+# ABI-compatible upgrade of the same major needs no relink
+ifneq ($(shell uname -s),Darwin)
+SONAME_FLAG := -Wl,-soname,libqmc.so.$(VERSION_MAJOR)
+endif
+
 $(SHLIB_PATH): directories $(ALL_OBJS)
-	$(CC) -shared -o $@ $(ALL_OBJS) $(CFLAGS) $(LDFLAGS)
+	$(CC) -shared $(SONAME_FLAG) -o $@ $(ALL_OBJS) $(CFLAGS) $(LDFLAGS)
 
 shared: $(SHLIB_PATH)
 
@@ -679,7 +692,10 @@ install uninstall:
 else
 install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
 	install -m644 $(LIB_PATH) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
-	install -m755 $(SHLIB_PATH) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME)
+	install -m755 $(SHLIB_PATH) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION)
+	ln -sf $(SHLIB_NAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION_MAJOR)
+	ln -sf $(SHLIB_NAME).$(VERSION_MAJOR) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME)
+	install -m644 qmc.h $(DESTDIR)$(INCDIR)/qmc.h
 	install -m644 $(PC_PATH) $(DESTDIR)$(PKGCONFDIR)/qmc.pc
 	cd $(CORE_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/core/{}' \;
 	cd $(PHYSICS_DIR) && find . -name '*.h' -exec install -Dm644 '{}' '$(DESTDIR)$(INCDIR)/physics/{}' \;
@@ -689,7 +705,7 @@ install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
 	@echo "Downstream projects: pkg-config --cflags --libs qmc  (#include <qmc/physics/hydrogen.h>)"
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME) $(DESTDIR)$(PKGCONFDIR)/qmc.pc
+	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).* $(DESTDIR)$(PKGCONFDIR)/qmc.pc
 	rm -rf $(DESTDIR)$(INCDIR)
 endif
 
@@ -699,6 +715,7 @@ check-install:
 	rm -rf $(CHECK_PREFIX)
 	$(MAKE) install PREFIX=$(CHECK_PREFIX)
 	sh tests/consumer/run.sh $(CHECK_PREFIX) $(CC)
+	sh tests/consumer/symbols.sh $(CHECK_PREFIX)
 
 ## Run targets
 examples:   directories $(OUTPUT_DIR) $(EXAMPLES)

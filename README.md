@@ -286,9 +286,25 @@ This swaps in LAPACK's `dsyev`/`zheev` for both the real-symmetric and complex-H
 AddressSanitizer (`-fsanitize=address`) is on by default. It must be turned OFF (for `EXTRA_CFLAGS` to be cleared and that hook is additive and doesn't remove flags already in `CFLAGS`) when running binaries under Valgrind, since Valgrind cannot run an ASan-instrumented binary correctly:
 
 ```bash
-# install headers + libraries to a prefix (default /usr/local)
-make SANITIZE=0 install-lib PREFIX=/usr/local
+make valgrind          # cleans, rebuilds without ASan, runs every test under Valgrind
+make valgrind-zeno     # a single test (build/test_zeno)
 ```
+
+## Using QMC as a library
+
+```bash
+# release build; installs libqmc.a/.so, headers and qmc.pc (default prefix /usr/local)
+make install PREFIX=$HOME/.local
+
+# in your project:  #include <qmc/qmc.h>
+cc demo.c $(PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig pkg-config --cflags --libs qmc) -o demo
+
+# verify an install end to end (what CI runs)
+make check-install
+```
+
+See [Using QMC as a Library](docs/src/setup/library.md) for the layout, static
+linking, versioning and the current naming caveats.
 
 ## Benchmarks
 

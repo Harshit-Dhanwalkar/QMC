@@ -8,6 +8,7 @@
 # Setup
 
 - [Building from Source](setup/building.md)
+- [Using QMC as a Library](setup/library.md)
 - [Dependencies](setup/dependencies.md)
 - [Platform Support](setup/portability.md)
 

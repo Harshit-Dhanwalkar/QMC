@@ -3,26 +3,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Forward declare the QR-based solver
+// Forward declare QR-based solver
 extern eigen_t *cmatrix_eigh(const cmatrix_t *A);
 
 #ifdef USE_LAPACK
 #include <lapacke.h>
 
-/*
- * Generic (real or complex) Hermitian solver via LAPACK's zheev, called on
- * every cmatrix_t regardless of whether its imaginary parts happen to be zero.
- */
-/* NOTE: Unlike a real-only dsyev path, this can never silently drop a complex
- * Hermitian matrix's imaginary part. complex_t's layout ({double re, im;}) is
- * bit-compatible with LAPACK's lapack_complex_double (two consecutive doubles),
- * so cmatrix_t data can be reinterpreted in place with no copy/conversion
- * beyond what zheev itself needs (it overwrites its input array with the
- * eigenvectors, so a copy of the input is still required to preserve the
- * aller's A).
- */
+// Generic (real or complex) Hermitian solver via LAPACK's zheev, called on
+// every cmatrix_t regardless of whether its imaginary parts happen to be zero
 
-eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
+//  NOTE: Unlike a real-only dsyev path, this can never silently drop a complex
+//  Hermitian matrix's imaginary part. complex_t's layout ({double re, im;}) is
+//  bit-compatible with LAPACK's lapack_complex_double (two consecutive
+//  doubles), so cmatrix_t data can be reinterpreted in place with no
+//  copy/conversion beyond what zheev itself needs (it overwrites its input
+//  array with eigenvectors, so a copy of input is still required to preserve
+//  aller's A)
+
+static eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
   if (!A || A->nrows != A->ncols) {
     return NULL;
   }
@@ -48,10 +46,9 @@ eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
     return NULL;
   }
 
-  /* NOTE: zheev overwrites its input with the eigenvectors, so copy A into the
-   * (row-major) buffer we're about to hand it : CMAT's row-major layout
-   * matches LAPACK_ROW_MAJOR directly, no transpose needed.
-   */
+  // NOTE: zheev overwrites its input with eigenvectors, so copy A into
+  // (row-major) buffer about to hand it: CMAT's row-major layout matches
+  // LAPACK_ROW_MAJOR directly, no transpose needed
   for (int i = 0; i < n * n; i++) {
     result->eigenvectors->data[i] = A->data[i];
   }
@@ -73,8 +70,8 @@ eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
 }
 #else
 
-// Fallback when LAPACK is not available - use the built‑in QR eigensolver.
-eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
+// Fallback when LAPACK is not available - use built‑in QR eigensolver
+static eigen_t *cmatrix_eigh_lapack(const cmatrix_t *A) {
   return cmatrix_eigh(A);
 }
 

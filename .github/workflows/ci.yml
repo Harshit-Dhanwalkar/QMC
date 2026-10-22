@@ -38,6 +38,7 @@ jobs:
       tests: ${{ steps.filter.outputs.tests }}
       makefile: ${{ steps.filter.outputs.makefile }}
       wasm: ${{ steps.filter.outputs.wasm }}
+      install: ${{ steps.filter.outputs.install }}
       workflows: ${{ steps.filter.outputs.workflows }}
     steps:
       - uses: actions/checkout@v7
@@ -57,6 +58,16 @@ jobs:
               - 'CMakeLists.txt'
             wasm:
               - 'wasm/**'
+            install:
+              - 'core/**'
+              - 'physics/**'
+              - 'export/**'
+              - 'latex/**'
+              - 'qmc.h'
+              - 'tests/consumer/**'
+              - 'Makefile'
+              - 'CMakeLists.txt'
+              - '.github/workflows/ci.yml'
             workflows:
               - '.github/workflows/ci.yml'
               - '.github/actions/**'
@@ -194,17 +205,17 @@ jobs:
   install-check:
     needs: changes
     if: |
-      !cancelled() &&
-      (needs.changes.outputs.core     == 'true' ||
-       needs.changes.outputs.physics  == 'true' ||
-       needs.changes.outputs.makefile == 'true' ||
-       needs.changes.outputs.workflows == 'true')
+      !cancelled() && needs.changes.outputs.install == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        compiler: [gcc, clang]
+        include:
+          - { compiler: gcc, flags: "" }
+          - { compiler: clang, flags: "" }
+          # optional dependencies
+          - { compiler: gcc, flags: "USE_LAPACK=1 USE_HDF5=1" }
     steps:
       - uses: actions/checkout@v7
         with:
@@ -214,8 +225,12 @@ jobs:
         with:
           extra: clang
 
-      - name: Install and build a downstream consumer
-        run: make check-install CC=${{ matrix.compiler }} PLOT_BACKEND=NONE -j"$(nproc)"
+      # Installs a release (non-sanitized) build to a scratch prefix then
+      # compiles and runs tests/consumer against it through pkg-config
+      # (shared + static), compiles every installed header standalone, and
+      # audits libqmc.so (SONAME, no sanitizer runtime, no undeclared exports)
+      - name: Install, build a downstream consumer, audit symbols
+        run: make check-install CC=${{ matrix.compiler }} PLOT_BACKEND=NONE ${{ matrix.flags }} -j"$(nproc)"
 
   wasm-check:
     needs: changes
@@ -275,7 +290,8 @@ jobs:
   # count as success, a failed or cancelled one does not
   ci-ok:
     if: always()
-    needs: [build-and-test, static-analysis, sanitizers, install-check, wasm-check]
+    needs:
+      [build-and-test, static-analysis, sanitizers, install-check, wasm-check]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

@@ -1,0 +1,3 @@
+# Symbols libqmc.so exports on purpose without a public declaration, one per
+# line. Keep this empty if possible: make internal helpers `static`, or hide
+# cross-file ones with QMC_INTERNAL (see export/plot_internal.h).
