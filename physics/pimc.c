@@ -85,9 +85,8 @@ void pimc_walker_init(pimc_walker_t *w, rng_state_t *rng, double Z) {
 
 /* Potential action over specific set of bead offsets (from `anchor`, modulo P),
  * for given pair of ring paths. Used to compute old-vs-new potential-action
- * difference for bisection segment without touching rest of the ring. `offsets`
- * has `n_offsets` entries.
- */
+ * difference for bisection segment without touching rest of ring. `offsets`
+ * has `n_offsets` entries */
 static double segment_potential_action(double (*r1)[3], double (*r2)[3],
                                        const int *offsets, int n_offsets,
                                        int anchor, int P, double Z,
@@ -117,8 +116,7 @@ static double segment_potential_action(double (*r1)[3], double (*r2)[3],
 
 /* Free-particle bridge midpoint sample: given endpoints x_a, x_b separated by 2
  * * sub_dt in imaginary time (sub_dt = time from either endpoint to midpoint),
- * draws midpoint from N((x_a + x_b)/2, sub_dt/(2 * mass)).
- */
+ * draws midpoint from N((x_a + x_b)/2, sub_dt/(2 * mass)) */
 static void bridge_sample(const double xa[3], const double xb[3], double sub_dt,
                           double mass, rng_state_t *rng, double out[3]) {
   double sigma = sqrt(sub_dt / (2.0 * mass));
@@ -197,8 +195,7 @@ int pimc_bisection_move(pimc_walker_t *w, int which, double Z, double tau,
   /* Potential action only needs the OTHER electron's beads at same * offsets
    * (its beads don't move, but the e-e Kelbg term depends on both electrons'
    * positions at each shared bead index). Build a matching "other" segment view
-   * (unchanged, same values for old and new).
-   */
+   * (unchanged, same values for old and new) */
   double (*other_seg)[3] = malloc((size_t)(seg + 1) * sizeof *other_seg);
   if (!other_seg) {
     free(new_seg);
@@ -306,16 +303,13 @@ double pimc_energy_estimator(const pimc_walker_t *w, double Z, double tau) {
   potential_term /= P;
 
   /* Leading constant is d * N * P / (2 * \beta),
-   *  Which simplifies to d * N / (2 * \tau) since \beta = P * \tau
-   */
+   *  Which simplifies to d * N / (2 * \tau) since \beta = P * \tau */
   return (double)(d * N) / (2.0 * tau) - kinetic_term + potential_term;
 }
 
-/*
- * dV_Kelbg/dr at fixed \lambda (\tau held fixed): derived term-by-term from
+/* dV_Kelbg/dr at fixed \lambda (\tau held fixed): derived term-by-term from
  *   V_Kelbg(r) = (q/r) * (1 - \exp(-r^2 / \lambda^2))
- *                 + q * (\sqrt(\pi) / \lambda) * erfc(r / \lambda)
- */
+ *                 + q * (\sqrt(\pi) / \lambda) * erfc(r / \lambda) */
 static double kelbg_dV_dr(double r, double lambda, double q) {
   double x = r / lambda;
 
@@ -403,10 +397,11 @@ static pimc_result_t pimc_run_with_rng(rng_state_t *rng, double Z, int P,
                                        int n_equilibration, int n_blocks,
                                        int block_size) {
   // Run a full PIMC simulation using a caller-provided RNG state
-  //   1) parameter/invariant checks
-  //   2) walker allocation and initialization
-  //   3) equilibration sweeps (discarded)
-  //   4) production sweeps grouped into blocks for statistics
+  //   1. parameter/invariant checks
+  //   2. walker allocation and initialization
+  //   3. equilibration sweeps (discarded)
+  //   4. production sweeps grouped into blocks for statistics
+  //
   // Returns a zero-initialized result on invalid input or allocation failure
   pimc_result_t result = {0};
 

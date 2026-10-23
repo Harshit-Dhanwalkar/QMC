@@ -191,8 +191,7 @@ molecular_hf_result_t *molecular_rhf(basis_function_t **basis, int n_basis,
     /* NOTE: Recompute F once more at D_new for energy expression, cheaper to
      * just reuse F built above evaluated with D (pre-update), using RHF energy
      * formula E = (1/2) * \sum D_new_ij (Hcore_ij + F_ij) with F built from
-     * D_new for a fully self-consistent value
-     */
+     * D_new for a fully self-consistent value */
     cmatrix_t *F_new = cmatrix_alloc(n, n);
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
@@ -458,7 +457,7 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
       }
     }
 
-    // Recompute Fock matrices at the new densities for a fully self-consistent
+    // Recompute Fock matrices at new densities for a fully self-consistent
     // energy expression
     double *Dtot_new = malloc((size_t)n * n * sizeof(double));
     for (int i = 0; i < n * n; i++) {

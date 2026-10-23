@@ -1,8 +1,8 @@
 /*
-1st/2nd order, degenerate, Stark/Zeeman
-Perturbation theory:
-Time‑independent (non‑deg/deg) and time‑dependent (Fermi golden rule)
-*/
+ * 1st/2nd order, degenerate, Stark/Zeeman
+ * Perturbation theory:
+ * Time‑independent (non‑deg/deg) and time‑dependent (Fermi golden rule)
+ */
 
 #include "perturbation.h"
 #include "../core/complex.h"

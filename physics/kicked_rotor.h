@@ -3,8 +3,7 @@
 
 #include "../core/vector.h"
 
-/*
- * Quantum kicked rotor and classical standard map
+/* Quantum kicked rotor and classical standard map
  *
  *   H = p^2/2 + K \cos(\theta) \sum_n \delta(t - n),   \theta in [0, 2\pi)
  *
@@ -32,8 +31,7 @@
  * every n (ballistic, not diffusive)
  *
  * NOTE: state lives on N = 2^k angle points \theta_j = 2 \pi j / N and momentum
- * index m runs over -N/2 .. N/2 - 1; keep distribution well inside that range
- */
+ * index m runs over -N/2 .. N/2 - 1; keep distribution well inside that range */
 
 /* Start in momentum eigenstate m = 0 (uniform in angle)
  *
@@ -49,20 +47,18 @@ int krotor_init(cvector_t *psi);
 int krotor_step(cvector_t *psi, double k, double hbar, int steps);
 
 /* Momentum probabilities |c_m|^2 into prob[0..N-1]; index j is m = j - N/2.
- * Returns 0, or -1 on invalid input, -2 on allocation failure. */
+ * Returns 0, or -1 on invalid input, -2 on allocation failure */
 int krotor_momentum_distribution(const cvector_t *psi, double *prob);
 
 /* <m^2> and norm; NaN on invalid input */
 double krotor_momentum2(const cvector_t *psi);
 double krotor_norm(const cvector_t *psi);
 
-/*
- * Classical ensemble of n points for standard map. Initial angles are uniform
+/* Classical ensemble of n points for standard map. Initial angles are uniform
  * in [0, 2 pi) and momenta uniform in [-hbar/2, hbar/2) (width of quantum m = 0
  * state), from a deterministic generator seeded by `seed`
  *
- * Returns 0, or -1 for NULL arrays or n < 1
- */
+ * Returns 0, or -1 for NULL arrays or n < 1 */
 int krotor_classical_init(double *theta, double *p, int n, double hbar,
                           unsigned long long seed);
 

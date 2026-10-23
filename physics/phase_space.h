@@ -3,8 +3,7 @@
 
 #include "../core/complex.h"
 
-/*
- * Phase-space picture of a single bosonic mode: Fock-space states, Kerr
+/* Phase-space picture of a single bosonic mode: Fock-space states, Kerr
  * nonlinearity and Wigner function
  *
  * A pure state is stored as amplitudes c[0 .. n_max] in Fock basis,
@@ -25,8 +24,7 @@
  * on a uniform x grid, with integral done as a sum over grid offsets
  * It is negative wherever state has non-classical interference:
  * Fock states n >= 1, cat states, squeezed states (no negativity but sub-vacuum
- * variance)
- */
+ * variance) */
 
 /* Fock state |n>
  *

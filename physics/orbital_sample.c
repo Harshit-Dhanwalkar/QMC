@@ -1,6 +1,44 @@
 /*
-Monte Carlo sampling of hydrogen orbitals
-*/
+ * Monte Carlo sampling of hydrogen orbitals
+ *
+ * Physics: draws random points from exact probability density
+ * |\psi_{nlm}|^2 = |R_{nl}(r) Y_{lm}(\theta, \phi)|^2 of a hydrogenic orbital,
+ * so that a scatter plot of many samples reproduces familiar electron-cloud
+ * picture with dot density proportional to probability
+ *
+ * Units: positions and radii are in Bohr radii (a0) and radial function R_{nl}
+ * is in a0^(-3/2). underlying hydrogen_radial_wavefunction() in hydrogen.h
+ * works in SI units, so grid is converted to meters before calling it and
+ * result is scaled by a0^(3/2) on way back
+ *
+ * Sampling algorithm: radial and angular parts are sampled independently:
+ *   1. Radial (inverse CDF): R_{nl}(r) is tabulated on a RADIAL_TABLE-point
+ *      grid out to a radius rmax = n(2n+16) a0, where n-th shell has
+ *      decayed to negligible density. CDF of radial distribution
+ *      r^2 R^2 is built by a running sum, and each sample is obtained by
+ *      inverting it. Linear interpolation within bin recovers
+ *      sub-grid resolution, so radial histogram is smooth
+ *   2. Angular (rejection): \theta and \phi are drawn uniformly from sphere
+ *      (uniform in \cos(\theta), uniform in \phi) and a sample is accepted with
+ *      probability |Y|^2 / bound. Bound is estimated on a coarse BOUND_GRID x
+ *      BOUND_GRID grid and padded by 15% to avoid an infinite loop when true
+ *      maximum is slightly off-grid. Because rejection sampler produces points
+ *      proportional to |Y|^2, resulting density matches true |\psi|^2 without
+ *      needing an explicit normalization constant
+ *
+ * Determinism: xorshift64* generator is seeded from caller and is identical
+ * on every platform, so same (n, l, m, real_form, count, seed) always produces
+ * same sequence of points. This is what native-vs-WASM tests rely on for
+ * bit-exact agreement
+ *
+ * Phase / sign output: In addition to position, each sample carries a "phase"
+ * in [0, \pi]:
+ *   - Complex orbitals (real_form = 0): phase is arg(\psi) in (-\pi, \pi],
+ *     so sign of imaginary part is preserved
+ *   - Real orbitals (real_form = 1): phase is 0 where psi >= 0 and \pi
+ *     where psi < 0, which exposes sign lobes (nodal structure) of real
+ *     spherical harmonic
+ */
 
 #include "orbital_sample.h"
 #include "../core/complex.h"
@@ -27,7 +65,8 @@ static double next_uniform(unsigned long long *s) {
   *s ^= *s << 25;
   *s ^= *s >> 27;
 
-  return (double)((*s * 2685821657736338717ULL) >> 11) * (1.0 / 9007199254740992.0);
+  return (double)((*s * 2685821657736338717ULL) >> 11) *
+         (1.0 / 9007199254740992.0);
 }
 
 // Value of the (complex or real) harmonic.

@@ -1,5 +1,5 @@
 /*
-V(x) library: infinite well, finite well, harmonic, barrier
+* V(x) library: infinite well, finite well, harmonic, barrier
 */
 
 #include "potentials.h"
