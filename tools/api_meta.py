@@ -1,8 +1,8 @@
-"""Hand-curated metadata for tools/gen_api.py.
+"""Hand-curated metadata for tools/gen_api.py
 
 Every public header (core/, physics/, export/, latex/) must appear in
-SUMMARIES; the generator fails otherwise, so a new module cannot ship without a
-one-line description and a category. Edit here, then run `make api-docs`.
+SUMMARIES; generator fails otherwise, so a new module cannot ship without a
+one-line description and a category. Edit here, then run `make api-docs`
 """
 
 CORE_TYPES = "Core: data types & utilities"
@@ -21,7 +21,7 @@ EXPORT = "Export, plotting & LaTeX"
 
 # stem -> (category, one-line summary)
 SUMMARIES = {
-    # ---- core ----
+    # Core
     "complex": (CORE_TYPES, "Complex number type complex_t and inline arithmetic (c_add, c_mul, c_exp, c_abs, ...)."),
     "constants": (CORE_TYPES, "Fundamental physical constants in SI units (HBAR, M_ELECTRON, E_CHARGE, EPSILON_0, ...)."),
     "matrix": (CORE_TYPES, "Dense complex matrix type cmatrix_t: allocation, copy, multiply, transpose and related operations."),
@@ -47,7 +47,7 @@ SUMMARIES = {
     "numerov": (CORE_ODE, "Numerov integrator for the 1D time-independent Schrodinger equation."),
     "crank_nicolson": (CORE_ODE, "Crank-Nicolson time evolution of the 1D Schrodinger equation, with complex absorbing potentials."),
     "special": (CORE_SPECIAL, "Special functions: Hermite, Laguerre, Legendre, Bessel, spherical harmonics and related polynomials."),
-    # ---- export ----
+    # Export
     "csv_writer": (EXPORT, "Streaming CSV writer: configurable delimiter and precision, RFC 4180 escaping, append mode, column descriptors."),
     "json_writer": (EXPORT, "Streaming JSON writer for results and metadata: objects, arrays, quantities with units, schema header."),
     "hdf5_writer": (EXPORT, "HDF5 export: typed datasets, groups, attributes, chunking and compression, appendable datasets (needs USE_HDF5=1)."),
@@ -56,7 +56,7 @@ SUMMARIES = {
     "plot": (EXPORT, "Plotting front end (lines, multi-series) over GR, gnuplot or matplotlib back ends, chosen with PLOT_BACKEND."),
     "export_schema": (EXPORT, "Conventions shared by all exporters: schema version, library name and version, UTC timestamps, column descriptors."),
     "latex_gen": (EXPORT, "LaTeX generation: escaping, tables, matrices and documents, rendered to PDF or PNG when pdflatex is available."),
-    # ---- single-particle QM ----
+    # Single-particle QM
     "wavefn": (SP, "Wavefunction container on a 1D grid: allocation, normalisation and probability density."),
     "potentials": (SP, "Standard 1D potentials (infinite and finite well, harmonic, step, barrier, Morse, Coulomb, Yukawa) as V(x) functions."),
     "schrodinger": (SP, "1D Schrodinger solvers: matrix diagonalisation, shooting, Crank-Nicolson and split-step time evolution."),
@@ -73,7 +73,7 @@ SUMMARIES = {
     "soft": (SP, "Split-operator Fourier method for 2D and 3D time-dependent Schrodinger evolution."),
     "relativistic": (SP, "Relativistic wave equations: 1D Klein-Gordon and Dirac solvers and the radial Dirac equation."),
     "dirac_evolve": (SP, "1D Dirac equation time evolution of a two-component spinor (split-operator Fourier method)."),
-    # ---- atoms & perturbation theory ----
+    # Atoms & perturbation theory
     "helium": (ATOMS, "Two-electron atom or ion ground-state energy by the effective-nuclear-charge variational method."),
     "angular": (ATOMS, "Angular momentum and spin: Pauli matrices, L+/L-/L^2/Lz, Clebsch-Gordan and Gaunt coefficients."),
     "fine_structure": (ATOMS, "Hydrogen fine structure: spin-orbit coupling and the closed-form total fine-structure formula."),
@@ -84,7 +84,7 @@ SUMMARIES = {
     "identical": (ATOMS, "Identical particles: Slater determinants for fermions and permanents for bosons."),
     "hartree_fock": (ATOMS, "Restricted Hartree-Fock SCF for closed-shell atoms and ions."),
     "dft": (ATOMS, "Kohn-Sham LDA density functional theory for closed-shell atoms and ions."),
-    # ---- two-level / open systems ----
+    # Two-level / open systems
     "rabi": (OPEN, "Rabi oscillations of a two-level system in the rotating-wave approximation, exact and numerical."),
     "driven": (OPEN, "Driven two-level systems: general time-dependent Hamiltonians, Landau-Zener sweeps, lab-frame driving beyond the RWA."),
     "landau_zener": (OPEN, "Landau-Zener sweeps of a two-level system on the Bloch sphere."),
@@ -94,7 +94,7 @@ SUMMARIES = {
     "zeno": (OPEN, "Quantum Zeno effect: pulsed and continuous measurement survival probabilities and Monte Carlo trajectories."),
     "kicked_rotor": (OPEN, "Quantum kicked rotor and the classical standard map."),
     "phase_space": (OPEN, "Phase-space picture of a bosonic mode: Fock states, Kerr nonlinearity and the Wigner function."),
-    # ---- quantum chemistry ----
+    # Quantum chemistry
     "basis_parser": (CHEM, "Parser for Gaussian94-format basis-set files (as exported by Basis Set Exchange)."),
     "molecular_integrals": (CHEM, "Gaussian-type-orbital molecular integrals by McMurchie-Davidson, with built-in STO-3G data."),
     "molecular_hf": (CHEM, "Restricted Hartree-Fock for molecules in a general basis, plus AO-to-MO integral transforms."),
@@ -108,11 +108,11 @@ SUMMARIES = {
     "tddft": (CHEM, "Linear-response TDDFT excitation energies in the Tamm-Dancoff approximation."),
     "geometry_optimization": (CHEM, "Generic Cartesian geometry optimiser driven by an energy-and-gradient callback."),
     "vibrational": (CHEM, "Harmonic vibrational frequencies from numerical Hessians of analytic gradients."),
-    # ---- QMC ----
+    # QMC
     "vmc": (QMCARLO, "Variational Monte Carlo for two-electron atoms and ions with a Slater-Jastrow ansatz."),
     "dmc": (QMCARLO, "Diffusion Monte Carlo for two-electron atoms and ions with importance sampling."),
     "pimc": (QMCARLO, "Path integral Monte Carlo for two-electron atoms at finite temperature."),
-    # ---- condensed matter / many-body ----
+    # Condensed matter / many-body
     "anderson": (CM, "Anderson localisation on a 1D tight-binding chain with random on-site disorder."),
     "lattice": (CM, "Tight-binding lattice models on 1D and 2D lattices, including Hofstadter and Chern-number routines."),
     "tight_binding": (CM, "Generic multi-band tight-binding models: bands, DOS, Berry curvature, Chern numbers, Zak and Wilson loops."),
@@ -125,7 +125,7 @@ SUMMARIES = {
     "finite_dmrg": (CM, "Finite-system DMRG sweeps."),
     "quantum_walk": (CM, "Discrete-time quantum walk on a line with a two-state coin."),
     "second_quant": (CM, "Second quantisation and the Jordan-Wigner transform: fermionic operators and molecular Hamiltonians in qubit form."),
-    # ---- quantum computing & information ----
+    # Quantum computing & information
     "qubits": (QC, "Minimal multi-qubit state-vector simulator: single-qubit gates and CNOT."),
     "qft": (QC, "Quantum Fourier transform and its inverse on a chosen set of qubits."),
     "qpe": (QC, "Quantum phase estimation: circuit simulation, phase estimate and output distribution."),

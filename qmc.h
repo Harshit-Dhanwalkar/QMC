@@ -43,11 +43,6 @@
 #include "core/special/special.h"
 #include "core/utils.h"
 #include "core/vector.h"
-#include "export/csv_writer.h"
-#include "export/export_schema.h"
-#include "export/json_writer.h"
-#include "export/vtk_writer.h"
-#include "latex/latex_gen.h"
 #include "physics/ab_ring.h"
 #include "physics/anderson.h"
 #include "physics/angular.h"
@@ -127,6 +122,11 @@
 #include "physics/wkb.h"
 #include "physics/zeeman.h"
 #include "physics/zeno.h"
+#include "export/csv_writer.h"
+#include "export/export_schema.h"
+#include "export/json_writer.h"
+#include "export/vtk_writer.h"
+#include "latex/latex_gen.h"
 /* gen_api:end */
 // IWYU pragma: end_exports
 

@@ -98,7 +98,6 @@ int main(void) {
             } else {
               hi = mid;
             }
-            lo = mid;
           } else {
             if (!mid_sign) {
               lo = mid;

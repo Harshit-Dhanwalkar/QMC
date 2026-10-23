@@ -1,9 +1,9 @@
-"""Minimal C header parser used by tools/gen_api.py.
+"""Minimal C header parser used by tools/gen_api.py
 
-Not a general C parser: it understands exactly the declaration shapes used in
+Not a general C parser: it understands exactly declaration shapes used in
 QMC's public headers (prototypes, typedef struct/enum/union, function-pointer
 typedefs, static inline functions, #define macros, extern data) and attaches
-the comment that precedes each one.
+comment that precedes each one
 """
 import re
 
@@ -14,7 +14,7 @@ class Decl:
     def __init__(self, kind, name, text, comment, line):
         self.kind = kind          # 'function' | 'type' | 'macro' | 'data'
         self.name = name
-        self.text = text          # source text of the declaration
+        self.text = text          # source text of declaration
         self.comment = comment    # cleaned preceding comment ('' if none)
         self.line = line
 
@@ -141,7 +141,7 @@ def tokenize(src):
                 depth -= 1
                 if ch == "}" and depth == 0:
                     # function body or struct body ends; a struct decl continues
-                    # to its ';' ; a function body ends the statement.
+                    # to its ';' ; a function body ends statement
                     head = src[code_start:j]
                     rest = src[j + 1:j + 200]
                     if not re.match(r"\s*[A-Za-z_]\w*\s*;|\s*;|\s*\*?\s*[A-Za-z_]", rest) or \
@@ -165,7 +165,7 @@ def tokenize(src):
 
 
 def parse_header(path):
-    src = open(path, encoding="utf-8").read()
+    src = open(path, encoding="utf-8").read()  # noqa: SIM115
     h = Header(path)
     toks = tokenize(src)
     pending = None
@@ -176,8 +176,8 @@ def parse_header(path):
         if kind == "comment":
             pending = clean_comment(text)
             pending_end = l1
-            # a standalone (blank line after) block before the first real
-            # declaration is the module description
+            # a standalone (blank line after) block before first real
+            # declaration is module description
             if not seen_code and nxt is not None and \
                     (nxt[2] - l1 > 1 or nxt[0] == "pp") and \
                     len(pending.split()) >= 8 and not h.module_doc:
