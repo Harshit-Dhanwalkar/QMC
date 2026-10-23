@@ -61,7 +61,7 @@ static double *draw(int n, int l, int m, int real_form,
 }
 
 static void test_basics(void) {
-  printf("\n  === Input checks and closed forms ===\n");
+  printf("  === Test: Input checks and closed forms ===\n");
 
   double buf[8];
   check_true(hydrogen_orbital_sample(0, 0, 0, 0, 2, 1, buf) == -1, "n = 0");
@@ -99,9 +99,10 @@ static void test_basics(void) {
 
   int same = 1;
   int diff = 0;
+  const double diff_tol = 1e-12;
   for (int i = 0; i < 8; i++) {
     same &= (a[i] == b[i]);
-    diff |= (a[i] != c[i]);
+    diff |= (fabs(a[i] - c[i]) > diff_tol);
   }
 
   check_true(same, "same seed reproduces sample exactly");
@@ -109,7 +110,7 @@ static void test_basics(void) {
 }
 
 static void test_radial_norm(void) {
-  printf("\n  === Radial normalisation ===\n");
+  printf("  === Test: Radial normalisation ===\n");
 
   const int nl[][2] = {{1, 0}, {2, 1}, {3, 2}, {4, 3}, {5, 0}, {6, 2}};
 
@@ -135,7 +136,7 @@ static void test_radial_norm(void) {
 }
 
 static void test_radial_moments(void) {
-  printf("\n  === Sampled radial moments vs exact ===\n");
+  printf("  === Test: Sampled radial moments vs exact ===\n");
 
   const int nl[][2] = {{1, 0}, {2, 0}, {2, 1}, {3, 1}, {4, 3}, {5, 2}};
 
@@ -165,6 +166,7 @@ static void test_radial_moments(void) {
 
     snprintf(label, sizeof label, "<r>   n=%d l=%d", n, l);
     check_close(s1 / NS, ex1, 0.012 * ex1, label);
+
     snprintf(label, sizeof label, "<r^2> n=%d l=%d", n, l);
     check_close(s2 / NS, ex2, 0.02 * ex2, label);
 
@@ -173,7 +175,7 @@ static void test_radial_moments(void) {
 }
 
 static void test_angular(void) {
-  printf("\n  === Angular statistics ===\n");
+  printf("  === Test: Angular statistics ===\n");
 
   const int lm[][2] = {{1, 0}, {1, 1}, {2, 0}, {2, 2}, {3, 1}};
 
@@ -239,7 +241,7 @@ static void test_angular(void) {
 }
 
 static void test_phase(void) {
-  printf("  === Phase and sign lobes ===\n");
+  printf("  === Test: Phase and sign lobes ===\n");
 
   // 3d, m = 2 has no radial node and Y_22 ~ \exp^{2 i \phi}: phase = 2 \phi
   double *p = draw(3, 2, 2, 0, 4000);

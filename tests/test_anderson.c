@@ -1,5 +1,5 @@
 /*
- * Test: 1D Anderson localisation (anderson.h)
+ * Test: 1D Anderson localisation
  *
  * 1. Clean chain: Bessel-function spreading, <x^2> = 2 t^2 \tau^2 exactly,
  *    norm and energy conserved
@@ -55,7 +55,7 @@ int main(void) {
     return 1;
   }
 
-  printf("  === Clean chain: ballistic spreading ===\n");
+  printf("  === Test: Clean chain ballistic spreading ===\n");
   for (int j = 0; j < N; j++) {
     g_eps[j] = 0.0;
   }
@@ -75,7 +75,7 @@ int main(void) {
   check_close(anderson_width(psi), sqrt(2.0) * 0.5 * 40.0, 1e-5,
               "width with t = 0.5");
 
-  printf("  === Disorder generator ===\n");
+  printf("  === Test: Disorder generator ===\n");
   double a[8];
   double b[8];
 
@@ -84,12 +84,12 @@ int main(void) {
   int same = 1;
 
   for (int i = 0; i < 8; i++) {
-    same &= (a[i] == b[i]);
+    same &= (fabs(a[i] - b[i]) <= 1e-12);
   }
 
   check_true(same, "same seed, same sequence");
   anderson_disorder(b, 8, 3.0, 43);
-  check_true(a[0] != b[0], "different seed differs");
+  check_true(fabs(a[0] - b[0]) > 1e-12, "different seed differs");
   anderson_disorder(g_big, BIG, 3.0, 7);
 
   double lo = 1e9;
@@ -113,7 +113,7 @@ int main(void) {
   check_close(mean, 0.0, 0.01, "mean");
   check_close(var, 9.0 / 12.0, 0.01, "variance W^2/12");
 
-  printf("  === Strong disorder localises ===\n");
+  printf("  === Test: Strong disorder localises ===\n");
   anderson_disorder(g_eps, N, 6.0, 2024);
   start_on_site(psi, MID);
   anderson_evolve(psi, g_eps, 1.0, 0.01, 2000); // \tau = 20
@@ -130,7 +130,7 @@ int main(void) {
   check_close(anderson_norm(psi), 1.0, 1e-6, "norm (RK4 drift)");
   check_close(anderson_energy(psi, g_eps, 1.0), e0, 1e-6, "energy conserved");
 
-  printf("  === Lyapunov exponent vs weak-disorder formula ===\n");
+  printf("  === Test: Lyapunov exponent vs weak-disorder formula ===\n");
   anderson_disorder(g_big, BIG, 1.0, 99);
   double lam = anderson_lyapunov(g_big, BIG, 1.0, 1.0);
   double ref = anderson_lyapunov_weak(1.0, 1.0, 1.0);
@@ -142,7 +142,7 @@ int main(void) {
               "clean chain: no growth inside band");
   check_true(isnan(anderson_lyapunov_weak(1.0, 1.0, 2.5)), "outside band: NaN");
 
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
   check_true(anderson_disorder(NULL, 4, 1.0, 1) == -1, "NULL eps");
   check_true(anderson_disorder(a, 8, -1.0, 1) == -1, "negative W");
   check_true(anderson_evolve(NULL, g_eps, 1.0, 0.01, 1) == -1, "NULL psi");

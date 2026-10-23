@@ -44,10 +44,10 @@ find "$PREFIX/include/qmc" -name '*.h' | while read -r h; do
 done | tr -cs 'A-Za-z0-9_' '\n' | sort -u > "$TMP/declared.txt"
 
 # Defined, global, non-underscore-prefixed symbols (compiler/linker internals
-# such as _init, __bss_start, __odr_asan.* start with '_')
+# such as _init, __bss_start, and OpenMP reduction variables like
+# .gomp_critical_user_.reduction.var start with '_' or '.')
 nm -D --defined-only "$LIB" | awk '$2 ~ /^[TDBRVW]$/ {print $3}' \
-  | grep -v '^_' | sort -u > "$TMP/exported.txt"
-grep -v '^#' "$HERE/undeclared_symbols_allowed.txt" | sort -u > "$TMP/allowed.txt"
+  | grep -v -E '^(_|\.)' | sort -u > "$TMP/exported.txt"
 
 undeclared=$(comm -23 "$TMP/exported.txt" "$TMP/declared.txt" | comm -23 - "$TMP/allowed.txt")
 if [ -n "$undeclared" ]; then

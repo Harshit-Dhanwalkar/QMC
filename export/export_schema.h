@@ -17,7 +17,9 @@ extern "C" {
 #define QMC_LIBRARY_NAME "QMC"
 
 /* Derived from core/qmc_version.h, single source of truth for version */
+#ifndef QMC_LIBRARY_VERSION
 #define QMC_LIBRARY_VERSION QMC_VERSION_STRING
+#endif
 
 /* Buffer size that always fits an ISO 8601 UTC timestamp + NUL */
 #define EXPORT_TIMESTAMP_SIZE 32

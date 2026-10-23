@@ -17,11 +17,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/*
- * Extension per format
+/* Extension per format
  *
- * NULL for WINDOW and unrecognized
- */
+ * NULL for WINDOW and unrecognized */
 static const char *format_extension(plot_format_t format) {
   switch (format) {
   case PLOT_FORMAT_PNG:
@@ -98,15 +96,16 @@ plot_status_t plot_output_path(const char *filename, plot_format_t format,
 
 // PLOT_FORMAT_TEXT writers
 
-/*
- * Full-precision decimal formatting: try 1..17 significant digits and stop at
- * first whose strtod round-trips bit-exactly
- */
+/* Full-precision decimal formatting: try 1..17 significant digits and stop at
+ * first whose strtod round-trips bit-exactly */
 static void write_double(FILE *f, double v) {
   char buf[64];
   for (int precision = 1; precision <= 17; precision++) {
+    double parsed;
+
     snprintf(buf, sizeof buf, "%.*g", precision, v);
-    if (strtod(buf, NULL) == v) {
+    parsed = strtod(buf, NULL);
+    if (memcmp(&parsed, &v, sizeof(parsed)) == 0) {
       break;
     }
   }

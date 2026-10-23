@@ -112,7 +112,7 @@ static int find_well_bound_states(double V0, double a, double m, double hbar,
 
     if ((val > 0) != (prevVal > 0) && fabs(val) < 100 && fabs(prevVal) < 100) {
       double lo = prevE, hi = E;
-      double lo_sign = well_condition(lo, V0, a, m, hbar) > 0;
+      int lo_sign = well_condition(lo, V0, a, m, hbar) > 0;
 
       for (int b = 0; b < 100; b++) {
         double mid = 0.5 * (lo + hi);

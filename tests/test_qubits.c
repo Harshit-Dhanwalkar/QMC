@@ -6,14 +6,14 @@
  *    reduced-density-matrix entropy stays exactly 0 for every qubit even
  *    after applying Hadamard to all of them independently. This is
  *    "trivial" case - state stays a product state, cost stays linear in
- *    n_qubits (n independent 2-dim problems), not exponential.
+ *    n_qubits (n independent 2-dim problems), not exponential
  * 2. One entangling gate (CNOT) is enough to leave that regime: Bell state (H +
  *    CNOT) and GHZ state (H + CNOT + CNOT) checked against their exact known
- *    amplitudes (1/sqrt2 each on two basis states, 0 elsewhere) and their
+ *    amplitudes (1/\sqrt{2} each on two basis states, 0 elsewhere) and their
  *    reduced single-qubit entropy is exactly 1 bit (maximally entangled),
- *    unambiguous contrast with test 1.
+ *    unambiguous contrast with test 1
  * 3. Cost is exponential by construction : state vector dimension vs n_qubits,
- *    printed for n=2..14.
+ *    printed for n=2..14
  */
 
 #include "../core/complex.h"
@@ -195,8 +195,8 @@ static int test_measure_bell_state_statistics(void) {
 
 // Test 4c: collapse correctness on a 3-outcome-capable state (GHZ, n=3)
 // After measuring, exactly one amplitude must be 1.0 and all others exactly
-// 0.0, and returned outcome must be one of the two states with nonzero
-// amplitude in original GHZ superposition (0 or 7).
+// 0.0, and returned outcome must be one of 2 states with nonzero amplitude in
+// original GHZ superposition (0 or 7)
 static int test_measure_collapse_exact_ghz(void) {
   rng_state_t rng;
   rng_seed(&rng, 777ULL);
@@ -241,10 +241,10 @@ static int test_measure_invalid_input(void) {
 }
 
 // Test 5a: single-qubit measurement on a product state (H on both qubits, no
-// entanglement).
+// entanglement)
 // Measuring qubit 0 should give ~50/50, and qubit 1's marginal should remain
 // ~50/50 after qubit 0 is measured, since there's no correlation between them
-// in a product state which is contrast with Bell-state case below.
+// in a product state which is contrast with Bell-state case below
 static int test_measure_qubit_product_state_uncorrelated(void) {
   int n_qubits = 2;
   int N = 100000;
@@ -280,9 +280,9 @@ static int test_measure_qubit_product_state_uncorrelated(void) {
   return fail;
 }
 
-// Test 5b: single-qubit measurement on a Bell state.
+// Test 5b: single-qubit measurement on a Bell state
 // Measuring qubit 0 forces qubit 1's subsequent measurement to match exactly,
-// every time.
+// every time
 static int test_measure_qubit_bell_correlation(void) {
   int N = 5000;
   rng_state_t rng;
@@ -305,7 +305,7 @@ static int test_measure_qubit_bell_correlation(void) {
     }
 
     // After both qubits are measured, state must be exactly corresponding basis
-    // state (norm 1, both amplitudes accounted for).
+    // state (norm 1, both amplitudes accounted for)
     int expected_index = (o0 << 1) | o1; // qubit0=MSB per project convention
     for (int i = 0; i < psi->n; i++) {
       double expected_re = (i == expected_index) ? 1.0 : 0.0;
@@ -325,10 +325,10 @@ static int test_measure_qubit_bell_correlation(void) {
   return fail;
 }
 
-// Test 5c: single-qubit measurement on a 3-qubit GHZ state.
+// Test 5c: single-qubit measurement on a 3-qubit GHZ state
 // Measuring all three qubits one at a time (via qstate_measure_qubit, not
 // full-register qstate_measure) must give same outcome for every qubit, every
-// trial.
+// trial
 static int test_measure_qubit_ghz_correlation(void) {
   int N = 5000;
   rng_state_t rng;
@@ -352,8 +352,8 @@ static int test_measure_qubit_ghz_correlation(void) {
       mismatches++;
     }
 
-    // After all three qubits are measured, state must be exactly corresponding
-    // basis state.
+    // After all 3 qubits are measured, state must be exactly corresponding
+    // basis state
     int expected_index = (o0 << 2) | (o1 << 1) | o2;
     for (int i = 0; i < psi->n; i++) {
       double expected_re = (i == expected_index) ? 1.0 : 0.0;

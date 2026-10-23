@@ -816,7 +816,8 @@ int tb_haldane_chern(double t1, double t2, double phi, double mass) {
 }
 
 double tb_ssh_zak_phase(double v, double w) {
-  if (!isfinite(v) || !isfinite(w) || fabs(v) == fabs(w)) {
+  if (!isfinite(v) || !isfinite(w) ||
+      fabs(fabs(v) - fabs(w)) <= 1e-12 * fmax(1.0, fmax(fabs(v), fabs(w)))) {
     return NAN;
   }
 

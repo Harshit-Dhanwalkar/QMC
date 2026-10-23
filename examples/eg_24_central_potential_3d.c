@@ -87,14 +87,24 @@ int main(void) {
           fabs(prevVal) < 100) {
         double lo = prevE;
         double hi = E;
-        double lo_sign = well_condition(lo, V0, a, 1.0, 1.0) > 0;
+        int lo_sign = well_condition(lo, V0, a, 1.0, 1.0) > 0;
 
         for (int b = 0; b < 100; b++) {
           double mid = 0.5 * (lo + hi);
-          if ((well_condition(mid, V0, a, 1.0, 1.0) > 0) == lo_sign) {
+          int mid_sign = well_condition(mid, V0, a, 1.0, 1.0) > 0;
+          if (lo_sign) {
+            if (mid_sign) {
+              lo = mid;
+            } else {
+              hi = mid;
+            }
             lo = mid;
           } else {
-            hi = mid;
+            if (!mid_sign) {
+              lo = mid;
+            } else {
+              hi = mid;
+            }
           }
         }
 

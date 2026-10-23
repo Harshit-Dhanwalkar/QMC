@@ -10,6 +10,7 @@
 
 #include <fcntl.h>
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,11 +25,13 @@
 #define JSON_MAX_DEPTH 32
 #define JSON_MAX_PATH 512
 
-/*
- * Write `s` as a JSON string literal (with surrounding quotes), escaping
- * characters per RFC 8259 §7
- * NULL writes as ""
- */
+/* Exact equality for finite doubles based on raw representation */
+static int double_bits_equal(double a, double b) {
+  return memcmp(&a, &b, sizeof(double)) == 0;
+}
+
+/* Write `s` as a JSON string literal (with surrounding quotes), escaping
+ * characters per RFC 8259 §7 NULL writes as "" */
 static json_status_t write_json_string(FILE *f, const char *s) {
   fputc('"', f);
   if (s) {
@@ -64,13 +67,11 @@ static json_status_t write_json_string(FILE *f, const char *s) {
   return ferror(f) ? JSON_ERR_IO : JSON_OK;
 }
 
-/*
- * Write a double as a JSON number, or `null` for NaN/Inf
+/* Write a double as a JSON number, or `null` for NaN/Inf
  *
  * Uses shortest decimal precision (1..17 significant digits) whose value reads
  * back bit-for-bit identical via strtod (Reference: Steele & White 1990), so
- * e.g. -2.9037 is written as "-2.9037" rather than "-2.903700..."
- */
+ * e.g. -2.9037 is written as "-2.9037" rather than "-2.903700..." */
 static void write_json_double(FILE *f, double d) {
   if (isnan(d) || isinf(d)) {
     fputs("null", f);
@@ -82,7 +83,7 @@ static void write_json_double(FILE *f, double d) {
   for (int precision = 1; precision <= 17; precision++) {
     snprintf(buf, sizeof buf, "%.*g", precision, d);
 
-    if (strtod(buf, NULL) == d) {
+    if (double_bits_equal(strtod(buf, NULL), d)) {
       break;
     }
   }

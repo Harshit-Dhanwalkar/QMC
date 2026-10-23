@@ -315,8 +315,9 @@ test_vmc_run_parallel_from_stream_long_jump_ranks_independent(void) {
                "rank energy is a sane He-like bound-state estimate");
   }
 
-  check_true(means[0] != means[1] && means[1] != means[2] &&
-                 means[0] != means[2],
+  check_true(fabs(means[0] - means[1]) > 1e-12 &&
+                 fabs(means[1] - means[2]) > 1e-12 &&
+                 fabs(means[0] - means[2]) > 1e-12,
              "rng_long_jump-separated ranks give distinct (non-overlapping) "
              "RNG streams");
 }
