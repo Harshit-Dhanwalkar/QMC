@@ -46,6 +46,21 @@ if ! grep -qx "qmc version $pcver" "$TMP/shared.out"; then
   echo "FAIL: qmc.pc says $pcver but linked library reports:"; head -1 "$TMP/shared.out"; exit 1
 fi
 
+echo "== qmc-help and module catalog"
+HELP="$PREFIX/bin/qmc-help"
+[ -x "$HELP" ] || { echo "FAIL: $HELP not installed"; exit 1; }
+"$HELP" tight_binding > "$TMP/help.out"
+grep -q '#include <qmc/physics/tight_binding.h>' "$TMP/help.out" || { echo "FAIL: qmc-help tight_binding output:"; cat "$TMP/help.out"; exit 1; }
+[ "$("$HELP" --version)" = "qmc $pcver" ] || { echo "FAIL: qmc-help --version"; exit 1; }
+# every module catalog advertises must have its header installed
+count=0
+for h in $("$HELP" --headers); do
+  count=$((count + 1))
+  [ -f "$PREFIX/include/qmc/$h" ] || { echo "FAIL: catalog lists $h but it is not installed"; fail=1; }
+done
+[ "$fail" -eq 0 ] || exit 1
+echo "   $count catalog modules, all headers installed"
+
 echo "== static link"
 STATIC_LIBS=$(echo "$LIBS" | sed 's/-lqmc//')
 $CC -Wall "$HERE/consumer.c" $CFLAGS "$PREFIX/lib/libqmc.a" $STATIC_LIBS -o "$TMP/consumer_static"

@@ -233,10 +233,11 @@ TESTS_DIR    = tests
 BUILD_DIR    = build
 
 # Source files
-CORE_SRCS    = $(CORE_DIR)/vector.c \
+CORE_SRCS    = $(CORE_DIR)/version.c \
+               $(CORE_DIR)/catalog.c \
+               $(CORE_DIR)/vector.c \
                $(CORE_DIR)/matrix.c \
                $(CORE_DIR)/utils.c \
-               $(CORE_DIR)/version.c \
                $(CORE_DIR)/random.c \
                $(CORE_DIR)/sparse.c \
                $(CORE_DIR)/shift_invert.c \
@@ -457,6 +458,7 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
 
 
 TESTS       = $(BUILD_DIR)/test_version \
+              $(BUILD_DIR)/test_catalog \
               $(BUILD_DIR)/test_complex \
               $(BUILD_DIR)/test_matrix \
               $(BUILD_DIR)/test_numerov \
@@ -642,6 +644,7 @@ BENCHMARKS  = $(BUILD_DIR)/bench_accuracy \
 PREFIX            ?= /usr/local
 DESTDIR           ?=
 LIBDIR            := $(PREFIX)/lib
+BINDIR            := $(PREFIX)/bin
 INCDIR            := $(PREFIX)/include/qmc
 PKGCONFDIR        := $(LIBDIR)/pkgconfig
 LIB_NAME          := libqmc.a
@@ -649,6 +652,7 @@ LIB_PATH          := $(BUILD_DIR)/$(LIB_NAME)
 SHLIB_NAME        := libqmc.so
 SHLIB_PATH        := $(BUILD_DIR)/$(SHLIB_NAME)
 PC_PATH           := $(BUILD_DIR)/qmc.pc
+HELP_TOOL         := $(BUILD_DIR)/qmc-help
 INSTALL_BUILD_DIR := build-install
 CHECK_PREFIX      ?= $(CURDIR)/$(INSTALL_BUILD_DIR)/stage
 
@@ -660,7 +664,7 @@ lib: $(LIB_PATH)
 
 # All objects are built with -fPIC, so same object set links into a shared object
 # ELF SONAME libqmc.so.<MAJOR>: binaries record it at link time, so a later
-# ABI-compatible upgrade of the same major needs no relink
+# ABI-compatible upgrade of same major needs no relink
 ifneq ($(shell uname -s),Darwin)
 SONAME_FLAG := -Wl,-soname,libqmc.so.$(VERSION_MAJOR)
 endif
@@ -689,13 +693,28 @@ $(PC_PATH): directories
 
 pkgconfig: $(PC_PATH)
 
+## qmc-help: command-line front end to module catalog (core/catalog.h)
+$(HELP_TOOL): tools/qmc_help.c $(ALL_OBJS) | directories
+	$(CC) $(CFLAGS) -Icore -Iexport -I. $^ -o $@ $(LDFLAGS)
+
+help-tool: $(HELP_TOOL)
+
+## API reference + module catalog + qmc.h block, generated from public headers
+## (tools/gen_api.py). Run after adding or changing a public header; CI runs check-api
+api-docs:
+	python3 tools/gen_api.py
+
+check-api:
+	python3 tools/gen_api.py --check
+
 ifeq ($(SANITIZE),1)
 # Default dev build is sanitized: build and install a clean release instead
 install uninstall:
 	$(MAKE) $@ SANITIZE=0 BUILD_DIR=$(INSTALL_BUILD_DIR)
 else
-install: lib shared pkgconfig
-	install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
+install: lib shared pkgconfig help-tool
+	install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR) $(DESTDIR)$(BINDIR)
+	install -m755 $(HELP_TOOL) $(DESTDIR)$(BINDIR)/qmc-help
 	install -m644 $(LIB_PATH) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 	install -m755 $(SHLIB_PATH) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION)
 	ln -sf $(SHLIB_NAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION_MAJOR)
@@ -710,7 +729,7 @@ install: lib shared pkgconfig
 	@echo "Downstream projects: pkg-config --cflags --libs qmc  (#include <qmc/physics/hydrogen.h>)"
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/$(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).* $(DESTDIR)$(PKGCONFDIR)/qmc.pc
+	rm -f $(DESTDIR)$(BINDIR)/qmc-help $(DESTDIR)$(LIBDIR)/$(LIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).* $(DESTDIR)$(PKGCONFDIR)/qmc.pc
 	rm -rf $(DESTDIR)$(INCDIR)
 endif
 
@@ -840,16 +859,16 @@ valgrind-%: clean
 	@echo "Running $@ under Valgrind..."
 	valgrind $(VALGRIND_FLAGS) $(BUILD_DIR)/test_$*
 
-# WebAssembly playground (docs/src/playground/qmc.wasm).
-# Needs Emscripten (emcc) or `pip install ziglang`; see wasm/README.md.
+# WebAssembly playground (docs/src/playground/qmc.wasm)
+# Needs Emscripten (emcc) or `pip install ziglang`; see wasm/README.md
 wasm:
 	./wasm/build.sh
 
-# Native-vs-WASM consistency check for the playground solver (needs node).
+# Native-vs-WASM consistency check for playground solver (needs node)
 wasm-test: wasm
 	./wasm/test/run.sh
 
-.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall check-install wasm wasm-test
+.PHONY: all clean examples tests run-examples run-tests benchmarks run-benchmarks info valgrind valgrind-% lib shared pkgconfig install uninstall check-install help-tool api-docs check-api wasm wasm-test
 
 # Info target: print external dependency
 info:

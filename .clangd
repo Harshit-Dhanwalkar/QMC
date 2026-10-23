@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-I., -Icore, -Iphysics, -Iexport, -Ilatex]

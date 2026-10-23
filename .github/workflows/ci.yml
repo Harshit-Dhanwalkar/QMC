@@ -64,6 +64,8 @@ jobs:
               - 'export/**'
               - 'latex/**'
               - 'qmc.h'
+              - 'tools/**'
+              - 'docs/src/api/**'
               - 'tests/consumer/**'
               - 'Makefile'
               - 'CMakeLists.txt'
@@ -232,6 +234,23 @@ jobs:
       - name: Install, build a downstream consumer, audit symbols
         run: make check-install CC=${{ matrix.compiler }} PLOT_BACKEND=NONE ${{ matrix.flags }} -j"$(nproc)"
 
+  # API reference (docs/src/api), module catalog (core/catalog_data.inc)
+  # and include block in qmc.h are generated from public headers by
+  # tools/gen_api.py. Fails if a header changed without regenerating, or a new
+  # module has no entry in tools/api_meta.py
+  api-docs-fresh:
+    needs: changes
+    if: |
+      !cancelled() &&
+      needs.changes.outputs.install == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Generated API files are up to date
+        run: make check-api
+
   wasm-check:
     needs: changes
     if: |
@@ -291,7 +310,14 @@ jobs:
   ci-ok:
     if: always()
     needs:
-      [build-and-test, static-analysis, sanitizers, install-check, wasm-check]
+      [
+        build-and-test,
+        static-analysis,
+        sanitizers,
+        install-check,
+        api-docs-fresh,
+        wasm-check,
+      ]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

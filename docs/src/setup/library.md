@@ -22,6 +22,7 @@ Installed layout:
 | Path                                               | Contents                                    |
 | -------------------------------------------------- | ------------------------------------------- |
 | `$PREFIX/include/qmc/qmc.h`                        | umbrella header                             |
+| `$PREFIX/bin/qmc-help`                             | command-line module catalog                 |
 | `$PREFIX/include/qmc/{core,physics,export,latex}/` | per-module headers                          |
 | `$PREFIX/lib/libqmc.a`                             | static library                              |
 | `$PREFIX/lib/libqmc.so.<MAJOR>.<MINOR>.<PATCH>`    | shared library (SONAME `libqmc.so.<MAJOR>`) |
@@ -57,6 +58,40 @@ cc demo.c $(pkg-config --cflags qmc) $PREFIX/lib/libqmc.a \
 `qmc.h` deliberately leaves out `export/hdf5_writer.h`, `export/netcdf_writer.h`
 and `export/plot.h`, which need optional third-party libraries; include those
 directly when you built QMC with the matching option.
+
+## Finding your way around
+
+QMC has more than a hundred modules, so it can describe itself. From code:
+
+```c
+#include <qmc/qmc.h>
+
+qmc_help(stdout, NULL);             // every category and module
+qmc_help(stdout, "tight_binding");  // what it does, #include line, where to start,
+                                    // guide, example, test, API page
+qmc_help(stdout, "chemistry");      // all modules in a category
+qmc_help(stdout, "chern");          // keyword search
+```
+
+From a shell (installed with the library):
+
+```sh
+qmc-help                    # overview
+qmc-help tight_binding      # one module
+qmc-help dmrg vqe           # several topics
+qmc-help --list             # module names, one per line
+```
+
+The same catalog is available as data (`qmc_module_count()`, `qmc_module_at()`,
+`qmc_module_find()`, `qmc_module_search()`, `qmc_category_at()`) if you want to
+build a menu or a lookup on top of it.
+
+The [API Reference](../api/index.md) lists every type, constant and function of
+every module, with the comments from the headers and the example and test that
+show each module in use. It, the catalog and the include list of `qmc.h` are all
+generated from the public headers by `tools/gen_api.py`
+(`make api-docs`); CI fails if they are stale, and a new header must be given a
+category and a one-line summary in `tools/api_meta.py`.
 
 ## Versioning
 

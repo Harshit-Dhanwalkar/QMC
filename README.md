@@ -299,12 +299,18 @@ make install PREFIX=$HOME/.local
 # in your project:  #include <qmc/qmc.h>
 cc demo.c $(PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig pkg-config --cflags --libs qmc) -o demo
 
-# verify an install end to end (what CI runs)
+# verify an install end to end
 make check-install
+
+# find way around modules
+qmc-help                    # overview (or qmc_help(stdout, NULL) in C)
+qmc-help tight_binding      # what it does, #include line, where to start, example, test
+qmc-help chern              # keyword search
 ```
 
 See [Using QMC as a Library](docs/src/setup/library.md) for the layout, static
-linking, versioning and the current naming caveats.
+linking, versioning and the current naming caveats, and the
+[API Reference](docs/src/api/index.md) for every module, type and function.
 
 ## Benchmarks
 

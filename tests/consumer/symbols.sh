@@ -49,6 +49,12 @@ done | tr -cs 'A-Za-z0-9_' '\n' | sort -u > "$TMP/declared.txt"
 nm -D --defined-only "$LIB" | awk '$2 ~ /^[TDBRVW]$/ {print $3}' \
   | grep -v -E '^(_|\.)' | sort -u > "$TMP/exported.txt"
 
+# Intentionally undeclared exports. grep exits 1 when list holds only comments,
+# which is normal, empty case
+ALLOWED="$HERE/undeclared_symbols_allowed.txt"
+[ -f "$ALLOWED" ] || { echo "FAIL: $ALLOWED is missing"; exit 1; }
+{ grep -v '^#' "$ALLOWED" || true; } | sort -u > "$TMP/allowed.txt"
+
 undeclared=$(comm -23 "$TMP/exported.txt" "$TMP/declared.txt" | comm -23 - "$TMP/allowed.txt")
 if [ -n "$undeclared" ]; then
   echo "FAIL: exported but not declared in any installed header:"

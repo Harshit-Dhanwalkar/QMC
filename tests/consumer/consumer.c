@@ -9,8 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-// #include <qmc/qmc.h> // umbrella header
-#include "../../qmc.h"
+#include <qmc/qmc.h>
 
 int main(void) {
   if (qmc_version_number() != QMC_VERSION_NUMBER ||
@@ -39,6 +38,14 @@ int main(void) {
       fprintf(stderr, "rng mismatch at draw %d\n", i);
       return 1;
     }
+  }
+
+  // discoverability: catalog knows where a module lives
+  const qmc_module_t *hy = qmc_module_find("hydrogen");
+  if (hy == NULL || strcmp(hy->header, "physics/hydrogen.h") != 0 ||
+      qmc_module_count() < 100) {
+    fprintf(stderr, "module catalog lookup failed\n");
+    return 1;
   }
 
   // core: allocation round trip (zero-initialised)

@@ -1,0 +1,191 @@
+# `mp2`
+
+> Generated from `physics/mp2.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+
+Second-order Moller-Plesset perturbation theory for closed-shell molecules.
+
+**Category:** Quantum chemistry (molecules)
+
+```c
+#include <qmc/physics/mp2.h>
+```
+
+**Start with:** [`mp2_correlation_energy`](#mp2_correlation_energy), [`molecular_mp2`](#molecular_mp2), [`molecular_ump2`](#molecular_ump2)
+
+- Example: `examples/eg_32_mp2.c`
+- Test (every call with expected results): `tests/test_mp2.c`
+- Runtime help: `qmc_help(stdout, "mp2");` or `qmc-help mp2`
+
+## Overview
+
+```text
+Second-order Moller-Plesset perturbation theory (MP2), restricted
+closed-shell (Reference: Szabo & Ostlund Ch. 6)
+
+closed-shell RHF MP2, spatial orbitals, chemist notation:
+  E_MP2 = \sum_{i,j occ} sum_{a,b virt} (ia|jb) *
+          [2 * (ia|jb) - (ib|ja)] / (eps_i + eps_j - eps_a - eps_b)
+Where
+  (ia|jb) = \int \int \phi_i(1)\phi_a(1) (1/r12) \phi_j(2)\phi_b(2) dr1 dr2
+
+Two implementations are provided:
+ - mp2_correlation_energy(): restricted to s-only atomic orbitals
+   (hartree_fock_atom_s_orbitals' radial-grid solver). For s-only orbitals,
+   multipole expansion of 1/r12 collapses to its L=0 term exactly, giving
+   a closed form (ia|jb) = \int u_i(r) u_a(r) Y0_jb(r) dr (compute_Y0 kernel)
+   - this only ever sees l=0 slice  of true MP2 correlation energy, since
+   there are no p/d/... virtual orbitals to correlate into
+ - molecular_mp2(): general angular momentum, any basis set / molecule
+   supported by molecular_hf.h's RHF solver (McMurchie-Davidson AO integrals
+   + molecular_ao_to_mo, same infrastructure ccsd_run() uses). This is
+   what actually resolves s-only restriction above - (ia|jb) here is a
+   real p/d/...-including two-electron MO integral, not a multipole
+   truncation
+```
+
+## Types
+
+### `mp2_result_t`
+
+```c
+typedef struct {
+  double e_hf;  // input HF total energy, Hartree
+  double e_mp2; // MP2 correlation correction, Hartree (l=0-restricted, expected
+                // -ve) */
+  double e_total; // e_hf + e_mp2
+  int n_occ;      // occupied orbitals used (= hf->n_orbitals)
+  int n_virt;     // virtual orbitals used (<= hf->n_virtual)
+} mp2_result_t;
+```
+
+### `molecular_mp2_result_t`
+
+```c
+typedef struct {
+  double e_rhf;   // input RHF total energy, Hartree
+  double e_mp2;   // MP2 correlation correction, Hartree (expected <= 0)
+  double e_total; // e_rhf + e_mp2
+  int n_occ;      // occupied spatial orbitals actually correlated (excludes
+                  // n_frozen_spatial)
+  int n_virt;     // virtual spatial orbitals used (n_basis - n_electrons/2)
+} molecular_mp2_result_t;
+```
+
+### `molecular_ump2_result_t`
+
+```c
+typedef struct {
+  double e_uhf;   // input UHF total energy, Hartree
+  double e_mp2;   // UMP2 correlation correction, Hartree (expected <= 0)
+  double e_total; // e_uhf + e_mp2
+  double e_aa;    // same-spin (alpha-alpha) contribution
+  double e_bb;    // same-spin (beta-beta) contribution
+  double e_ab;    // opposite-spin (alpha-beta) contribution; e_mp2 = e_aa +
+                  // e_bb + e_ab
+} molecular_ump2_result_t;
+```
+
+## Functions (3)
+
+[`mp2_correlation_energy`](#mp2_correlation_energy), [`molecular_mp2`](#molecular_mp2), [`molecular_ump2`](#molecular_ump2)
+
+### `mp2_correlation_energy`
+
+```c
+mp2_result_t mp2_correlation_energy(const hf_result_t *hf, const double *r,
+                                    int N, int n_virtual);
+```
+
+```text
+Compute (l=0-restricted) MP2 correlation energy on top of converged
+hf_result_t
+
+r, N     : radial grid passed to hartree_fock_atom_s_orbitals
+n_virtual: number of lowest-energy virtual orbitals to include (1 <=
+           n_virtual <= hf->n_virtual)
+
+Returns a zeroed mp2_result_t (e_mp2=0) on invalid input (NULL hf/r,
+n_virtual out of range)
+```
+
+### `molecular_mp2`
+
+```c
+molecular_mp2_result_t molecular_mp2(int n_basis, const double *eri_mo,
+                                     const double *mo_energy, int n_electrons,
+                                     int n_frozen_spatial, double e_rhf);
+```
+
+```text
+General closed-shell RHF-MP2 correlation energy for any molecule/basis
+set supported by molecular_hf.h - not restricted to s orbitals
+
+n_basis, eri_mo, mo_energy: same convention as ccsd_run() - eri_mo is
+n_basis^4 two-electron integrals in MO basis, chemist notation
+(MOLINT_ERI macro / molecular_ao_to_mo's output), mo_energy is n_basis RHF
+orbital energies
+
+Where
+ - n_electrons     : total electron count (must be even: closed-shell)
+ - n_frozen_spatial: number of lowest-energy occupied spatial orbitals to
+                     exclude from correlation sum (0 for none)
+ - e_rhf           : converged RHF total energy, folded into e_total for
+                     convenience
+
+Returns a zeroed molecular_mp2_result_t (e_mp2=0, n_occ=n_virt=0) on invalid
+input: n_basis<=0, NULL eri_mo/mo_energy, n_electrons odd or out of [2 *
+n_frozen_spatial + 2, 2 * n_basis] range
+```
+
+### `molecular_ump2`
+
+```c
+molecular_ump2_result_t
+molecular_ump2(int n_basis, const double *eri_aaaa, const double *eri_bbbb,
+               const double *eri_aabb, const double *mo_energy_alpha,
+               const double *mo_energy_beta, int n_alpha, int n_beta,
+               int n_frozen_alpha, int n_frozen_beta, double e_uhf);
+```
+
+```text
+Unrestricted (UHF-based) MP2 correlation energy - post-HF partner to
+molecular_uhf(), letting open-shell radicals/cations/anions/triplets get a
+correlation correction same way molecular_mp2() does for RHF's closed-shell
+reference. Spin-orbital MP2 restricted to real, unmixed spin blocks
+(Reference: Szabo & Ostlund Ch. 6, spin-orbital formulation specialized to
+\alpha/\beta block structure a real (not complex/generalized) UHF reference
+has):
+
+  E_UMP2 = E_aa + E_bb + E_ab
+  E_aa = (1/4) \sum_{i,j occ-alpha} \sum_{a,b virt-alpha}
+         [(ia|jb) - (ib|ja)]^2 / (eps_i + eps_j - eps_a - eps_b)
+  E_bb = same, all-beta
+  E_ab = \sum_{i occ-alpha} \sum_{j occ-beta} \sum_{a virt-alpha}
+         \sum_{b virt-beta} (ia|jb)^2 / (eps_i + eps_j - eps_a - eps_b)
+
+NOTE: E_ab has no exchange/antisymmetrization term: alpha and beta electrons
+are distinguishable, so there's no (ib|ja)-type contribution to subtract - i
+is alpha-only, j is beta-only, so "ib" and "ja" would mix spins within a
+single spatial integral, which isn't a valid same-integral exchange partner
+here)
+
+eri_aaaa, eri_bbbb: n_basis^4 same-spin MO integrals, each built via
+molecular_ao_to_mo(..., C_alpha, ...) / (..., C_beta, ...) respectively (or
+molecular_ao_to_mo_eri_mixed with C_bra==C_ket)
+ - eri_aabb: n_basis^4 mixed-spin MO integrals from
+             molecular_ao_to_mo_eri_mixed(eri_ao, C_alpha, C_beta, n_basis,
+             eri_aabb)
+- bra pair (i,a) in \alpha basis, ket pair (j,b) in \beta basis
+
+mo_energy_alpha, mo_energy_beta: n_basis UHF orbital energies per spin
+n_alpha, n_beta                : occupied \alpha/\beta counts (as in
+                                 molecular_uhf)
+n_frozen_alpha, n_frozen_beta  : lowest-energy occupied orbitals of each spin
+                                 to exclude from correlation (0 for none)
+e_uhf                          : converged UHF total energy, folded into
+                                 e_total for convenience
+
+Returns a zeroed molecular_ump2_result_t (e_mp2=0) on invalid input:
+n_basis<=0, any NULL array, n_alpha/n_beta out of [n_frozen, n_basis] range,
+or n_alpha < n_beta
+```
