@@ -1,7 +1,7 @@
 /*
  * Noisy VQE: drives lindblad.c's existing GKSL machinery gate-by-gate to
  * simulate vqe.c hardware-efficient ansatz under T1/T2 noise, plus a
- * zero-noise-extrapolation (ZNE) mitigation estimator.
+ * zero-noise-extrapolation (ZNE) mitigation estimator
  */
 
 #include "vqe_noisy.h"
@@ -12,7 +12,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-// \rho <- U \rho U^\dagger, freeing input \rho and returning a new matrix
+/* \rho <- U \rho U^\dagger, freeing input \rho and returning a new matrix */
 static cmatrix_t *dm_conjugate_free(const cmatrix_t *U, cmatrix_t *rho) {
   cmatrix_t *Urho = cmatrix_multiply(U, rho);
   cmatrix_free(rho);
@@ -40,7 +40,7 @@ static cmatrix_t *dm_conjugate_free(const cmatrix_t *U, cmatrix_t *rho) {
  *
  * Where
  *  perm flips target's bit whenever control's bit is 1 (0-indexed, qubit 0 =
- *  leftmost/MSB).
+ *  leftmost/MSB)
  */
 static cmatrix_t *dm_apply_cnot_free(cmatrix_t *rho, int n_qubits, int control,
                                      int target) {
@@ -107,7 +107,7 @@ cmatrix_t *vqe_noisy_prepare_density(int n_qubits, int n_layers,
 
   int n_ops = 2 * n_qubits;
   // NOLINTNEXTLINE(clang-analyzer-unix.mallocsizeof)
-  cmatrix_t **L = calloc((size_t)n_ops, sizeof **L);
+  cmatrix_t **L = calloc((size_t)n_ops, sizeof(*L));
   if (!L) {
     cmatrix_free(rho);
     cmatrix_free(Hzero);
@@ -212,15 +212,13 @@ double vqe_noisy_energy(int n_qubits, int n_layers, const double *theta,
   return trace.re;
 }
 
-/*
- * Solve (d + 1)x(d + 1) normal-equations system for a degree-d
- * least-squares polynomial fit y ~= \sum_k p[k] * c^k through given (c[i],
- * y[i]) points, via Gaussian elimination with partial pivoting
- * Writes p[0..d] (p[0] is c=0 intercept, to satisfy ZNE)
- *
- * Returns 0 on success, -1 on a singular system (shouldn't happen for distinct
- * c[i] with n_points >= d+1)
- */
+// Solve (d + 1)x(d + 1) normal-equations system for a degree-d
+// least-squares polynomial fit y ~= \sum_k p[k] * c^k through given (c[i],
+// y[i]) points, via Gaussian elimination with partial pivoting
+// Writes p[0..d] (p[0] is c=0 intercept, to satisfy ZNE)
+//
+// Returns 0 on success, -1 on a singular system (shouldn't happen for distinct
+// c[i] with n_points >= d+1)
 static int polyfit_intercept(const double *c, const double *y, int n_points,
                              int degree, double *p_out) {
   int m = degree + 1;

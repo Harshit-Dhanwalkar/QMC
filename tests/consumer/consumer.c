@@ -1,4 +1,5 @@
-/* Downstream-consumer smoke test
+/*
+ * Downstream-consumer smoke test
  *
  * Built by tests/consumer/run.sh against an *installed* QMC (not source tree),
  * using only `pkg-config --cflags --libs qmc` and <qmc/...> includes, exactly
@@ -8,7 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <qmc/qmc.h> // umbrella header
+// #include <qmc/qmc.h> // umbrella header
+#include "../../qmc.h"
 
 int main(void) {
   if (qmc_version_number() != QMC_VERSION_NUMBER ||

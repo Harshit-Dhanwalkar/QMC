@@ -728,8 +728,8 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   }
 
   if (n_spatial <= 0 || !h_mo || !eri_mo || !mo_energy ||
-      n_electrons % 2 != 0 || 2 * n_frozen_spatial >= n_electrons ||
-      n_electrons > 2 * n_spatial) {
+      n_electrons % 2 != 0 || n_frozen_spatial < 0 ||
+      2 * n_frozen_spatial >= n_electrons || n_electrons > 2 * n_spatial) {
     return NULL;
   }
 
@@ -743,8 +743,8 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
   ctx.nso = nso;
   ctx.nocc = n_electrons - 2 * n_frozen_spatial;
   ctx.nvirt = nso - n_electrons;
-  ctx.occ = malloc((size_t)ctx.nocc * sizeof(int));
-  ctx.virt = malloc((size_t)ctx.nvirt * sizeof(int));
+  ctx.occ = calloc((size_t)ctx.nocc, sizeof(int));
+  ctx.virt = calloc((size_t)ctx.nvirt, sizeof(int));
   ctx.Fso = calloc((size_t)nso * nso, sizeof(double));
   ctx.Dia = calloc((size_t)nso * nso, sizeof(double));
   ctx.n_spatial = n_spatial;
@@ -777,7 +777,6 @@ ccsd_result_t *ccsd_run_ex(int n_spatial, const double *h_mo,
 
   int no = ctx.nocc, nv = ctx.nvirt;
   for (int ii = 0; ii < no; ii++) {
-    // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Assign)
     int i = ctx.occ[ii];
 
     for (int ai = 0; ai < nv; ai++) {

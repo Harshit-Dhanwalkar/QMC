@@ -79,10 +79,14 @@ ifeq ($(PLOT_BACKEND),MATPLOTLIB)
     endif
 endif
 
-# TODO: define macro -DHAVE_LATEX to conditionally compile LaTeX features
-LATEX_AVAIL := $(shell command -v pdflatex >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 && echo yes || echo no)
-ifeq ($(LATEX_AVAIL),no)
-    $(warning pdflatex or pdftoppm not found in PATH – LaTeX rendering will fail at runtime)
+LATEX ?= 1
+ifeq ($(LATEX),1)
+    LATEX_AVAIL := $(shell command -v pdflatex >/dev/null 2>&1 && command -v pdftoppm >/dev/null 2>&1 && echo yes || echo no)
+    ifeq ($(LATEX_AVAIL),no)
+        $(warning pdflatex or pdftoppm not found in PATH – LaTeX rendering will fail at runtime)
+    endif
+else
+    LATEX_AVAIL := no
 endif
 
 # LaTeX backend selection : pdflatex and lualatex

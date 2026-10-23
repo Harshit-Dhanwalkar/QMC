@@ -52,7 +52,7 @@ jobs:
             --keep-empty \
             -v \
             -o analyzer-results \
-            make -j"$(nproc)" all PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 \
+            make -j"$(nproc)" all LATEX=0 PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1 \
             2>&1 | tee scan-build.log
 
       - name: Summarize findings

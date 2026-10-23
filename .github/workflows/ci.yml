@@ -95,10 +95,10 @@ jobs:
           compiler: ${{ matrix.compiler }}
 
       - name: Build All
-        run: make -j"$(nproc)" all CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
+        run: make -j"$(nproc)" all LATEX=1 CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
 
       - name: Run Test Suite
-        run: make run-tests CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
+        run: make run-tests LATEX=1 CC=${{ matrix.compiler }} PLOT_BACKEND=GR USE_HDF5=1 USE_NETCDF=1
 
       # - name: Run Example Binaries
       #   run: make run-examples CC=${{ matrix.compiler }} PLOT_BACKEND=GR
