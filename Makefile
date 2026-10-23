@@ -126,7 +126,6 @@ endif
 
 CFLAGS += -DQMC_PLOT_BACKEND_NAME=\"$(PLOT_BACKEND)\"
 CFLAGS += -DQMC_LATEX_COMPILER=\"$(LATEX_COMPILER)\"
-BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
 LDFLAGS += -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
 
@@ -231,6 +230,7 @@ LATEX_DIR    = latex
 EXAMPLES_DIR = examples
 TESTS_DIR    = tests
 BUILD_DIR    = build
+BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 
 # Source files
 CORE_SRCS    = $(CORE_DIR)/version.c \
@@ -582,17 +582,16 @@ demo: $(BUILD_DIR)/main
 	@$(BUILD_DIR)/main
 
 # Check backend
-PLOT_MARKER := $(BUILD_DIR)/.plot_backend
 check-backend:
 	@mkdir -p $(BUILD_DIR)
 	@if [ -e "$(GR_LIB)" ]; then \
-	    echo "gr"      > $(BUILD_DIR)/.plot_backend.new; \
+	    echo "gr"      > $(BACKEND_SENTINEL).new; \
 	elif command -v gnuplot >/dev/null; then \
-	    echo "gnuplot" > $(BUILD_DIR)/.plot_backend.new; \
+	    echo "gnuplot" > $(BACKEND_SENTINEL).new; \
 	else \
-	    echo "noop"    > $(BUILD_DIR)/.plot_backend.new; \
+	    echo "noop"    > $(BACKEND_SENTINEL).new; \
 	fi
-	@mv $(BUILD_DIR)/.plot_backend.new $(PLOT_MARKER)
+	@mv $(BACKEND_SENTINEL).new $(BACKEND_SENTINEL)
 
 $(BACKEND_SENTINEL): check-backend
 	@:
