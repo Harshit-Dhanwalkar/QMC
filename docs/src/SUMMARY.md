@@ -137,6 +137,7 @@
   - [finite_dmrg](api/finite_dmrg.md)
   - [hubbard_dimer](api/hubbard_dimer.md)
   - [ising_chain](api/ising_chain.md)
+  - [josephson](api/josephson.md)
   - [lattice](api/lattice.md)
   - [quantum_walk](api/quantum_walk.md)
   - [second_quant](api/second_quant.md)

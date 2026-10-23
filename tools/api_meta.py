@@ -125,6 +125,7 @@ SUMMARIES = {
     "finite_dmrg": (CM, "Finite-system DMRG sweeps."),
     "quantum_walk": (CM, "Discrete-time quantum walk on a line with a two-state coin."),
     "second_quant": (CM, "Second quantisation and the Jordan-Wigner transform: fermionic operators and molecular Hamiltonians in qubit form."),
+    "josephson": (CM, "RCSJ Josephson junction: phase dynamics, I-V sweeps, hysteresis and Shapiro steps."),
     # Quantum computing & information
     "qubits": (QC, "Minimal multi-qubit state-vector simulator: single-qubit gates and CNOT."),
     "qft": (QC, "Quantum Fourier transform and its inverse on a chosen set of qubits."),
