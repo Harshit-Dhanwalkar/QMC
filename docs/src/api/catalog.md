@@ -1,6 +1,6 @@
 # `catalog`
 
-> Generated from `core/catalog.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/catalog.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Module catalog and help: discover modules and print where and how to use them (qmc_help).
 
@@ -129,7 +129,7 @@ Categories, in display order.
 const char *qmc_category_at(size_t index);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qmc_help`
 

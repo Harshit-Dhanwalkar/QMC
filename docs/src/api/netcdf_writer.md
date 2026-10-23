@@ -1,6 +1,6 @@
 # `netcdf_writer`
 
-> Generated from `export/netcdf_writer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/netcdf_writer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 NetCDF export of 1D series and matrices (needs USE_NETCDF=1).
 
@@ -61,7 +61,7 @@ typedef struct netcdf_writer netcdf_writer_t;
 netcdf_writer_t *netcdf_open(const char *path);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `netcdf_close`
 
@@ -69,7 +69,7 @@ _No description in the header yet._
 netcdf_status_t netcdf_close(netcdf_writer_t *writer);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `netcdf_writer_write_1d`
 
@@ -79,7 +79,7 @@ netcdf_status_t netcdf_writer_write_1d(netcdf_writer_t *writer,
                                        size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `netcdf_writer_write_matrix`
 
@@ -90,7 +90,7 @@ netcdf_status_t netcdf_writer_write_matrix(netcdf_writer_t *writer,
                                            size_t cols);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `netcdf_write_1d`
 
@@ -119,7 +119,7 @@ int netcdf_write_matrix(const char *filename, const char *varname,
                         const double *data, size_t rows, size_t cols);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `netcdf_strerror`
 
@@ -127,4 +127,4 @@ _No description in the header yet._
 const char *netcdf_strerror(netcdf_status_t status);
 ```
 
-_No description in the header yet._
+_No description in header yet._

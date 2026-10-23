@@ -1,6 +1,6 @@
 # `qec5`
 
-> Generated from `physics/qec5.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qec5.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 The five-qubit perfect [[5,1,3]] error-correcting code.
 

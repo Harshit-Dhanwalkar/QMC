@@ -1,6 +1,6 @@
 # `lattice`
 
-> Generated from `physics/lattice.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/lattice.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Tight-binding lattice models on 1D and 2D lattices, including Hofstadter and Chern-number routines.
 

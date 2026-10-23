@@ -1,6 +1,6 @@
 # `dmrg`
 
-> Generated from `physics/dmrg.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/dmrg.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Infinite-system density matrix renormalisation group for spin chains.
 
@@ -111,7 +111,7 @@ Returns NULL on allocation failure
 void dmrg_block_free(dmrg_block_t *b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `dmrg_run`
 

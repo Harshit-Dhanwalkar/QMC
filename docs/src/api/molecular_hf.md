@@ -1,6 +1,6 @@
 # `molecular_hf`
 
-> Generated from `physics/molecular_hf.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/molecular_hf.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Restricted Hartree-Fock for molecules in a general basis, plus AO-to-MO integral transforms.
 
@@ -112,7 +112,7 @@ n_electrons > 2*n_basis) or allocation failure
 void molecular_hf_result_free(molecular_hf_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_uhf`
 
@@ -136,7 +136,7 @@ Returns NULL on invalid input or allocation failure
 void molecular_uhf_result_free(molecular_uhf_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_ao_to_mo`
 

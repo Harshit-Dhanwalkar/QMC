@@ -1,6 +1,6 @@
 # `physics`
 
-> Generated from `physics/physics.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/physics.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Umbrella header including the core headers and every physics module.
 

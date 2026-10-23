@@ -1,6 +1,6 @@
 # `rk4`
 
-> Generated from `core/ode/rk4.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/ode/rk4.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Fourth-order Runge-Kutta integrator for complex ODE systems.
 

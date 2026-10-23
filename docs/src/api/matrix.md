@@ -1,6 +1,6 @@
 # `matrix`
 
-> Generated from `core/matrix.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/matrix.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Dense complex matrix type cmatrix_t: allocation, copy, multiply, transpose and related operations.
 
@@ -70,7 +70,7 @@ Allocate/Free
 void cmatrix_free(cmatrix_t *mat);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_copy`
 
@@ -78,7 +78,7 @@ _No description in the header yet._
 cmatrix_t *cmatrix_copy(const cmatrix_t *mat);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_multiply`
 
@@ -96,7 +96,7 @@ Operations
 cmatrix_t *cmatrix_transpose(const cmatrix_t *matrix);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_adjoint`
 
@@ -104,7 +104,7 @@ _No description in the header yet._
 cmatrix_t *cmatrix_adjoint(const cmatrix_t *matrix);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_scale`
 
@@ -123,7 +123,7 @@ cvector_t *cmatrix_mv(const cmatrix_t *mat,
                       const cvector_t *vec);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_add`
 
@@ -163,7 +163,7 @@ Linear algebra
 cvector_t *cmatrix_solve(cmatrix_t *mat, const cvector_t *vec_b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_eigh`
 
@@ -171,7 +171,7 @@ _No description in the header yet._
 eigen_t *cmatrix_eigh(const cmatrix_t *mat);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `eigen_free`
 
@@ -199,7 +199,7 @@ Setter helper
 cvector_t *cmatrix_get_row(const cmatrix_t *matrix, int row);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_permanent`
 
@@ -207,7 +207,7 @@ _No description in the header yet._
 complex_t cmatrix_permanent(const cmatrix_t *matrix);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cmatrix_print`
 

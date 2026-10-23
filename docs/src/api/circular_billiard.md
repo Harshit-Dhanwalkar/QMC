@@ -1,6 +1,6 @@
 # `circular_billiard`
 
-> Generated from `physics/circular_billiard.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/circular_billiard.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Quantum billiard in a disk: Bessel functions and zeros, modes and Weyl counting.
 

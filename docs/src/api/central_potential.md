@@ -1,6 +1,6 @@
 # `central_potential`
 
-> Generated from `physics/central_potential.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/central_potential.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 General 3D central-potential radial solver.
 

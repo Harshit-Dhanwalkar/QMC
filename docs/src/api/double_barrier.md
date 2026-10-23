@@ -1,6 +1,6 @@
 # `double_barrier`
 
-> Generated from `physics/double_barrier.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/double_barrier.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Resonant tunnelling: transfer-matrix transmission through stacked square barriers, wavefunction profile and dwell time.
 

@@ -1,6 +1,6 @@
 # `cisd`
 
-> Generated from `physics/cisd.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/cisd.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Configuration interaction singles and doubles (optionally with a frozen core).
 
@@ -128,4 +128,4 @@ Returns NULL under the same conditions as fci_solve_frozen_core.
 void cisd_result_free(cisd_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

@@ -1,6 +1,6 @@
 # `wavefn`
 
-> Generated from `physics/wavefn.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/wavefn.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Wavefunction container on a 1D grid: allocation, normalisation and probability density.
 
@@ -50,7 +50,7 @@ Allocate/free
 void wavefunction_free(wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_copy`
 
@@ -58,7 +58,7 @@ _No description in the header yet._
 wavefunction_t *wavefunction_copy(const wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_normalize`
 
@@ -87,7 +87,7 @@ double wavefunction_prob_in_interval(const wavefunction_t *wavefn, double a,
                                      double b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_expect_x`
 
@@ -105,7 +105,7 @@ Expectation values (using central finite differences for p)
 double wavefunction_expect_x2(const wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_expect_p`
 
@@ -113,7 +113,7 @@ _No description in the header yet._
 double wavefunction_expect_p(const wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_expect_p2`
 
@@ -141,7 +141,7 @@ Uncertainty
 double wavefunction_delta_p(const wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_uncertainty_product`
 
@@ -149,7 +149,7 @@ _No description in the header yet._
 double wavefunction_uncertainty_product(const wavefunction_t *wavefn);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `wavefunction_save`
 
@@ -167,4 +167,4 @@ I/O
 void wavefunction_save_prob(const wavefunction_t *wavefn, const char *filename);
 ```
 
-_No description in the header yet._
+_No description in header yet._

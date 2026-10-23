@@ -1,6 +1,6 @@
 # `csv_writer`
 
-> Generated from `export/csv_writer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/csv_writer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Streaming CSV writer: configurable delimiter and precision, RFC 4180 escaping, append mode, column descriptors.
 
@@ -139,7 +139,7 @@ Streaming row API
 csv_status_t csv_write_double(csv_writer_t *writer, double value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_status`
 
@@ -147,7 +147,7 @@ _No description in the header yet._
 csv_status_t csv_status(csv_writer_t *writer);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_write_int`
 
@@ -165,7 +165,7 @@ last error, or CSV_OK
 csv_status_t csv_end_row(csv_writer_t *writer);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_write_row`
 
@@ -174,7 +174,7 @@ csv_status_t csv_write_row(csv_writer_t *writer, const double *values,
                            size_t n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_write_header_columns`
 
@@ -210,7 +210,7 @@ int csv_write_1d(const char *filename, const double *x, const double *y,
                  size_t n, const char *xlabel, const char *ylabel);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_write_matrix`
 
@@ -219,7 +219,7 @@ int csv_write_matrix(const char *filename, const double *data, size_t rows,
                      size_t cols, const char **col_headers);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `csv_strerror`
 
@@ -227,4 +227,4 @@ _No description in the header yet._
 const char *csv_strerror(csv_status_t status);
 ```
 
-_No description in the header yet._
+_No description in header yet._

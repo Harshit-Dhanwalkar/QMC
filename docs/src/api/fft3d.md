@@ -1,6 +1,6 @@
 # `fft3d`
 
-> Generated from `core/fft/fft3d.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/fft/fft3d.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 3D FFT by separable row-column-depth decomposition.
 
@@ -32,7 +32,7 @@ along z, then every line along y, then every line along x.
 void fft3d(cvector_t *psi, int Nx, int Ny, int Nz);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `ifft3d`
 
@@ -40,4 +40,4 @@ _No description in the header yet._
 void ifft3d(cvector_t *psi, int Nx, int Ny, int Nz);
 ```
 
-_No description in the header yet._
+_No description in header yet._

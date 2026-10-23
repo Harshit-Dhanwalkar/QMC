@@ -1,6 +1,6 @@
 # `lindblad`
 
-> Generated from `physics/lindblad.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/lindblad.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Lindblad (GKSL) master equation for open quantum systems.
 
@@ -156,7 +156,7 @@ space and acting on qubit `target`, as an L_k. \gamma is channel's rate
 cmatrix_t *lindblad_dephasing_op(int n_qubits, int target, double gamma);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `lindblad_bitflip_op`
 
@@ -164,7 +164,7 @@ _No description in the header yet._
 cmatrix_t *lindblad_bitflip_op(int n_qubits, int target, double gamma);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `density_measure_computational_basis`
 

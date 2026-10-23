@@ -1,6 +1,6 @@
 # `eigen_generic`
 
-> Generated from `core/linalg/eigen_generic.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/eigen_generic.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Generic Hermitian eigensolver: LAPACK when built with USE_LAPACK, the built-in solver otherwise.
 

@@ -1,6 +1,6 @@
 # `vibrational`
 
-> Generated from `physics/vibrational.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/vibrational.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Harmonic vibrational frequencies from numerical Hessians of analytic gradients.
 
@@ -141,7 +141,7 @@ n_alpha and pass n_beta separately here (molecular_uhf's convention: n_alpha
 void molecular_vib_result_free(molecular_vib_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_vibrational_analysis`
 

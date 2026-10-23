@@ -1,6 +1,6 @@
 # `pimc`
 
-> Generated from `physics/pimc.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/pimc.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Path integral Monte Carlo for two-electron atoms at finite temperature.
 
@@ -116,7 +116,7 @@ i.e. identical to V_Kelbg except erfc term's coefficient is halved.
 pimc_walker_t *pimc_walker_alloc(int P);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `pimc_walker_free`
 
@@ -124,7 +124,7 @@ _No description in the header yet._
 void pimc_walker_free(pimc_walker_t *w);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `pimc_walker_init`
 

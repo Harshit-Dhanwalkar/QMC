@@ -1,6 +1,6 @@
 # `vector`
 
-> Generated from `core/vector.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/vector.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Complex vector type cvector_t: allocation, copy, dot product, norm and related operations.
 
@@ -45,7 +45,7 @@ Allocate/Free
 void cvector_free(cvector_t *v);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_copy`
 
@@ -53,7 +53,7 @@ _No description in the header yet._
 cvector_t *cvector_copy(const cvector_t *vec);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_dot`
 
@@ -71,7 +71,7 @@ Operations
 double cvector_norm(const cvector_t *vec);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_normalize`
 
@@ -79,7 +79,7 @@ _No description in the header yet._
 void cvector_normalize(cvector_t *vec);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_expect`
 
@@ -87,7 +87,7 @@ _No description in the header yet._
 double cvector_expect(const cvector_t *psi, const cvector_t *op_psi);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_print`
 
@@ -105,7 +105,7 @@ Utilities
 void cvector_fill(cvector_t *vec, complex_t val);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_get`
 
@@ -113,4 +113,4 @@ _No description in the header yet._
 static inline complex_t cvector_get(const cvector_t *v, int index);
 ```
 
-_No description in the header yet._
+_No description in header yet._

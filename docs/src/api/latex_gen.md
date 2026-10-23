@@ -1,6 +1,6 @@
 # `latex_gen`
 
-> Generated from `latex/latex_gen.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `latex/latex_gen.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 LaTeX generation: escaping, tables, matrices and documents, rendered to PDF or PNG when pdflatex is available.
 
@@ -259,7 +259,7 @@ Returns NULL on allocation failure or if expr is NULL
 char *latex_display_math(const char *expr);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_matrix`
 
@@ -361,7 +361,7 @@ unchanged - failed append is not partially applied)
 int latex_string_append_char(latex_string_t *s, char c);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_string_appendf`
 
@@ -372,7 +372,7 @@ int latex_string_appendf(latex_string_t *s, const char *fmt, ...)
 #endif;
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_string_detach`
 
@@ -431,7 +431,7 @@ int latex_render_to_pdf_ex(const char *expr, const char *outpath,
                            const latex_render_options_t *options);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_create`
 
@@ -451,7 +451,7 @@ Returns NULL on invalid dimensions (rows==0 or cols==0) or allocation failure
 void latex_table_free(latex_table_t *table);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_set`
 
@@ -504,7 +504,7 @@ table or (for the label setter) an invalid label
 int latex_table_set_label(latex_table_t *table, const char *label);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_set_style`
 
@@ -512,7 +512,7 @@ _No description in the header yet._
 int latex_table_set_style(latex_table_t *table, latex_table_style_t style);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_set_col_format`
 
@@ -520,7 +520,7 @@ _No description in the header yet._
 int latex_table_set_col_format(latex_table_t *table, const char *col_format);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_set_placement`
 
@@ -528,7 +528,7 @@ _No description in the header yet._
 int latex_table_set_placement(latex_table_t *table, const char *placement);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_table_write`
 
@@ -561,7 +561,7 @@ Returns NULL on allocation failure
 void latex_document_free(latex_document_t *doc);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_set_author`
 
@@ -582,7 +582,7 @@ Every setter here returns 0 on success, -1 on a NULL doc
 int latex_document_set_date(latex_document_t *doc, const char *date);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_set_abstract`
 
@@ -590,7 +590,7 @@ _No description in the header yet._
 int latex_document_set_abstract(latex_document_t *doc, const char *abstract);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_set_class`
 
@@ -636,7 +636,7 @@ an invalid label
 int latex_document_add_subsection(latex_document_t *doc, const char *title);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_add_paragraph`
 
@@ -644,7 +644,7 @@ _No description in the header yet._
 int latex_document_add_paragraph(latex_document_t *doc, const char *text);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_add_equation`
 
@@ -652,7 +652,7 @@ _No description in the header yet._
 int latex_document_add_equation(latex_document_t *doc, const char *equation);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_add_figure`
 
@@ -661,7 +661,7 @@ int latex_document_add_figure(latex_document_t *doc, const char *path,
                               const char *caption, const char *label);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_add_figure_ex`
 
@@ -670,7 +670,7 @@ int latex_document_add_figure_ex(latex_document_t *doc,
                                  const latex_figure_t *figure);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `latex_document_add_table`
 

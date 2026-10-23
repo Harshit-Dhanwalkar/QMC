@@ -1,6 +1,6 @@
 # `boson_sampling`
 
-> Generated from `physics/boson_sampling.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/boson_sampling.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Boson sampling: amplitudes and probabilities for N photons through an interferometer.
 

@@ -1,6 +1,6 @@
 # `tfim_quench`
 
-> Generated from `physics/tfim_quench.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/tfim_quench.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Exact quench dynamics of the transverse-field Ising chain via free fermions.
 

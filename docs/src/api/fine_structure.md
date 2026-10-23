@@ -1,6 +1,6 @@
 # `fine_structure`
 
-> Generated from `physics/fine_structure.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/fine_structure.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Hydrogen fine structure: spin-orbit coupling and the closed-form total fine-structure formula.
 

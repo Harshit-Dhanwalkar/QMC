@@ -1,6 +1,6 @@
 # `qr`
 
-> Generated from `core/linalg/qr.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/qr.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 QR decomposition with solve and inverse.
 

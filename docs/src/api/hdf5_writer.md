@@ -1,6 +1,6 @@
 # `hdf5_writer`
 
-> Generated from `export/hdf5_writer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/hdf5_writer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 HDF5 export: typed datasets, groups, attributes, chunking and compression, appendable datasets (needs USE_HDF5=1).
 
@@ -167,7 +167,7 @@ hdf5_status_t hdf5_writer_write_matrix(hdf5_writer_t *writer,
                                        size_t rows, size_t cols);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_write_dataset`
 
@@ -209,7 +209,7 @@ hdf5_status_t hdf5_writer_write_i32_1d(hdf5_writer_t *writer,
                                        size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_writer_write_i64_1d`
 
@@ -219,7 +219,7 @@ hdf5_status_t hdf5_writer_write_i64_1d(hdf5_writer_t *writer,
                                        size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_create_group`
 
@@ -255,7 +255,7 @@ hdf5_status_t hdf5_write_attribute_double(hdf5_writer_t *writer,
                                           const char *attr_name, double value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_write_attribute_int`
 
@@ -316,7 +316,7 @@ hdf5_dataset_t *hdf5_dataset_create(hdf5_writer_t *writer, const char *dataset,
                                     hdf5_status_t *status_out);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_dataset_append`
 
@@ -377,7 +377,7 @@ int hdf5_write_matrix(const char *filename, const char *dataset,
                       const double *data, size_t rows, size_t cols);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hdf5_strerror`
 

@@ -1,6 +1,6 @@
 # `geometry_optimization`
 
-> Generated from `physics/geometry_optimization.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/geometry_optimization.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Generic Cartesian geometry optimiser driven by an energy-and-gradient callback.
 
@@ -108,4 +108,4 @@ max_iter <= 0) or allocation failure. Otherwise always returns a result
 void geometry_optimization_result_free(geometry_optimization_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

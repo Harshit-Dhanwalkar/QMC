@@ -1,6 +1,6 @@
 # `finite_dmrg`
 
-> Generated from `physics/finite_dmrg.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/finite_dmrg.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Finite-system DMRG sweeps.
 
@@ -105,4 +105,4 @@ Returns a malloc'd finite_dmrg_result_t, or NULL for invalid input (N_target
 void finite_dmrg_result_free(finite_dmrg_result_t *r);
 ```
 
-_No description in the header yet._
+_No description in header yet._

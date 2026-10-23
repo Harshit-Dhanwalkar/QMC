@@ -1,6 +1,6 @@
 # `qft`
 
-> Generated from `physics/qft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Quantum Fourier transform and its inverse on a chosen set of qubits.
 
@@ -52,4 +52,4 @@ void qft_apply_inverse(cvector_t *psi, int n_qubits, const int *qubits,
                        int n_q);
 ```
 
-_No description in the header yet._
+_No description in header yet._

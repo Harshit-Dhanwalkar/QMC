@@ -1,6 +1,6 @@
 # `shift_invert`
 
-> Generated from `core/shift_invert.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/shift_invert.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Shift-invert eigensolver for k interior eigenvalues and eigenvectors of a Hermitian sparse matrix.
 
@@ -76,4 +76,4 @@ rather than repeating same one
 void shift_invert_result_free(shift_invert_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

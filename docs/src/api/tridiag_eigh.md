@@ -1,6 +1,6 @@
 # `tridiag_eigh`
 
-> Generated from `core/linalg/tridiag_eigh.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/tridiag_eigh.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Eigenvalues and eigenvectors of real symmetric tridiagonal matrices (implicit QL).
 

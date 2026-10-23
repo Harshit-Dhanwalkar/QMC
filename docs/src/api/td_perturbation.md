@@ -1,6 +1,6 @@
 # `td_perturbation`
 
-> Generated from `physics/td_perturbation.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/td_perturbation.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Time-dependent perturbation theory: Dyson series to arbitrary order and first-order closed forms.
 
@@ -126,7 +126,7 @@ or allocation failure
 void tdpt_result_free(tdpt_result_t *result);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `tdpt_total_amplitude`
 

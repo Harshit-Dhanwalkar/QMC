@@ -1,6 +1,6 @@
 # `qaoa`
 
-> Generated from `physics/qaoa.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qaoa.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 QAOA for MaxCut and Ising cost functions: simulator, closed-form p=1 expectation and parameter optimisation.
 
@@ -144,7 +144,7 @@ Returns NULL on invalid input or allocation failure
 void qaoa_problem_free(qaoa_problem_t *problem);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qaoa_problem_qubits`
 
@@ -189,7 +189,7 @@ Both return 0.0 if `problem` is NULL
 double qaoa_problem_worst_cost(const qaoa_problem_t *problem);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qaoa_prepare_state`
 
@@ -269,7 +269,7 @@ Returns best restart. On invalid input, returns a zeroed result with `\gamma
 void qaoa_result_free(qaoa_result_t *result);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qaoa_approximation_ratio`
 

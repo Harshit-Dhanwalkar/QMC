@@ -1,6 +1,6 @@
 # `grover_multi`
 
-> Generated from `physics/grover_multi.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/grover_multi.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Grover search with several marked items: state evolution and success probability.
 

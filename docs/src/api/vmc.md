@@ -1,6 +1,6 @@
 # `vmc`
 
-> Generated from `physics/vmc.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/vmc.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Variational Monte Carlo for two-electron atoms and ions with a Slater-Jastrow ansatz.
 

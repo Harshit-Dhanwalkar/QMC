@@ -1,6 +1,6 @@
 # `tight_binding`
 
-> Generated from `physics/tight_binding.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/tight_binding.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Generic multi-band tight-binding models: bands, DOS, Berry curvature, Chern numbers, Zak and Wilson loops.
 
@@ -125,7 +125,7 @@ Returns NULL on invalid input or allocation failure
 void tb_model_free(tb_model_t *model);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `tb_model_dim`
 
@@ -143,7 +143,7 @@ Spatial dimension / orbital count, or 0 for a NULL model
 int tb_model_orbitals(const tb_model_t *model);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `tb_set_onsite`
 
@@ -151,7 +151,7 @@ _No description in the header yet._
 tb_status_t tb_set_onsite(tb_model_t *model, int orbital, double energy);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `tb_add_hopping`
 
@@ -398,7 +398,7 @@ Analytic references
 double tb_square_energy(double t, double k1, double k2);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `tb_graphene_energy`
 

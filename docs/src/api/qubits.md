@@ -1,6 +1,6 @@
 # `qubits`
 
-> Generated from `physics/qubits.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qubits.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Minimal multi-qubit state-vector simulator: single-qubit gates and CNOT.
 
@@ -162,7 +162,7 @@ circuits.
 void ry_gate(double theta, complex_t out[4]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `rz_gate`
 
@@ -170,7 +170,7 @@ _No description in the header yet._
 void rz_gate(double theta, complex_t out[4]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qstate_reduced_density_single`
 

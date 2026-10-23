@@ -1,6 +1,6 @@
 # `vqe_noisy`
 
-> Generated from `physics/vqe_noisy.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/vqe_noisy.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Noisy VQE: amplitude-damping and dephasing noise after every gate.
 

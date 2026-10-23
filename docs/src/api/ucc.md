@@ -1,6 +1,6 @@
 # `ucc`
 
-> Generated from `physics/ucc.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/ucc.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Unitary coupled-cluster ansatz built from converged CCSD amplitudes.
 

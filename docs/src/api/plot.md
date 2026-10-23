@@ -1,6 +1,6 @@
 # `plot`
 
-> Generated from `export/plot.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/plot.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Plotting front end (lines, multi-series) over GR, gnuplot or matplotlib back ends, chosen with PLOT_BACKEND.
 

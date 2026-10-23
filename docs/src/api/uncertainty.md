@@ -1,6 +1,6 @@
 # `uncertainty`
 
-> Generated from `physics/uncertainty.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/uncertainty.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Position and momentum uncertainties and energy expectation values for wavefunctions.
 

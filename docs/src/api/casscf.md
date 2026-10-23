@@ -1,6 +1,6 @@
 # `casscf`
 
-> Generated from `physics/casscf.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/casscf.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Complete-active-space SCF: joint optimisation of CI coefficients and orbitals.
 
@@ -110,4 +110,4 @@ found within max_iter iterations.
 void casscf_result_free(casscf_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

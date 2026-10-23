@@ -1,6 +1,6 @@
 # `fci`
 
-> Generated from `physics/fci.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/fci.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Full configuration interaction: exact diagonalisation of the molecular electronic Hamiltonian.
 
@@ -121,4 +121,4 @@ n_electrons_active is not in [0, 2*(n_spatial-n_frozen)].
 void fci_result_free(fci_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

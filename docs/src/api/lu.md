@@ -1,6 +1,6 @@
 # `lu`
 
-> Generated from `core/linalg/lu.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/lu.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 LU decomposition with partial pivoting: solve, determinant and inverse.
 

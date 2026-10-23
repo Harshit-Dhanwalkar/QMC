@@ -1,6 +1,6 @@
 # `quantum_info`
 
-> Generated from `physics/quantum_info.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/quantum_info.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Quantum information protocols: teleportation, superdense coding and CHSH.
 

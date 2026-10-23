@@ -1,6 +1,6 @@
 # `tddft`
 
-> Generated from `physics/tddft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/tddft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Linear-response TDDFT excitation energies in the Tamm-Dancoff approximation.
 
@@ -92,4 +92,4 @@ exceeds 2*n_basis, the resulting occupied-virtual space is empty
 void tddft_result_free(tddft_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

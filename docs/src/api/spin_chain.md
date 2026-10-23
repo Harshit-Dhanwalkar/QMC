@@ -1,6 +1,6 @@
 # `spin_chain`
 
-> Generated from `physics/spin_chain.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/spin_chain.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Spin-1/2 XXZ chain on a ring: symmetry-adapted exact diagonalisation and Lanczos.
 
@@ -80,7 +80,7 @@ allocation failure. Free with spin_sector_free.
 void spin_sector_free(spin_sector_t *sec);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `spin_sector_find`
 

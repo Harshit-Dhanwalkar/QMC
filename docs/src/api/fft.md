@@ -1,6 +1,6 @@
 # `fft`
 
-> Generated from `core/fft/fft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/fft/fft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 1D radix-2 Cooley-Tukey FFT and inverse for power-of-two lengths.
 

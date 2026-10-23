@@ -1,6 +1,6 @@
 # `export_schema`
 
-> Generated from `export/export_schema.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/export_schema.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Conventions shared by all exporters: schema version, library name and version, UTC timestamps, column descriptors.
 

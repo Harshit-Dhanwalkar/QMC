@@ -1,6 +1,6 @@
 # `floquet`
 
-> Generated from `physics/floquet.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/floquet.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Floquet theory for periodically driven systems: quasienergies from time-domain and Sambe-space solvers.
 
@@ -151,7 +151,7 @@ failure. Free with floquet_result_free
 void floquet_result_free(floquet_result_t *result);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `floquet_stroboscopic_state`
 

@@ -1,6 +1,6 @@
 # `second_quant`
 
-> Generated from `physics/second_quant.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/second_quant.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Second quantisation and the Jordan-Wigner transform: fermionic operators and molecular Hamiltonians in qubit form.
 
@@ -65,7 +65,7 @@ Returns NULL if mode is out of [0, n_modes) or n_modes < 1.
 cmatrix_t *jw_annihilation_operator(int mode, int n_modes);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `second_quant_build_hopping_hamiltonian`
 

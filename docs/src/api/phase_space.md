@@ -1,6 +1,6 @@
 # `phase_space`
 
-> Generated from `physics/phase_space.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/phase_space.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Phase-space picture of a bosonic mode: Fock states, Kerr nonlinearity and the Wigner function.
 
@@ -125,7 +125,7 @@ Mean photon number and squared norm. NaN for NULL c or n_max < 0
 double ps_norm2(const complex_t *c, int n_max);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `ps_wavefunction`
 

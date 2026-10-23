@@ -1,6 +1,6 @@
 # `utils`
 
-> Generated from `core/utils.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/utils.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Grid and array utilities: linspace, logspace, range, wavefunction normalisation and norms.
 
@@ -34,7 +34,7 @@ Array/Grid utilities
 double *logspace(double start, double end, int num_points);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `range`
 
@@ -42,7 +42,7 @@ _No description in the header yet._
 int *range(int start, int end);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `normalize_wavefunction`
 
@@ -60,7 +60,7 @@ Wave function utilities
 double compute_norm_squared(const cvector_t *psi, double grid_dx);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `expectation_value`
 
@@ -80,7 +80,7 @@ double expectation_position(const cvector_t *psi, const double *pos_grid,
                             double grid_dx);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `expectation_position_squared`
 
@@ -89,7 +89,7 @@ double expectation_position_squared(const cvector_t *psi,
                                     const double *pos_grid, double grid_dx);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `position_to_momentum`
 
@@ -108,7 +108,7 @@ double expectation_momentum(const cvector_t *psi_k, const double *k_grid,
                             double grid_dk);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `mean`
 
@@ -126,7 +126,7 @@ Statistics
 double variance(const double *data, int n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `std_dev`
 
@@ -134,7 +134,7 @@ _No description in the header yet._
 double std_dev(const double *data, int n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cvector_from_matrix_column`
 
@@ -164,7 +164,7 @@ void save_potential(const char *filename, const double *x, const double *V,
                     int n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `save_eigenvalues`
 
@@ -172,4 +172,4 @@ _No description in the header yet._
 void save_eigenvalues(const char *filename, const double *eigenvals, int n);
 ```
 
-_No description in the header yet._
+_No description in header yet._

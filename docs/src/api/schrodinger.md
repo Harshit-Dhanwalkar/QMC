@@ -1,6 +1,6 @@
 # `schrodinger`
 
-> Generated from `physics/schrodinger.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/schrodinger.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 1D Schrodinger solvers: matrix diagonalisation, shooting, Crank-Nicolson and split-step time evolution.
 

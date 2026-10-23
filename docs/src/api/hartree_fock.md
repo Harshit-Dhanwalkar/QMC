@@ -1,6 +1,6 @@
 # `hartree_fock`
 
-> Generated from `physics/hartree_fock.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/hartree_fock.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Restricted Hartree-Fock SCF for closed-shell atoms and ions.
 
@@ -118,7 +118,7 @@ failure.
 void hf_result_free(hf_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `compute_Y0`
 

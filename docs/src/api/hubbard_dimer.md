@@ -1,6 +1,6 @@
 # `hubbard_dimer`
 
-> Generated from `physics/hubbard_dimer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/hubbard_dimer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Two-site Hubbard model: exact diagonalisation, eigenstates and time evolution.
 
@@ -132,7 +132,7 @@ double hd_expect_energy(const hd_solution_t *s, const double *re,
                         const double *im);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hd_expect_double_occ`
 
@@ -141,7 +141,7 @@ double hd_expect_double_occ(const double *re,
                             const double *im);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hd_expect_sz`
 

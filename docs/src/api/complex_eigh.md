@@ -1,6 +1,6 @@
 # `complex_eigh`
 
-> Generated from `core/linalg/complex_eigh.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/complex_eigh.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Eigen-decomposition of complex Hermitian matrices via the real-embedding trick (cmatrix_eigh_complex).
 

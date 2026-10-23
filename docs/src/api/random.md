@@ -1,6 +1,6 @@
 # `random`
 
-> Generated from `core/random.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/random.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 xoshiro256** random number generator with uniform and Gaussian draws and jump-ahead parallel streams.
 

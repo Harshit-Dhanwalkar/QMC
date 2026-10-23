@@ -1,6 +1,6 @@
 # `zeeman`
 
-> Generated from `physics/zeeman.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/zeeman.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Weak-field anomalous Zeeman effect for a single valence electron.
 

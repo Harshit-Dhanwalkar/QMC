@@ -1,6 +1,6 @@
 # `bell_chsh`
 
-> Generated from `physics/bell_chsh.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/bell_chsh.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Bell and CHSH correlations: quantum values and local-hidden-variable and deterministic bounds.
 

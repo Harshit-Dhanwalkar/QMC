@@ -1,6 +1,6 @@
 # `orbital_sample`
 
-> Generated from `physics/orbital_sample.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/orbital_sample.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Monte Carlo sampling of hydrogen orbitals psi_nlm, for visualisation.
 

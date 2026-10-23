@@ -1,6 +1,6 @@
 # `ccsd`
 
-> Generated from `physics/ccsd.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/ccsd.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Coupled cluster singles and doubles (CCSD) for closed-shell molecules.
 
@@ -87,7 +87,7 @@ typedef struct {
 void ccsd_amplitudes_free(ccsd_amplitudes_t *amp);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `ccsd_run`
 

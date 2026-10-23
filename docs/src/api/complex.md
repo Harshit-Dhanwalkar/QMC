@@ -1,6 +1,6 @@
 # `complex`
 
-> Generated from `core/complex.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/complex.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Complex number type complex_t and inline arithmetic (c_add, c_mul, c_exp, c_abs, ...).
 
@@ -45,7 +45,7 @@ Basic operations
 static inline complex_t c_one(void);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_zero`
 
@@ -53,7 +53,7 @@ _No description in the header yet._
 static inline complex_t c_zero(void);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_neg`
 
@@ -61,7 +61,7 @@ _No description in the header yet._
 static inline complex_t c_neg(complex_t z);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_real`
 
@@ -69,7 +69,7 @@ _No description in the header yet._
 static inline complex_t c_real(double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_imag`
 
@@ -77,7 +77,7 @@ _No description in the header yet._
 static inline complex_t c_imag(double y);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_conj`
 
@@ -85,7 +85,7 @@ _No description in the header yet._
 static inline complex_t c_conj(complex_t z);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_abs`
 
@@ -103,7 +103,7 @@ NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
 static inline double c_abs2(complex_t z);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_arg`
 
@@ -111,7 +111,7 @@ _No description in the header yet._
 static inline double c_arg(complex_t z);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_add`
 
@@ -129,7 +129,7 @@ Arithmetic
 static inline complex_t c_sub(complex_t a, complex_t b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_mul`
 
@@ -137,7 +137,7 @@ _No description in the header yet._
 static inline complex_t c_mul(complex_t a, complex_t b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_div`
 
@@ -145,7 +145,7 @@ _No description in the header yet._
 static inline complex_t c_div(complex_t a, complex_t b);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_scale`
 
@@ -153,7 +153,7 @@ _No description in the header yet._
 static inline complex_t c_scale(complex_t z, double s);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_exp`
 
@@ -161,7 +161,7 @@ _No description in the header yet._
 static inline complex_t c_exp(complex_t z);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `c_abs_sqr`
 
@@ -179,4 +179,4 @@ Polar coorindates
 static inline complex_t c_from_polar(double r, double theta);
 ```
 
-_No description in the header yet._
+_No description in header yet._

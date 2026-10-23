@@ -1,6 +1,6 @@
 # `driven`
 
-> Generated from `physics/driven.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/driven.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Driven two-level systems: general time-dependent Hamiltonians, Landau-Zener sweeps, lab-frame driving beyond the RWA.
 
@@ -95,7 +95,7 @@ int driven_two_level_evolve(cvector_t *psi, time_fn Delta, void *delta_params,
                             driven_params_t params);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `landau_zener_probability`
 

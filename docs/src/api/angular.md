@@ -1,6 +1,6 @@
 # `angular`
 
-> Generated from `physics/angular.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/angular.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Angular momentum and spin: Pauli matrices, L+/L-/L^2/Lz, Clebsch-Gordan and Gaunt coefficients.
 
@@ -73,7 +73,7 @@ Matrix representation of L^2, L_z for a given l (dimension 2l+1)
 cmatrix_t *lz_matrix(int l);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `lx_matrix`
 
@@ -81,7 +81,7 @@ _No description in the header yet._
 cmatrix_t *lx_matrix(int l);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `ly_matrix`
 
@@ -89,7 +89,7 @@ _No description in the header yet._
 cmatrix_t *ly_matrix(int l);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `clebsch_gordan`
 
@@ -167,7 +167,7 @@ Spin-1/2 operations: apply \sigma_x, \sigma_y, \sigma_z to 2-component spinor
 void spin_sigma_y(cvector_t *spinor);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `spin_sigma_z`
 
@@ -175,4 +175,4 @@ _No description in the header yet._
 void spin_sigma_z(cvector_t *spinor);
 ```
 
-_No description in the header yet._
+_No description in header yet._

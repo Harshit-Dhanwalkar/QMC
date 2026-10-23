@@ -1,6 +1,6 @@
 # `fft_wrapper`
 
-> Generated from `core/fft/fft_wrapper.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/fft/fft_wrapper.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 FFT wrapper that dispatches to the built-in implementation or to FFTW.
 
@@ -35,7 +35,7 @@ FFT wrapper that uses either internal or external (FFTW) library
 void ifft_wrapper(cvector_t *x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `fft_wrapper_normalized`
 
@@ -43,7 +43,7 @@ _No description in the header yet._
 void fft_wrapper_normalized(cvector_t *x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `ifft_wrapper_normalized`
 
@@ -51,4 +51,4 @@ _No description in the header yet._
 void ifft_wrapper_normalized(cvector_t *x);
 ```
 
-_No description in the header yet._
+_No description in header yet._

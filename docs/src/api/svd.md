@@ -1,6 +1,6 @@
 # `svd`
 
-> Generated from `core/linalg/svd.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/linalg/svd.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Singular value decomposition, SVD solve and pseudoinverse.
 

@@ -1,6 +1,6 @@
 # `soft`
 
-> Generated from `physics/soft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/soft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Split-operator Fourier method for 2D and 3D time-dependent Schrodinger evolution.
 
@@ -47,7 +47,7 @@ int soft_evolve_2d(cvector_t *psi, const double *V, int Nx, int Ny, double dx,
                    double dy, double dt, int steps, double hbar, double mass);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `soft_evolve_3d`
 
@@ -57,7 +57,7 @@ int soft_evolve_3d(cvector_t *psi, const double *V, int Nx, int Ny, int Nz,
                    double hbar, double mass);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `grid_norm`
 

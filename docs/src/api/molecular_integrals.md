@@ -1,6 +1,6 @@
 # `molecular_integrals`
 
-> Generated from `physics/molecular_integrals.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/molecular_integrals.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Gaussian-type-orbital molecular integrals by McMurchie-Davidson, with built-in STO-3G data.
 
@@ -129,7 +129,7 @@ Where
 void boys_function_array(int nmax, double x, double *F  );
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `basis_function_alloc`
 
@@ -153,7 +153,7 @@ Returns NULL on allocation failure or n_primitives <= 0
 void basis_function_free(basis_function_t *bf);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molint_normalize_contraction`
 
@@ -208,7 +208,7 @@ molecule_t *molecule_alloc(int n_atoms, const double *charge,
                            const double center[][3]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecule_free`
 
@@ -216,7 +216,7 @@ _No description in the header yet._
 void molecule_free(molecule_t *mol);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecule_nuclear_repulsion`
 
@@ -315,7 +315,7 @@ void gto_kinetic_grad_a(const basis_function_t *a, const basis_function_t *b,
                         double grad[3]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `gto_nuclear_attraction_grad_a`
 
@@ -325,7 +325,7 @@ void gto_nuclear_attraction_grad_a(const basis_function_t *a,
                                    const double center[3], double grad[3]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `gto_nuclear_attraction_grad_C`
 
@@ -349,7 +349,7 @@ void gto_eri_grad_a(const basis_function_t *a, const basis_function_t *b,
                     double grad[3]);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_overlap_matrix`
 
@@ -371,7 +371,7 @@ part)
 cmatrix_t *molecular_kinetic_matrix(basis_function_t **basis, int n_basis);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_core_hamiltonian`
 

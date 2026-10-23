@@ -1,6 +1,6 @@
 # `rabi`
 
-> Generated from `physics/rabi.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/rabi.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Rabi oscillations of a two-level system in the rotating-wave approximation, exact and numerical.
 

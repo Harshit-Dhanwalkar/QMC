@@ -1,6 +1,6 @@
 # `numerov`
 
-> Generated from `core/ode/numerov.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/ode/numerov.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Numerov integrator for the 1D time-independent Schrodinger equation.
 
@@ -85,7 +85,7 @@ Seed: \psi[0]=0 (Dirichlet), psi[1]=1e-8.
 void numerov_solution_free(numerov_solution_t *sol);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `numerov_shoot_matching`
 

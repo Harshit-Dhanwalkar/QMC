@@ -1,6 +1,6 @@
 # `sparse`
 
-> Generated from `core/sparse.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/sparse.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 CSR sparse matrices: construction from dense, matrix-vector products (including Hermitian).
 
@@ -95,7 +95,7 @@ Create/destroy
 void sparse_free(sparse_matrix_t *sp_mat);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `sparse_from_dense`
 
@@ -160,7 +160,7 @@ and their eigenvectors as columns of an n x k cmatrix_t
 void lanczos_free(lanczos_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `lanczos_tridiagonalize`
 
@@ -170,7 +170,7 @@ lanczos_tridiag_t *lanczos_tridiagonalize(const sparse_matrix_t *sp_mat,
                                           double tol);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `lanczos_tridiag_free`
 
@@ -178,7 +178,7 @@ _No description in the header yet._
 void lanczos_tridiag_free(lanczos_tridiag_t *tridiag);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `cg_solve`
 

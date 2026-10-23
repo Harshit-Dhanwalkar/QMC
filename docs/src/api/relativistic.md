@@ -1,6 +1,6 @@
 # `relativistic`
 
-> Generated from `physics/relativistic.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/relativistic.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Relativistic wave equations: 1D Klein-Gordon and Dirac solvers and the radial Dirac equation.
 
@@ -105,7 +105,7 @@ last-iterate values regardless.
 void klein_gordon_solution_free(klein_gordon_solution_t *sol);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `dirac_1d`
 

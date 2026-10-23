@@ -1,6 +1,6 @@
 # `ising_chain`
 
-> Generated from `physics/ising_chain.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/ising_chain.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Transverse-field Ising chain: exact diagonalisation on a ring and the exact Jordan-Wigner solution.
 

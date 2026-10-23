@@ -1,6 +1,6 @@
 # `quantum_walk`
 
-> Generated from `physics/quantum_walk.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/quantum_walk.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Discrete-time quantum walk on a line with a two-state coin.
 
@@ -126,7 +126,7 @@ input or zero norm
 double qwalk_variance(const cvector_t *up, const cvector_t *down);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `qwalk_classical`
 

@@ -1,6 +1,6 @@
 # `dirac_evolve`
 
-> Generated from `physics/dirac_evolve.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/dirac_evolve.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 1D Dirac equation time evolution of a two-component spinor (split-operator Fourier method).
 

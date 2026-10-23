@@ -1,6 +1,6 @@
 # `special`
 
-> Generated from `core/special/special.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `core/special/special.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Special functions: Hermite, Laguerre, Legendre, Bessel, spherical harmonics and related polynomials.
 
@@ -36,7 +36,7 @@ Hermite polynomials
 void hermite_array(int n, const double *x, int m, double *H);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hermite_deriv`
 
@@ -44,7 +44,7 @@ _No description in the header yet._
 double hermite_deriv(int n, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hermite_zeros`
 
@@ -52,7 +52,7 @@ _No description in the header yet._
 double hermite_zeros(int n, int k);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hermite_zeros_all`
 
@@ -60,7 +60,7 @@ _No description in the header yet._
 int hermite_zeros_all(int n, double *zeros);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `hermite_function_stable`
 
@@ -89,7 +89,7 @@ Laguerre polynomials
 void laguerre_array(int n, double alpha, const double *x, int N, double *L);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `legendre`
 
@@ -107,7 +107,7 @@ Legendre polynomials
 double assoc_legendre(int l, int m, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `legendre_array`
 
@@ -115,7 +115,7 @@ _No description in the header yet._
 void legendre_array(int l, const double *x, int N, double *P);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `spherical_harmonic_real`
 
@@ -133,7 +133,7 @@ Spherical harmonics
 double spherical_harmonic_imag(int l, int m, double theta, double phi);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `spherical_harmonic`
 
@@ -141,7 +141,7 @@ _No description in the header yet._
 complex_t spherical_harmonic(int l, int m, double theta, double phi);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `sph_bessel_j`
 
@@ -159,7 +159,7 @@ Spherical Bessel functions
 double sph_bessel_y(int l, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `sph_bessel_j_deriv`
 
@@ -167,7 +167,7 @@ _No description in the header yet._
 double sph_bessel_j_deriv(int l, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `sph_bessel_array`
 
@@ -175,7 +175,7 @@ _No description in the header yet._
 void sph_bessel_array(int lmax, double x, double *j, double *y);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `riccati_bessel_j`
 
@@ -193,7 +193,7 @@ Riccati-Bessel functions
 double riccati_bessel_y(int l, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `riccati_bessel_j_deriv`
 
@@ -201,7 +201,7 @@ _No description in the header yet._
 double riccati_bessel_j_deriv(int l, double x);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `factorial`
 
@@ -219,4 +219,4 @@ Utilities
 double log_factorial(int n);
 ```
 
-_No description in the header yet._
+_No description in header yet._

@@ -1,6 +1,6 @@
 # `qpe`
 
-> Generated from `physics/qpe.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qpe.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Quantum phase estimation: circuit simulation, phase estimate and output distribution.
 
@@ -87,4 +87,4 @@ target_eigenstate NULL/wrong length).
 void qpe_distribution_free(qpe_distribution_t *d);
 ```
 
-_No description in the header yet._
+_No description in header yet._

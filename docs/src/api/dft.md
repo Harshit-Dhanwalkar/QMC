@@ -1,6 +1,6 @@
 # `dft`
 
-> Generated from `physics/dft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/dft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Kohn-Sham LDA density functional theory for closed-shell atoms and ions.
 
@@ -98,7 +98,7 @@ PZ81 LDA correlation, unpolarized.
 double lda_correlation_potential_pz81(double n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `lda_xc_energy_density`
 
@@ -116,7 +116,7 @@ Sums of the above (what actually enters the Kohn-Sham potential/energy).
 double lda_xc_potential(double n);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `pw92_correlation_energy_density`
 
@@ -169,7 +169,7 @@ void pbe_exchange_potential(double n, double sigma, double *vrho,
                             double *vsigma);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `pbe_correlation_energy_density`
 
@@ -189,7 +189,7 @@ void pbe_correlation_potential(double n, double sigma, double *vrho,
                                double *vsigma);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `pbe_xc_energy_density`
 
@@ -207,7 +207,7 @@ Sums of the above (what actually enters the GGA Kohn-Sham potential/energy).
 void pbe_xc_potential(double n, double sigma, double *vrho, double *vsigma);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `dft_lda_atom_s_orbitals`
 
@@ -234,4 +234,4 @@ Returns NULL on invalid input / allocation failure.
 void dft_result_free(dft_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._

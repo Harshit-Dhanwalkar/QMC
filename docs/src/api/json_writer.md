@@ -1,6 +1,6 @@
 # `json_writer`
 
-> Generated from `export/json_writer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/json_writer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Streaming JSON writer for results and metadata: objects, arrays, quantities with units, schema header.
 
@@ -119,7 +119,7 @@ typedef struct {
 json_options_t json_options_default(void);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_open`
 
@@ -140,7 +140,7 @@ json_writer_t *json_open_with_options(const char *path,
                                       const json_options_t *options);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_close`
 
@@ -199,7 +199,7 @@ a NULL key inside an object, is JSON_ERR_INVALID_ARGUMENT
 json_status_t json_end_object(json_writer_t *writer);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_begin_array`
 
@@ -233,7 +233,7 @@ a single call), this streams arbitrary mixed or nested elements one at a time
 json_status_t json_end_array(json_writer_t *writer);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_string`
 
@@ -254,7 +254,7 @@ json_status_t json_write_int(json_writer_t *writer, const char *key,
                              long value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_double`
 
@@ -263,7 +263,7 @@ json_status_t json_write_double(json_writer_t *writer, const char *key,
                                 double value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_bool`
 
@@ -272,7 +272,7 @@ json_status_t json_write_bool(json_writer_t *writer, const char *key,
                               int value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_null`
 
@@ -280,7 +280,7 @@ _No description in the header yet._
 json_status_t json_write_null(json_writer_t *writer, const char *key);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_quantity`
 
@@ -316,7 +316,7 @@ json_status_t json_write_int_array(json_writer_t *writer, const char *key,
                                    const long *data, size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_string_array`
 
@@ -325,7 +325,7 @@ json_status_t json_write_string_array(json_writer_t *writer, const char *key,
                                       const char *const *data, size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_field_string`
 
@@ -333,7 +333,7 @@ _No description in the header yet._
 json_field_t json_field_string(const char *key, const char *value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_field_int`
 
@@ -341,7 +341,7 @@ _No description in the header yet._
 json_field_t json_field_int(const char *key, long value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_field_double`
 
@@ -349,7 +349,7 @@ _No description in the header yet._
 json_field_t json_field_double(const char *key, double value);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_field_double_array`
 
@@ -358,7 +358,7 @@ json_field_t json_field_double_array(const char *key, const double *data,
                                      size_t len);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `json_write_field`
 

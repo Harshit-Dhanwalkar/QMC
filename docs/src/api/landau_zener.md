@@ -1,6 +1,6 @@
 # `landau_zener`
 
-> Generated from `physics/landau_zener.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/landau_zener.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Landau-Zener sweeps of a two-level system on the Bloch sphere.
 

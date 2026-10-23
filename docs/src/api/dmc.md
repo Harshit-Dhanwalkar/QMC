@@ -1,6 +1,6 @@
 # `dmc`
 
-> Generated from `physics/dmc.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/dmc.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Diffusion Monte Carlo for two-electron atoms and ions with importance sampling.
 
@@ -105,7 +105,7 @@ typedef struct {
 dmc_population_t *dmc_population_alloc(int capacity);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `dmc_population_free`
 
@@ -113,7 +113,7 @@ _No description in the header yet._
 void dmc_population_free(dmc_population_t *pop);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `dmc_population_init`
 

@@ -1,6 +1,6 @@
 # `vtk_writer`
 
-> Generated from `export/vtk_writer.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `export/vtk_writer.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Legacy VTK writer for scalar fields on structured grids (open in ParaView or VisIt).
 

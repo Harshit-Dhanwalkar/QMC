@@ -1,6 +1,6 @@
 # `ab_ring`
 
-> Generated from `physics/ab_ring.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/ab_ring.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Aharonov-Bohm ring: energy levels versus flux, persistent current and flux-dependent transmission.
 

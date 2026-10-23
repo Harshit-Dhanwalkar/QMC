@@ -1,6 +1,6 @@
 # `kicked_rotor`
 
-> Generated from `physics/kicked_rotor.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/kicked_rotor.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Quantum kicked rotor and the classical standard map.
 
@@ -108,7 +108,7 @@ double krotor_momentum2(const cvector_t *psi);
 double krotor_norm(const cvector_t *psi);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `krotor_classical_init`
 

@@ -1,6 +1,6 @@
 # `helium`
 
-> Generated from `physics/helium.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/helium.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Two-electron atom or ion ground-state energy by the effective-nuclear-charge variational method.
 

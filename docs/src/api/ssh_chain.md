@@ -1,6 +1,6 @@
 # `ssh_chain`
 
-> Generated from `physics/ssh_chain.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/ssh_chain.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Su-Schrieffer-Heeger chain, the simplest topological insulator.
 

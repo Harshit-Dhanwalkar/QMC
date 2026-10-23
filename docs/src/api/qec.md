@@ -1,6 +1,6 @@
 # `qec`
 
-> Generated from `physics/qec.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/qec.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Three-qubit bit-flip and phase-flip error-correcting codes with ancilla syndrome extraction.
 
@@ -174,4 +174,4 @@ qec_shor_result_t qec_shor_run(complex_t alpha, complex_t beta, int error_qubit,
                                qec_error_type_t error_type, const double u[8]);
 ```
 
-_No description in the header yet._
+_No description in header yet._

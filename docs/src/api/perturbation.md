@@ -1,6 +1,6 @@
 # `perturbation`
 
-> Generated from `physics/perturbation.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/perturbation.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Time-independent perturbation theory (non-degenerate and degenerate) and Fermi's golden rule.
 
@@ -62,7 +62,7 @@ perturb_result_t perturb_nondeg(const eigen_t *unperturbed, int state_index,
                                 const cmatrix_t *V_pert, double tol);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `perturb_degenerate`
 

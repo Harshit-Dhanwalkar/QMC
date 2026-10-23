@@ -1,6 +1,6 @@
 # `anderson`
 
-> Generated from `physics/anderson.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/anderson.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Anderson localisation on a 1D tight-binding chain with random on-site disorder.
 

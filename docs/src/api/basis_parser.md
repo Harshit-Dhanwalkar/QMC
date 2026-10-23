@@ -1,6 +1,6 @@
 # `basis_parser`
 
-> Generated from `physics/basis_parser.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/basis_parser.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Parser for Gaussian94-format basis-set files (as exported by Basis Set Exchange).
 
@@ -131,7 +131,7 @@ Returns NULL if the file cannot be opened/read or the contents are malformed.
 void basis_set_free(basis_set_t *bs);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `basis_set_find_element`
 

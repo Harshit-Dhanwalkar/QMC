@@ -1,6 +1,6 @@
 # `molecular_dft`
 
-> Generated from `physics/molecular_dft.h` by `tools/gen_api.py`. To change this page, edit the header's comments or `tools/api_meta.py`.
+> Generated from `physics/molecular_dft.h` by `tools/gen_api.py`. To change this page, edit header's comments or `tools/api_meta.py`.
 
 Molecular Kohn-Sham LDA DFT on a Becke fuzzy-Voronoi integration grid.
 
@@ -127,7 +127,7 @@ parameters to molecular_grid_build directly for that case
 void molecular_grid_free(molecular_grid_t *grid);
 ```
 
-_No description in the header yet._
+_No description in header yet._
 
 ### `molecular_ks_lda`
 
@@ -218,4 +218,4 @@ max_iter=200
 void molecular_dft_result_free(molecular_dft_result_t *res);
 ```
 
-_No description in the header yet._
+_No description in header yet._
