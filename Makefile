@@ -582,14 +582,17 @@ demo: $(BUILD_DIR)/main
 	@$(BUILD_DIR)/main
 
 # Check backend
+PLOT_MARKER := $(BUILD_DIR)/.plot_backend
 check-backend:
 	@mkdir -p $(BUILD_DIR)
-	@echo "$(PLOT_BACKEND)" > $(BUILD_DIR)/.plot_backend.new
-	@if ! cmp -s $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL) 2>/dev/null; then \
-		mv $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL); \
+	@if [ -e "$(GR_LIB)" ]; then \
+	    echo "gr"      > $(BUILD_DIR)/.plot_backend.new; \
+	elif command -v gnuplot >/dev/null; then \
+	    echo "gnuplot" > $(BUILD_DIR)/.plot_backend.new; \
 	else \
-		rm -f $(BUILD_DIR)/.plot_backend.new; \
+	    echo "noop"    > $(BUILD_DIR)/.plot_backend.new; \
 	fi
+	@mv $(BUILD_DIR)/.plot_backend.new $(PLOT_MARKER)
 
 $(BACKEND_SENTINEL): check-backend
 	@:

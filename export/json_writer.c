@@ -1,9 +1,10 @@
 /*
  * JSON export backend
  *
- * A streaming JSON writer for metadata and structured output. Supports nested
- * objects, arrays, scalars, and arrays of scalars. Handles string escaping,
- * pretty-printing, and configurable handling of non-finite numbers (NaN/Inf)
+ * A streaming JSON writer for metadata and structured output
+ * Supports nested objects, arrays, scalars, and arrays of scalars
+ * Handles string escaping, pretty-printing, and configurable handling of
+ * non-finite numbers (NaN/Inf)
  */
 #include "json_writer.h"
 #include "export_schema.h"
@@ -70,8 +71,8 @@ static json_status_t write_json_string(FILE *f, const char *s) {
 /* Write a double as a JSON number, or `null` for NaN/Inf
  *
  * Uses shortest decimal precision (1..17 significant digits) whose value reads
- * back bit-for-bit identical via strtod (Reference: Steele & White 1990), so
- * e.g. -2.9037 is written as "-2.9037" rather than "-2.903700..." */
+ * back identical via strtod (Reference: Steele & White 1990), so e.g.
+ * -2.9037 is written as "-2.9037" rather than "-2.903700..." */
 static void write_json_double(FILE *f, double d) {
   if (isnan(d) || isinf(d)) {
     fputs("null", f);
@@ -83,7 +84,7 @@ static void write_json_double(FILE *f, double d) {
   for (int precision = 1; precision <= 17; precision++) {
     snprintf(buf, sizeof buf, "%.*g", precision, d);
 
-    if (double_bits_equal(strtod(buf, NULL), d)) {
+    if (strtod(buf, NULL) == d) {
       break;
     }
   }

@@ -105,7 +105,7 @@ static void write_double(FILE *f, double v) {
 
     snprintf(buf, sizeof buf, "%.*g", precision, v);
     parsed = strtod(buf, NULL);
-    if (memcmp(&parsed, &v, sizeof(parsed)) == 0) {
+    if (parsed == v) {
       break;
     }
   }

@@ -530,6 +530,7 @@ static int append_shell_functions(const basis_shell_t *sh,
     if (*count == *cap) {
       int new_cap = *cap == 0 ? 8 : *cap * 2;
 
+      // NOLINTNEXTLINE(bugprone-sizeof-expression)
       basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
       if (!tmp) {
         basis_function_free(s_fn);
@@ -556,6 +557,7 @@ static int append_shell_functions(const basis_shell_t *sh,
       if (*count == *cap) {
         int new_cap = *cap == 0 ? 8 : *cap * 2;
 
+        // NOLINTNEXTLINE(bugprone-sizeof-expression)
         basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
         if (!tmp) {
           basis_function_free(p_fn);
