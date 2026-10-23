@@ -690,7 +690,8 @@ ifeq ($(SANITIZE),1)
 install uninstall:
 	$(MAKE) $@ SANITIZE=0 BUILD_DIR=$(INSTALL_BUILD_DIR)
 else
-install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
+install: lib shared pkgconfig
+	install -d $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(PKGCONFDIR)
 	install -m644 $(LIB_PATH) $(DESTDIR)$(LIBDIR)/$(LIB_NAME)
 	install -m755 $(SHLIB_PATH) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION)
 	ln -sf $(SHLIB_NAME).$(VERSION) $(DESTDIR)$(LIBDIR)/$(SHLIB_NAME).$(VERSION_MAJOR)
