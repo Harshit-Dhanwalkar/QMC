@@ -273,6 +273,10 @@ void klein_gordon_solution_free(klein_gordon_solution_t *sol) {
 
 eigen_t *dirac_1d(const double *x, int N, const double *V, double m,
                   double hbar, double c) {
+  if (!x || !V || N < 2) {
+    return NULL;
+  }
+
   // Build 2N x 2N Hermitian matrix:
   // [ V(x) + mc^2,          -i * \hbar * c d/dx ]
   // [ -i * hbar * c * d/dx,  V(x) - mc^2        ]

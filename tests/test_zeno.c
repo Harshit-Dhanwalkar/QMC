@@ -125,8 +125,8 @@ int main(void) {
       double r = zeno_continuous_rate(omega, g);
       // late-time envelope of (P - 1/2): ratio over a window deep in tail
       double t1 = 6.0 / fmax(r, 0.05), t2 = t1 + 1.0 / fmax(r, 0.05);
-      double e1 = fabs(zeno_survival_continuous(omega, g, t1) - 0.5),
-             e2 = fabs(zeno_survival_continuous(omega, g, t2) - 0.5);
+      double e1 = fabs(zeno_survival_continuous(omega, g, t1) - 0.5);
+      double e2 = fabs(zeno_survival_continuous(omega, g, t2) - 0.5);
       char label[80];
 
       if (g == 2.0 * omega) {

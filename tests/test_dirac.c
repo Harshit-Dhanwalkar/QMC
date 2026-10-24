@@ -17,12 +17,21 @@
 #include "../physics/potentials.h"
 #include "../physics/relativistic.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #ifndef RUNNING_ON_VALGRIND
 #define RUNNING_ON_VALGRIND 0
 #endif
+
+#define CHECK_ALLOC(ptr)                                                       \
+  do {                                                                         \
+    if (!(ptr)) {                                                              \
+      fprintf(stderr, "Out of memory at %s:%d\n", __FILE__, __LINE__);         \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
 
 static int failures = 0;
 
@@ -61,6 +70,7 @@ static void test_hermiticity_of_construction(void) {
   }
 
   double *V = calloc(N, sizeof *V); // free particle
+  CHECK_ALLOC(V);
 
   for (int i = 0; i < N; i++) {
     int row1 = i;
@@ -102,7 +112,7 @@ static void test_hermiticity_of_construction(void) {
 }
 
 static void test_free_particle_branches(void) {
-  printf("  === Test: free particle +-mc^2 branch structure ===\n");
+  printf("  === Test: Free particle +-mc^2 branch structure ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 20 : 40;
   double dx = 0.2;
@@ -111,6 +121,9 @@ static void test_free_particle_branches(void) {
   double m = 1.0;
   double *x = malloc(N * sizeof *x);
   double *V = calloc(N, sizeof *V);
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < N; i++) {
     x[i] = i * dx;
   }
@@ -151,14 +164,12 @@ static void test_free_particle_branches(void) {
   eigen_free(eig);
 }
 
-/*
- * Harmonic V(x) and c taken large (weak-relativistic-coupling limit),
+/* Harmonic V(x) and c taken large (weak-relativistic-coupling limit),
  * Dirac equation's positive-energy branch must reduce exactly to ordinary
  * Schrodinger-equation spectrum shifted by the rest-mass energy,
- *  E - m * c^2 -> (n + 1/2) * \hbar * \omega
- */
+ *  E - m * c^2 -> (n + 1/2) * \hbar * \omega */
 static void test_nonrelativistic_limit(void) {
-  printf("  === Test: non-relativistic limit vs exact QHO spectrum ===\n");
+  printf("  === Test: Non-relativistic limit vs exact QHO spectrum ===\n");
 
   int N = RUNNING_ON_VALGRIND ? 60 : 150;
   double L = 20.0;
@@ -170,6 +181,9 @@ static void test_nonrelativistic_limit(void) {
 
   double *x = malloc(N * sizeof *x);
   double *V = malloc(N * sizeof *V);
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < N; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * m * omega * omega * x[i] * x[i];
@@ -188,14 +202,16 @@ static void test_nonrelativistic_limit(void) {
   // Collect the lowest few positive-energy (E > 0) eigenvalues
   int n_total = eig->n;
   double *pos = malloc((size_t)n_total * sizeof(double));
+  CHECK_ALLOC(pos);
+
   int n_pos = 0;
   for (int i = 0; i < n_total; i++) {
     if (eig->eigenvalues[i] > 0.0) {
       pos[n_pos++] = eig->eigenvalues[i];
     }
   }
-  /* NOTE: eigenvalues from cmatrix_eigh_complex are ascending, so smallest
-   * n_pos entries are already lowest positive-energy states */
+  // NOTE: eigenvalues from cmatrix_eigh_complex are ascending, so smallest
+  // n_pos entries are already lowest positive-energy states
 
   int n_check = RUNNING_ON_VALGRIND ? 1 : 3;
   printf("  Non-relativistic limit (c=%.0f, harmonic V, m=\\omega=\\hbar=1):\n",
@@ -204,7 +220,7 @@ static void test_nonrelativistic_limit(void) {
     double exact = (n + 0.5) * hbar * omega;
     // each level appears twice (spin/component doubling); check first of  pair
     // at index 2 * n
-    double shifted = pos[2 * n] - mc2;
+    double shifted = pos[(ptrdiff_t)(2 * n)] - mc2;
     double tol = 0.02 * (n + 1);
 
     char label[64];
@@ -229,6 +245,8 @@ static void test_dirac_hydrogen_sommerfeld(void) {
   double r_max = RUNNING_ON_VALGRIND ? 20.0 * a0 : 40.0 * a0;
   double r_min = 1e-4 * a0 / N;
   double *r = malloc(N * sizeof *r);
+  CHECK_ALLOC(r);
+
   double dr = (r_max - r_min) / (N - 1);
   for (int i = 0; i < N; i++) {
     r[i] = r_min + i * dr;
@@ -250,7 +268,8 @@ static void test_dirac_hydrogen_sommerfeld(void) {
 
   int n_states = sizeof(states) / sizeof(states[0]);
   for (int s = 0; s < n_states; s++) {
-    int n = states[s].n, kappa = states[s].kappa;
+    int n = states[s].n;
+    int kappa = states[s].kappa;
 
     double E_exact = dirac_hydrogen_energy_level(
         n, kappa, Z_charge, HBAR, M_ELECTRON, E_CHARGE, EPSILON_0, C_LIGHT);

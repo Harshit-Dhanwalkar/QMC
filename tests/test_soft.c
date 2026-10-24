@@ -12,13 +12,12 @@
  *    potential term switched off entirely
  * 2. 2D harmonic-oscillator coherent state: a Gaussian of width \sigma_0 =
  *    \sqrt(\hbar / (m * \omega)), displaced from origin, is an exact coherent
- *    state of the HO. It does Not spread, and its centroid follows trajectory
+ *    state of HO. It does Not spread, and its centroid follows trajectory
  *    exactly (Ehrenfest's theorem is exact for a harmonic potential):
  *
  *      <x>(t) = x_0 * \cos(\omega * t)
  *      <y>(t) = y_0 * \cos(\omega * t)
- *    The potential-operator half-steps together with kinetic propagator in same
- *    run
+ *    Potential-operator half-steps together with kinetic propagator in same run
  * 3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run
  */
 
@@ -32,6 +31,14 @@
 #ifndef RUNNING_ON_VALGRIND
 #define RUNNING_ON_VALGRIND 0
 #endif
+
+#define CHECK_ALLOC(ptr)                                                       \
+  do {                                                                         \
+    if (!(ptr)) {                                                              \
+      fprintf(stderr, "OOM at %s:%d\n", __FILE__, __LINE__);                   \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
 
 static int check_close(double got, double expected, double tol,
                        const char *label) {
@@ -53,6 +60,9 @@ static int test_free_particle_2d(void) {
 
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(y);
+
   for (int i = 0; i < Nx; i++) {
     x[i] = -Lx / 2 + i * dx;
   }
@@ -62,6 +72,7 @@ static int test_free_particle_2d(void) {
 
   cvector_t *psi = cvector_alloc(Nx * Ny);
   double *V = calloc(Nx * Ny, sizeof(double)); // free particle: V=0
+  CHECK_ALLOC(V);
 
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
@@ -148,6 +159,10 @@ static int test_free_particle_3d(void) {
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
   double *z = malloc(Nz * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(y);
+  CHECK_ALLOC(z);
+
   for (int i = 0; i < Nx; i++) {
     x[i] = -Lx / 2 + i * dx;
   }
@@ -161,6 +176,8 @@ static int test_free_particle_3d(void) {
   int N = Nx * Ny * Nz;
   cvector_t *psi = cvector_alloc(N);
   double *V = calloc(N, sizeof(double));
+  CHECK_ALLOC(V);
+
 
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
@@ -213,7 +230,7 @@ static int test_free_particle_3d(void) {
 }
 
 // Test 3: 2D harmonic-oscillator coherent state (no spreading, exact classical
-// centroid motion via Ehrenfest's theorem).
+// centroid motion via Ehrenfest's theorem)
 static int test_ho_coherent_state_2d(void) {
   int Nx = RUNNING_ON_VALGRIND ? 32 : 64;
   int Ny = RUNNING_ON_VALGRIND ? 32 : 64;
@@ -229,6 +246,9 @@ static int test_ho_coherent_state_2d(void) {
 
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(y);
+
   for (int i = 0; i < Nx; i++) {
     x[i] = -Lx / 2 + i * dx;
   }
@@ -238,6 +258,8 @@ static int test_ho_coherent_state_2d(void) {
 
   cvector_t *psi = cvector_alloc(Nx * Ny);
   double *V = malloc(Nx * Ny * sizeof(double));
+  CHECK_ALLOC(V);
+
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       V[ix * Ny + iy] =
