@@ -126,7 +126,6 @@ endif
 
 CFLAGS += -DQMC_PLOT_BACKEND_NAME=\"$(PLOT_BACKEND)\"
 CFLAGS += -DQMC_LATEX_COMPILER=\"$(LATEX_COMPILER)\"
-BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 CFLAGS  += $(PLOT_CFLAGS)
 LDFLAGS += -lm $(PLOT_LDFLAGS) $(PLOT_LIBS)
 
@@ -231,6 +230,7 @@ LATEX_DIR    = latex
 EXAMPLES_DIR = examples
 TESTS_DIR    = tests
 BUILD_DIR    = build
+BACKEND_SENTINEL := $(BUILD_DIR)/.plot_backend
 
 # Source files
 CORE_SRCS    = $(CORE_DIR)/version.c \
@@ -291,6 +291,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/hubbard_dimer.c \
                $(PHYSICS_DIR)/ab_ring.c \
                $(PHYSICS_DIR)/double_barrier.c \
+               $(PHYSICS_DIR)/josephson.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
@@ -454,7 +455,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_91_circular_billiard \
               $(BUILD_DIR)/eg_92_hubbard_dimer \
               $(BUILD_DIR)/eg_93_ab_ring \
-              $(BUILD_DIR)/eg_94_double_barrier
+              $(BUILD_DIR)/eg_94_double_barrier \
+              $(BUILD_DIR)/eg_95_josephson
 
 
 TESTS       = $(BUILD_DIR)/test_version \
@@ -489,6 +491,7 @@ TESTS       = $(BUILD_DIR)/test_version \
               $(BUILD_DIR)/test_hubbard_dimer \
               $(BUILD_DIR)/test_ab_ring \
               $(BUILD_DIR)/test_double_barrier \
+              $(BUILD_DIR)/test_josephson \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
@@ -583,12 +586,14 @@ demo: $(BUILD_DIR)/main
 # Check backend
 check-backend:
 	@mkdir -p $(BUILD_DIR)
-	@echo "$(PLOT_BACKEND)" > $(BUILD_DIR)/.plot_backend.new
-	@if ! cmp -s $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL) 2>/dev/null; then \
-		mv $(BUILD_DIR)/.plot_backend.new $(BACKEND_SENTINEL); \
+	@if [ -e "$(GR_LIB)" ]; then \
+	    echo "gr"      > $(BACKEND_SENTINEL).new; \
+	elif command -v gnuplot >/dev/null; then \
+	    echo "gnuplot" > $(BACKEND_SENTINEL).new; \
 	else \
-		rm -f $(BUILD_DIR)/.plot_backend.new; \
+	    echo "noop"    > $(BACKEND_SENTINEL).new; \
 	fi
+	@mv $(BACKEND_SENTINEL).new $(BACKEND_SENTINEL)
 
 $(BACKEND_SENTINEL): check-backend
 	@:

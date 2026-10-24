@@ -25,6 +25,7 @@
 #   docs/src/playground/qmc_hubbard.wasm    Hubbard-dimer demo
 #   docs/src/playground/qmc_ring.wasm       Aharonov-Bohm ring demo
 #   docs/src/playground/qmc_tunnel.wasm     resonant-tunnelling (double barrier) demo
+#   docs/src/playground/qmc_josephson.wasm  Josephson-junction (RCSJ) demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -95,7 +96,7 @@ build_module() {
 
 build_module "$OUT/qmc.wasm" \
   "qmc_init qmc_n qmc_box qmc_potential qmc_clear_potential qmc_fill_rect \
-qmc_build_slits qmc_wavepacket qmc_step qmc_norm qmc_density" \
+  qmc_build_slits qmc_wavepacket qmc_step qmc_norm qmc_density" \
   wasm/qmc_wasm.c core/vector.c core/fft/fft.c core/fft/fft2d.c \
   core/fft/fft3d.c physics/soft.c
 
@@ -106,8 +107,8 @@ build_module "$OUT/qmc_butterfly.wasm" \
 
 build_module "$OUT/qmc_dirac.wasm" \
   "qmc_dc_n qmc_dc_dx qmc_dc_dt qmc_dc_time qmc_dc_buffer qmc_dc_density \
-qmc_dc_klein qmc_dc_zitter qmc_dc_step qmc_dc_norm qmc_dc_position \
-qmc_dc_right qmc_dc_exact" \
+  qmc_dc_klein qmc_dc_zitter qmc_dc_step qmc_dc_norm qmc_dc_position \
+  qmc_dc_right qmc_dc_exact" \
   wasm/qmc_dirac.c physics/dirac_evolve.c core/vector.c core/fft/fft.c
 
 build_module "$OUT/qmc_orbital.wasm" \
@@ -123,47 +124,47 @@ build_module "$OUT/qmc_bloch.wasm" \
 
 build_module "$OUT/qmc_anderson.wasm" \
   "qmc_an_n qmc_an_dt qmc_an_time qmc_an_buffer qmc_an_density qmc_an_reset \
-qmc_an_step qmc_an_norm qmc_an_width qmc_an_ipr qmc_an_energy qmc_an_xi" \
+  qmc_an_step qmc_an_norm qmc_an_width qmc_an_ipr qmc_an_energy qmc_an_xi" \
   wasm/qmc_anderson.c physics/anderson.c core/vector.c
 
 build_module "$OUT/qmc_qwalk.wasm" \
   "qmc_qw_n qmc_qw_tmax qmc_qw_time qmc_qw_buffer qmc_qw_reset qmc_qw_step \
-qmc_qw_norm qmc_qw_mean qmc_qw_variance qmc_qw_asymptote" \
+  qmc_qw_norm qmc_qw_mean qmc_qw_variance qmc_qw_asymptote" \
   wasm/qmc_qwalk.c physics/quantum_walk.c core/vector.c
 
 build_module "$OUT/qmc_lz.wasm" \
   "qmc_lz_vec qmc_lz_scan_buffer qmc_lz_scan_max qmc_lz_time qmc_lz_total_time qmc_lz_delta \
-qmc_lz_upper qmc_lz_exact qmc_lz_reset qmc_lz_step qmc_lz_scan_rate qmc_lz_scan_amp" \
+  qmc_lz_upper qmc_lz_exact qmc_lz_reset qmc_lz_step qmc_lz_scan_rate qmc_lz_scan_amp" \
   wasm/qmc_lz.c physics/landau_zener.c
 
 build_module "$OUT/qmc_rotor.wasm" \
   "qmc_kr_n qmc_kr_np qmc_kr_tmax qmc_kr_time qmc_kr_qbuffer qmc_kr_cbuffer qmc_kr_reset \
-qmc_kr_step qmc_kr_qm2 qmc_kr_cm2 qmc_kr_norm qmc_kr_diffusion qmc_kr_edge" \
+  qmc_kr_step qmc_kr_qm2 qmc_kr_cm2 qmc_kr_norm qmc_kr_diffusion qmc_kr_edge" \
   wasm/qmc_rotor.c physics/kicked_rotor.c core/vector.c core/fft/fft.c
 
 build_module "$OUT/qmc_ssh.wasm" \
-  "qmc_ssh_cells qmc_ssh_sweep_max qmc_ssh_energies qmc_ssh_vectors qmc_ssh_bonds qmc_ssh_sweep_buffer \
-qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi qmc_ssh_gap qmc_ssh_bulk \
-qmc_ssh_edge_weight" \
+  "qmc_ssh_cells qmc_ssh_sweep_max qmc_ssh_energies qmc_ssh_vectors qmc_ssh_bonds  \ 
+  qmc_ssh_sweep_buffer qmc_ssh_set qmc_ssh_sweep qmc_ssh_winding qmc_ssh_zak qmc_ssh_xi \
+  qmc_ssh_gap qmc_ssh_bulk qmc_ssh_edge_weight" \
   wasm/qmc_ssh.c physics/ssh_chain.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
 
 build_module "$OUT/qmc_tfim.wasm" \
   "qmc_tq_rmax qmc_tq_curve_max qmc_tq_modes qmc_tq_zz_buffer qmc_tq_rate_buffer qmc_tq_mx_buffer \
-qmc_tq_density_buffer qmc_tq_set qmc_tq_eval qmc_tq_last_mx qmc_tq_last_rate qmc_tq_curve qmc_tq_tcrit \
-qmc_tq_front_speed" \
+  qmc_tq_density_buffer qmc_tq_set qmc_tq_eval qmc_tq_last_mx qmc_tq_last_rate qmc_tq_curve \
+  qmc_tq_tcrit qmc_tq_front_speed" \
   wasm/qmc_tfim.c physics/tfim_quench.c
 
 build_module "$OUT/qmc_haldane.wasm" \
-  "qmc_hd_width qmc_hd_states qmc_hd_nk_max qmc_hd_energy_buffer qmc_hd_mean_buffer qmc_hd_prob_buffer \
-qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit qmc_hd_valley_gap qmc_hd_vmax \
-qmc_hd_cmin" \
+  "qmc_hd_width qmc_hd_states qmc_hd_nk_max qmc_hd_energy_buffer qmc_hd_mean_buffer \ 
+  qmc_hd_prob_buffer qmc_hd_set qmc_hd_compute qmc_hd_profile qmc_hd_chern qmc_hd_limit \
+  qmc_hd_valley_gap qmc_hd_vmax qmc_hd_cmin" \
   wasm/qmc_haldane.c physics/tight_binding.c core/matrix.c core/vector.c core/utils.c \
   core/fft/fft.c core/linalg/*.c core/ode/*.c
 
 build_module "$OUT/qmc_wigner.wasm" \
-  "qmc_wg_n qmc_wg_nmax qmc_wg_extent qmc_wg_w_buffer qmc_wg_x_buffer qmc_wg_p_buffer qmc_wg_pn_buffer \
-qmc_wg_nbar qmc_wg_negativity qmc_wg_wmin qmc_wg_wmax qmc_wg_state" \
+  "qmc_wg_n qmc_wg_nmax qmc_wg_extent qmc_wg_w_buffer qmc_wg_x_buffer qmc_wg_p_buffer  \ 
+  qmc_wg_pn_buffer qmc_wg_nbar qmc_wg_negativity qmc_wg_wmin qmc_wg_wmax qmc_wg_state" \
   wasm/qmc_wigner.c physics/phase_space.c
 
 build_module "$OUT/qmc_grover.wasm" \
@@ -173,40 +174,48 @@ build_module "$OUT/qmc_grover.wasm" \
   wasm/qmc_grover.c physics/grover_multi.c
 
 build_module "$OUT/qmc_bell.wasm" \
-  "qmc_bl_curve_max qmc_bl_quantum_buffer qmc_bl_local_buffer qmc_bl_set qmc_bl_chsh qmc_bl_local_chsh \
-  qmc_bl_max qmc_bl_e qmc_bl_e_local qmc_bl_curve qmc_bl_sample qmc_bl_est qmc_bl_sigma" \
+  "qmc_bl_curve_max qmc_bl_quantum_buffer qmc_bl_local_buffer qmc_bl_set qmc_bl_chsh \
+  qmc_bl_local_chsh qmc_bl_max qmc_bl_e qmc_bl_e_local qmc_bl_curve qmc_bl_sample qmc_bl_est \
+  qmc_bl_sigma" \
   wasm/qmc_bell.c physics/bell_chsh.c
 
 build_module "$OUT/qmc_carpet.wasm" \
-  "qmc_qc_nx qmc_qc_nt qmc_qc_curve_len qmc_qc_carpet_buffer qmc_qc_slice_buffer qmc_qc_curve_buffer \
-qmc_qc_weight qmc_qc_energy qmc_qc_set qmc_qc_slice" \
+  "qmc_qc_nx qmc_qc_nt qmc_qc_curve_len qmc_qc_carpet_buffer qmc_qc_slice_buffer \
+  qmc_qc_curve_buffer qmc_qc_weight qmc_qc_energy qmc_qc_set qmc_qc_slice" \
   wasm/qmc_carpet.c physics/box_revival.c
 
 build_module "$OUT/qmc_zeno.wasm" \
   "qmc_zn_curve_len qmc_zn_max_n qmc_zn_time_buffer qmc_zn_n_buffer qmc_zn_rate_buffer \
-qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \ 
-qmc_zn_continuous qmc_zn_rates qmc_zn_rate qmc_zn_sample" \
+  qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \ 
+  qmc_zn_continuous qmc_zn_rates qmc_zn_rate qmc_zn_sample" \
   wasm/qmc_zeno.c physics/zeno.c
 
 build_module "$OUT/qmc_corral.wasm" \
-  "qmc_cb_n qmc_cb_mode_count qmc_cb_field_buffer qmc_cb_mode_m qmc_cb_mode_n qmc_cb_mode_sine qmc_cb_mode_k \
-qmc_cb_show_mode qmc_cb_launch qmc_cb_energy qmc_cb_evolve" \
+  "qmc_cb_n qmc_cb_mode_count qmc_cb_field_buffer qmc_cb_mode_m qmc_cb_mode_n qmc_cb_mode_sine \
+  qmc_cb_mode_k qmc_cb_show_mode qmc_cb_launch qmc_cb_energy qmc_cb_evolve" \
   wasm/qmc_corral.c physics/circular_billiard.c
 
 build_module "$OUT/qmc_hubbard.wasm" \
-  "qmc_hb_curve_len qmc_hb_time_len qmc_hb_spec_buffer qmc_hb_gs_d_buffer qmc_hb_gs_ss_buffer qmc_hb_gs_s_buffer \
-qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer qmc_hb_th_d_buffer qmc_hb_th_ss_buffer \
-qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer qmc_hb_levels_buffer qmc_hb_curves qmc_hb_levels \
-qmc_hb_quench qmc_hb_probs qmc_hb_thermal" \
+  "qmc_hb_curve_len qmc_hb_time_len qmc_hb_spec_buffer qmc_hb_gs_d_buffer qmc_hb_gs_ss_buffer \ 
+  qmc_hb_gs_s_buffer qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer \ 
+  qmc_hb_th_d_buffer qmc_hb_th_ss_buffer qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer \ 
+  qmc_hb_levels_buffer qmc_hb_curves qmc_hb_levels qmc_hb_quench qmc_hb_probs qmc_hb_thermal" \
   wasm/qmc_hubbard.c physics/hubbard_dimer.c
 
 build_module "$OUT/qmc_ring.wasm" \
-  "qmc_ar_curve_len qmc_ar_map_n qmc_ar_max_sites qmc_ar_spec_buffer qmc_ar_cur_buffer qmc_ar_tf_buffer qmc_ar_te_buffer \
-qmc_ar_map_buffer qmc_ar_levels_buffer qmc_ar_spectrum qmc_ar_current qmc_ar_levels qmc_ar_current_at qmc_ar_point \
-qmc_ar_last_reflection qmc_ar_trans_flux qmc_ar_trans_energy qmc_ar_map" \
+  "qmc_ar_curve_len qmc_ar_map_n qmc_ar_max_sites qmc_ar_spec_buffer qmc_ar_cur_buffer \
+  qmc_ar_tf_buffer qmc_ar_te_buffer qmc_ar_map_buffer qmc_ar_levels_buffer qmc_ar_spectrum \
+  qmc_ar_current qmc_ar_levels qmc_ar_current_at qmc_ar_point qmc_ar_last_reflection \
+  qmc_ar_trans_flux qmc_ar_trans_energy qmc_ar_map" \
   wasm/qmc_ring.c physics/ab_ring.c
 
 build_module "$OUT/qmc_tunnel.wasm" \
-  "qmc_dt_curve_len qmc_dt_te_buffer qmc_dt_dwell_buffer qmc_dt_psi_buffer qmc_dt_pot_buffer qmc_dt_set qmc_dt_length \
-qmc_dt_well_level qmc_dt_curves qmc_dt_point qmc_dt_last_reflection qmc_dt_dwell qmc_dt_profile" \
+  "qmc_dt_curve_len qmc_dt_te_buffer qmc_dt_dwell_buffer qmc_dt_psi_buffer qmc_dt_pot_buffer  \
+  qmc_dt_set qmc_dt_length qmc_dt_well_level qmc_dt_curves qmc_dt_point qmc_dt_last_reflection \
+  qmc_dt_dwell qmc_dt_profile" \
   wasm/qmc_tunnel.c physics/double_barrier.c
+
+build_module "$OUT/qmc_josephson.wasm" \
+  "qmc_jj_curve_len qmc_jj_up_buffer qmc_jj_down_buffer qmc_jj_set qmc_jj_reset qmc_jj_advance \
+  qmc_jj_phi qmc_jj_v qmc_jj_time qmc_jj_iv" \
+  wasm/qmc_josephson.c physics/josephson.c

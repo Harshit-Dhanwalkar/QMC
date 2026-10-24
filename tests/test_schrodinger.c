@@ -3,14 +3,14 @@
  * (solve_tise_shoot, evolve_tdse_crank, evolve_tdse_split_step)
  *
  *   1. solve_tise_shoot: harmonic-oscillator ground/first-excited energies
- *      against the exact analytic (n + 1/2) * \hbar * \omega, and
+ *      against exact analytic (n + 1/2) * \hbar * \omega, and
  *      cross-validated against solve_tise_matrix's independent diagonalization
  *      approach
  *   2. evolve_tdse_crank: norm conservation, and same coherent-state trajectory
  *      check - since this uses a completely different discretization
  *      (finite-difference + Crank-Nicolson, not FFT-based split-step),
- *      agreement between the two independently-implemented time-evolution
- *      methods is itself a strong cross-validation of both
+ *      agreement between 2 independently-implemented time-evolution methods is
+ *      itself a strong cross-validation of both
  */
 
 #include "../core/complex.h"
@@ -42,6 +42,14 @@
 #define TEST_LENGTH 20.0
 #endif
 
+#define CHECK_ALLOC(ptr)                                                       \
+  do {                                                                         \
+    if (!(ptr)) {                                                              \
+      fprintf(stderr, "OOM at %s:%d\n", __FILE__, __LINE__);                   \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
+
 static int failures = 0;
 
 static void check(int cond, const char *msg) {
@@ -60,15 +68,11 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-/* ---------------------------------------------------------------------
- * solve_tise_shoot
- * ------------------------------------------------------------------- */
-
+// solve_tise_shoot
 static void test_solve_tise_shoot_harmonic_oscillator(void) {
-  printf(
-      "  === Test: solve_tise_shoot on the harmonic oscillator matches exact "
-      "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
-      "solve_tise_matrix ===\n");
+  printf("  === Test: solve_tise_shoot on harmonic oscillator matches exact "
+         "(n+1/2) * \\hbar * \\omega energies and cross-validates against "
+         "solve_tise_matrix ===\n");
 
   int n = TEST_N_SMALL;
   double L = TEST_LENGTH;
@@ -78,6 +82,9 @@ static void test_solve_tise_shoot_harmonic_oscillator(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * omega * omega * x[i] * x[i];
@@ -130,16 +137,11 @@ static void test_solve_tise_shoot_harmonic_oscillator(void) {
   free(V);
 }
 
-/* ---------------------------------------------------------------------
- * Shared coherent-state setup for the two TDSE evolution tests
- * ------------------------------------------------------------------- */
-
-/*
- * Minimum-uncertainty Gaussian ("coherent state") for harmonic oscillator,
+// Shared coherent-state setup for two TDSE evolution tests
+/* Minimum-uncertainty Gaussian ("coherent state") for harmonic oscillator,
  * centered at x0 with zero initial momentum. Its center-of-mass  trajectory
  * x(t) = x0 * \cos(\omega * t) is an exact result (Ehrenfest's theorem is exact
- * for any harmonic potential) for any \hbar, mass, \omega
- */
+ * for any harmonic potential) for any \hbar, mass, \omega */
 static void make_coherent_state(cvector_t *psi, const double *x, int n,
                                 double x0, double hbar, double mass,
                                 double omega) {
@@ -177,10 +179,7 @@ static double compute_x_mean(const cvector_t *psi, const double *x, int n,
   return s * dx / (norm * dx);
 }
 
-/* ---------------------------------------------------------------------
- * evolve_tdse_split_step
- * ------------------------------------------------------------------- */
-
+// evolve_tdse_split_step
 static void test_split_step_norm_conservation(void) {
   printf("  === Test: evolve_tdse_split_step conserves probability norm ===\n");
 
@@ -191,6 +190,9 @@ static void test_split_step_norm_conservation(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * mass * omega * omega * x[i] * x[i];
@@ -212,9 +214,8 @@ static void test_split_step_norm_conservation(void) {
 }
 
 static void test_split_step_coherent_state_hbar_independence(void) {
-  printf(
-      "  === Test: evolve_tdse_split_step reproduces the exact coherent-state "
-      "trajectory x(t)=x0*cos(omega*t) at multiple hbar values ===\n");
+  printf("  === Test: evolve_tdse_split_step reproduces exact coherent-state "
+         "trajectory x(t)=x0 * \\cos(\\omega*t) at multiple \\hbar values ===\n");
 
   int n = TEST_N_MEDIUM;
   double L = 40.0;
@@ -231,6 +232,9 @@ static void test_split_step_coherent_state_hbar_independence(void) {
 
     double *x = malloc((size_t)n * sizeof(double));
     double *V = malloc((size_t)n * sizeof(double));
+    CHECK_ALLOC(x);
+    CHECK_ALLOC(V);
+
     for (int i = 0; i < n; i++) {
       x[i] = -L / 2.0 + i * dx;
       V[i] = 0.5 * mass * omega * omega * x[i] * x[i];
@@ -257,10 +261,7 @@ static void test_split_step_coherent_state_hbar_independence(void) {
   }
 }
 
-/* ---------------------------------------------------------------------
- * evolve_tdse_crank
- * ------------------------------------------------------------------- */
-
+// evolve_tdse_crank
 static void test_crank_norm_conservation(void) {
   printf("  === Test: evolve_tdse_crank conserves probability norm ===\n");
 
@@ -272,6 +273,9 @@ static void test_crank_norm_conservation(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * omega * omega * x[i] * x[i];
@@ -279,6 +283,9 @@ static void test_crank_norm_conservation(void) {
 
   double *diag = malloc((size_t)n * sizeof(double));
   double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  CHECK_ALLOC(diag);
+  CHECK_ALLOC(offdiag);
+
   build_tridiagonal_hamiltonian(x, V, n, dx, hbar_sq_2m, diag, offdiag);
 
   cvector_t *psi = cvector_alloc(n);
@@ -303,7 +310,7 @@ static void test_crank_matches_split_step(void) {
   printf("  === Test: evolve_tdse_crank and evolve_tdse_split_step "
          "independently-implemented time-evolution schemes "
          "(finite-difference+Crank-Nicolson vs. FFT-based split-step) agree on "
-         "the same coherent-state trajectory ===\n");
+         "same coherent-state trajectory ===\n");
 
   int n = TEST_N_MEDIUM;
   double L = 40.0;
@@ -315,6 +322,9 @@ static void test_crank_matches_split_step(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * mass * omega * omega * x[i] * x[i];
@@ -328,6 +338,9 @@ static void test_crank_matches_split_step(void) {
 
   double *diag = malloc((size_t)n * sizeof(double));
   double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  CHECK_ALLOC(diag);
+  CHECK_ALLOC(offdiag);
+
   build_tridiagonal_hamiltonian(x, V, n, dx, hbar_sq_2m, diag, offdiag);
 
   int rc1 = evolve_tdse_crank(diag, offdiag, n, psi_crank, dt, steps);
@@ -368,6 +381,9 @@ static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * x[i] * x[i];
@@ -439,6 +455,9 @@ static void test_solve_tise_shoot_matching_matches_shoot(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * x[i] * x[i];
@@ -470,14 +489,17 @@ static void test_solve_tise_shoot_matching_matches_shoot(void) {
 }
 
 static void test_solve_tise_shoot_matching_no_root_returns_null(void) {
-  printf("Test: solve_tise_shoot_matching returns NULL when bracket contains "
-         "no eigenvalue\n");
+  printf(" === Test: solve_tise_shoot_matching returns NULL when bracket "
+         "contains no eigenvalue ===\n");
 
   int n = TEST_N_LARGE;
   double L = TEST_LENGTH;
   double dx = L / (n - 1);
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  CHECK_ALLOC(x);
+  CHECK_ALLOC(V);
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * x[i] * x[i];

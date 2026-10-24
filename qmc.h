@@ -75,6 +75,7 @@
 #include "physics/hydrogen.h"
 #include "physics/identical.h"
 #include "physics/ising_chain.h"
+#include "physics/josephson.h"
 #include "physics/kicked_rotor.h"
 #include "physics/landau_zener.h"
 #include "physics/lattice.h"

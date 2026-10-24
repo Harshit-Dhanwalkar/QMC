@@ -1,10 +1,10 @@
 /*
- * Test: Quantum Approximate Optimization Algorithm (QAOA).
+ * Test: Quantum Approximate Optimization Algorithm (QAOA)
  *
  * 1. Cost tables: MaxCut on K3/K4/ring against known cut values; weighted
  *    edges; Ising table against a hand-evaluated spin configuration
  * 2. Trivial limits: gamma = 0 or beta = 0 leaves uniform superposition,
- *    so <C> equals mean of cost table; states stay normalized.
+ *    so <C> equals mean of cost table; states stay normalized
  * 3. Exact closed forms: ring of n vertices at p = 1 has
  *    <C> = n (1/2 + \sin(4\beta) sin(2\gamma) / 4); general-graph p = 1
  *    formula (triangles included) matches state-vector simulator on
@@ -16,7 +16,7 @@
  * 6. Optimizer: on a ring optimal depth-p expectation is exactly
  *    (2p + 1)/(2p + 2) of edges (Farhi et al.), valid for n > 2p + 1;
  *    optimum probability grows with p; Ising minimization works. On
- *    Petersen graph p = 1 optimum is |E| (1/2 + 1/(3\sqrt(3)))
+ *    Petersen graph p = 1 optimum is |E| (1/2 + 1/(3\sqrt{3}))
  * 7. Invalid-input handling
  */
 
@@ -75,7 +75,7 @@ static qaoa_problem_t *make_ring(int n) {
 }
 
 static void test_cost_tables(void) {
-  printf("  === Cost tables and exact optima ===\n");
+  printf("  === Test: Cost tables and exact optima ===\n");
 
   const int tu[] = {0, 1, 0};
   const int tv[] = {1, 2, 2};
@@ -93,7 +93,9 @@ static void test_cost_tables(void) {
 
   qaoa_problem_free(k3);
 
-  int ku[6], kv[6], m = 0;
+  int ku[6] = {0};
+  int kv[6] = {0};
+  int m = 0;
   for (int i = 0; i < 4; i++) {
     for (int j = i + 1; j < 4; j++) {
       ku[m] = i;
@@ -155,7 +157,7 @@ static void test_cost_tables(void) {
 }
 
 static void test_trivial_limits(void) {
-  printf("  === Trivial limits and normalization ===\n");
+  printf("  === Test: Trivial limits and normalization ===\n");
 
   qaoa_problem_t *ring = make_ring(6);
   const double *tab = qaoa_problem_cost_table(ring);
@@ -191,7 +193,7 @@ static void test_trivial_limits(void) {
 }
 
 static void test_closed_forms(void) {
-  printf("  === Closed-form p = 1 expectations ===\n");
+  printf("  === Test: Closed-form p = 1 expectations ===\n");
 
   qaoa_problem_t *ring = make_ring(8);
   double g = 0.7, b = 0.3;
@@ -207,8 +209,8 @@ static void test_closed_forms(void) {
   rng_seed(&rng, 12345);
   for (int trial = 0; trial < 4; trial++) {
     int n = 7;
-    int u[64];
-    int v[64];
+    int u[64] = {0};
+    int v[64] = {0};
     int m = 0;
 
     for (int i = 0; i < n; i++) {
@@ -252,7 +254,8 @@ static void test_closed_forms(void) {
 }
 
 static void test_dense_crosscheck(void) {
-  printf("  === Cross-check against dense Pauli Hamiltonian (vqe.c) ===\n");
+  printf(
+      "  === Test: Cross-check against dense Pauli Hamiltonian (vqe.c) ===\n");
   // Triangle with a pendant vertex: 4 qubits, weights all 1
   int n = 4;
   const int u[] = {0, 1, 0, 2};
@@ -296,7 +299,7 @@ static void test_dense_crosscheck(void) {
 }
 
 static void test_periodicity(void) {
-  printf("  === Periodicity (integer costs) ===\n");
+  printf("  === Test: Periodicity (integer costs) ===\n");
 
   qaoa_problem_t *ring = make_ring(8);
   double g0 = 0.7, b0 = 0.3;
@@ -311,7 +314,7 @@ static void test_periodicity(void) {
 }
 
 static void test_optimizer(void) {
-  printf("  === Optimizer ===\n");
+  printf("  === Test: Optimizer ===\n");
 
   // Farhi et al.: ring, p layers, optimal <C>/edges = (2p+1)/(2p+2) for
   // n > 2p + 1. n = 8 covers p = 1, 2, 3
@@ -396,7 +399,7 @@ static void test_optimizer(void) {
 }
 
 static void test_petersen(void) {
-  printf("  === Petersen graph (triangle-free, 3-regular) ===\n");
+  printf("  === Test: Petersen graph (triangle-free, 3-regular) ===\n");
   const int u[15] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5, 7, 9, 6, 8};
   const int v[15] = {1, 2, 3, 4, 0, 5, 6, 7, 8, 9, 7, 9, 6, 8, 5};
   qaoa_problem_t *pr = qaoa_problem_maxcut(10, u, v, NULL, 15);
@@ -404,6 +407,7 @@ static void test_petersen(void) {
   if (!pr) {
     return;
   }
+
   check_close(qaoa_problem_best_cost(pr, NULL), 12.0, 1e-12,
               "Petersen exact max cut");
 
@@ -417,16 +421,19 @@ static void test_petersen(void) {
               "Petersen p=1 optimum vs closed form");
   check_close(qaoa_maxcut_p1_expectation(pr, r.gamma[0], r.beta[0]),
               r.expectation, 1e-10, "Wang formula at optimized angles");
+
   qaoa_result_free(&r);
+
   qaoa_result_t r2 = qaoa_run(pr, 2, 4, 6, 0.4, 2026);
   check_true(r2.expectation > p1_exact + 1e-3, "p=2 improves on p=1");
   check_true(r2.expectation <= 12.0 + 1e-9, "<C> never exceeds max cut");
+
   qaoa_result_free(&r2);
   qaoa_problem_free(pr);
 }
 
 static void test_invalid_input(void) {
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
 
   const int u[] = {0, 1};
   const int v[] = {1, 2};
@@ -454,29 +461,37 @@ static void test_invalid_input(void) {
              "Ising: negative coupling count");
   check_true(qaoa_problem_ising(2, NULL, NULL, NULL, NULL, 0, NAN) == NULL,
              "Ising: NaN offset");
+
   qaoa_problem_t *fields_only =
       qaoa_problem_ising(2, (double[]){1.0, -1.0}, NULL, NULL, NULL, 0, 0.0);
+
   check_true(fields_only != NULL, "Ising: fields only is valid");
+
   qaoa_problem_free(fields_only);
 
   qaoa_problem_t *ring = make_ring(4);
-  double g = 0.1, b = 0.2;
+  double g = 0.1;
+  double b = 0.2;
   check_true(qaoa_prepare_state(NULL, 1, &g, &b) == NULL, "NULL problem");
   check_true(qaoa_prepare_state(ring, 0, &g, &b) == NULL, "p = 0");
   check_true(qaoa_prepare_state(ring, 1, NULL, &b) == NULL, "NULL gamma");
+
   double bad = NAN;
   check_true(qaoa_prepare_state(ring, 1, &bad, &b) == NULL, "NaN gamma");
   check_close(qaoa_expectation(NULL, 1, &g, &b), 0.0, 0.0,
               "expectation of NULL problem is 0");
+
   qaoa_result_t r = qaoa_run(ring, 0, 1, 1, 0.3, 1);
   check_true(r.gamma == NULL && r.beta == NULL, "run p = 0 rejected");
   r = qaoa_run(ring, 1, 0, 1, 0.3, 1);
   check_true(r.gamma == NULL, "run n_restarts = 0 rejected");
   r = qaoa_run(ring, 1, 1, 1, -0.3, 1);
   check_true(r.gamma == NULL, "run negative window rejected");
+
   qaoa_result_free(&r);
   qaoa_problem_free(ring);
   qaoa_problem_free(NULL);
+
   check_true(isnan(qaoa_maxcut_p1_expectation(NULL, 0.1, 0.1)),
              "p1 formula on NULL -> NaN");
   check_close(qaoa_approximation_ratio(NULL, 1.0), 0.0, 0.0,
@@ -484,7 +499,7 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
-  printf("  >  Test QAOA :\n");
+  printf(" > QAOA tests:\n");
 
   test_cost_tables();
   test_trivial_limits();

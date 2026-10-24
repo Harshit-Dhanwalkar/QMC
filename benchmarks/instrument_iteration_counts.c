@@ -2,12 +2,14 @@
  * Instrumentation: counts outer QL sweeps and inner rotation ("i-loop") steps
  * for tridiagonal QL algorithm (eigenvalues only), directly on same
  * clustered-diagonal test matrix used in wall-clock benchmarks, across
- * increasing N.
+ * increasing N
  *
  * USAGE:
  *   gcc -O2 -o instrument_iteration_counts instrument_iteration_counts.c -lm
  *   for N in 400 800 1600 3200; do ./instrument_iteration_counts $N; done
  */
+
+#include "benchmark_utils.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,10 +41,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  double *diag = malloc(n * sizeof(double)),
-         *offdiag = malloc((n - 1) * sizeof(double));
+  double *diag = xmalloc(n * sizeof(double));
+  double *offdiag = xmalloc((n - 1) * sizeof(double));
 
-  // exact same matrix as wall-clock benchmark: clustered diag
   for (int i = 0; i < n; i++) {
     diag[i] = 2.0 + 0.001 * i;
   }
@@ -50,16 +51,19 @@ int main(int argc, char **argv) {
     offdiag[i] = -1.0;
   }
 
-  double *d = malloc(n * sizeof(double)), *e = malloc(n * sizeof(double));
+  double *d = xmalloc(n * sizeof(double));
+  double *e = xmalloc(n * sizeof(double));
   for (int i = 0; i < n; i++) {
     d[i] = diag[i];
   }
   for (int i = 0; i < n - 1; i++) {
     e[i] = offdiag[i];
   }
+
   e[n - 1] = 0.0;
 
-  long total_outer = 0, total_i_steps = 0;
+  long total_outer = 0;
+  long total_i_steps = 0;
   int max_iter_seen = 0;
 
   for (int l = 0; l < n; l++) {
@@ -85,7 +89,10 @@ int main(int argc, char **argv) {
         double g = (d[l + 1] - d[l]) / (2.0 * e[l]);
         double r = pythag(g, 1.0);
         g = d[m] - d[l] + e[l] / (g + (g >= 0 ? fabs(r) : -fabs(r)));
-        double s = 1.0, c = 1.0, p = 0.0;
+
+        double s = 1.0;
+        double c = 1.0;
+        double p = 0.0;
         int i;
         for (i = m - 1; i >= l; i--) {
           total_i_steps++;
@@ -122,7 +129,7 @@ int main(int argc, char **argv) {
     } while (m != l);
   }
 
-  printf("N=%6d  total_outer=%10ld  total_i_steps=%12ld  i_steps/N^2=%.4f  "
+  printf("  N=%6d  total_outer=%10ld  total_i_steps=%12ld  i_steps/N^2=%.4f  "
          "i_steps/N^2.5=%.6f  i_steps/N^3=%.8f  max_iter_for_one_l=%d\n",
          n, total_outer, total_i_steps, (double)total_i_steps / ((double)n * n),
          (double)total_i_steps / pow(n, 2.5),

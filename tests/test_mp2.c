@@ -29,6 +29,14 @@
 #define RUNNING_ON_VALGRIND 0
 #endif
 
+#define CHECK_ALLOC(ptr)                                                       \
+  do {                                                                         \
+    if (!(ptr)) {                                                              \
+      fprintf(stderr, "OOM at %s:%d\n", __FILE__, __LINE__);                   \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
+
 static int failures = 0;
 
 static void check_close(double got, double expected, double tol,
@@ -52,6 +60,8 @@ static void check_true(int cond, const char *label) {
 static double *make_radial(const double *r, int N, double dr, double a,
                            double b) {
   double *f = malloc((size_t)N * sizeof *f);
+  CHECK_ALLOC(f);
+
   double norm_sq = 0.0;
   for (int i = 0; i < N; i++) {
     f[i] = r[i] * exp(-a * r[i]) + 0.3 * r[i] * r[i] * exp(-b * r[i]);
@@ -69,6 +79,8 @@ static double *make_radial(const double *r, int N, double dr, double a,
 // Builds a synthetic hf_result_t with 2 occupied and 2 virtual orbitals
 static hf_result_t *build_synthetic_hf(const double *r, int N) {
   hf_result_t *hf = malloc(sizeof *hf);
+  CHECK_ALLOC(hf);
+
   if (hf == NULL) {
     return NULL;
   }
@@ -250,7 +262,9 @@ static void test_molecular_mp2_lih(void) {
     cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
     double *eri_ao = molecular_eri_tensor(basis, 6);
     double *h_mo = malloc(36 * sizeof(double));
-    double *eri_mo = malloc(6 * 6 * 6 * 6 * sizeof(double));
+    double *eri_mo = malloc(6UL * 6UL * 6UL * 6UL * sizeof(double));
+    CHECK_ALLOC(h_mo);
+    CHECK_ALLOC(eri_mo);
     molecular_ao_to_mo(h_ao, eri_ao, hf->C, 6, h_mo, eri_mo);
 
     molecular_mp2_result_t mp2_full =
@@ -325,10 +339,14 @@ static void test_molecular_ump2_li(void) {
     cmatrix_t *h_ao = molecular_core_hamiltonian(li_orbs, 5, mol);
     double *eri_ao = molecular_eri_tensor(li_orbs, 5);
 
-    double *eri_aaaa = malloc(5 * 5 * 5 * 5 * sizeof(double));
-    double *eri_bbbb = malloc(5 * 5 * 5 * 5 * sizeof(double));
-    double *eri_aabb = malloc(5 * 5 * 5 * 5 * sizeof(double));
+    double *eri_aaaa = malloc(5UL * 5UL * 5UL * 5UL * sizeof(double));
+    double *eri_bbbb = malloc(5UL * 5UL * 5UL * 5UL * sizeof(double));
+    double *eri_aabb = malloc(5UL * 5UL * 5UL * 5UL * sizeof(double));
     double *h_mo_scratch = malloc(25 * sizeof(double));
+    CHECK_ALLOC(eri_aaaa);
+    CHECK_ALLOC(eri_bbbb);
+    CHECK_ALLOC(eri_aabb);
+    CHECK_ALLOC(h_mo_scratch);
 
     molecular_ao_to_mo(h_ao, eri_ao, uhf->C_alpha, 5, h_mo_scratch, eri_aaaa);
     molecular_ao_to_mo(h_ao, eri_ao, uhf->C_beta, 5, h_mo_scratch, eri_bbbb);

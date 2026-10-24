@@ -1,58 +1,6 @@
 /*
  * Benchmark: Hybrid MPI (across processes) + OpenMP (within a process)
- * scaling for VMC/DMC on He, implementing TODO.md's "Phase 1: Hybrid VMC
- * Baseline" and DMC extension.
- *
- * This is the first MPI-aware code in the repo -- everything else (OpenMP
- * replica parallelism via vmc_run_parallel/dmc_run_parallel, demonstrated in
- * examples/eg_39_openmp_qmc.c) already exists and needed no changes.
- *
- * Design, following TODO.md's own outline and core/random.h's documented
- * RNG-fanout contract:
- *   - OpenMP fans out across REPLICAS WITHIN a rank: vmc_run_parallel /
- *     dmc_run_parallel already do this internally via rng_jump() (see
- *     physics/vmc.c, physics/dmc.c), needing no MPI-specific code at all.
- *   - MPI fans out across RANKS: each rank derives its own well-separated
- *     RNG starting point via rng_long_jump() (core/random.h: "generating
- *     independent *jump* starting points (e.g. one per MPI rank, each of
- *     which then uses rng_jump() internally to fan out to its own
- *     threads/walkers)"), then extracts a uint64_t seed from it to hand to
- *     vmc_run_parallel/dmc_run_parallel's existing master_seed parameter.
- *     No changes to physics/vmc.c or physics/dmc.c were needed.
- *   - Statistics are combined with MPI_Gather (not MPI_Allreduce on the raw
- *     means): only rank 0 needs the combined result to report it, and
- *     gathering each rank's local grand_mean lets rank 0 compute a proper
- *     inter-rank standard error (std of the per-rank means / sqrt(n_ranks)),
- *     the same treatment vmc_run_parallel itself gives to its per-replica
- *     means one level down. This mirrors TODO.md's "Use MPI_Allreduce
- *     strictly at the end of optimization blocks to pool statistical
- *     averages across processes" -- Allreduce broadcasts too, which no rank
- *     here needs, so Reduce+Gather is the tighter-scoped choice for a
- *     reporting-only benchmark. A future parameter-optimization driver that
- *     needs every rank to see the pooled result would want Allreduce
- *     instead.
- *
- * Physical work done per rank is IDENTICAL to eg_39_openmp_qmc.c's single
- * process -- MPI only adds the process dimension on top.
- *
- * TODO.md "Phase 2: Distributed VMC" checklist, addressed here:
- *   - "Manager-Worker / All-Reduce VMC execution": MPI_Gather-based
- *     aggregation above (see the design note on Allreduce vs Gather).
- *   - "Verify statistical agreement with serial VMC": the serial-reference
- *     block below now keeps every replica's mean (not just timing) and
- *     reports a z-score between the hybrid and serial grand means via
- *     standard error propagation -- a real correctness check, not just a
- *     timing comparison.
- *   - "Profile OpenMP vs. MPI vs. Hybrid scaling": no new code needed for
- *     this -- it's three ways of invoking the same binary:
- *       OpenMP-only:  OMP_NUM_THREADS=N mpirun -np 1
- * ./build/bench_openmp_parallel MPI-only:     OMP_NUM_THREADS=1 mpirun -np N
- * ./build/bench_openmp_parallel Hybrid:       OMP_NUM_THREADS=k mpirun -np N/k
- * ./build/bench_openmp_parallel Compare the reported "Hybrid MPI+OpenMP
- * speedup" line across the three; on a single machine (no real multi-node MPI)
- * OpenMP-only should generally win since it avoids MPI's process-startup and
- *     message-passing overhead entirely -- MPI's own advantage only shows
- *     up once ranks are actually spread across separate machines.
+ * scaling for VMC/DMC on He
  *
  * USAGE (needs an MPI implementation, e.g. `apt install libopenmpi-dev`):
  *   make PLOT_BACKEND=NONE SANITIZE=0 build/bench_openmp_parallel
@@ -65,6 +13,7 @@
 #include "../core/random.h"
 #include "../physics/dmc.h"
 #include "../physics/vmc.h"
+#include "benchmark_utils.h"
 #include <math.h>
 #include <mpi.h>
 #include <stdint.h>
@@ -78,13 +27,13 @@
 
 static double wall_seconds(void) { return MPI_Wtime(); }
 
-/* Rank-unique master seed: long_jump `rank+1` times from a shared base
- * seed, then draw a scalar to feed into vmc_run_parallel/dmc_run_parallel's
- * existing uint64_t master_seed parameter (which itself rng_jump()'s that
- * scalar out across the rank's local OpenMP replicas). Non-overlap between
- * ranks and between a rank's replicas is therefore end-to-end guaranteed by
- * the same jump/long_jump machinery already used for OpenMP, not by hoping
- * distinct scalar seeds don't collide. */
+// Rank-unique master seed: long_jump `rank+1` times from a shared base seed,
+// then draw a scalar to feed into vmc_run_parallel/dmc_run_parallel's existing
+// uint64_t master_seed parameter (which itself rng_jump()'s that scalar out
+// across rank's local OpenMP replicas). Non-overlap between ranks and between a
+// rank's replicas is therefore end-to-end guaranteed by same jump/long_jump
+// machinery already used for OpenMP, not by hoping distinct scalar seeds don't
+// collide
 static uint64_t rank_master_seed(uint64_t base_seed, int rank) {
   rng_state_t rng;
   rng_seed(&rng, base_seed);
@@ -113,18 +62,23 @@ int main(int argc, char **argv) {
            "workers: %d)\n",
            n_ranks, n_threads, n_ranks * n_threads);
 #ifndef _OPENMP
-    printf("# NOTE: built without OpenMP -- rebuild with -fopenmp for the "
+    printf("# NOTE: built without OpenMP -- rebuild with -fopenmp for "
            "intra-rank half of this benchmark to do anything.\n");
 #endif
   }
 
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
-  int n_equilibration = 1000, n_samples = 40000, block_size = 100;
-  double step1 = 0.9, step2 = 0.9;
-  int replicas_per_rank = n_threads; /* always >= 1: set above */
+  double Z = 2.0;
+  double Zeff = 1.6875;
+  double b = 0.3;
+  int n_equilibration = 1000;
+  int n_samples = 40000;
+  int block_size = 100;
+  double step1 = 0.9;
+  double step2 = 0.9;
+  int replicas_per_rank = n_threads; // always >= 1: set above
   uint64_t base_seed = 1000ULL;
 
-  /* === VMC === */
+  // === VMC ===
   uint64_t my_seed = rank_master_seed(base_seed, rank);
 
   MPI_Barrier(MPI_COMM_WORLD);
@@ -138,9 +92,9 @@ int main(int argc, char **argv) {
   double *all_means = NULL, *all_elapsed = NULL;
   int *all_nsamples = NULL;
   if (rank == 0) {
-    all_means = malloc((size_t)n_ranks * sizeof(double));
-    all_elapsed = malloc((size_t)n_ranks * sizeof(double));
-    all_nsamples = malloc((size_t)n_ranks * sizeof(int));
+    all_means = xmalloc((size_t)n_ranks * sizeof(double));
+    all_elapsed = xmalloc((size_t)n_ranks * sizeof(double));
+    all_nsamples = xmalloc((size_t)n_ranks * sizeof(int));
   }
 
   MPI_Gather(&local.mean, 1, MPI_DOUBLE, all_means, 1, MPI_DOUBLE, 0,
@@ -178,7 +132,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    printf("\n=== VMC: %d ranks x %d replicas/rank, %d samples/replica (%ld "
+    printf("\n === VMC: %d ranks x %d replicas/rank, %d samples/replica (%ld "
            "total samples) ===\n",
            n_ranks, replicas_per_rank, n_samples, total_samples);
     printf("Wall time (max across ranks): %.3f s\n", max_elapsed);
@@ -186,17 +140,15 @@ int main(int argc, char **argv) {
            "ranks; exact He ground state: -2.9037)\n",
            grand_mean, inter_rank_error, n_ranks);
 
-    /* Reference: same total sampling work (n_ranks * replicas_per_rank
-     * independent replicas), run serially on rank 0 alone -- same
-     * methodology as eg_39_openmp_qmc.c's sequential-loop comparison,
-     * extended across the MPI dimension too. Collect each serial replica's
-     * mean (not just timing) so we can check statistical agreement with the
-     * hybrid run below, per TODO.md Phase 2's "Verify statistical agreement
-     * with serial VMC". */
+    // Reference: same total sampling work (n_ranks * replicas_per_rank
+    // independent replicas), run serially on rank 0 alone using sequential-loop
+    // comparison, extended across MPI dimension too Collect each serial
+    // replica's mean (not just timing) so we can check statistical agreement
+    // with hybrid run below
     int n_serial_replicas = n_ranks * replicas_per_rank;
-    double *serial_means = malloc((size_t)n_serial_replicas * sizeof(double));
+    double *serial_means = xmalloc((size_t)n_serial_replicas * sizeof(double));
 
-    printf("\nSerial reference: running the equivalent %d total replicas "
+    printf("\n Serial reference: running the equivalent %d total replicas "
            "one at a time on rank 0 for comparison...\n",
            n_serial_replicas);
     double t2 = wall_seconds();
@@ -241,28 +193,27 @@ int main(int argc, char **argv) {
              serial_elapsed / max_elapsed, n_serial_replicas);
     }
 
-    /* Statistical agreement check: hybrid grand_mean/inter_rank_error above
-     * vs. this serial_grand_mean/serial_error, combined via standard
-     * error propagation. These are two independent estimates of the same
-     * quantity (same physical system, same total sampling work, disjoint
-     * RNG streams via rng_long_jump), so |z| should be O(1) if the hybrid
-     * path introduces no statistical bias -- a genuine correctness check,
-     * not just a timing comparison. */
+    // Statistical agreement check: hybrid grand_mean/inter_rank_error above vs.
+    // this serial_grand_mean/serial_error, combined via standard error
+    // propagation. These are 2 independent estimates of same quantity (same
+    // physical system, same total sampling work, disjoint RNG streams via
+    // rng_long_jump), so |z| should be O(1) if hybrid path introduces no
+    // statistical bias - a correctness check comparison
     double combined_error =
         sqrt(inter_rank_error * inter_rank_error + serial_error * serial_error);
     double z = (combined_error > 1e-12)
                    ? (grand_mean - serial_grand_mean) / combined_error
                    : 0.0;
-    printf("\nStatistical agreement check (hybrid vs. serial, same total "
+    printf("\n Statistical agreement check (hybrid vs. serial, same total "
            "sampling work):\n");
-    printf("  z = (E_hybrid - E_serial) / sqrt(err_hybrid^2 + err_serial^2) "
+    printf("   z = (E_hybrid - E_serial) / \\sqrt(err_hybrid^2 + err_serial^2) "
            "= %.3f\n",
            z);
-    printf("  %s (|z| %s 2: hybrid and serial agree within combined "
+    printf("   %s (|z| %s 2: hybrid and serial agree within combined "
            "statistical uncertainty)\n",
            fabs(z) < 2.0 ? "PASS"
-                         : "WARN -- check for a bias in the hybrid "
-                           "RNG fan-out or an unlucky sample",
+                         : "WARN: check for a bias in hybrid RNG fan-out or an "
+                           "unlucky sample",
            fabs(z) < 2.0 ? "<" : ">=");
 
     free(all_means);
@@ -270,7 +221,7 @@ int main(int argc, char **argv) {
     free(all_nsamples);
   }
 
-  /* === DMC === */
+  // DMC
   MPI_Barrier(MPI_COMM_WORLD);
   uint64_t my_dmc_seed = rank_master_seed(base_seed + 424242ULL, rank);
 
@@ -287,8 +238,8 @@ int main(int argc, char **argv) {
 
   double *all_dmc_means = NULL, *all_dmc_elapsed = NULL;
   if (rank == 0) {
-    all_dmc_means = malloc((size_t)n_ranks * sizeof(double));
-    all_dmc_elapsed = malloc((size_t)n_ranks * sizeof(double));
+    all_dmc_means = xmalloc((size_t)n_ranks * sizeof(double));
+    all_dmc_elapsed = xmalloc((size_t)n_ranks * sizeof(double));
   }
 
   MPI_Gather(&local_dmc.energy_mixed, 1, MPI_DOUBLE, all_dmc_means, 1,
@@ -324,10 +275,10 @@ int main(int argc, char **argv) {
       }
     }
 
-    printf("\n=== DMC: %d ranks x %d replicas/rank ===\n", n_ranks,
+    printf("\n === DMC: %d ranks x %d replicas/rank ===\n", n_ranks,
            replicas_per_rank);
-    printf("Wall time (max across ranks): %.3f s\n", max_elapsed);
-    printf("mixed estimator: E = %.6f +- %.6f Hartree (inter-rank standard "
+    printf(" Wall time (max across ranks): %.3f s\n", max_elapsed);
+    printf(" mixed estimator: E = %.6f +- %.6f Hartree (inter-rank standard "
            "error over %d ranks)\n",
            grand_mean, inter_rank_error, n_ranks);
 
