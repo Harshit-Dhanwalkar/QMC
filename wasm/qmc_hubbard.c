@@ -4,7 +4,7 @@
  * Physics: physics/hubbard_dimer.c (exact diagonalisation of two Hubbard sites)
  * Hopping is unit of energy (t = 1, hbar = 1); page varies U / t. Half filling
  * (N = 2) is shown: spectrum and ground-state observables against U, Neel
- * quench, one-site probabilities and canonical thermal averages.
+ * quench, one-site probabilities and canonical thermal averages
  */
 
 #include "../physics/hubbard_dimer.h"
@@ -87,6 +87,11 @@ double *qmc_hb_levels_buffer(void) { return g_levels; }
 
 static int u_ok(double u) { return u >= 0.0 && u <= 40.0; }
 
+// Exact degeneracies leave eigenvalues at +-1e-17 noise whose sign differs
+// between libm/FP orderings (native vs WASM), printing as "-0.00000" vs
+// "0.00000". Snap to a positive zero at the export boundary
+static double clean0(double x) { return fabs(x) < 1e-12 ? 0.0 : x; }
+
 static void gs_state(const hd_solution_t *s, double *re, double *im) {
   int idx[6];
 
@@ -110,13 +115,13 @@ int qmc_hb_curves(double umax) {
     hd_solve(1.0, umax * i / (HB_CURVE - 1), &s);
     hd_n2_states(&s, idx);
     for (int l = 0; l < 6; l++) {
-      g_spec[l * HB_CURVE + i] = s.e[idx[l]];
+      g_spec[l * HB_CURVE + i] = clean0(s.e[idx[l]]);
     }
 
     hd_eigenstate(&s, idx[0], re, im);
-    g_gs_d[i] = hd_expect_double_occ(re, im);
-    g_gs_ss[i] = hd_expect_ss(re, im);
-    g_gs_s[i] = hd_site_entropy(re, im, 0);
+    g_gs_d[i] = clean0(hd_expect_double_occ(re, im));
+    g_gs_ss[i] = clean0(hd_expect_ss(re, im));
+    g_gs_s[i] = clean0(hd_site_entropy(re, im, 0));
   }
 
   return 0;
@@ -136,7 +141,7 @@ double qmc_hb_levels(double u) {
   hd_solve(1.0, u, &s);
   hd_n2_states(&s, idx);
   for (int l = 0; l < 6; l++) {
-    g_levels[l] = s.e[idx[l]];
+    g_levels[l] = clean0(s.e[idx[l]]);
   }
 
   return g_levels[0];
@@ -162,10 +167,10 @@ int qmc_hb_quench(double u, double tmax) {
   for (int i = 0; i < HB_TIME; i++) {
     hd_evolve(&s, re0, im0, tmax * i / (HB_TIME - 1), re, im);
 
-    g_q_d[i] = hd_expect_double_occ(re, im);
-    g_q_m[i] = 2.0 * hd_expect_sz(re, im, 0);
-    g_q_s[i] = hd_site_entropy(re, im, 0);
-    g_q_ss[i] = hd_expect_ss(re, im);
+    g_q_d[i] = clean0(hd_expect_double_occ(re, im));
+    g_q_m[i] = clean0(2.0 * hd_expect_sz(re, im, 0));
+    g_q_s[i] = clean0(hd_site_entropy(re, im, 0));
+    g_q_ss[i] = clean0(hd_expect_ss(re, im));
   }
 
   return 0;
@@ -218,10 +223,10 @@ int qmc_hb_thermal(double u, double tmax) {
   for (int i = 0; i < HB_CURVE; i++) {
     hd_thermal_n2(&s, tmax * (i + 1) / HB_CURVE, &th);
 
-    g_th_d[i] = th.double_occ;
-    g_th_ss[i] = th.ss;
-    g_th_s[i] = th.entropy;
-    g_th_e[i] = th.energy;
+    g_th_d[i] = clean0(th.double_occ);
+    g_th_ss[i] = clean0(th.ss);
+    g_th_s[i] = clean0(th.entropy);
+    g_th_e[i] = clean0(th.energy);
   }
 
   return 0;

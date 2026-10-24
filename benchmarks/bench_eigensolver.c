@@ -1,7 +1,7 @@
 /*
  * Benchmark: hand-rolled (Jacobi, via cmatrix_eigh_generic) vs LAPACK zheev
  * complex-Hermitian eigensolver, both reached through the single entry point
- * core/linalg/complex_eigh.c:cmatrix_eigh_complex().
+ * core/linalg/complex_eigh.c:cmatrix_eigh_complex()
  *
  * NOTE: cmatrix_eigh_complex() picks its backend at COMPILE time (#ifdef
  * USE_LAPACK), not runtime, so a single binary can only exercise one path. This
@@ -15,7 +15,7 @@
  *  compute : max_i ||H v_i - lambda_i v_i|| / ||v_i||
  * directly against the input matrix, rather than diffing against a
  * simultaneously-computed "other" solver (which this compile-time split makes
- * impossible within one run anyway).
+ * impossible within one run anyway)
  *
  * USAGE:
  *   gcc/USE_LAPACK=0 build:
@@ -24,7 +24,7 @@
  *     make PLOT_BACKEND=NONE SANITIZE=0 USE_LAPACK=1 build/bench_eigensolver
  *
  *   ./build/bench_eigensolver [size1 size2 ...]   (defaults below if none
- * given)
+ *    given)
  */
 
 #include "../core/complex.h"
@@ -128,7 +128,12 @@ int main(int argc, char **argv) {
 
   if (argc > 1) {
     n_sizes = argc - 1;
-    sizes = malloc(n_sizes * sizeof(int));
+    sizes = malloc((size_t)n_sizes * sizeof(int));
+    if (!sizes) {
+      fprintf(stderr, "bench_eigensolver: out of memory\n");
+
+      return 1;
+    }
 
     for (int i = 0; i < n_sizes; i++) {
       sizes[i] = atoi(argv[i + 1]);
@@ -136,7 +141,7 @@ int main(int argc, char **argv) {
   }
 
   printf("# Eigensolver benchmark -- backend: %s\n", BACKEND_TAG);
-  printf("# Size | Time (ms) | Max residual ||Hv - lambda*v|| / ||v||\n");
+  printf("# Size | Time (ms) | Max residual ||Hv - \\lambda*v|| / ||v||\n");
 
   rng_state_t rng;
   rng_seed(&rng, 42ULL);
