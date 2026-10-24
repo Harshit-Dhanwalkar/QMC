@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-20 interactive demos, all computed live by the same C library you can read
+21 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -27,6 +27,7 @@ what the C code returns.
 | [Quantum corral](playground/corral.html)           | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
 | [Hubbard dimer](playground/hubbard.html)           | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
 | [Resonant tunnelling](playground/tunnel.html)      | Two thin barriers, transmission jumps to 1            | `db_transmission`                   | 22 KB |
+| [Josephson junction](playground/josephson.html)    | Washboard pendulum: hysteresis and Shapiro steps      | `jj_sweep`                          | 22 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -400,6 +401,26 @@ height of 1 for symmetric barriers (and less for asymmetric ones), and that
 the dwell time peaks on resonance.
 
 [Open the demo](playground/tunnel.html)
+
+## The Josephson junction: a pendulum made of two superconductors
+
+[![Josephson junction](playground/josephson.gif)](playground/josephson.html)
+
+Two superconductors separated by a thin insulator share a macroscopic quantum
+phase, and the phase difference φ across the junction obeys the equation of a
+damped, driven pendulum: $\phi'' + \phi'/Q + \sin(\phi) = i$. Equivalently it
+is a ball rolling in a tilted washboard potential. Below the critical current
+the ball is trapped in a well and no voltage appears; above it the ball runs and
+the voltage is the average speed. A lightly damped junction is hysteretic: it
+switches to the voltage state at $i = 1$ but only retraps near $4/(\pi Q)$ on
+the way down. Add an ac drive and the running phase locks to it, so the I–V curve
+has flat Shapiro steps at $V = n \Omega$, the basis of the voltage standard. The
+page animates the ball, draws the washboard, and sweeps the I–V curve up and down.
+The tests check the supercurrent branch, the overdamped formula $V = Q\sqrt{(i^2−1)}$,
+fourth-order convergence of the integrator and its energy conservation, the
+hysteresis loop and the Shapiro plateau.
+
+[Open the demo](playground/josephson.html)
 
 ## Run it yourself
 

@@ -213,11 +213,19 @@
       <br>
       <sub>Fabry-Perot resonances, quasi-bound states, and dwell time in a double-barrier structure</sub>
     </td>
-    <td width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/josephson.html">
+        <img src="docs/src/playground/josephson.gif" alt="RCSJ Josephson junction phase dynamics and I-V curve" width="260" height="260">
+      </a>
+      <br>
+      <b>Josephson junction</b>
+      <br>
+      <sub>Phase particle in a tilted washboard potential: hysteresis, switching currents, and Shapiro steps</sub>
+    </td>
   </tr>
 </table>
 
-A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, and quantum Monte Carlo (variational and diffusion).
+A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, Josephson junction dynamics, and quantum Monte Carlo (variational and diffusion).
 
 > **Units Convention:** Natural/atomic units ($\hbar = m = 1$) are used throughout, except `hydrogen.c` and `fine_structure.c`, which work in SI units and take explicit physical parameters ($\hbar, m_e, e$, etc.).
 
@@ -347,6 +355,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
   - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
   - Quantum rings: Persistent currents and Aharonov-Bohm transmission (scattering matrix via Green's functions).
+  - Josephson junctions: RCSJ model phase dynamics, I-V sweeps with hysteresis and Shapiro steps under AC drive.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - Optimised linear algebra (LAPACK/BLAS backend).
 

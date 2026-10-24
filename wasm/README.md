@@ -38,6 +38,8 @@
 
 `qmc_tunnel.c` wraps the transfer-matrix double barrier (`physics/double_barrier.c`): `docs/src/playground/tunnel.html` shows resonant transmission, the dwell time and the wavefunction in the well.
 
+`qmc_josephson.c` wraps the RCSJ Josephson junction (`physics/josephson.c`): `docs/src/playground/josephson.html` animates the phase in the washboard potential and sweeps the I-V curve with hysteresis and Shapiro steps.
+
 ## Build
 
 ```sh
@@ -143,6 +145,8 @@ Corral module (`qmc_corral.wasm`, no imports): the first call builds a table of 
 Ring module (`qmc_ring.wasm`, no imports): t = 1, rings of 4 .. 32 sites with leads at sites 0 and b. `qmc_ar_spectrum(n)` fills the sorted levels against flux in [-1, 1], `qmc_ar_current(n, ne)` the persistent current of ne electrons, `qmc_ar_trans_flux(n, b, e)` and `qmc_ar_trans_energy(n, b, flux)` the transmission curves, `qmc_ar_map(n, b)` a 64 x 64 transmission map over flux and energy and `qmc_ar_point(n, b, flux, e)` one value (`qmc_ar_last_reflection` gives R).
 
 Tunnel module (`qmc_tunnel.wasm`, no imports): units hbar^2/2m = 1. `qmc_dt_set(v1, b1, w, b2, v2, vw)` defines barrier, well and barrier, `qmc_dt_curves(emax)` fills T(E) and the dwell time, `qmc_dt_point(e)` returns T at one energy (`qmc_dt_last_reflection` gives R) and `qmc_dt_profile(e, xmin, xmax)` fills |psi|^2 and the potential along x.
+
+Josephson module (`qmc_josephson.wasm`, no imports): time in units of 1/omega_p. `qmc_jj_set(q, i_dc, i_ac, omega)` sets the junction, `qmc_jj_reset(phi, v)` and `qmc_jj_advance(t)` step the live pendulum (`qmc_jj_phi/v/time` read it), and `qmc_jj_iv(imax)` fills the up and down sweep I-V curves.
 
 Regenerate the butterfly images:
 
