@@ -455,7 +455,8 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_91_circular_billiard \
               $(BUILD_DIR)/eg_92_hubbard_dimer \
               $(BUILD_DIR)/eg_93_ab_ring \
-              $(BUILD_DIR)/eg_94_double_barrier
+              $(BUILD_DIR)/eg_94_double_barrier \
+              $(BUILD_DIR)/eg_95_josephson
 
 
 TESTS       = $(BUILD_DIR)/test_version \
@@ -490,6 +491,7 @@ TESTS       = $(BUILD_DIR)/test_version \
               $(BUILD_DIR)/test_hubbard_dimer \
               $(BUILD_DIR)/test_ab_ring \
               $(BUILD_DIR)/test_double_barrier \
+              $(BUILD_DIR)/test_josephson \
               $(BUILD_DIR)/test_crank_nicolson \
               $(BUILD_DIR)/test_wkb \
               $(BUILD_DIR)/test_potentials \
