@@ -1,19 +1,19 @@
 /*
  * Benchmark: hand-rolled (Jacobi, via cmatrix_eigh_generic) vs LAPACK zheev
- * complex-Hermitian eigensolver, both reached through the single entry point
+ * complex-Hermitian eigensolver, both reached through single entry point
  * core/linalg/complex_eigh.c:cmatrix_eigh_complex()
  *
  * NOTE: cmatrix_eigh_complex() picks its backend at COMPILE time (#ifdef
  * USE_LAPACK), not runtime, so a single binary can only exercise one path. This
  * benchmark is therefore built twice : once with USE_LAPACK=0, once with
- * USE_LAPACK=1. And each run writes a tagged results line; combine the two
- * output files for the side-by-side comparison.
- * See benchmarks/README.md for the exact build/run recipe.
+ * USE_LAPACK=1. And each run writes a tagged results line; combine 2 output
+ * files for side-by-side comparison
+ * See benchmarks/README.md for exact build/run recipe
  *
  * Accuracy is checked with a residual test independent of any reference solver:
- *  for each returned eigenpair : (lambda_i, v_i),
+ * for each returned eigenpair: (\lambda_i, v_i),
  *  compute : max_i ||H v_i - lambda_i v_i|| / ||v_i||
- * directly against the input matrix, rather than diffing against a
+ * directly against input matrix, rather than diffing against a
  * simultaneously-computed "other" solver (which this compile-time split makes
  * impossible within one run anyway)
  *
@@ -23,8 +23,7 @@
  *   USE_LAPACK=1 build (separate build dir to avoid stale objects):
  *     make PLOT_BACKEND=NONE SANITIZE=0 USE_LAPACK=1 build/bench_eigensolver
  *
- *   ./build/bench_eigensolver [size1 size2 ...]   (defaults below if none
- *    given)
+ *   ./build/bench_eigensolver [size1 size2 ...]  (defaults below if none given)
  */
 
 #include "../core/complex.h"
@@ -32,6 +31,7 @@
 #include "../core/matrix.h"
 #include "../core/random.h"
 #include "../core/vector.h"
+#include "benchmark_utils.h"
 #include <bits/time.h>
 #include <math.h>
 #include <stdio.h>
@@ -51,8 +51,8 @@ static double wall_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9;
 }
 
-/* Random n x n complex Hermitian matrix: A_ij ~ N(0,1) + i N(0,1) off-diagonal
- * (with A_ji = conj(A_ij)), A_ii ~ N(0,1) real. */
+// Random n x n complex Hermitian matrix: A_ij ~ N(0,1) + i N(0,1) off-diagonal
+// (with A_ji = conj(A_ij)), A_ii ~ N(0,1) real
 static cmatrix_t *random_hermitian(int n, rng_state_t *rng) {
   cmatrix_t *H = cmatrix_alloc(n, n);
   if (!H) {
@@ -73,7 +73,7 @@ static cmatrix_t *random_hermitian(int n, rng_state_t *rng) {
   return H;
 }
 
-/* max_i ||H v_i - \\lambda_i v_i|| / ||v_i|| over all n returned eigenpairs. */
+// max_i ||H v_i - \\lambda_i v_i|| / ||v_i|| over all n returned eigenpairs
 static double max_residual(const cmatrix_t *H, const eigen_t *eig) {
   int n = eig->n;
   double worst = 0.0;
@@ -128,12 +128,7 @@ int main(int argc, char **argv) {
 
   if (argc > 1) {
     n_sizes = argc - 1;
-    sizes = malloc((size_t)n_sizes * sizeof(int));
-    if (!sizes) {
-      fprintf(stderr, "bench_eigensolver: out of memory\n");
-
-      return 1;
-    }
+    sizes = xmalloc((size_t)n_sizes * sizeof(int));
 
     for (int i = 0; i < n_sizes; i++) {
       sizes[i] = atoi(argv[i + 1]);

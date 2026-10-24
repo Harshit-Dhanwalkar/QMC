@@ -13,6 +13,7 @@
 #include "../core/random.h"
 #include "../physics/dmc.h"
 #include "../physics/vmc.h"
+#include "benchmark_utils.h"
 #include <math.h>
 #include <mpi.h>
 #include <stdint.h>
@@ -26,26 +27,13 @@
 
 static double wall_seconds(void) { return MPI_Wtime(); }
 
-// malloc that aborts whole MPI job on failure, so callers never see NULL
-static void *xmalloc(size_t bytes) {
-  void *p = malloc(bytes);
-
-  if (!p) {
-    fprintf(stderr, "bench_openmp_parallel: out of memory (%zu bytes)\n",
-            bytes);
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-
-  return p;
-}
-
-/* Rank-unique master seed: long_jump `rank+1` times from a shared base
- * seed, then draw a scalar to feed into vmc_run_parallel/dmc_run_parallel's
- * existing uint64_t master_seed parameter (which itself rng_jump()'s that
- * scalar out across rank's local OpenMP replicas). Non-overlap between
- * ranks and between a rank's replicas is therefore end-to-end guaranteed by
- * same jump/long_jump machinery already used for OpenMP, not by hoping
- * distinct scalar seeds don't collide */
+// Rank-unique master seed: long_jump `rank+1` times from a shared base seed,
+// then draw a scalar to feed into vmc_run_parallel/dmc_run_parallel's existing
+// uint64_t master_seed parameter (which itself rng_jump()'s that scalar out
+// across rank's local OpenMP replicas). Non-overlap between ranks and between a
+// rank's replicas is therefore end-to-end guaranteed by same jump/long_jump
+// machinery already used for OpenMP, not by hoping distinct scalar seeds don't
+// collide
 static uint64_t rank_master_seed(uint64_t base_seed, int rank) {
   rng_state_t rng;
   rng_seed(&rng, base_seed);
@@ -79,9 +67,14 @@ int main(int argc, char **argv) {
 #endif
   }
 
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
-  int n_equilibration = 1000, n_samples = 40000, block_size = 100;
-  double step1 = 0.9, step2 = 0.9;
+  double Z = 2.0;
+  double Zeff = 1.6875;
+  double b = 0.3;
+  int n_equilibration = 1000;
+  int n_samples = 40000;
+  int block_size = 100;
+  double step1 = 0.9;
+  double step2 = 0.9;
   int replicas_per_rank = n_threads; // always >= 1: set above
   uint64_t base_seed = 1000ULL;
 
@@ -147,15 +140,15 @@ int main(int argc, char **argv) {
            "ranks; exact He ground state: -2.9037)\n",
            grand_mean, inter_rank_error, n_ranks);
 
-    /* Reference: same total sampling work (n_ranks * replicas_per_rank
-     * independent replicas), run serially on rank 0 alone using sequential-loop
-     * comparison, extended across MPI dimension too Collect each serial
-     * replica's mean (not just timing) so we can check statistical agreement
-     * with hybrid run below */
+    // Reference: same total sampling work (n_ranks * replicas_per_rank
+    // independent replicas), run serially on rank 0 alone using sequential-loop
+    // comparison, extended across MPI dimension too Collect each serial
+    // replica's mean (not just timing) so we can check statistical agreement
+    // with hybrid run below
     int n_serial_replicas = n_ranks * replicas_per_rank;
     double *serial_means = xmalloc((size_t)n_serial_replicas * sizeof(double));
 
-    printf("\nSerial reference: running the equivalent %d total replicas "
+    printf("\n Serial reference: running the equivalent %d total replicas "
            "one at a time on rank 0 for comparison...\n",
            n_serial_replicas);
     double t2 = wall_seconds();
@@ -200,23 +193,23 @@ int main(int argc, char **argv) {
              serial_elapsed / max_elapsed, n_serial_replicas);
     }
 
-    /* Statistical agreement check: hybrid grand_mean/inter_rank_error above
-     * vs. this serial_grand_mean/serial_error, combined via standard error
-     * propagation. These are 2 independent estimates of same quantity (same
-     * physical system, same total sampling work, disjoint RNG streams via
-     * rng_long_jump), so |z| should be O(1) if hybrid path introduces no
-     * statistical bias - a correctness check comparison */
+    // Statistical agreement check: hybrid grand_mean/inter_rank_error above vs.
+    // this serial_grand_mean/serial_error, combined via standard error
+    // propagation. These are 2 independent estimates of same quantity (same
+    // physical system, same total sampling work, disjoint RNG streams via
+    // rng_long_jump), so |z| should be O(1) if hybrid path introduces no
+    // statistical bias - a correctness check comparison
     double combined_error =
         sqrt(inter_rank_error * inter_rank_error + serial_error * serial_error);
     double z = (combined_error > 1e-12)
                    ? (grand_mean - serial_grand_mean) / combined_error
                    : 0.0;
-    printf("\nStatistical agreement check (hybrid vs. serial, same total "
+    printf("\n Statistical agreement check (hybrid vs. serial, same total "
            "sampling work):\n");
-    printf("  z = (E_hybrid - E_serial) / \\sqrt(err_hybrid^2 + err_serial^2) "
+    printf("   z = (E_hybrid - E_serial) / \\sqrt(err_hybrid^2 + err_serial^2) "
            "= %.3f\n",
            z);
-    printf("  %s (|z| %s 2: hybrid and serial agree within combined "
+    printf("   %s (|z| %s 2: hybrid and serial agree within combined "
            "statistical uncertainty)\n",
            fabs(z) < 2.0 ? "PASS"
                          : "WARN: check for a bias in hybrid RNG fan-out or an "
@@ -284,8 +277,8 @@ int main(int argc, char **argv) {
 
     printf("\n === DMC: %d ranks x %d replicas/rank ===\n", n_ranks,
            replicas_per_rank);
-    printf("Wall time (max across ranks): %.3f s\n", max_elapsed);
-    printf("mixed estimator: E = %.6f +- %.6f Hartree (inter-rank standard "
+    printf(" Wall time (max across ranks): %.3f s\n", max_elapsed);
+    printf(" mixed estimator: E = %.6f +- %.6f Hartree (inter-rank standard "
            "error over %d ranks)\n",
            grand_mean, inter_rank_error, n_ranks);
 
