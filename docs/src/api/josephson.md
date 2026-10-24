@@ -12,6 +12,8 @@ RCSJ Josephson junction: phase dynamics, I-V sweeps, hysteresis and Shapiro step
 
 **Start with:** [`jj_step`](#jj_step), [`jj_advance`](#jj_advance), [`jj_mean_voltage`](#jj_mean_voltage), [`jj_sweep`](#jj_sweep)
 
+- Example: `examples/eg_95_josephson.c`
+- Test (every call with expected results): `tests/test_josephson.c`
 - Runtime help: `qmc_help(stdout, "josephson");` or `qmc-help josephson`
 
 ## Overview

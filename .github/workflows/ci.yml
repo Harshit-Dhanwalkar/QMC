@@ -137,18 +137,18 @@ jobs:
 
       - name: Run Cppcheck
         # run: |
-        #   cppcheck --enable=warning,performance,portability \
-        #            --suppress=constVariable \
-        #            --suppress=constParameterPointer \
+        #   cppcheck --enable=warning,style,performance,portability \
         #            --error-exitcode=1 \
         #            --inline-suppr \
-        #            -I core -I physics -I export .
+        #            -I core -I physics -I export \
+        #            -i third_party -i build .
         run: |
           cppcheck --enable=warning,style,performance,portability \
                    --error-exitcode=1 \
                    --inline-suppr \
                    -I core -I physics -I export \
-                   -i third_party -i build .
+                   -i third_party -i build -i tests \
+                   .
 
       # - name: Install bear and generate compilation database
       #   run: |

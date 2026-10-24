@@ -245,7 +245,7 @@ static const qmc_module_t qmc_catalog_modules[] = {
     {"josephson", "physics/josephson.h", "Condensed matter & many-body",
      "RCSJ Josephson junction: phase dynamics, I-V sweeps, hysteresis and Shapiro steps.",
      "jj_step, jj_advance, jj_mean_voltage, jj_sweep",
-     "", "", "", 1},
+     "", "examples/eg_95_josephson.c", "tests/test_josephson.c", 1},
     {"lattice", "physics/lattice.h", "Condensed matter & many-body",
      "Tight-binding lattice models on 1D and 2D lattices, including Hofstadter and Chern-number routines.",
      "lattice_build_1d_chain, lattice_1d_chain_analytic, lattice_build_2d_square, lattice_2d_square_analytic, lattice_build_anderson_1d",
