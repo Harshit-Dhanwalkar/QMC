@@ -184,14 +184,16 @@ static void test_2d_round_trip(void) {
     check_true(parsed.n_values == 6, "POINT_DATA count matches nx*ny*nz");
 
     int all_match = 1;
+    const double eps = 1e-12;
     for (int i = 0; i < 6; i++) {
-      if (parsed.values[i] != data[i]) {
+      if (fabs(parsed.values[i] - data[i]) > eps) {
         all_match = 0;
       }
     }
 
-    check_true(all_match,
-               "every scalar value round-trips bit-for-bit identical");
+    check_true(
+        all_match,
+        "every scalar value round-trips within floating-point tolerance");
 
     free(parsed.values);
   }

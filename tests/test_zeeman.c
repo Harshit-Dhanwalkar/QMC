@@ -1,6 +1,6 @@
 /*
- * Test: zeeman.c (Lande g-factor, weak-field Zeeman shift, and a
- * Clebsch-Gordan cross-check of <Sz>)
+ * Test: zeeman.c (Lande g-factor, weak-field Zeeman shift and a Clebsch-Gordan
+ * cross-check of <Sz>)
  *
  * 1. Lande g-factors reproduce known textbook values for S1/2, P1/2, P3/2,
  *    D3/2, D5/2
@@ -16,32 +16,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int check_close(double got, double expected, double tol,
-                       const char *label) {
+static int failures = 0;
+
+static void check_close(double got, double expected, double tol,
+                        const char *label) {
   double err = fabs(got - expected);
-
   printf("  %s: got=%.8f expected=%.8f err=%.2e\n", label, got, expected, err);
-
-  return err > tol;
+  if (!(err <= tol)) {
+    printf("  FAIL: %s\n", label);
+    failures++;
+  }
 }
 
-static int test_known_g_factors(void) {
-  int fail = 0;
-  fail |= check_close(zeeman_lande_g_factor(0, 1), 2.0, 1e-10, "S1/2 g_J");
-  fail |=
-      check_close(zeeman_lande_g_factor(1, 1), 2.0 / 3.0, 1e-10, "P1/2 g_J");
-  fail |=
-      check_close(zeeman_lande_g_factor(1, 3), 4.0 / 3.0, 1e-10, "P3/2 g_J");
-  fail |=
-      check_close(zeeman_lande_g_factor(2, 3), 4.0 / 5.0, 1e-10, "D3/2 g_J");
-  fail |=
-      check_close(zeeman_lande_g_factor(2, 5), 6.0 / 5.0, 1e-10, "D5/2 g_J");
+static void test_known_g_factors(void) {
+  printf("  === Test: Known Lande g-factors (S1/2,P1/2,P3/2,D3/2,D5/2) ===\n");
 
-  return fail;
+  check_close(zeeman_lande_g_factor(0, 1), 2.0, 1e-10, "S1/2 g_J");
+  check_close(zeeman_lande_g_factor(1, 1), 2.0 / 3.0, 1e-10, "P1/2 g_J");
+  check_close(zeeman_lande_g_factor(1, 3), 4.0 / 3.0, 1e-10, "P3/2 g_J");
+  check_close(zeeman_lande_g_factor(2, 3), 4.0 / 5.0, 1e-10, "D3/2 g_J");
+  check_close(zeeman_lande_g_factor(2, 5), 6.0 / 5.0, 1e-10, "D5/2 g_J");
 }
 
-static int test_sz_matches_coupling(void) {
-  int fail = 0;
+static void test_sz_matches_coupling(void) {
+  printf("  === Test: <Sz> from coupling vs closed form (l=0..3, all j, mj) "
+         "===\n");
+
   double tol = 1e-10;
 
   for (int l = 0; l <= 3; l++) {
@@ -61,44 +61,40 @@ static int test_sz_matches_coupling(void) {
 
         char label[64];
         snprintf(label, sizeof label, "l=%d j_2=%d mj_2=%d <Sz>", l, j_2, mj_2);
-        fail |= check_close(from_coupling, closed, tol, label);
+
+        check_close(from_coupling, closed, tol, label);
       }
     }
   }
-
-  return fail;
 }
 
-static int test_energy_shift_formula(void) {
+static void test_energy_shift_formula(void) {
+  printf("  === Test: energy shift formula ===\n");
+
   int l = 1;
   int j_2 = 3;
-  int mj_2 = 3; // P3/2, mj=3/2
+  int mj_2 = 3; // P3/2, mj = 3/2
   double B = 2.0;
   double mu_B = 1.5;
   double g = zeeman_lande_g_factor(l, j_2);
   double expected = g * mu_B * B * (mj_2 / 2.0);
   double got = zeeman_energy_shift(l, j_2, mj_2, B, mu_B);
 
-  return check_close(got, expected, 1e-12, "dE = g_J * \\mu_B * B * mj");
+  check_close(got, expected, 1e-12, "dE = g_J * \\mu_B * B * mj");
 }
 
 int main(void) {
-  int failed = 0;
+  printf(" > Weak-field Zeeman effect tests:\n");
 
-  printf("Known Lande g-factors (S1/2,P1/2,P3/2,D3/2,D5/2):\n");
-  failed += test_known_g_factors();
+  test_known_g_factors();
+  test_sz_matches_coupling();
+  test_energy_shift_formula();
 
-  printf("<Sz> from coupling vs closed form (l=0..3, all j, mj):\n");
-  failed += test_sz_matches_coupling();
-
-  printf("Energy shift formula:\n");
-  failed += test_energy_shift_formula();
-
-  if (failed) {
-    printf("FAILED (%d)\n", failed);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-  printf("PASS\n");
+  printf("\nAll Zeeman checks passed\n");
 
   return 0;
 }

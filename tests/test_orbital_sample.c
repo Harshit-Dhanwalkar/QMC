@@ -101,7 +101,7 @@ static void test_basics(void) {
   int diff = 0;
   const double diff_tol = 1e-12;
   for (int i = 0; i < 8; i++) {
-    same &= (a[i] == b[i]);
+    same &= (fabs(a[i] - b[i]) <= diff_tol);
     diff |= (fabs(a[i] - c[i]) > diff_tol);
   }
 

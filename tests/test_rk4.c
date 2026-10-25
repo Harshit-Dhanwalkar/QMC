@@ -5,10 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * A single complex phase oscillator :
- *   dy/dt = i * \omega * y => y(t) = y0 * \exp(i * \omega * t)
- */
+// A single complex phase oscillator:
+//   dy/dt = i * \omega * y => y(t) = y0 * \exp(i * \omega * t)
 static void phase_rhs(double t, const cvector_t *y, cvector_t *dydt,
                       void *params) {
   (void)t;
@@ -42,9 +40,9 @@ static double run_to(double T, double dt, double omega) {
 }
 
 int main(void) {
-  printf(" > Testing RK4 integrator (complex phase oscillator)...\n");
-  int pass = 1;
+  printf(" > RK4 integrator (complex phase oscillator) tests:\n");
 
+  int pass = 1;
   double omega = 2.0;
   double T = 1.0;
 
@@ -57,8 +55,8 @@ int main(void) {
     pass = 0;
   }
 
-  // 4th-order convergence check: halving dt should shrink the error
-  // by roughly 2^4 = 16
+  // 4th-order convergence check: halving dt should shrink error by roughly 2^4
+  // = 16
   double err_full = run_to(T, 0.05, omega);
   double err_half = run_to(T, 0.025, omega);
   double ratio = (err_half > 0.0) ? err_full / err_half : 0.0;

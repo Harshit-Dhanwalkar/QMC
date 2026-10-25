@@ -1,15 +1,15 @@
 /*
- * Test: UHF (Unrestricted Hartree-Fock) on the Li atom, STO-3G basis.
+ * Test: UHF (Unrestricted Hartree-Fock) on Li atom, STO-3G basis
  *
- * NOTE: Li (Z=3, doublet ground state: 2-\alpha electrons, 1-\beta) is the
- * smallest open-shell system reachable with the existing STO-3G basis builders
- * (molint_basis_sto3g_li), and has no even-electron-count RHF analogue on the
- * same atom to compare against directly.
+ * NOTE: Li (Z=3, doublet ground state: 2-\alpha electrons, 1-\beta) is smallest
+ * open-shell system reachable with existing STO-3G basis builders
+ * (molint_basis_sto3g_li), and has no even-electron-count RHF analogue on same
+ * atom to compare against directly
  *
  * <S^2> = 0.75 exactly is also an independent physical check: it is Sz(Sz+1)
  * for a pure doublet (Sz=1/2) with zero spin contamination, which is expected
  * here since Li's unpaired 2s electron is well-separated in energy from other
- * configurations at this basis-set/geometry.
+ * configurations at this basis-set/geometry
  */
 
 #include "../physics/molecular_hf.h"
@@ -40,7 +40,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_li_atom_uhf(void) {
-  printf("test_li_atom_uhf:\n");
+  printf("  === Test: Li atom UHF ===\n");
 
   double center[3] = {0, 0, 0};
   basis_function_t *li[5];
@@ -77,9 +77,9 @@ static void test_li_atom_uhf(void) {
 
   // NOTE: n_alpha=n_beta edge case: closed-shell UHF on Li+ (2 electrons,
   // singlet) should reduce to \alpha and \beta MOs being numerically identical
-  // (both spin channels see the same Fock operator when densities are equal),
-  // and its energy should match closed-shell RHF run on the same 2-electron
-  // system as an internal consistency check.
+  // (both spin channels see same Fock operator when densities are equal),
+  // and its energy should match closed-shell RHF run on same 2-electron
+  // system as an internal consistency check
   molecular_uhf_result_t *uhf_liplus =
       molecular_uhf(li, 5, mol, 1, 1, 1e-10, 300);
   molecular_hf_result_t *rhf_liplus = molecular_rhf(li, 5, mol, 2, 1e-10, 300);
@@ -87,7 +87,7 @@ static void test_li_atom_uhf(void) {
              "UHF/RHF both allocate for Li+ (2-electron closed shell)");
   if (uhf_liplus && rhf_liplus) {
     check_close(uhf_liplus->total_energy, rhf_liplus->total_energy, 1e-8,
-                "UHF with n_alpha=n_beta matches RHF on the same 2e- system");
+                "UHF with n_alpha=n_beta matches RHF on same 2e- system");
     check_close(uhf_liplus->spin_squared, 0.0, 1e-8,
                 "<S^2> = 0 exactly for a closed-shell singlet");
   }
@@ -102,15 +102,17 @@ static void test_li_atom_uhf(void) {
 }
 
 int main(void) {
-  printf(" > UHF tests\n");
+
+  printf(
+      " > Unrestricted Hartree-Fock (UHF) on Li atom, STO-3G basis tests:\n");
 
   test_li_atom_uhf();
 
-  if (failures == 0) {
-    printf("\nAll test_uhf checks passed.\n");
-    return 0;
-  } else {
-    printf("\n%d test_uhf check(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll UHF checks passed\n");
+
+  return 0;
 }

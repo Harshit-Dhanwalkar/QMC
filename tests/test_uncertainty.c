@@ -1,17 +1,15 @@
 /*
- * Test: physics/uncertainty.c's compute_uncertainties and
- * compute_energy_expectation
+ * Test: compute_uncertainties and compute_energy_expectation
  *
- * test_wavefn.c already covers these two functions on the quantum harmonic
- * oscillator (QHO) ground state, where the Heisenberg bound is saturated
- * (it's a minimum-uncertainty Gaussian state). This test adds a second,
- * qualitatively different analytic system - ground state of infinite square
- * well - which is smooth but non-Gaussian, so:
+ * test_wavefn.c already covers these two functions on quantum harmonic
+ * oscillator (QHO) ground state, where Heisenberg bound is saturated (it's a
+ * minimum-uncertainty Gaussian state). This test adds a second, qualitatively
+ * different analytic system - ground state of infinite square well - which is
+ * smooth but non-Gaussian, so:
  *
- *   - The uncertainty product should come out clearly above \hbar/2 (not
- *     saturated)
- *   - The exact analytic value of \Delta_x, \Delta_p, and the ground-state
- *     energy are all theroretical closed forms, so this cross-checks underlying
+ *   - Uncertainty product should come out clearly above \hbar/2 (not saturated)
+ *   - Exact analytic value of \Delta_x, \Delta_p, and ground-state energy are
+ *     all theroretical closed forms, so this cross-checks underlying
  *     wavefunction_expect_* machinery against a second, unrelated derivation
  *
  * Also covers NULL-input safety path of compute_uncertainties
@@ -42,17 +40,15 @@ static void check_true(int cond, const char *msg) {
   }
 }
 
-/*
- * Ground state of the infinite square well V_infinite_well (V=0 for
- * |x|<a, V=huge otherwise), natural units \hbar=m=1:
- *   \psi(x) = \sqrt(1/a) * \cos(\pi * x / (2a)),   |x| <= a
- * which vanishes at both edges (x = \pm a) and is normalized on [-a,a]:
- *   \int_{-a}^{a} (1/a) \cos^2(\pi * x / (2a)) dx = 1
- *
- * Sampling the grid over exactly [-a,a] keeps the wavefunction at (near) zero
- * at both boundaries, which is what wavefunction_expect_p/p2's FFT approach
- * needs to behave like a periodic function
- */
+// Ground state of infinite square well V_infinite_well (V=0 for |x|<a, V=huge
+// otherwise), natural units \hbar = m = 1:
+//   \psi(x) = \sqrt(1/a) * \cos(\pi * x / (2a)),   |x| <= a
+// which vanishes at both edges (x = \pm a) and is normalized on [-a,a]:
+//   \int_{-a}^{a} (1/a) \cos^2(\pi * x / (2a)) dx = 1
+//
+// Sampling grid over exactly [-a,a] keeps wavefunction at (near) zero
+// at both boundaries, which is what wavefunction_expect_p/p2's FFT approach
+// needs to behave like a periodic function
 static wavefunction_t *make_infinite_well_ground_state(int n, double a) {
   wavefunction_t *wf = wavefunction_alloc(n);
   wf->dx = (2.0 * a) / (n - 1);
@@ -70,7 +66,8 @@ static wavefunction_t *make_infinite_well_ground_state(int n, double a) {
 }
 
 static void test_null_wavefunction_is_safe(void) {
-  printf("Test: compute_uncertainties(NULL) is safe and returns all-zero\n");
+  printf(" === Test: compute_uncertainties(NULL) is safe and returns all-zero "
+         "===\n");
 
   uncertainty_t u = compute_uncertainties(NULL);
 
@@ -87,8 +84,8 @@ static void test_null_wavefunction_is_safe(void) {
 }
 
 static void test_infinite_well_ground_state_uncertainty(void) {
-  printf("Test: compute_uncertainties on the infinite-square-well ground "
-         "state is not saturated (non-Gaussian state)\n");
+  printf("  === Test: compute_uncertainties on infinite-square-well ground "
+         "state is not saturated (non-Gaussian state) ===\n");
 
   double a = 1.0;
   wavefunction_t *wf = make_infinite_well_ground_state(4096, a);
@@ -98,15 +95,15 @@ static void test_infinite_well_ground_state_uncertainty(void) {
   for (int i = 0; i < wf->n; i++) {
     norm += wf->psi->data[i].re * wf->psi->data[i].re * wf->dx;
   }
+
   check_close(norm, 1.0, 1e-3, "position-space normalization holds");
 
   uncertainty_t u = compute_uncertainties(wf);
 
-  /* Analytic results (natural units, hbar=m=1), well half-width a=1:
-   *  <x> = 0, <p> = 0 (real, even wavefunction)
-   *  Var(x) = (a^2/3) * (1 - 6/\pi^2)  =>  \delta_x = \sqrt(Var(x))
-   *  E_1 = \pi^2 / (8 a^2)  =>  <p^2> = 2*E_1  =>  \delta_p = \sqrt(<p^2>)
-   */
+  // Analytic results (natural units, hbar=m=1), well half-width a=1:
+  //  <x> = 0, <p> = 0 (real, even wavefunction)
+  //  Var(x) = (a^2/3) * (1 - 6/\pi^2)  =>  \delta_x = \sqrt(Var(x))
+  //  E_1 = \pi^2 / (8 a^2)  =>  <p^2> = 2*E_1  =>  \delta_p = \sqrt(<p^2>)
   double var_x = (a * a / 3.0) * (1.0 - 6.0 / (M_PI * M_PI));
   double delta_x_exact = sqrt(var_x);
   double E1_exact = (M_PI * M_PI) / (8.0 * a * a);
@@ -121,14 +118,14 @@ static void test_infinite_well_ground_state_uncertainty(void) {
   check_close(u.mean_x, 0.0, 1e-6, "<x>=0 by symmetry");
   check_close(u.mean_p, 0.0, 1e-6, "<p>=0 by symmetry");
   check_close(u.delta_x, delta_x_exact, 1e-3,
-              "\\delta_x matches the analytic infinite-well result");
+              "\\delta_x matches analytic infinite-well result");
   check_close(u.delta_p, delta_p_exact, 2e-2,
-              "\\delta_p matches the analytic infinite-well result");
+              "\\delta_p matches analytic infinite-well result");
   check_close(u.product, product_exact, 2e-2,
-              "uncertainty product matches the analytic value");
+              "uncertainty product matches analytic value");
 
-  // The physically important, qualitative check: a non-Gaussian bound state
-  // must not saturate Heisenberg bound way QHO ground state  does
+  // Physically important, qualitative check: a non-Gaussian bound state must
+  // not saturate Heisenberg bound way QHO ground state  does
   check_true(u.product > 0.5 + 1e-3,
              "uncertainty product is strictly above hbar/2 (not saturated, "
              "unlike QHO ground state)");
@@ -137,8 +134,8 @@ static void test_infinite_well_ground_state_uncertainty(void) {
 }
 
 static void test_infinite_well_energy_expectation(void) {
-  printf("Test: compute_energy_expectation on the infinite-well ground state "
-         "matches E_1 = pi^2/(8a^2)\n");
+  printf("  === Test: compute_energy_expectation on infinite-well ground state "
+         "matches E_1 = \\pi^2/(8a^2) ===\n");
 
   double a = 1.0;
   wavefunction_t *wf = make_infinite_well_ground_state(4096, a);
@@ -148,12 +145,14 @@ static void test_infinite_well_energy_expectation(void) {
 
   printf("  E1 got=%.6f exact=%.6f\n", E1_got, E1_exact);
   check_close(E1_got, E1_exact, 2e-2,
-              "energy expectation matches the exact ground-state energy");
+              "energy expectation matches exact ground-state energy");
 
   wavefunction_free(wf);
 }
 
 int main(void) {
+  printf(" > Uncertainty functions tests:\n");
+
   test_null_wavefunction_is_safe();
   test_infinite_well_ground_state_uncertainty();
   test_infinite_well_energy_expectation();

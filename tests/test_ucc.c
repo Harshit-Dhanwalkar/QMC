@@ -1,15 +1,15 @@
 /*
- * Test: UCC ansatz (physics/ucc.c), wired to CCSD amplitudes
+ * Test: UCC ansatz, wired to CCSD amplitudes
  *
  * NOTE: H2/STO-3G's occ={0,1}/virt={2,3} (only 2 occupied, 2 virtual spin
  * orbitals) means general ucc_excitations_from_ccsd_amplitudes enumeration
  * naturally reduces to exactly this same single-double-excitation case (only
  * one occ pair, only one virt pair possible). Singles are forced to zero by
  * spin symmetry (CCSD's own t1 is spin-conserving-integral-driven and vanishes
- * here), so this lets the same exact target validate the full pipeline
- * end-to-end: CCSD converge -> T1/T2 amplitudes ->
- * ucc_excitations_from_ccsd_amplitudes -> ucc_build_generator ->
- * ucc_prepare_state -> energy expectation against the JW Hamiltonian.
+ * here), so this lets same exact target validate full pipeline end-to-end: CCSD
+ * converge -> T1/T2 amplitudes -> ucc_excitations_from_ccsd_amplitudes ->
+ * ucc_build_generator -> ucc_prepare_state -> energy expectation against JW
+ * Hamiltonian
  *
  * 1. Core-math test: ucc_build_generator + ucc_prepare_state directly (no CCSD
  *    involved), \theta scanned by hand, minimum checked against exact FCI
@@ -19,7 +19,7 @@
  *        on FCI
  *    (b) a local scan around that CCSD-seeded \theta cannot find any point with
  *        materially lower energy, i.e., CCSD amplitude for H2 already sits
- *        essentially at the exact UCC optimum
+ *        essentially at exact UCC optimum
  */
 
 #include "../core/complex.h"
@@ -112,7 +112,7 @@ static void build_h2_setup(molecule_t **mol_out, basis_function_t **h0_out,
 }
 
 static void test_core_math_exact_h2(void) {
-  printf("test_ucc_core_math_h2_exact:\n");
+  printf("  === Test: UCC core math, H2/STO-3G exact ===\n");
 
   molecule_t *mol;
   basis_function_t *h0, *h1;
@@ -130,11 +130,8 @@ static void test_core_math_exact_h2(void) {
   }
   hf_ref->data[0b1100] = c_real(1.0); // modes 0,1 occupied (MSB-first)/
 
-  /*
-   * HACK: hand scan around the known-optimal \theta cross-check
-   * (-0.11295559...) to bracket minimum without needing a general optimizer in
-   * this test
-   */
+  // HACK: hand scan around known-optimal \theta cross-check (-0.11295559...) to
+  // bracket minimum without needing a general optimizer in this test
   double best_e = 1e9;
   double best_theta = 0.0;
   for (int s = -200; s <= 200; s++) {
@@ -147,7 +144,7 @@ static void test_core_math_exact_h2(void) {
     }
   }
 
-  printf("  scanned best theta=%.6f  energy=%.10f\n", best_theta, best_e);
+  printf("  scanned best \\theta=%.6f  energy=%.10f\n", best_theta, best_e);
   check_close(best_e, H2_FCI_ENERGY, 1e-6,
               "scanned UCC minimum matches exact FCI (grid-limited precision)");
 
@@ -162,7 +159,7 @@ static void test_core_math_exact_h2(void) {
 }
 
 static void test_ccsd_to_ucc_wiring(void) {
-  printf("test_ucc_ccsd_wiring_h2:\n");
+  printf("  === Test: CCSD-seeded UCC energy vs FCI ===\n");
 
   molecule_t *mol;
   basis_function_t *h0, *h1;
@@ -217,9 +214,9 @@ static void test_ccsd_to_ucc_wiring(void) {
     e_seed += c_mul(c_conj(psi_seed->data[r]), Hpsi_r).re;
   }
 
-  printf(
-      "  CCSD t2 seed value (theta_d[0])=%.8f  CCSD-seeded UCC energy=%.10f\n",
-      theta_d[0], e_seed);
+  printf("  CCSD t2 seed value (\\theta_d[0])=%.8f  CCSD-seeded UCC "
+         "energy=%.10f\n",
+         theta_d[0], e_seed);
   check_true(e_seed >= H2_FCI_ENERGY - 1e-9,
              "CCSD-seeded UCC energy is a variational upper bound on FCI");
 
@@ -227,11 +224,9 @@ static void test_ccsd_to_ucc_wiring(void) {
               "CCSD-seeded (unoptimized) UCC energy is already CCSD-quality "
               "close to FCI");
 
-  /*
-   * NOTE: now scan around the CCSD-seeded theta to confirm no nearby point has
-   * materially lower energy: i.e. CCSD amplitude is already essentially at UCC
-   * optimum
-   */
+  // NOTE: now scan around CCSD-seeded \theta to confirm no nearby point has
+  // materially lower energy: i.e. CCSD amplitude is already essentially at UCC
+  // optimum
   double best_e = 1e9;
   double best_theta = theta_d[0];
   for (int s = -200; s <= 200; s++) {
@@ -245,17 +240,17 @@ static void test_ccsd_to_ucc_wiring(void) {
     }
   }
 
-  printf("  local scan around CCSD seed: best_theta=%.6f best_e=%.10f "
-         "(seed itself: theta=%.6f e=%.10f)\n",
+  printf("  local scan around CCSD seed: best_\\theta=%.6f best_e=%.10f "
+         "(seed itself: \\theta=%.6f e=%.10f)\n",
          best_theta, best_e, theta_d[0], e_seed);
 
   check_true(best_e <= e_seed + 1e-12,
-             "local scan never finds an energy above the seed itself "
-             "(sanity: seed is a valid point in the scanned set)");
+             "local scan never finds an energy above seed itself (sanity: seed "
+             "is a valid point in scanned set)");
 
   check_close(best_e, H2_FCI_ENERGY, 1e-6,
-              "best point found near the CCSD seed matches exact FCI to the "
-              "same precision as test 1's independent scan");
+              "best point found near CCSD seed matches exact FCI to same "
+              "precision as test 1's independent scan");
 
   cvector_free(psi_seed);
   cmatrix_free(gen);
@@ -276,7 +271,7 @@ static void test_ccsd_to_ucc_wiring(void) {
 }
 
 static void test_invalid_input_rejected(void) {
-  printf("  === Test ucc_invalid_input ===\n");
+  printf("  === Test: UCC invalid input ===\n");
   check_true(ucc_build_generator(0, NULL, NULL, 0, NULL, NULL, 0) == NULL,
              "n_modes<1 rejected");
 
@@ -295,17 +290,17 @@ static void test_invalid_input_rejected(void) {
 }
 
 int main(void) {
-  printf(" > UCC tests\n");
+  printf(" > UCC ansatz seeding to CCSD amplitudes tests:\n");
 
   test_core_math_exact_h2();
   test_ccsd_to_ucc_wiring();
   test_invalid_input_rejected();
 
-  if (failures == 0) {
-    printf("\nAll UCC tests PASSED\n");
-    return 0;
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
+    return 1;
   }
-  printf("\n%d UCC test(s) FAILED\n", failures);
+  printf("\nAll UCC checks passed\n");
 
-  return 1;
+  return 0;
 }
