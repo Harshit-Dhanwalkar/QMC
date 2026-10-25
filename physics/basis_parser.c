@@ -20,12 +20,10 @@ void basis_set_free_functions(basis_function_t **funcs, int num_funcs) {
   free((void *)funcs); // NOLINT: explicit cast for multi-level pointer
 }
 
-/* ---------------------------------------------------------------------
- * Small line/token helpers
- * ------------------------------------------------------------------- */
+// Small line/token helpers
 
-/* strtod that also accepts Fortran-style 'D'/'d' exponent markers ("1.0D+00")
- * by rewriting a private copy before handing off to strtod. */
+// strtod that also accepts Fortran-style 'D'/'d' exponent markers ("1.0D+00")
+// by rewriting a private copy before handing off to strtod
 static double parse_double_token(const char *tok) {
   char buf[64];
   size_t i;
@@ -62,7 +60,8 @@ static int is_separator_line(const char *line) {
   return (line[0] == '*');
 }
 
-// Angular momentum letter -> l. Returns -1 if unrecognized.
+// Angular momentum letter -> l
+// Returns -1 if unrecognized
 static int shell_letter_to_l(char c) {
   switch (toupper((unsigned char)c)) {
   case 'S':
@@ -80,9 +79,7 @@ static int shell_letter_to_l(char c) {
   }
 }
 
-/* ---------------------------------------------------------------------
- * Growable arrays used only during parsing
- * ------------------------------------------------------------------- */
+// Growable arrays used only during parsing
 
 typedef struct {
   basis_element_t *items;
@@ -138,15 +135,10 @@ static void shell_free(basis_shell_t *shell) {
   free(shell->coef2);
 }
 
-/* ---------------------------------------------------------------------
- * Parser
- * ------------------------------------------------------------------- */
+// Parser
 
-/*
- * Splits `line` into up to max_tok whitespace-separated tokens.
- *
- * Returns token count.
- */
+// Splits `line` into up to max_tok whitespace-separated tokens
+// Returns token count
 static int split_tokens(char *line, char **tok, int max_tok) {
   int n = 0;
   char *p = strtok(line, " \t\r\n");
@@ -426,17 +418,17 @@ basis_set_t *basis_set_parse_file(const char *path) {
     return NULL;
   }
 
-  char *buf = malloc((size_t)size + 1);
+  char *buf = calloc((size_t)size + 1, 1);
   if (!buf) {
     fclose(fp);
 
     return NULL;
   }
 
-  size_t nread = fread(buf, 1, (size_t)size, fp);
+  (void)fread(buf, 1, (size_t)size, fp);
+
   fclose(fp);
 
-  buf[nread] = '\0';
   basis_set_t *bs = basis_set_parse_string(buf);
 
   free(buf);
@@ -479,15 +471,12 @@ const basis_element_t *basis_set_find_element(const basis_set_t *bs,
   return NULL;
 }
 
-/* ---------------------------------------------------------------------
- * Shell -> basis_function_t expansion
- * ------------------------------------------------------------------- */
+// Shell -> basis_function_t expansion
 
-/* Enumerate the (l+1)(l+2)/2 Cartesian (lx,ly,lz) components of angular
- * momentum l, in decreasing-lx canonical order (convention used by
- * molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes into
- * out[][3], returns the count.
- */
+// Enumerate the (l+1)(l+2)/2 Cartesian (lx,ly,lz) components of angular
+// momentum l, in decreasing-lx canonical order (convention used by
+// molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes into
+// out[][3], returns the count
 static int cartesian_components(int l_quantum, int out[][3]) {
   int n = 0;
   for (int lx = l_quantum; lx >= 0; lx--) {
@@ -505,12 +494,10 @@ static int cartesian_components(int l_quantum, int out[][3]) {
   return n;
 }
 
-/* NOTE: Appends one shell's expanded, normalized basis functions into a
- * growable basis_function_t* array.
- *
- * Returns 1 on success, 0 on failure (out params left unmodified on failure
- * other than partial growth).
- */
+// NOTE: Appends one shell's expanded, normalized basis functions into a
+// growable basis_function_t* array
+// Returns 1 on success, 0 on failure (out params left unmodified on failure
+// other than partial growth)
 static int append_shell_functions(const basis_shell_t *sh,
                                   const double center[3],
                                   basis_function_t ***arr, int *count,

@@ -26,13 +26,20 @@
 #define JSON_MAX_DEPTH 32
 #define JSON_MAX_PATH 512
 
-/* Exact equality for finite doubles based on raw representation */
-static int double_bits_equal(double a, double b) {
-  return memcmp(&a, &b, sizeof(double)) == 0;
+// Exact equality for finite doubles based on raw representation
+static int json_double_bit_equal(double a, double b) {
+  if (isnan(a) && isnan(b)) {
+    return 1;
+  }
+  if (a == 0.0 && b == 0.0) {
+    return signbit(a) == signbit(b);
+  }
+
+  return a == b;
 }
 
-/* Write `s` as a JSON string literal (with surrounding quotes), escaping
- * characters per RFC 8259 §7 NULL writes as "" */
+// Write `s` as a JSON string literal (with surrounding quotes), escaping
+// characters per RFC 8259 §7 NULL writes as ""
 static json_status_t write_json_string(FILE *f, const char *s) {
   fputc('"', f);
   if (s) {
@@ -68,11 +75,11 @@ static json_status_t write_json_string(FILE *f, const char *s) {
   return ferror(f) ? JSON_ERR_IO : JSON_OK;
 }
 
-/* Write a double as a JSON number, or `null` for NaN/Inf
- *
- * Uses shortest decimal precision (1..17 significant digits) whose value reads
- * back identical via strtod (Reference: Steele & White 1990), so e.g.
- * -2.9037 is written as "-2.9037" rather than "-2.903700..." */
+// Write a double as a JSON number, or `null` for NaN/Inf
+//
+// Uses shortest decimal precision (1..17 significant digits) whose value reads
+// back identical via strtod (Reference: Steele & White 1990), so e.g.
+// -2.9037 is written as "-2.9037" rather than "-2.903700..."
 static void write_json_double(FILE *f, double d) {
   if (isnan(d) || isinf(d)) {
     fputs("null", f);
@@ -241,10 +248,8 @@ json_status_t json_close(json_writer_t *writer) {
   return rc;
 }
 
-/*
- * Emit a comma if needed at current depth, then a newline + indent (when
- * pretty). Also flips need_comma bit for this depth
- */
+// Emit a comma if needed at current depth, then a newline + indent (when
+// pretty). Also flips need_comma bit for this depth
 static json_status_t element_prefix(json_writer_t *w) {
   if (w->need_comma[w->depth]) {
     if (fputc(',', w->f) == EOF) {
@@ -286,11 +291,9 @@ static json_status_t write_key(json_writer_t *w, const char *key) {
   return JSON_OK;
 }
 
-/*
- * Every element-writing function (scalars, begin_object, begin_array) must
- * agree with enclosing container on whether key is given: object members
- * require one, array elements must not have one
- */
+// Every element-writing function (scalars, begin_object, begin_array) must
+// agree with enclosing container on whether key is given: object members
+// require one, array elements must not have one
 static int key_mismatches_context(json_writer_t *w, const char *key) {
   int in_array = w->ctx[w->depth] == JSON_CTX_ARRAY;
 
