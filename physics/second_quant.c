@@ -1,7 +1,7 @@
 /*
-Jordan-Wigner fermion-to-qubit mapping + an independent direct Fock-space
-Hamiltonian builder for cross-validation
-*/
+ * Jordan-Wigner fermion-to-qubit mapping + an independent direct Fock-space
+ * Hamiltonian builder for cross-validation
+ */
 
 #include "second_quant.h"
 #include "../core/complex.h"
@@ -14,17 +14,19 @@ static const complex_t Z2[4] = {{1, 0}, {0, 0}, {0, 0}, {-1, 0}};
 static const complex_t SIGMA_PLUS[4] = {{0, 0}, {0, 0}, {1, 0}, {0, 0}};
 static const complex_t SIGMA_MINUS[4] = {{0, 0}, {1, 0}, {0, 0}, {0, 0}};
 
-/* Kronecker product of two dense matrices:
- *  (A \otimes B)[i * nb + k][j * nb + l] = A[i][j]*B[k][l]
- *
- * Returns a freshly allocated cmatrix_t
- */
+// Kronecker product of two dense matrices:
+//  (A \otimes B)[i * nb + k][j * nb + l] = A[i][j]*B[k][l]
+//
+// Returns a freshly allocated cmatrix_t
 static cmatrix_t *kron2(const cmatrix_t *A, const cmatrix_t *B) {
   int ra = A->nrows;
   int ca = A->ncols;
   int rb = B->nrows;
   int cb = B->ncols;
   cmatrix_t *out = cmatrix_alloc(ra * rb, ca * cb);
+  if (!out) {
+    return NULL;
+  }
 
   for (int i = 0; i < ra; i++) {
     for (int j = 0; j < ca; j++) {
@@ -45,12 +47,21 @@ static cmatrix_t *kron2(const cmatrix_t *A, const cmatrix_t *B) {
 // gates[0] (x) gates[1] (x) ... (x) gates[n-1]
 static cmatrix_t *kron_chain_2x2(const complex_t *const *gates, int n) {
   cmatrix_t *result = cmatrix_alloc(2, 2);
+  if (!result) {
+    return NULL;
+  }
+
   for (int k = 0; k < 4; k++) {
     result->data[k] = gates[0][k];
   }
 
   for (int idx = 1; idx < n; idx++) {
     cmatrix_t *next = cmatrix_alloc(2, 2);
+    if (!next) {
+      cmatrix_free(result);
+
+      return NULL;
+    }
 
     for (int k = 0; k < 4; k++) {
       next->data[k] = gates[idx][k];
@@ -59,6 +70,9 @@ static cmatrix_t *kron_chain_2x2(const complex_t *const *gates, int n) {
     cmatrix_t *combined = kron2(result, next);
     cmatrix_free(result);
     cmatrix_free(next);
+    if (!combined) {
+      return NULL;
+    }
 
     result = combined;
   }
@@ -73,6 +87,10 @@ static cmatrix_t *jw_operator(int mode, int n_modes, const complex_t *local) {
   }
 
   const complex_t **gates = malloc((size_t)n_modes * sizeof(complex_t *));
+  if (!gates) {
+    return NULL;
+  }
+
   for (int k = 0; k < mode; k++) {
     gates[k] = Z2;
   }
@@ -112,12 +130,10 @@ static int count_bits_before(int state, int mode, int n_modes) {
   return count;
 }
 
-/*
- * Direct (bit-manipulation) fermionic annihilation
- *
- * Returns resulting state index and writes fermionic sign to *sign_out, or
- * Returns -1 (Pauli exclusion / already empty) if mode isn't occupied.
- */
+// Direct (bit-manipulation) fermionic annihilation
+//
+// Returns resulting state index and writes fermionic sign to *sign_out, or
+// Returns -1 (Pauli exclusion / already empty) if mode isn't occupied
 static int direct_annihilate(int state, int mode, int n_modes, int *sign_out) {
   int bitpos = n_modes - 1 - mode;
   if (!((state >> bitpos) & 1)) {
@@ -266,10 +282,10 @@ cmatrix_t *second_quant_build_molecular_hamiltonian(int n_spatial,
     }
   }
 
-  /* Two-body: (1/2) * \sum_{pqrs} <pq|rs> a_p^\dagger a_q^\dagger a_s a_r,
-   * with <pq|rs> = chemist (pr|qs) = eri_mo[((p * n + r) * n + q) * n + s].
-   * NOTE: Spin conservation: spin(p)=spin(r) (electron 1), spin(q)=spin(s)
-   * (electron 2). */
+  // Two-body: (1/2) * \sum_{pqrs} <pq|rs> a_p^\dagger a_q^\dagger a_s a_r,
+  // with <pq|rs> = chemist (pr|qs) = eri_mo[((p * n + r) * n + q) * n + s]
+  // NOTE: Spin conservation: spin(p)=spin(r) (electron 1), spin(q)=spin(s)
+  // (electron 2)
   for (int p = 0; p < n_modes; p++) {
     int spat_p = p / 2, spin_p = p % 2;
 
@@ -347,7 +363,7 @@ cmatrix_t *second_quant_build_molecular_hamiltonian_frozen_core(
 
   int n_active = n_spatial - n_frozen;
 
-  // MOLINT_ERI-style flat index into an n_spatial^4 tensor
+// MOLINT_ERI-style flat index into an n_spatial^4 tensor
 #define EMO(p, q, r, s)                                                        \
   eri_mo[(((size_t)(p) * n_spatial + (q)) * (size_t)n_spatial + (r)) *         \
              (size_t)n_spatial +                                               \

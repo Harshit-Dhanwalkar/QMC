@@ -67,7 +67,13 @@ int svd_decompose(const cmatrix_t *A, cmatrix_t *U, cvector_t *S,
   }
 
   // Sort eigenvalues and eigenvectors descending
-  int *idx = malloc(n * sizeof(int));
+  int *idx = malloc((size_t)n * sizeof(int));
+  if (!idx) {
+    eigen_free(eig);
+
+    return -1;
+  }
+
   for (int i = 0; i < n; i++) {
     idx[i] = i;
   }

@@ -9,8 +9,8 @@
  * infinite algorithm ever had access to:
  *  1. For a fixed, truncation-limited bond dimension m, central-bond ground
  *     energy checkpoint improves (or holds) with every successive sweep
- *  2. At small m, the converged finite-sweep energy matches or improves on
- *     infinite algorithm's result for same (N, m)
+ *  2. At small m, converged finite-sweep energy matches or improves on infinite
+ *     algorithm's result for same (N, m)
  */
 
 #include "../export/plot.h"
@@ -21,11 +21,10 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Finite-system DMRG sweeps: Heisenberg antiferromagnetic "
-         "chain\n\n");
+  printf(" > Finite-system DMRG sweeps: Heisenberg antiferromagnetic chain\n");
 
-  // NOTE: isotropic (critical) Heisenberg AFM - the case for a fixed, small
-  // bond dimension since a gapless chain has no true "lossless" m
+  // NOTE: isotropic (critical) Heisenberg AFM - case for a fixed, small bond
+  // dimension since a gapless chain has no true "lossless" m
   double Jz = 1.0;
   double Jxy = 1.0;
 
@@ -57,7 +56,7 @@ int main(void) {
   plot_line("finite_dmrg_sweep_convergence", PLOT_FORMAT_PNG, sweep_idx,
             r->sweep_energy, n_sweeps, &opts1);
   printf("\n   Saved finite_dmrg_sweep_convergence.png (should decrease "
-         "monotonically then plateau)\n\n");
+         "monotonically then plateau)\n");
 
   free(sweep_idx);
   finite_dmrg_result_free(r);
@@ -108,7 +107,7 @@ int main(void) {
   plot_lines("finite_dmrg_vs_infinite", PLOT_FORMAT_PNG, N_vals_d, series, 2,
              n_N, labels, &opts2);
   printf("\n   Saved finite_dmrg_vs_infinite.png (finite-sweep curve should "
-         "sit at or below the infinite-algorithm curve: sweeping only ever "
+         "sit at or below infinite-algorithm curve: sweeping only ever "
          "re-optimizes previously-built blocks using more information)\n");
 
   free(N_vals_d);

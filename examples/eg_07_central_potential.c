@@ -13,20 +13,24 @@
 #include "../physics/central_potential.h"
 #include "../physics/potentials.h"
 #include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 int main(void) {
   printf(" > General 3D Central-Potential Solver\n\n");
 
-  // 1. 3D isotropic harmonic oscillator, l=0
+  // 3D isotropic harmonic oscillator, l=0
   printf("   3D Isotropic Harmonic Oscillator (l=0)\n");
   printf("   Exact: E_{n_r,0} = (2 * n_r + 3/2) * \\hbar * \\omega\n\n");
 
   int N = 400;
-  double r_min = 1e-3, r_max = 15.0;
+  double r_min = 1e-3;
+  double r_max = 15.0;
   double *r = linspace(r_min, r_max, N);
-  double hbar = 1.0, mass = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double omega = 1.0;
 
   eigen_t *eig_ho =
       central_potential_radial_solve(r, N, 0, hbar, mass, V_harmonic, &omega);
@@ -43,7 +47,16 @@ int main(void) {
 
     cvector_t *psi0 = cvector_from_matrix_column(eig_ho->eigenvectors, 0);
     if (psi0) {
-      double *y = malloc(N * sizeof *y);
+      double *y = malloc((size_t)N * sizeof *y);
+      if (!y) {
+        fprintf(stderr, "Error: out of memory.\n");
+
+        cvector_free(psi0);
+        eigen_free(eig_ho);
+        free(r);
+
+        return 1;
+      }
 
       for (int i = 0; i < N; i++) {
         y[i] = psi0->data[i].re;
@@ -63,9 +76,10 @@ int main(void) {
 
     eigen_free(eig_ho);
   }
+
   free(r);
 
-  // 2. Finite spherical well
+  // Finite spherical well
   printf("   Finite Spherical Well (l=0)\n");
   double well_params[2] = {2.0, 10.0}; // {a, V0}
   int N2 = 400;

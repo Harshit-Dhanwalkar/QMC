@@ -272,12 +272,14 @@ size_t qmc_help(FILE *out, const char *topic) {
 
   if (topic == NULL || topic[0] == '\0') {
     print_overview(out);
+
     return module_total();
   }
 
   const qmc_module_t *m = qmc_module_find(topic);
   if (m != NULL) {
     print_module_detail(out, m);
+
     return 1;
   }
 
@@ -295,6 +297,7 @@ size_t qmc_help(FILE *out, const char *topic) {
                    qmc_catalog_categories[c]) == 0) {
           const qmc_module_t *one = &qmc_catalog_modules[i];
           print_module_list(out, &one, 1);
+
           shown++;
         }
       }
@@ -309,13 +312,14 @@ size_t qmc_help(FILE *out, const char *topic) {
 
   // Keyword search
   enum { MAX_HITS = 16 };
-  const qmc_module_t *hits[MAX_HITS];
+  const qmc_module_t *hits[MAX_HITS] = {NULL};
   size_t total = qmc_module_search(topic, hits, MAX_HITS);
   if (total == 0) {
     fprintf(out,
             "No module, category or keyword matches \"%s\".\n"
-            "Try qmc_help(stdout, NULL) for the full list.\n",
+            "Try qmc_help(stdout, NULL) for full list.\n",
             topic);
+
     return 0;
   }
 
@@ -331,7 +335,7 @@ size_t qmc_help(FILE *out, const char *topic) {
     fprintf(out, "  ... and %zu more; use a longer keyword.\n", total - shown);
   }
 
-  fputs("\nqmc_help(stdout, \"<module>\") shows how to use one of them.\n",
+  fputs("\n qmc_help(stdout, \"<module>\") shows how to use one of them.\n",
         out);
 
   return shown;

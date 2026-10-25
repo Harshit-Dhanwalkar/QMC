@@ -1,7 +1,7 @@
 /*
  * Complex Absorbing Potential (CAP) and Time-Dependent V(x,t)
  *
- * A free Gaussian wavepacket travels toward right edge of grid.
+ * A free Gaussian wavepacket travels toward right edge of grid
  */
 
 #include "../core/complex.h"
@@ -12,13 +12,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static double V_free(double x, double t, void *params) { return 0.0; }
+static double V_free(double x, double t, void *params) {
+  (void)x;
+  (void)t;
+  (void)params;
+
+  return 0.0;
+}
 
 int main(void) {
   printf(" > Complex Absorbing Potential (CAP) and Time-Dependent TDSE\n\n");
 
   int N = 400;
-  double x_min = -20.0, x_max = 20.0;
+  double x_min = -20.0;
+  double x_max = 20.0;
   double dx = (x_max - x_min) / (N - 1);
   double hbar_sq_2m = 0.5;
   double dt = 0.02;
@@ -26,15 +33,34 @@ int main(void) {
   int report_every = 40;
 
   double *x = malloc(N * sizeof *x);
+  if (!x) {
+    return 1;
+  }
+
   for (int i = 0; i < N; i++) {
     x[i] = x_min + i * dx;
   }
 
   double *absorb = malloc(N * sizeof *absorb);
+  if (!absorb) {
+    free(x);
+
+    return 1;
+  }
+
   cap_build_monomial(x, N, 4.0, 5.0, 2, absorb);
 
   cvector_t *psi = cvector_alloc(N);
-  double sigma0 = 1.0, k0 = 3.0, x0 = -10.0;
+  if (!psi) {
+    free(x);
+    free(absorb);
+
+    return 1;
+  }
+
+  double sigma0 = 1.0;
+  double k0 = 3.0;
+  double x0 = -10.0;
   for (int i = 0; i < N; i++) {
     double dxg = x[i] - x0;
     double env = exp(-dxg * dxg / (4.0 * sigma0 * sigma0));

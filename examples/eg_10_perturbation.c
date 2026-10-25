@@ -16,12 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * <\phi_{col}|V|\phi_k> for every k = 0..n-1, i.e. one full column of V in
- * eigenbasis, via direct numerical integration on position grid
- * Written into V_pert's column `col`
- * NOTE:since V is symmetric here, that also gives corresponding row
- */
+// <\phi_{col}|V|\phi_k> for every k = 0..n-1, i.e. one full column of V in
+// eigenbasis, via direct numerical integration on position grid
+// Written into V_pert's column `col`
+// NOTE:since V is symmetric here, that also gives corresponding row
 static void fill_eigenbasis_column(cmatrix_t *V_pert, int col,
                                    const eigen_t *eig, const double *x,
                                    const double *V_grid, int N, double dx) {
@@ -90,6 +88,15 @@ int main(void) {
   double coeff = -hbar * hbar / (2.0 * m * dx * dx);
   cmatrix_t *H_0 = cmatrix_alloc(N, N);
   double *V_grid = malloc((size_t)N * sizeof(double));
+  if (!V_grid) {
+    fprintf(stderr, "Error: out of memory.\n");
+
+    cmatrix_free(H_0);
+    free(x);
+
+    return 1;
+  }
+
   for (int i = 0; i < N; i++) {
     double V0 = 0.5 * m * omega * omega * x[i] * x[i];
     CMAT(H_0, i, i) = c_real(-2.0 * coeff + V0);
@@ -107,7 +114,7 @@ int main(void) {
 
   eigen_t *eig0 = cmatrix_eigh(H_0);
 
-  printf("Step 1: build V' = lambda*x^4 in H_0 eigenbasis (only columns "
+  printf(" Step 1: build V' = lambda*x^4 in H_0 eigenbasis (only columns "
          "needed for states 0..4) and call perturb_nondeg directly\n");
 
   cmatrix_t *V_pert = cmatrix_alloc(N, N);
@@ -147,7 +154,7 @@ int main(void) {
            n, E0_analytical, res.E1, res.E2, E_pt, E_full, err);
     if (res.n_terms_skipped_near_degenerate > 0) {
       printf("            (note: %d near-degenerate term(s) skipped in E2, "
-             "min denominator %.2e -- E2 may be an underestimate)\n",
+             "min denominator %.2e - E2 may be an underestimate)\n",
              res.n_terms_skipped_near_degenerate, res.min_skipped_denominator);
     }
 
@@ -155,11 +162,12 @@ int main(void) {
     eigen_free(eig_full);
   }
 
-  printf("\nStep 2: demonstrate perturb_nondeg's near-degeneracy diagnostic on "
-         "a toy 2-level system\n\n");
-  /* Two nearly-degenerate unperturbed levels (E=1.0 and E=1.0+1e-9) coupled
-   * by an off-diagonal perturbation strong enough that naive non-degenerate
-   * PT's 1 / (E_i - E_k) formula would wildly diverge if not caught */
+  printf(
+      "\n Step 2: demonstrate perturb_nondeg's near-degeneracy diagnostic on "
+      "a toy 2-level system\n\n");
+  // Two nearly-degenerate unperturbed levels (E=1.0 and E=1.0+1e-9) coupled by
+  // an off-diagonal perturbation strong enough that naive non-degenerate PT's 1
+  // / (E_i - E_k) formula would wildly diverge if not caught
   double toy_energies[2] = {1.0, 1.0 + 1e-9};
   eigen_t toy_eig = {2, toy_energies, NULL};
   cmatrix_t *V_toy = cmatrix_alloc(2, 2);

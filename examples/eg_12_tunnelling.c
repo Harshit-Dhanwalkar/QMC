@@ -40,6 +40,12 @@ int main(void) {
   double a = 1.0;  // barrier left edge
   double b = 2.0;  // barrier right edge
   double *V = calloc(N, sizeof *V);
+  if (!V) {
+    free(x);
+
+    return 1;
+  }
+
   for (int i = 0; i < N; i++) {
     V[i] = (x[i] >= a && x[i] <= b) ? V0 : 0.0;
   }
@@ -91,10 +97,21 @@ int main(void) {
   // Save initial snapshot
   {
     double *prob = malloc(N * sizeof *prob);
+    if (!prob) {
+      cvector_free(psi);
+      free(diag);
+      free(offdiag);
+      free(x);
+      free(V);
+
+      return 1;
+    }
+
     for (int i = 0; i < N; i++) {
       prob[i] =
           psi->data[i].re * psi->data[i].re + psi->data[i].im * psi->data[i].im;
     }
+
     save_wavefunction("tunnel_psi_t0.dat", x, psi, N);
 
     plot_opts_t opts = {0};
@@ -104,6 +121,17 @@ int main(void) {
 
     // Overlay barrier as second series
     double *Vscaled = malloc(N * sizeof *Vscaled);
+    if (!Vscaled) {
+      free(prob);
+      cvector_free(psi);
+      free(diag);
+      free(offdiag);
+      free(x);
+      free(V);
+
+      return 1;
+    }
+
     for (int i = 0; i < N; i++) {
       Vscaled[i] = V[i] * 0.3; // scale for vis
     }
@@ -133,12 +161,23 @@ int main(void) {
       }
       printf("   t=%.2f  norm=%.6f\n", t, n2);
 
-      char fname[64], pname[64];
+      char fname[64];
+      char pname[64];
       snprintf(fname, sizeof fname, "tunnel_psi_t%d.dat", t_idx);
       snprintf(pname, sizeof pname, "tunnel_t%d", t_idx);
       save_wavefunction(fname, x, psi, N);
 
       double *prob = malloc(N * sizeof *prob);
+      if (!prob) {
+        cvector_free(psi);
+        free(diag);
+        free(offdiag);
+        free(x);
+        free(V);
+
+        return 1;
+      }
+
       for (int i = 0; i < N; i++) {
         prob[i] = psi->data[i].re * psi->data[i].re +
                   psi->data[i].im * psi->data[i].im;
@@ -157,7 +196,8 @@ int main(void) {
   }
 
   // Transmission coefficient
-  double T_coeff = 0.0, R_coeff = 0.0;
+  double T_coeff = 0.0;
+  double R_coeff = 0.0;
   for (int i = 0; i < N; i++) {
     double p = (psi->data[i].re * psi->data[i].re +
                 psi->data[i].im * psi->data[i].im) *
@@ -175,13 +215,12 @@ int main(void) {
   printf("   Reflection   R = %.4f\n", R_coeff);
   printf("   T + R          = %.4f (should be ~1)\n", T_coeff + R_coeff);
 
-  /* Analytic WKB transmission (thick barrier, E < V0):
-   * T_WKB = \exp(-2 * \kappa * L)
-   *
-   * Where
-   *  \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar,
-   *  L      = b - a
-   */
+  // Analytic WKB transmission (thick barrier, E < V0):
+  // T_WKB = \exp(-2 * \kappa * L)
+  //
+  // Where
+  //  \kappa = \sqrt( 2 * m * (V0 - E)) / \hbar
+  //  L      = b - a
   double E_kin = k0 * k0 / 2.0;
   if (E_kin < V0) {
     double diff = V0 - E_kin;

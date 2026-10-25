@@ -61,7 +61,8 @@ int main(void) {
   double *diag = malloc(n_grid * sizeof *diag);
   double *offdiag = malloc((n_grid - 1) * sizeof *offdiag);
   if (!diag || !offdiag) {
-    fprintf(stderr, "Memory allocation failed\n");
+    fprintf(stderr, "Error: out of memory.\n");
+
     free(x);
     free(diag);
     free(offdiag);
@@ -105,9 +106,18 @@ int main(void) {
 
   // Save potential
   double *V = malloc(n_grid * sizeof(double));
+  if (!V) {
+    fprintf(stderr, "Error: out of memory.\n");
+
+    free(V);
+
+    return 1;
+  }
+
   for (int i = 0; i < n_grid; i++) {
     V[i] = mass_omega2 * x[i] * x[i];
   }
+
   save_potential("harmonic_potential.dat", x, V, n_grid);
 
   // Save wavefunctions and plot
@@ -118,6 +128,7 @@ int main(void) {
     }
 
     double *y = malloc(n_grid * sizeof(double));
+
     for (int j = 0; j < n_grid; j++) {
       y[j] = col->data[j].re; // real eigenfunctions
     }

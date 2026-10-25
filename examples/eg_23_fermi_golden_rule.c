@@ -50,6 +50,7 @@ int main(void) {
 
   CMAT(Vpert, 1, 0) = c_real(V0);
   double Gamma = fermi_golden_rate(Vpert, 0, 1, rho);
+
   cmatrix_free(Vpert);
 
   printf("   Manifold: %d final states over energy window W=%.1f (\\rho=%.2f, "
@@ -59,7 +60,9 @@ int main(void) {
          Gamma);
 
   eigen_t *eig = cmatrix_eigh_generic(H);
+
   cmatrix_free(H);
+
   if (eig == NULL) {
     fprintf(stderr, "Failed to diagonalize Hamiltonian (cmatrix_eigh_generic "
                     "returned NULL).\n");
@@ -68,6 +71,13 @@ int main(void) {
   }
 
   double *c = malloc(dim * sizeof(double));
+  if (!c) {
+    fprintf(stderr, "Error: out of memory.\n");
+    eigen_free(eig);
+
+    return 1;
+  }
+
   for (int k = 0; k < dim; k++) {
     c[k] = CMAT(eig->eigenvectors, 0, k).re;
   }
@@ -75,15 +85,19 @@ int main(void) {
   printf("   Survival probability P(t) = |<initial|\\psi(t)>|^2:\n");
   printf("   %6s  %14s  %14s\n", "t", "exact P(t)", "\\exp(-\\Gamma*t)");
   for (double t = 0.25; t <= 5.0; t += 0.25) {
-    double re = 0.0, im = 0.0;
+    double re = 0.0;
+    double im = 0.0;
+
     for (int k = 0; k < dim; k++) {
       double phase = -eig->eigenvalues[k] * t;
       re += c[k] * c[k] * cos(phase);
       im += c[k] * c[k] * sin(phase);
     }
+
     double P = re * re + im * im;
     printf("   %6.2f  %14.6f  %14.6f\n", t, P, exp(-Gamma * t));
   }
+
   printf("\n  (short t: quadratic/Zeno transient, not exponential : expected; "
          "t ~ 2-5: settles onto golden-rule exponential decay)\n");
 

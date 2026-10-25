@@ -4,7 +4,7 @@
  * Solves the 1D Dirac equation via the complex-Hermitian real-embedding solver
  * (cmatrix_eigh_complex). For a free particle, spectrum should split into two
  * branches separated by ~2mc^2, hard-wall-grid qualitative analog of
- * theoretical continuum result.
+ * theoretical continuum result
  */
 
 #include "../core/complex.h"
@@ -22,7 +22,9 @@ int main(void) {
 
   int N = 50;
   double dx = 0.2;
-  double hbar = 1.0, c = 1.0, m = 1.0;
+  double hbar = 1.0;
+  double c = 1.0;
+  double m = 1.0;
   double mc2 = m * c * c;
 
   double *x = linspace(0.0, (N - 1) * dx, N);
@@ -45,7 +47,9 @@ int main(void) {
     return 1;
   }
 
-  int n_pos = 0, n_neg = 0, n_gap = 0;
+  int n_pos = 0;
+  int n_neg = 0;
+  int n_gap = 0;
   for (int i = 0; i < eig->n; i++) {
     double E = eig->eigenvalues[i];
     if (E >= mc2 - 1e-6) {
@@ -76,14 +80,23 @@ int main(void) {
   }
   printf("\n");
 
-  // Plot |upper component|^2 of lowest positive-energy state.
+  // Plot |upper component|^2 of lowest positive-energy state
   // eig->eigenvectors columns are 2N-dimensional spinors: rows
-  // [0,N) = upper component, [N,2N) = lower component.
+  // [0,N) = upper component, [N,2N) = lower component
   if (lowest_pos_idx >= 0) {
     cvector_t *spinor =
         cvector_from_matrix_column(eig->eigenvectors, lowest_pos_idx);
     if (spinor) {
       double *upper_prob = malloc(N * sizeof *upper_prob);
+      if (!upper_prob) {
+        fprintf(stderr, "Error: out of memory.\n");
+        cvector_free(spinor);
+        eigen_free(eig);
+        free(x);
+        free(V);
+
+        return 1;
+      }
 
       for (int i = 0; i < N; i++) {
         upper_prob[i] = c_abs2(spinor->data[i]);

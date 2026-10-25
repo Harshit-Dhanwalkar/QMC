@@ -23,9 +23,16 @@
 static double *diagonalize_sorted(const cmatrix_t *H, int n) {
   cmatrix_t *copy = cmatrix_copy(H);
   eigen_t *eig = cmatrix_eigh_complex(copy);
+
   cmatrix_free(copy);
 
   double *E = malloc((size_t)n * sizeof *E);
+  if (!E) {
+    eigen_free(eig);
+
+    return NULL;
+  }
+
   for (int i = 0; i < n; i++) {
     E[i] = eig->eigenvalues[i];
   }
@@ -39,7 +46,7 @@ int main(void) {
   printf(" > Tight-Binding Lattice Models\n\n");
 
   // 1D nearest-neighbor chain (open boundaries)
-  printf("   --- 1D chain, n=10 sites, eps0=0.5, t=1.2 ---\n");
+  printf("   1D chain, n=10 sites, eps0=0.5, t=1.2\n");
   int n = 10;
   cmatrix_t *H1d = lattice_build_1d_chain(n, 0.5, 1.2, LATTICE_OPEN);
   double *E1d = diagonalize_sorted(H1d, n);
@@ -51,11 +58,13 @@ int main(void) {
   free(E1d);
   cmatrix_free(H1d);
 
+  printf("\n");
+
   // Anderson model in 1D. Sweep disorder strength W and average ground-state
   // inverse participation ratio over multiple realizations
-  printf("   --- Anderson localization, n=60 sites, t=1.0 ---\n");
+  printf("   Anderson localization, n=60 sites, t=1.0 \n");
   printf("   Ground-state IPR (inverse participation ratio) averaged over 15 "
-         "disorder realizations: larger IPR = more localized.\n\n");
+         "disorder realizations: larger IPR = more localized\n\n");
   const double W_values[3] = {0.2, 2.0, 6.0};
 
   for (int w = 0; w < 3; w++) {
@@ -92,10 +101,11 @@ int main(void) {
   printf(
       "\n   Weak disorder barely localizes ground state; strong disorder does, "
       "qualitative Anderson-localization signature (in 1D, any disorder "
-      "eventually localizes every state, given a long enough chain).\n\n");
+      "eventually localizes every state, given a long enough chain)\n");
+  printf("\n");
 
   // SSH chain (open boundaries) for topology/edge-state contrast
-  printf("   --- SSH model, 15 unit cells (30 sites), open boundary ---\n");
+  printf("   SSH model, 15 unit cells (30 sites), open boundary \n");
   int n_cells = 15;
   int N = 2 * n_cells;
 
@@ -142,9 +152,8 @@ int main(void) {
   printf("     weight on first+last 2 sites = %.4f (out of 1.0 total, spread "
          "over %d sites)\n",
          edge_weight, N);
-  printf(
-      "     -> a topological edge state: exponentially localized at chain "
-      "ends, protected by chiral symmetry, absent in trivial phase above.\n");
+  printf("     -> a topological edge state: exponentially localized at chain "
+         "ends, protected by chiral symmetry, absent in trivial phase above\n");
 
   cvector_free(psi);
   eigen_free(eig);

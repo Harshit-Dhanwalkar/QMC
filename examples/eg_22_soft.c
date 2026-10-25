@@ -14,13 +14,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*
- * Demonstration driver for 2D/3D split-operator Fourier propagation
- *
- * Each section below configures an initial state and potential, evolves state
- * using SOFT, and prints numerical observables alongside analytical
- * expectations where available
- */
+// Demonstration driver for 2D/3D split-operator Fourier propagation
+//
+// Each section below configures an initial state and potential, evolves state
+// using SOFT, and prints numerical observables alongside analytical
+// expectations where available
 int main(void) {
   printf(" > Split-Operator Fourier Transform: 2D and 3D Wavepackets\n\n");
 
@@ -47,6 +45,19 @@ int main(void) {
     // Build coordinate arrays for observable integration
     double *x = malloc(Nx * sizeof(double));
     double *y = malloc(Ny * sizeof(double));
+    cvector_t *psi = cvector_alloc(Nx * Ny);
+    double *V = malloc((long)Nx * Ny * sizeof(double));
+
+    if (!x || !y || !psi || !V) {
+      fprintf(stderr, "Error: out of memory.\n");
+      free(x);
+      free(y);
+      cvector_free(psi);
+      free(V);
+
+      return 1;
+    }
+
     for (int i = 0; i < Nx; i++) {
       x[i] = -Lx / 2 + i * dx;
     }
@@ -56,8 +67,6 @@ int main(void) {
     }
 
     // Allocate wavefunction and free-particle potential (V = 0 everywhere)
-    cvector_t *psi = cvector_alloc(Nx * Ny);
-    double *V = calloc((long)Nx * Ny, sizeof(double));
     for (int ix = 0; ix < Nx; ix++) {
       for (int iy = 0; iy < Ny; iy++) {
         double gx = exp(-(x[ix] - x0) * (x[ix] - x0) / (4 * sigma0 * sigma0));
@@ -135,6 +144,19 @@ int main(void) {
 
     double *x = malloc(Nx * sizeof(double));
     double *y = malloc(Ny * sizeof(double));
+    cvector_t *psi = cvector_alloc(Nx * Ny);
+    double *V = calloc((long)Nx * Ny, sizeof(double));
+
+    if (!x || !y || !psi || !V) {
+      fprintf(stderr, "Error: out of memory.\n");
+      free(x);
+      free(y);
+      cvector_free(psi);
+      free(V);
+
+      return 1;
+    }
+
     for (int i = 0; i < Nx; i++) {
       x[i] = -Lx / 2 + i * dx;
     }
@@ -143,8 +165,6 @@ int main(void) {
       y[i] = -Ly / 2 + i * dy;
     }
 
-    cvector_t *psi = cvector_alloc(Nx * Ny);
-    double *V = malloc((long)Nx * Ny * sizeof(double));
     for (int ix = 0; ix < Nx; ix++) {
       for (int iy = 0; iy < Ny; iy++) {
         V[ix * Ny + iy] =
