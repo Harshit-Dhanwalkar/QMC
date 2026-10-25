@@ -28,7 +28,7 @@ Potential function pointer
 ```
 
 ```c
-typedef double (*potential_fn)(double x, void *params);
+typedef double (*potential_fn)(double, const void *);
 ```
 
 ## Functions (9)
@@ -38,7 +38,7 @@ typedef double (*potential_fn)(double x, void *params);
 ### `V_infinite_well`
 
 ```c
-double V_infinite_well(double x, void *params);
+double V_infinite_well(double x, const void *params);
 ```
 
 ```text
@@ -48,7 +48,7 @@ Infinite square well: V=0 for |x|<a, V=\infty elsewhere
 ### `V_finite_well`
 
 ```c
-double V_finite_well(double x, void *params);
+double V_finite_well(double x, const void *params);
 ```
 
 ```text
@@ -58,7 +58,7 @@ Finite square well: V=-V0 for |x|<a, V=0 elsewhere
 ### `V_harmonic`
 
 ```c
-double V_harmonic(double x, void *params);
+double V_harmonic(double x, const void *params);
 ```
 
 ```text
@@ -68,7 +68,7 @@ Harmonic oscillator: V = (1/2) * m * \omega^2 * x^2
 ### `V_step`
 
 ```c
-double V_step(double x, void *params);
+double V_step(double x, const void *params);
 ```
 
 ```text
@@ -78,7 +78,7 @@ Step potential: V=0 for x<0, V=V0 for x>=0
 ### `V_barrier`
 
 ```c
-double V_barrier(double x, void *params);
+double V_barrier(double x, const void *params);
 ```
 
 ```text
@@ -88,7 +88,7 @@ Rectangular barrier: V=V0 for 0<x<a, V=0 elsewhere
 ### `V_coulomb`
 
 ```c
-double V_coulomb(double r, void *params);
+double V_coulomb(double r, const void *params);
 ```
 
 ```text
@@ -98,7 +98,7 @@ Coulomb potential: V = -k/r (for hydrogen)
 ### `V_yukawa`
 
 ```c
-double V_yukawa(double r, void *params);
+double V_yukawa(double r, const void *params);
 ```
 
 ```text
@@ -108,7 +108,7 @@ Yukawa potential: V = -g * \exp(-\mu * r) / r (screening)
 ### `V_morse`
 
 ```c
-double V_morse(double x, void *params);
+double V_morse(double x, const void *params);
 ```
 
 ```text
@@ -118,7 +118,7 @@ Morse potential: V = D*[1 - \exp(-a(x - x0))]^2 (molecules)
 ### `potential_array`
 
 ```c
-void potential_array(double *x, int n, potential_fn V, void *params,
+void potential_array(double *x, int n, potential_fn V, const void *params,
                      double *V_out);
 ```
 
