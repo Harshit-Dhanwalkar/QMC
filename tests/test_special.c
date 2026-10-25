@@ -1,5 +1,5 @@
 /*
- * Test: core/special/hermite.c and core/special/legendre.c.
+ * Test: Special functions (core/special/hermite.c and core/special/legendre.c)
  */
 
 #include "../core/linalg/tridiag_eigh.h"
@@ -26,11 +26,8 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-/*
- * Exact Hermite roots (physicists' convention H_n)
- *
- * Returns descending (index 0 = largest), so these are compared reversed
- */
+// Exact Hermite roots (physicists' convention H_n)
+// Returns descending (index 0 = largest), so these are compared reversed
 static const double exact_roots_n5[5] = {-2.02018287045609, -0.958572464613819,
                                          0.0, 0.958572464613819,
                                          2.02018287045609};
@@ -150,7 +147,7 @@ static void test_legendre_array_basic(void) {
 }
 
 int main(void) {
-  printf(" > Tests hermite, legendre polynomials\n");
+  printf(" > Hermite and Legendre polynomial tests:\n");
 
   test_hermite_basic();
   test_hermite_zeros_matches_exact_roots();
@@ -158,11 +155,10 @@ int main(void) {
   test_hermite_zeros_all_matches_per_index();
   test_legendre_array_basic();
 
-  if (failures == 0) {
-    printf("\nAll Tests passed.\n");
-    return 0;
-  } else {
-    printf("\n%d Test(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll special-function checks passed\n");
+  return 0;
 }

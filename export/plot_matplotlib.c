@@ -30,23 +30,6 @@ static int matplotlib_module_available(void) {
 
 const char *plot_backend_name(void) { return "matplotlib"; }
 
-// static const char *mpl_ext(plot_format_t fmt) {
-//   switch (fmt) {
-//   case PLOT_FORMAT_PNG:
-//     return "png";
-//   case PLOT_FORMAT_PDF:
-//     return "pdf";
-//   case PLOT_FORMAT_SVG:
-//     return "svg";
-//   case PLOT_FORMAT_EPS:
-//     return "eps";
-//   case PLOT_FORMAT_JPEG:
-//     return "jpg";
-//   default:
-//     return "png";
-//   }
-// }
-
 // Builds Python single-quoted string literal
 static void py_repr(char *out, size_t out_size, const char *s) {
   size_t o = 0;

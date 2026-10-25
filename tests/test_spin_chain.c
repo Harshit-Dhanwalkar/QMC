@@ -575,7 +575,7 @@ static void test_spin_inversion(void) {
 }
 
 int main(void) {
-  printf(" > Spin-chain symmetry-adapted ED + DSF tests\n");
+  printf(" > Spin-chain symmetry-adapted ED + DSF tests\n\n");
 
   test_ground_energies();
   test_hamiltonian_hermitian_and_sector_sizes();
@@ -584,11 +584,10 @@ int main(void) {
   test_reflection_parity();
   test_spin_inversion();
 
-  if (failures == 0) {
-    printf("\nAll test_spin_chain checks passed.\n");
-    return 0;
-  } else {
-    printf("\n%d test_spin_chain check(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll spin-chain checks passed\n");
+  return 0;
 }

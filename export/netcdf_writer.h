@@ -18,8 +18,7 @@ typedef enum {
   NETCDF_ERR_PATH_TOO_LONG = -7
 } netcdf_status_t;
 
-/*
- * Persistent NetCDF writer
+/* Persistent NetCDF writer
  *
  * Preferred over the legacy one-shot API: netcdf_open() creates file once
  * (truncating if it already exists) and subsequent () calls add variables to
@@ -28,8 +27,7 @@ typedef enum {
  * NOTE: Files are written in NETCDF4 format (HDF5-backed). This is required so
  * a variable can be replaced if a same-named variable is written again (classic
  * NetCDF3 does not permit variable deletion). All modern readers (netCDF4
- * Python, xarray, NCO, panoply, ...) read NETCDF4 files
- */
+ * Python, xarray, NCO, panoply, ...) read NETCDF4 files */
 typedef struct netcdf_writer netcdf_writer_t;
 
 netcdf_writer_t *netcdf_open(const char *path);
@@ -43,8 +41,7 @@ netcdf_status_t netcdf_writer_write_matrix(netcdf_writer_t *writer,
                                            const double *data, size_t rows,
                                            size_t cols);
 
-/*
- * Writes into QMC_OUTPUT_DIR/filename. On the first call for a given
+/* Writes into QMC_OUTPUT_DIR/filename. On the first call for a given
  * file, creates the file; on subsequent calls to the same file, opens it
  * in write mode and adds/replaces only the named variable. This means:
  *
@@ -53,8 +50,7 @@ netcdf_status_t netcdf_writer_write_matrix(netcdf_writer_t *writer,
  *
  * NOTE: leaves a file containing both "energy" and "variance"
  *
- * Returns NETCDF_OK (0) on success, a negative netcdf_status_t on failure
- */
+ * Returns NETCDF_OK (0) on success, a negative netcdf_status_t on failure */
 int netcdf_write_1d(const char *filename, const char *varname,
                     const double *data, size_t len);
 int netcdf_write_matrix(const char *filename, const char *varname,

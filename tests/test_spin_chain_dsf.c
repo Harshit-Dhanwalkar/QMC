@@ -263,17 +263,16 @@ static void test_n4_sum_rule_cross_check(void) {
 }
 
 int main(void) {
-  printf(" > Lanczos continued-fraction evaluation tests\n");
-  
+  printf(" > Lanczos continued-fraction DSF evaluation tests:\n");
+
   test_q_zero_annihilates_ground_state();
   test_dsf_is_nonnegative();
   test_n4_sum_rule_cross_check();
 
-  if (failures > 0) {
+  if (failures) {
     printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-  printf("\nAll checks passed\n");
-
+  printf("\nAll Lanczos DSF checks passed\n");
   return 0;
 }

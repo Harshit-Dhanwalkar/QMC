@@ -48,6 +48,7 @@ int plot_lines(const char *filename, plot_format_t format, const double *x,
     if (st != PLOT_OK) {
       return st;
     }
+
     return (int)plot_write_text_nd(path, x, ys, n_series, n_pts, labels, opts);
   }
 

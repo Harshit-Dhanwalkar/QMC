@@ -1,6 +1,6 @@
 /*
- * Test: exact free-fermion quench of transverse-field Ising chain against exact
- * diagonalisation
+ * Test: Exact free-fermion quench of transverse-field Ising chain against
+ * exact diagonalisation
  *
  * 1. t = 0 is ground state: <sx> equals ED ground state, L = 1, and
  *    correlations match ED
@@ -8,12 +8,13 @@
  *    transverse magnetisation, Loschmidt echo and <sz_0 sz_r> for r = 1..3
  *    agree with an ED time evolution of same 8-site ring
  * 3. No quench: nothing moves
- * 4. Dynamical quantum phase transition: for a quench across h = J critical
+ * 4. Deep paramagnet / ferromagnet limits
+ * 5. Dynamical quantum phase transition: for a quench across h = J critical
  *    mode has overlap zero at t*_n, so rate function peaks there and critical
  *    time follows closed form
- * 5. Light cone: correlations beyond Lieb-Robinson front stay at their initial
- *    value
- * 6. Invalid input
+ * 6. Light cone: correlations beyond Lieb-Robinson front stay at their
+ *    initial value
+ * 7. Invalid input
  */
 
 #include "../core/linalg/complex_eigh.h"
@@ -52,9 +53,9 @@ static void check_true(int cond, const char *label) {
 
 enum { N = 8, DIM = 1 << N };
 
-/* Even-parity ground state at field h on 8-site ring: lowest eigenvector from
- * ED, projected onto \sum_j sx_j parity +1 by flipping every spin (ordered
- * phase is nearly degenerate between two sectors) */
+// Even-parity ground state at field h on 8-site ring: lowest eigenvector from
+// ED, projected onto \sum_j sx_j parity +1 by flipping every spin (ordered
+// phase is nearly degenerate between two sectors)
 static int even_ground_state(double J, double h, complex_t *psi) {
   cmatrix_t *H = ising_hamiltonian_dense(N, J, h, 1);
   if (!H) {
@@ -115,6 +116,7 @@ static double expect_zz(const complex_t *st, int r) {
   return sum;
 }
 
+// Compare free-fermion quench against ED time evolution of an 8-site ring
 static void compare_with_ed(double J, double h_i, double h_f) {
   printf("  === Test: quench h = %.2f -> %.2f against ED (%d sites) ===\n", h_i,
          h_f, N);
@@ -185,6 +187,7 @@ static void compare_with_ed(double J, double h_i, double h_f) {
 
     for (int r = 1; r <= 3; r++) {
       snprintf(label, sizeof label, "t=%.1f <sz0 sz%d>", t, r);
+
       check_close(zz[r], expect_zz(st, r), 1e-9, label);
     }
   }
@@ -193,95 +196,113 @@ static void compare_with_ed(double J, double h_i, double h_f) {
   eigen_free(eig);
 }
 
-int main(void) {
-  printf(" > TTFIM Quench tests\n");
-
+static void test_quench_matches_ed(void) {
   const double J = 1.0;
 
   compare_with_ed(J, 0.3, 1.7);
   compare_with_ed(J, 1.8, 0.4);
+}
 
-  printf("  === Test: No quench: nothing moves ===\n");
+static void test_no_quench(void) {
+  printf("  === Test: no quench, nothing moves ===\n");
+
+  const double J = 1.0;
   double zz0[8];
   double zz1[8];
 
   tfim_quench_zz(J, 0.8, 0.8, 0.0, 64, 4, zz0);
   tfim_quench_zz(J, 0.8, 0.8, 7.3, 64, 4, zz1);
+
   check_close(tfim_quench_mx(J, 0.8, 0.8, 5.0, 64),
               tfim_quench_mx(J, 0.8, 0.8, 0.0, 64), 1e-12, "<sx> constant");
   check_close(zz1[3], zz0[3], 1e-12, "<sz0 sz3> constant");
   check_close(tfim_quench_loschmidt_rate(J, 0.8, 0.8, 3.0, 64), 0.0, 1e-12,
               "rate function zero");
+}
 
-  printf("  === Test: Deep paramagnet / ferromagnet limits ===\n");
+static void test_deep_limits(void) {
+  printf("  === Test: deep paramagnet / ferromagnet limits ===\n");
+
+  const double J = 1.0;
+  double zz0[8];
+
   check_close(tfim_quench_mx(J, 1e9, 1e9, 0.0, 32), 1.0, 1e-6,
               "<sx> -> 1 for h -> infinity");
   tfim_quench_zz(J, 1e-9, 1e-9, 0.0, 32, 5, zz0);
   check_close(zz0[5], 1.0, 1e-6, "<sz0 sz5> -> 1 for h -> 0");
+}
 
-  printf(
-      "  === Test: Dynamical quantum phase transition (h = 0.3 -> 2.0) ===\n");
-  {
-    double hi = 0.3;
-    double hf = 2.0;
-    double t0 = tfim_quench_critical_time(J, hi, hf, 0);
-    double t1 = tfim_quench_critical_time(J, hi, hf, 1);
-    double c = (J * J + hi * hf) / (J * (hi + hf)), kstar = acos(c);
-    double eps = 2.0 * sqrt(J * J + hf * hf - 2.0 * J * hf * cos(kstar));
-    int n_big = 4096;
+static void test_dqpt(void) {
+  printf("  === Test: dynamical quantum phase transition (h = 0.3 -> 2.0) "
+         "===\n");
 
-    check_close(t0, M_PI / (2.0 * eps), 1e-12, "t*_0 = \\pi / 2 \\eps_k*");
-    check_close(t1 / t0, 3.0, 1e-12, "t*_1 / t*_0 = 3");
+  const double J = 1.0;
+  double hi = 0.3;
+  double hf = 2.0;
+  double t0 = tfim_quench_critical_time(J, hi, hf, 0);
+  double t1 = tfim_quench_critical_time(J, hi, hf, 1);
+  double c = (J * J + hi * hf) / (J * (hi + hf)), kstar = acos(c);
+  double eps = 2.0 * sqrt(J * J + hf * hf - 2.0 * J * hf * cos(kstar));
+  int n_big = 4096;
 
-    /* rate function is smooth on either side but has a kink at t*: its slope
-     * changes sign across it, so check maximum of a fine scan sits at t*_0
-     * within scan step */
-    double best_t = 0.0;
-    double best = -1.0;
-    double step = 0.002;
+  check_close(t0, M_PI / (2.0 * eps), 1e-12, "t*_0 = \\pi / 2 \\eps_k*");
+  check_close(t1 / t0, 3.0, 1e-12, "t*_1 / t*_0 = 3");
 
-    for (double t = 0.05; t < 1.5 * t0; t += step) {
-      double lam = tfim_quench_loschmidt_rate(J, hi, hf, t, n_big);
+  // rate function is smooth on either side but has a kink at t*: its slope
+  // changes sign across it, so check maximum of a fine scan sits at t*_0 within
+  // scan step
+  double best_t = 0.0;
+  double best = -1.0;
+  double step = 0.002;
 
-      if (lam > best) {
-        best = lam;
-        best_t = t;
-      }
-    }
+  for (double t = 0.05; t < 1.5 * t0; t += step) {
+    double lam = tfim_quench_loschmidt_rate(J, hi, hf, t, n_big);
 
-    printf("  peak of rate function at t=%.4f, t*_0=%.4f\n", best_t, t0);
-    check_true(fabs(best_t - t0) < 0.02,
-               "rate function peaks at critical time");
-    check_true(isnan(tfim_quench_critical_time(J, 0.3, 0.6, 0)),
-               "no critical time without crossing h = J");
-  }
-
-  printf("  Test: Light cone ===\n");
-  {
-    /* start deep in paramagnet, where <sz_0 sz_r> ~ (J/h_i)^r is
-     * negligible, and quench into ordered phase: correlations spread
-     * ballistically at twice maximum quasiparticle speed 2 min(J, h_f) */
-    double hi = 3.0;
-    double hf = 0.5;
-    double t = 3.0, zz[41];
-    int n = 256;
-
-    tfim_quench_zz(J, hi, hf, t, n, 40, zz);
-    // double speed = 4.0 * (hf < J ? hf : J), front = speed * t;
-    double speed = 4.0 * hf;
-    double front = speed * t;
-
-    printf("  front at r = %.1f\n", front);
-    check_true(fabs(zz[3]) > 0.05, "correlations have changed inside cone");
-    for (int r = (int)(front + 6.0); r <= 40; r += 8) {
-      char label[64];
-
-      snprintf(label, sizeof label, "r=%d outside cone is ~0", r);
-      check_close(zz[r], 0.0, 2e-3, label);
+    if (lam > best) {
+      best = lam;
+      best_t = t;
     }
   }
 
-  printf("  === Test: Invalid input ===\n");
+  printf("  peak of rate function at t=%.4f, t*_0=%.4f\n", best_t, t0);
+
+  check_true(fabs(best_t - t0) < 0.02, "rate function peaks at critical time");
+  check_true(isnan(tfim_quench_critical_time(J, 0.3, 0.6, 0)),
+             "no critical time without crossing h = J");
+}
+
+static void test_light_cone(void) {
+  printf("  === Test: light cone ===\n");
+
+  // start deep in paramagnet, where <sz_0 sz_r> ~ (J/h_i)^r is negligible, and
+  // quench into ordered phase: correlations spread ballistically at twice
+  // maximum quasiparticle speed 2 min(J, h_f)
+  const double J = 1.0;
+  double hi = 3.0;
+  double hf = 0.5;
+  double t = 3.0;
+  double zz[41];
+  int n = 256;
+
+  tfim_quench_zz(J, hi, hf, t, n, 40, zz);
+  double speed = 4.0 * hf;
+  double front = speed * t;
+
+  printf("  front at r = %.1f\n", front);
+  check_true(fabs(zz[3]) > 0.05, "correlations have changed inside cone");
+  for (int r = (int)(front + 6.0); r <= 40; r += 8) {
+    char label[64];
+
+    snprintf(label, sizeof label, "r=%d outside cone is ~0", r);
+
+    check_close(zz[r], 0.0, 2e-3, label);
+  }
+}
+
+static void test_invalid_input(void) {
+  printf("  === Test: invalid input ===\n");
+
+  const double J = 1.0;
   double dummy[10];
 
   check_true(isnan(tfim_quench_mx(J, 0.5, 1.0, 0.0, 7)),
@@ -295,13 +316,22 @@ int main(void) {
              "NULL output rejected");
   check_true(tfim_quench_modes(J, 0.5, 1.0, 0.0, 8, NULL) == -1,
              "NULL modes rejected");
+}
+
+int main(void) {
+  printf(" > TFIM quench tests\n\n");
+
+  test_quench_matches_ed();
+  test_no_quench();
+  test_deep_limits();
+  test_dqpt();
+  test_light_cone();
+  test_invalid_input();
 
   if (failures) {
-    printf("\n  %d check(s) FAILED\n", failures);
-
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-  printf("\n  all checks passed\n");
-
+  printf("\nAll TFIM quench checks passed\n");
   return 0;
 }

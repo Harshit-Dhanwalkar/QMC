@@ -1,24 +1,19 @@
 /*
- * Test : Split-Operator Fourier Transform (SOFT) method, 2D and 3D
+ * Test: Split-Operator Fourier Transform (SOFT) method, 2D and 3D
  *
- * Validation strategy:
  * 1. Free-particle Gaussian wavepacket (V=0), 2D and 3D: a minimum-uncertainty
- *    Gaussian wavepacket spreads with a well-known closed form (e.g. Griffiths
- *    "Intro to QM" ch. 2; Cohen-Tannoudji complement G_I):
- *      <x>(t)  = x0 + (\hbar * k0/ m ) * t
- *      Var(x)(t) = \sigma_0^2 * (1 + (\hbar * t / (2 * m * \sigma_0^2))^2)
- *    independently in every Cartesian direction. This isolates and validates
- *    momentum-space kinetic propagator (fft2d/ fft3d + phase factors) with
- *    potential term switched off entirely
- * 2. 2D harmonic-oscillator coherent state: a Gaussian of width \sigma_0 =
- *    \sqrt(\hbar / (m * \omega)), displaced from origin, is an exact coherent
- *    state of HO. It does Not spread, and its centroid follows trajectory
- *    exactly (Ehrenfest's theorem is exact for a harmonic potential):
- *
- *      <x>(t) = x_0 * \cos(\omega * t)
- *      <y>(t) = y_0 * \cos(\omega * t)
- *    Potential-operator half-steps together with kinetic propagator in same run
- * 3. Norm conservation (unitarity): Tr(|\psi|^2) stays 1 throughout every run
+ *    Gaussian spreads with closed form
+ *      <x>(t)    = x0 + (hbar*k0/m)*t
+ *      Var(x)(t) = sigma0^2 * (1 + (hbar*t/(2*m*sigma0^2))^2)
+ *    independently in every Cartesian direction.  Isolates momentum-space
+ *    kinetic propagator (fft2d/fft3d + phase factors) with potential term
+ *    switched off entirely
+ * 2. 2D harmonic-oscillator coherent state: a Gaussian of width
+ *    sigma0 = sqrt(hbar/(m*omega)), displaced from origin, is an exact
+ *    coherent state.  It does not spread, and its centroid follows exact
+ *    classical trajectory (Ehrenfest is exact for a harmonic potential):
+ *      <x>(t) = x0*cos(omega*t),  <y>(t) = y0*cos(omega*t)
+ * 3. Norm conservation (unitarity): grid_norm stays 1 throughout every run
  */
 
 #include "../core/complex.h"
@@ -40,23 +35,40 @@
     }                                                                          \
   } while (0)
 
-static int check_close(double got, double expected, double tol,
-                       const char *label) {
+static int failures = 0;
+
+static void check_close(double got, double expected, double tol,
+                        const char *label) {
   double err = fabs(got - expected);
   printf("  %s: got=%.6f expected=%.6f err=%.2e\n", label, got, expected, err);
-
-  return err > tol;
+  if (!(err <= tol)) {
+    printf("  FAIL: %s\n", label);
+    failures++;
+  }
 }
 
-// Test 1: free-particle Gaussian spreading, 2D
-static int test_free_particle_2d(void) {
+static void check_true(int cond, const char *label) {
+  printf("  %s: %s\n", label, cond ? "ok" : "FAIL");
+  if (!cond) {
+    failures++;
+  }
+}
+
+static void test_free_particle_2d(void) {
+  printf("  === Test: Free-particle Gaussian spreading (2D, V=0) ===\n");
+
   int Nx = RUNNING_ON_VALGRIND ? 32 : 64;
   int Ny = RUNNING_ON_VALGRIND ? 32 : 64;
   double Lx = RUNNING_ON_VALGRIND ? 12.0 : 24.0;
   double Ly = RUNNING_ON_VALGRIND ? 12.0 : 24.0;
   double dx = Lx / Nx, dy = Ly / Ny;
-  double hbar = 1.0, mass = 1.0;
-  double sigma0 = 1.2, x0 = -2.0, y0 = 0.5, kx0 = 0.8, ky0 = -0.3;
+  double hbar = 1.0;
+  double mass = 1.0;
+  double sigma0 = 1.2;
+  double x0 = -2.0;
+  double y0 = 0.5;
+  double kx0 = 0.8;
+  double ky0 = -0.3;
 
   double *x = malloc(Nx * sizeof(double));
   double *y = malloc(Ny * sizeof(double));
@@ -71,7 +83,7 @@ static int test_free_particle_2d(void) {
   }
 
   cvector_t *psi = cvector_alloc(Nx * Ny);
-  double *V = calloc(Nx * Ny, sizeof(double)); // free particle: V=0
+  double *V = calloc(Nx * Ny, sizeof(double));
   CHECK_ALLOC(V);
 
   for (int ix = 0; ix < Nx; ix++) {
@@ -91,18 +103,20 @@ static int test_free_particle_2d(void) {
 
   double T = RUNNING_ON_VALGRIND ? 1.0 : 3.0;
   double dt = 0.01;
-  int fail = soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar,
-                            mass) != 0;
+  int rc =
+      soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar, mass);
+  check_true(rc == 0, "soft_evolve_2d ran");
 
   double mean_x = 0.0;
   double mean_y = 0.0;
-  for (int ix = 0; ix < Nx; ix++)
+  for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       double p = c_abs2(psi->data[ix * Ny + iy]) * dx * dy;
 
       mean_x += x[ix] * p;
       mean_y += y[iy] * p;
     }
+  }
 
   double var_x = 0.0;
   double var_y = 0.0;
@@ -116,27 +130,26 @@ static int test_free_particle_2d(void) {
   }
 
   double tol = RUNNING_ON_VALGRIND ? 1e-1 : 1e-3;
-  fail |= check_close(mean_x, x0 + (hbar * kx0 / mass) * T, tol,
-                      "2D free particle <x>(T)");
-  fail |= check_close(mean_y, y0 + (hbar * ky0 / mass) * T, tol,
-                      "2D free particle <y>(T)");
+  check_close(mean_x, x0 + (hbar * kx0 / mass) * T, tol,
+              "2D free particle <x>(T)");
+  check_close(mean_y, y0 + (hbar * ky0 / mass) * T, tol,
+              "2D free particle <y>(T)");
   double var_exact =
       sigma0 * sigma0 * (1.0 + pow(hbar * T / (2 * mass * sigma0 * sigma0), 2));
-  fail |= check_close(var_x, var_exact, tol * 10, "2D free particle Var(x)(T)");
-  fail |= check_close(var_y, var_exact, tol * 10, "2D free particle Var(y)(T)");
-  fail |= check_close(grid_norm(psi, dx * dy), 1.0, 1e-6,
-                      "2D free particle norm conservation");
+  check_close(var_x, var_exact, tol * 10, "2D free particle Var(x)(T)");
+  check_close(var_y, var_exact, tol * 10, "2D free particle Var(y)(T)");
+  check_close(grid_norm(psi, dx * dy), 1.0, 1e-6,
+              "2D free particle norm conservation");
 
   cvector_free(psi);
   free(V);
   free(x);
   free(y);
-
-  return fail;
 }
 
-// Test 2: free-particle Gaussian spreading, 3D
-static int test_free_particle_3d(void) {
+static void test_free_particle_3d(void) {
+  printf("  === Test: Free-particle Gaussian spreading (3D, V=0) ===\n");
+
   int Nx = RUNNING_ON_VALGRIND ? 32 : 64;
   int Ny = RUNNING_ON_VALGRIND ? 32 : 64;
   int Nz = RUNNING_ON_VALGRIND ? 16 : 32;
@@ -178,7 +191,6 @@ static int test_free_particle_3d(void) {
   double *V = calloc(N, sizeof(double));
   CHECK_ALLOC(V);
 
-
   for (int ix = 0; ix < Nx; ix++) {
     for (int iy = 0; iy < Ny; iy++) {
       for (int iz = 0; iz < Nz; iz++) {
@@ -201,8 +213,9 @@ static int test_free_particle_3d(void) {
   double T = RUNNING_ON_VALGRIND ? 1.0 : 2.0;
   double dt = 0.01;
 
-  int fail = soft_evolve_3d(psi, V, Nx, Ny, Nz, dx, dy, dz, dt, (int)(T / dt),
-                            hbar, mass) != 0;
+  int rc = soft_evolve_3d(psi, V, Nx, Ny, Nz, dx, dy, dz, dt, (int)(T / dt),
+                          hbar, mass);
+  check_true(rc == 0, "soft_evolve_3d ran");
 
   double mean_x = 0.0;
   for (int ix = 0; ix < Nx; ix++) {
@@ -215,23 +228,22 @@ static int test_free_particle_3d(void) {
   }
 
   double tol = RUNNING_ON_VALGRIND ? 1e-1 : 1e-3;
-  fail |= check_close(mean_x, x0 + (hbar * kx0 / mass) * T, tol,
-                      "3D free particle <x>(T)");
-  fail |= check_close(grid_norm(psi, dx * dy * dz), 1.0, 1e-6,
-                      "3D free particle norm conservation");
+  check_close(mean_x, x0 + (hbar * kx0 / mass) * T, tol,
+              "3D free particle <x>(T)");
+  check_close(grid_norm(psi, dx * dy * dz), 1.0, 1e-6,
+              "3D free particle norm conservation");
 
   cvector_free(psi);
   free(V);
   free(x);
   free(y);
   free(z);
-
-  return fail;
 }
 
-// Test 3: 2D harmonic-oscillator coherent state (no spreading, exact classical
-// centroid motion via Ehrenfest's theorem)
-static int test_ho_coherent_state_2d(void) {
+static void test_ho_coherent_state_2d(void) {
+  printf("  === Test: 2D Harmonic-oscillator coherent state (Ehrenfest, no "
+         "spreading) ===\n");
+
   int Nx = RUNNING_ON_VALGRIND ? 32 : 64;
   int Ny = RUNNING_ON_VALGRIND ? 32 : 64;
   double Lx = RUNNING_ON_VALGRIND ? 10.0 : 20.0;
@@ -283,8 +295,9 @@ static int test_ho_coherent_state_2d(void) {
 
   double T = RUNNING_ON_VALGRIND ? 1.0 : 4.0;
   double dt = 0.005;
-  int fail = soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar,
-                            mass) != 0;
+  int rc =
+      soft_evolve_2d(psi, V, Nx, Ny, dx, dy, dt, (int)(T / dt), hbar, mass);
+  check_true(rc == 0, "soft_evolve_2d ran");
 
   double mean_x = 0.0;
   double mean_y = 0.0;
@@ -298,38 +311,31 @@ static int test_ho_coherent_state_2d(void) {
   }
 
   double tol = RUNNING_ON_VALGRIND ? 5e-2 : 1e-3;
-  fail |= check_close(mean_x, x0 * cos(omega * T), tol,
-                      "2D HO coherent state <x>(T) (Ehrenfest)");
-  fail |= check_close(mean_y, y0 * cos(omega * T), tol,
-                      "2D HO coherent state <y>(T) (Ehrenfest)");
-  fail |= check_close(grid_norm(psi, dx * dy), 1.0, 1e-6,
-                      "2D HO coherent state norm conservation");
+  check_close(mean_x, x0 * cos(omega * T), tol,
+              "2D HO coherent state <x>(T) (Ehrenfest)");
+  check_close(mean_y, y0 * cos(omega * T), tol,
+              "2D HO coherent state <y>(T) (Ehrenfest)");
+  check_close(grid_norm(psi, dx * dy), 1.0, 1e-6,
+              "2D HO coherent state norm conservation");
 
   cvector_free(psi);
   free(V);
   free(x);
   free(y);
-
-  return fail;
 }
 
 int main(void) {
-  int failed = 0;
+  printf(" > Split-operator Fourier method (SOFT) tests\n\n");
 
-  printf("Free-particle Gaussian wavepacket spreading (2D, V=0):\n");
-  failed += test_free_particle_2d();
+  test_free_particle_2d();
+  test_free_particle_3d();
+  test_ho_coherent_state_2d();
 
-  printf("Free-particle Gaussian wavepacket spreading (3D, V=0):\n");
-  failed += test_free_particle_3d();
-
-  printf("2D harmonic-oscillator coherent state (Ehrenfest, no spreading):\n");
-  failed += test_ho_coherent_state_2d();
-
-  if (failed) {
-    printf("FAILED (%d)\n", failed);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-  printf("PASS\n");
+  printf("\nAll SOFT checks passed\n");
 
   return 0;
 }

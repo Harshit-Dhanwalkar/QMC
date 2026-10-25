@@ -10,6 +10,7 @@
  */
 #include "hdf5_writer.h"
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,8 +81,8 @@ static hid_t hdf5_native_type(hdf5_type_t type) {
   }
 }
 
-/* Create any missing intermediate groups implied by `dataset_path` ("a/b/c"
- * needs groups "a" and "a/b" to exist before dataset "a/b/c" can be created) */
+// Create any missing intermediate groups implied by `dataset_path` ("a/b/c"
+// needs groups "a" and "a/b" to exist before dataset "a/b/c" can be created)
 static hdf5_status_t ensure_parent_groups(hid_t file,
                                           const char *dataset_path) {
   const char *last_slash = strrchr(dataset_path, '/');
@@ -136,7 +137,7 @@ static hdf5_status_t ensure_parent_groups(hid_t file,
   return HDF5_OK;
 }
 
-/* Write (or replace) a single dataset in an already-open file */
+// Write (or replace) a single dataset in an already-open file
 static hdf5_status_t write_dataset_impl(hdf5_writer_t *w, const char *dataset,
                                         const double *data, int rank,
                                         const hsize_t *dims) {
@@ -245,19 +246,17 @@ hdf5_status_t hdf5_writer_write_matrix(hdf5_writer_t *writer,
   return write_dataset_impl(writer, dataset, data, 2, dims);
 }
 
-/*
- * Write an arbitrary-rank dataset to an open HDF5 file
- *
- * This is generic write path used by typed/rank-specific wrappers
- * Function validates arguments, computes total element count, configures
- * dataset creation options, creates dataset, writes payload data (when
- * present) and maps HDF5 failures to hdf5_status_t values
- *
- * NOTE:
- * - rank must be in [1, HDF5_MAX_RANK]
- * - dims must contain exactly `rank` entries
- * - data may be NULL only when total logical element count is zero
- */
+// Write an arbitrary-rank dataset to an open HDF5 file
+//
+// This is generic write path used by typed/rank-specific wrappers
+// Function validates arguments, computes total element count, configures
+// dataset creation options, creates dataset, writes payload data (when
+// present) and maps HDF5 failures to hdf5_status_t values
+//
+// NOTE:
+// - rank must be in [1, HDF5_MAX_RANK]
+// - dims must contain exactly `rank` entries
+// - data may be NULL only when total logical element count is zero
 hdf5_status_t hdf5_write_dataset(hdf5_writer_t *w, const char *dataset,
                                  hdf5_type_t type, int rank, const size_t *dims,
                                  const void *data,
@@ -415,10 +414,10 @@ hdf5_status_t hdf5_create_group(hdf5_writer_t *writer, const char *path) {
     return HDF5_OK; /* already exists */
   }
 
-  /* Reuse ensure_parent_groups to create `path` itself (plus any missing groups
-   * above it), by probing as if `path` were parent of a one-level-deeper name -
-   * ensure_parent_groups creates every path component strictly above  probe's
-   * last '/', which is exactly path` itself */
+  // Reuse ensure_parent_groups to create `path` itself (plus any missing groups
+  // above it), by probing as if `path` were parent of a one-level-deeper name -
+  // ensure_parent_groups creates every path component strictly above  probe's
+  // last '/', which is exactly path` itself
   char probe[HDF5_MAX_PATH];
 
   int n = snprintf(probe, sizeof probe, "%s/.", path);

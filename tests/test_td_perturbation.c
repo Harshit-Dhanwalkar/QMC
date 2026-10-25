@@ -217,13 +217,13 @@ static void exact_two_level(double E0, double E1, double V, double T,
   double s = sin(W * T);
 
   complex_t g = {cos(-mean * T), sin(-mean * T)};
-  *a0 = c_mul(g, c_new(c, s * half / W)); // cos(WT) + i sin(WT) (Delta/2)/W
+  *a0 = c_mul(g, c_new(c, s * half / W)); // cos(WT) + i \sin(WT) (\Delta/2)/W
   *a1 = c_mul(g, c_new(0.0, -V * s / W));
 }
 
 // Tests
 static void test_closed_forms(void) {
-  printf("  === Closed-form helpers ===\n");
+  printf("  ===  Test:Closed-form helpers ===\n");
 
   complex_t z = tdpt_phase_integral(0.0, 3.0);
   check_close(z.re, 3.0, 1e-15, "phase integral at \\Delta = 0 (real)");
@@ -233,7 +233,7 @@ static void test_closed_forms(void) {
   check_close(z.re, 3.0, 1e-12, "tiny \\Delta, real part -> t");
   check_close(z.im, 4.5e-13, 1e-14, "tiny \\Delta, imag part -> \\Delta t^2/2");
 
-  // continuity across the series/direct switch (x = \Delta t = 0.01)
+  // continuity across series/direct switch (x = \Delta t = 0.01)
   double t = 2.0;
   double below = 0.0099999999 / t;
   double above = 0.0100000001 / t;
@@ -243,7 +243,7 @@ static void test_closed_forms(void) {
   complex_t direct = {sin(xb) / below, (1.0 - cos(xb)) / below};
 
   check_close(cdiff(zb, direct), 0.0, 1e-13, "series branch vs direct formula");
-  check_close(cdiff(zb, za), 0.0, 1e-8, "continuous across the switch");
+  check_close(cdiff(zb, za), 0.0, 1e-8, "continuous across switch");
 
   // |\int|^2 = 4 \sin^2(x/2) / \Delta^2
   double d = 1.7;
@@ -275,7 +275,7 @@ static void test_closed_forms(void) {
 }
 
 static void test_first_order(void) {
-  printf("  === Numerical first order vs closed forms ===\n");
+  printf("  === Test: Numerical first order vs closed forms ===\n");
 
   const double E[2] = {0.0, 1.3};
   cvector_t *psi0 = basis_state(2, 0);
@@ -289,9 +289,9 @@ static void test_first_order(void) {
     check_close(cdiff(r->orders[1].data[1], ana), 0.0, 1e-9,
                 "constant first order vs closed form");
     check_close(cdiff(r->orders[0].data[0], c_one()), 0.0, 1e-15,
-                "order 0 is the initial state");
+                "order 0 is initial state");
     check_close(cdiff(r->orders[1].data[0], c_zero()), 0.0, 1e-12,
-                "no first-order change of the initial state (V_ii = 0)");
+                "no first-order change of initial state (V_ii = 0)");
 
     tdpt_result_free(r);
   }
@@ -318,7 +318,7 @@ static void test_first_order(void) {
     }
   }
 
-  // Gaussian pulse over the whole time axis
+  // Gaussian pulse over whole time axis
   const double Eg[2] = {0.0, 1.1};
   drive_params_t pg = {0.03, 0.0, 0.9};
   r = tdpt_dyson(2, Eg, gaussian_V, &pg, psi0, -9.0 * 0.9, 9.0 * 0.9, 4000, 1);
@@ -336,7 +336,7 @@ static void test_first_order(void) {
 }
 
 static void test_series_structure(void) {
-  printf("  === Series structure (two-level, exactly solvable) ===\n");
+  printf("  === Test: Series structure (two-level, exactly solvable) ===\n");
 
   const double E[2] = {0.0, 1.3};
   const double T = 2.7;
@@ -366,7 +366,7 @@ static void test_series_structure(void) {
   tdpt_result_free(ra);
   tdpt_result_free(rb);
 
-  // truncation error ~ eps^(K+1) against the exact two-level solution
+  // truncation error ~ eps^(K+1) against exact two-level solution
   for (int K = 1; K <= 3; K++) {
     double err[2];
     const double epss[2] = {0.08, 0.04};
@@ -401,7 +401,7 @@ static void test_series_structure(void) {
     check_true(ratio > 0.8 * expected && ratio < 1.25 * expected, label);
   }
 
-  // probabilities are picture independent and agree with the exact solution
+  // probabilities are picture independent and agree with exact solution
   drive_params_t p = {0.03, 0.0, 0.0};
   tdpt_result_t *r = tdpt_dyson(2, E, constant_V, &p, psi0, 0.0, T, 400, 3);
   if (r) {
@@ -416,7 +416,7 @@ static void test_series_structure(void) {
     tdpt_result_free(r);
   }
 
-  // max_order = 0 just returns the initial state
+  // max_order = 0 just returns initial state
   r = tdpt_dyson(2, E, constant_V, &p, psi0, 0.0, T, 10, 0);
   if (r) {
     check_close(cdiff(r->orders[0].data[0], c_one()), 0.0, 1e-15,
@@ -432,7 +432,7 @@ static void test_series_structure(void) {
 }
 
 static void test_four_level(void) {
-  printf("  === Four levels, time-dependent non-commuting V(t) ===");
+  printf("  === Test: Four levels, time-dependent non-commuting V(t) ===\n");
 
   const double E[N4] = {0.0, 0.45, 1.1, 1.8};
   cmatrix_t *A = make_hermitian(0.3);
@@ -455,7 +455,7 @@ static void test_four_level(void) {
       tdpt_result_t *r =
           tdpt_dyson(N4, E, four_level_V, &fl, psi0, 0.0, T, 600, K);
 
-      // at t0 = 0 the interaction and Schrodinger pictures coincide
+      // at t0 = 0 interaction and Schrodinger pictures coincide
       complex_t ref[N4];
       memcpy(ref, psi0->data, sizeof ref);
       direct_evolve(E, four_level_V, &fl, ref, 0.0, T, 4000);
@@ -518,7 +518,8 @@ static void band_V(double t, void *p, cmatrix_t *V) {
 }
 
 static void test_golden_rule(void) {
-  printf("  === Fermi's golden rule from a dense band of final states ===\n");
+  printf("  === Test: Fermi's golden rule from a dense band of final states "
+         "===\n");
 
   const int N = 200;
   const double dE = 0.02;
@@ -574,7 +575,7 @@ static void test_golden_rule(void) {
              "ratio approaches 1 monotonically as T grows");
   check_true(ratio[0] > 0.95 && ratio[0] < 1.0,
              "T = 10 within 5% (from below)");
-  check_close(ratio[2], 1.0, 0.012, "T = 40 within 1.2% of the golden rule");
+  check_close(ratio[2], 1.0, 0.012, "T = 40 within 1.2% of golden rule");
 
   free(E);
   cmatrix_free(Vm);
@@ -597,7 +598,7 @@ static void test_invalid(void) {
              "n = 0");
   check_true(tdpt_dyson(TDPT_MAX_DIM + 1, E, constant_V, &p, psi0, 0.0, 1.0, 10,
                         1) == NULL,
-             "n above the limit");
+             "n above limit");
   check_true(tdpt_dyson(2, NULL, constant_V, &p, psi0, 0.0, 1.0, 10, 1) == NULL,
              "NULL energies");
   check_true(tdpt_dyson(2, E, NULL, &p, psi0, 0.0, 1.0, 10, 1) == NULL,
@@ -622,7 +623,7 @@ static void test_invalid(void) {
              "max_order < 0");
   check_true(tdpt_dyson(2, E, constant_V, &p, psi0, 0.0, 1.0, 10,
                         TDPT_MAX_ORDER + 1) == NULL,
-             "max_order above the limit");
+             "max_order above limit");
   check_true(tdpt_dyson(2, E, nan_V, &p, psi0, 0.0, 1.0, 10, 1) == NULL,
              "callback producing NaN is rejected");
 
@@ -648,7 +649,7 @@ static void test_invalid(void) {
 }
 
 int main(void) {
-  printf(" > Time-dependent perturbation theory tests\n");
+  printf(" > Time-dependent perturbation theory tests:\n");
 
   test_closed_forms();
   test_first_order();

@@ -138,10 +138,10 @@ static void test_solve_tise_shoot_harmonic_oscillator(void) {
 }
 
 // Shared coherent-state setup for two TDSE evolution tests
-/* Minimum-uncertainty Gaussian ("coherent state") for harmonic oscillator,
- * centered at x0 with zero initial momentum. Its center-of-mass  trajectory
- * x(t) = x0 * \cos(\omega * t) is an exact result (Ehrenfest's theorem is exact
- * for any harmonic potential) for any \hbar, mass, \omega */
+// Minimum-uncertainty Gaussian ("coherent state") for harmonic oscillator,
+// centered at x0 with zero initial momentum. Its center-of-mass  trajectory
+// x(t) = x0 * \cos(\omega * t) is an exact result (Ehrenfest's theorem is exact
+// for any harmonic potential) for any \hbar, mass, \omega
 static void make_coherent_state(cvector_t *psi, const double *x, int n,
                                 double x0, double hbar, double mass,
                                 double omega) {
@@ -214,8 +214,9 @@ static void test_split_step_norm_conservation(void) {
 }
 
 static void test_split_step_coherent_state_hbar_independence(void) {
-  printf("  === Test: evolve_tdse_split_step reproduces exact coherent-state "
-         "trajectory x(t)=x0 * \\cos(\\omega*t) at multiple \\hbar values ===\n");
+  printf(
+      "  === Test: evolve_tdse_split_step reproduces exact coherent-state "
+      "trajectory x(t)=x0 * \\cos(\\omega*t) at multiple \\hbar values ===\n");
 
   int n = TEST_N_MEDIUM;
   double L = 40.0;
@@ -358,7 +359,7 @@ static void test_crank_matches_split_step(void) {
   double t_total = dt * steps;
   double x_expected = x0 * cos(omega * t_total);
   check_close(x_crank, x_expected, 5e-3,
-              "Crank-Nicolson also matches the exact classical trajectory");
+              "Crank-Nicolson also matches exact classical trajectory");
 
   cvector_free(psi_crank);
   cvector_free(psi_split);
@@ -369,10 +370,9 @@ static void test_crank_matches_split_step(void) {
 }
 
 static void test_solve_tise_shoot_matching_harmonic_oscillator(void) {
-  printf(
-      " === Test: solve_tise_shoot_matching on the harmonic oscillator matches "
-      "the exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, "
-      "with node counts and parity ===\n");
+  printf(" === Test: solve_tise_shoot_matching on harmonic oscillator matches "
+         "exact (n + 1/2) * \\hbar * \\omega spectrum across 4 levels, with "
+         "node counts and parity ===\n");
 
   int n = TEST_N_LARGE;
   double L = TEST_LENGTH;
@@ -471,7 +471,7 @@ static void test_solve_tise_shoot_matching_matches_shoot(void) {
   numerov_solution_t *diag = solve_tise_shoot(&params, 0.0, 1e-8);
 
   check(matching != NULL && diag != NULL,
-        "both methods should find the ground state");
+        "both methods should find ground state");
   if (matching && diag) {
     check_close(matching->energy, diag->energy, 1e-5,
                 "log-derivative-matching shooting agrees with diagonalization "
@@ -522,7 +522,7 @@ static void test_solve_tise_shoot_matching_no_root_returns_null(void) {
 }
 
 int main(void) {
-  printf(" > Schrodinger TISE-shooting and TDSE-evolution functions tests\n");
+  printf(" > Schrodinger TISE-shooting and TDSE-evolution functions tests:\n");
 
   test_solve_tise_shoot_harmonic_oscillator();
   test_solve_tise_shoot_matching_harmonic_oscillator();
@@ -533,11 +533,10 @@ int main(void) {
   test_crank_norm_conservation();
   test_crank_matches_split_step();
 
-  if (failures == 0) {
-    printf("\nTISE shooting and TDSE evolution tests checks passed.\n");
-    return 0;
-  } else {
-    printf("\n%d check(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll Schrodinger checks passed\n");
+  return 0;
 }

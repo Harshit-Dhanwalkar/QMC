@@ -47,7 +47,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_diagonal_matrix(void) {
-  printf("  === Test diagonal matrix ===\n");
+  printf("  === Test: Diagonal matrix ===\n");
 
   /* Diagonal entries 0.5, 1.0, 2.0, 5.0, 9.0. Shift near 2.0: two nearest
    * eigenvalues are 1.0 and 2.0 */
@@ -74,7 +74,7 @@ static void test_diagonal_matrix(void) {
 }
 
 static void test_random_hermitian_vs_dense(void) {
-  printf("  === Test Random Hermitian vs Dense ===\n");
+  printf("  === Test: Random Hermitian vs Dense ===\n");
 
   int n = 10;
   rng_state_t rng;
@@ -199,7 +199,7 @@ static void test_random_hermitian_vs_dense(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("  === Test invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
 
   int n = 3;
   cmatrix_t *dense = cmatrix_alloc(n, n);
@@ -230,15 +230,16 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Shift-invert eigensolver tests\n\n");
+
   test_diagonal_matrix();
   test_random_hermitian_vs_dense();
   test_invalid_input();
 
-  if (failures == 0) {
-    printf("\nAll test_shift_invert checks passed.\n");
-    return 0;
-  } else {
-    printf("\n%d check(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll shift-invert checks passed\n");
+  return 0;
 }

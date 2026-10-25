@@ -1,6 +1,5 @@
 /*
- * Test: ribbon (strip) spectra of Haldane model (tight_binding.h,
- * tb_ribbon_bands / tb_ribbon_profile)
+ * Test: Ribbon (strip) spectra of Haldane model
  *
  * 1. Graphene zigzag ribbon: flat band of edge states at E = 0 between Dirac
  *    points
@@ -44,7 +43,7 @@ static void check_true(int cond, const char *label) {
 
 enum { W = 20, NK = 64, MAXS = 64 };
 
-/* Bulk band edges (valence maximum, conduction minimum) from a k grid. */
+// Bulk band edges (valence maximum, conduction minimum) from a k grid
 static void bulk_gap_edges(const tb_model_t *m, double *vmax, double *cmin) {
   double e[2];
 
@@ -59,9 +58,9 @@ static void bulk_gap_edges(const tb_model_t *m, double *vmax, double *cmin) {
   }
 }
 
-/* Net crossings of Fermi level ef by in-gap states on r = 0 edge (mean_cell <
- * -0.5) as k1 runs over zone: +1 for each upward crossing
- * A state counts as an edge state when it lies inside bulk gap */
+// Net crossings of Fermi level ef by in-gap states on r = 0 edge (mean_cell <
+// -0.5) as k1 runs over zone: +1 for each upward crossing
+// A state counts as an edge state when it lies inside bulk gap
 static int edge_crossings(const tb_model_t *m, double ef, double vmax,
                           double cmin, int side, int *n_ingap) {
   double e[MAXS];
@@ -97,47 +96,40 @@ static int edge_crossings(const tb_model_t *m, double ef, double vmax,
   return net;
 }
 
-int main(void) {
+// Verify zigzag graphene ribbon has near-zero edge modes at k1 = \pi
+static void test_graphene_zigzag_ribbon(void) {
+  printf("  === Test: Graphene zigzag ribbon flat edge band ===\n");
+
   double e[MAXS];
   double mc[MAXS];
 
-  /* Plan:
-   * 1. Verify zigzag graphene ribbon has near-zero edge modes at k1 = \pi
-   * 2. In Chern phase (for both signs of \phi), verify in-gap edge states cross
-   * a Fermi level with opposite chirality on opposite edges
-   * 3. In a trivial phase, verify no in-gap edge channels cross gap
-   * 4. Verify edge-state profile properties (normalisation/localisation)
-   * 5. Verify invalid-input handling paths
-   */
+  tb_model_t *g = tb_model_graphene(1.0);
+  double emin = 1e30;
 
-  // Graphene zigzag ribbon supports two edge-localised near-zero modes around
-  // k1 = \pi (flat edge band feature)
-  printf("  --- graphene zigzag ribbon: flat edge band ---\n");
-  {
-    tb_model_t *g = tb_model_graphene(1.0);
-    double emin = 1e30;
-
-    tb_ribbon_bands(g, M_PI, 30, e, mc);
-    for (int s = 0; s < 60; s++) {
-      emin = fmin(emin, fabs(e[s]));
-    }
-
-    check_close(emin, 0.0, 1e-3, "smallest |E| at k1 = \\pi (W = 30)");
-    check_true(fabs(mc[29]) > 0.5 && fabs(mc[30]) > 0.5,
-               "two zero modes sit on the edges");
-
-    tb_model_free(g);
+  tb_ribbon_bands(g, M_PI, 30, e, mc);
+  for (int s = 0; s < 60; s++) {
+    emin = fmin(emin, fabs(e[s]));
   }
 
-  // Topological-phase sweep over opposite flux signs to check that edge-mode
-  // propagation direction flips with \phi, while opposite edges keep opposite
-  // velocities/chiralities
+  check_close(emin, 0.0, 1e-3, "smallest |E| at k1 = \\pi (W = 30)");
+  check_true(fabs(mc[29]) > 0.5 && fabs(mc[30]) > 0.5,
+             "two zero modes sit on the edges");
+
+  tb_model_free(g);
+}
+
+// In Chern phase (for both signs of \phi), verify in-gap edge states cross a
+// Fermi level with opposite chirality on opposite edges
+static void test_haldane_chern_phase(void) {
   const double t2 = 0.1;
   const double phis[2] = {M_PI / 2, -M_PI / 2};
 
   for (int p = 0; p < 2; p++) {
-    printf("  --- Haldane, \\phi = %+.2f \\pi, M = 0 (Chern phase) ---\n",
+    printf("  === Test: Haldane Chern phase, \\phi = %+.2f \\pi, M = 0 ===\n",
            phis[p] / M_PI);
+
+    double e[MAXS];
+    double mc[MAXS];
 
     tb_model_t *m = tb_model_haldane(1.0, t2, phis[p], 0.0);
     int chern = tb_haldane_chern(1.0, t2, phis[p], 0.0), n_ingap;
@@ -173,79 +165,103 @@ int main(void) {
 
     tb_model_free(m);
   }
+}
 
-  printf("  --- Haldane, M = 1 (trivial phase) ---\n");
-  {
-    tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 1.0);
-    double vmax;
-    double cmin;
-    int n_ingap;
+// In a trivial phase, verify no in-gap edge channels cross gap
+static void test_haldane_trivial_phase(void) {
+  printf("  === Test: Haldane trivial phase, M = 1 ===\n");
 
-    bulk_gap_edges(m, &vmax, &cmin);
-    check_true(tb_haldane_chern(1.0, t2, M_PI / 2, 1.0) == 0, "Chern number 0");
+  const double t2 = 0.1;
+  tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 1.0);
+  double vmax;
+  double cmin;
+  int n_ingap;
 
-    edge_crossings(m, 0.2, vmax, cmin, -1, &n_ingap);
-    check_true(n_ingap == 0, "no ribbon states in gap at any k1");
+  bulk_gap_edges(m, &vmax, &cmin);
+  check_true(tb_haldane_chern(1.0, t2, M_PI / 2, 1.0) == 0, "Chern number 0");
 
-    tb_model_free(m);
-  }
+  edge_crossings(m, 0.2, vmax, cmin, -1, &n_ingap);
+  check_true(n_ingap == 0, "no ribbon states in gap at any k1");
 
-  printf("  --- edge-state profile ---\n");
-  {
-    tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 0.0);
-    double prob[W], sum = 0.0;
+  tb_model_free(m);
+}
 
-    tb_ribbon_bands(m, M_PI - 0.4, W, e, mc);
-    int state = -1;
+// Verify edge-state profile properties (normalisation/localisation)
+static void test_edge_state_profile(void) {
+  printf("  === Test: Edge-state profile (normalisation, localisation) ===\n");
 
-    for (int s = 0; s < 2 * W; s++) {
-      if (mc[s] < -0.9 && (state < 0 || fabs(e[s]) < fabs(e[state]))) {
-        state = s;
-      }
+  double e[MAXS];
+  double mc[MAXS];
+  const double t2 = 0.1;
+
+  tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 0.0);
+  double prob[W], sum = 0.0;
+
+  tb_ribbon_bands(m, M_PI - 0.4, W, e, mc);
+  int state = -1;
+
+  for (int s = 0; s < 2 * W; s++) {
+    if (mc[s] < -0.9 && (state < 0 || fabs(e[s]) < fabs(e[state]))) {
+      state = s;
     }
-
-    check_true(state >= 0, "left-edge state found");
-    check_true(tb_ribbon_profile(m, M_PI - 0.4, W, state, prob) == TB_OK,
-               "profile computed");
-
-    for (int r = 0; r < W; r++) {
-      sum += prob[r];
-    }
-
-    check_close(sum, 1.0, 1e-9, "profile normalised");
-    check_true(prob[0] > prob[W / 2] * 100.0 && prob[0] > prob[1],
-               "decays away from edge");
-
-    tb_model_free(m);
   }
 
-  printf("  --- invalid input ---\n");
-  {
-    tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 0.0);
-    tb_model_t *chain = tb_model_alloc(1, 1);
-    double prob[4];
+  check_true(state >= 0, "left-edge state found");
+  check_true(tb_ribbon_profile(m, M_PI - 0.4, W, state, prob) == TB_OK,
+             "profile computed");
 
-    check_true(tb_ribbon_bands(NULL, 0.0, 4, e, NULL) == TB_ERR_INVALID,
-               "NULL model rejected");
-    check_true(tb_ribbon_bands(m, 0.0, 0, e, NULL) == TB_ERR_INVALID,
-               "zero width rejected");
-    check_true(tb_ribbon_bands(m, NAN, 4, e, NULL) == TB_ERR_INVALID,
-               "NaN k rejected");
-    check_true(tb_ribbon_bands(m, 0.0, 4, NULL, NULL) == TB_ERR_INVALID,
-               "NULL output rejected");
-    check_true(tb_ribbon_bands(chain, 0.0, 4, e, NULL) == TB_ERR_INVALID,
-               "1D model rejected");
-    check_true(tb_ribbon_profile(m, 0.0, 2, 99, prob) == TB_ERR_INVALID,
-               "state out of range rejected");
-
-    tb_model_free(m);
-    tb_model_free(chain);
+  for (int r = 0; r < W; r++) {
+    sum += prob[r];
   }
+
+  check_close(sum, 1.0, 1e-9, "profile normalised");
+  check_true(prob[0] > prob[W / 2] * 100.0 && prob[0] > prob[1],
+             "decays away from edge");
+
+  tb_model_free(m);
+}
+
+// Verify invalid-input handling paths
+static void test_invalid_input(void) {
+  printf("  === Test: invalid input ===\n");
+
+  double e[MAXS];
+  double prob[4];
+  const double t2 = 0.1;
+
+  tb_model_t *m = tb_model_haldane(1.0, t2, M_PI / 2, 0.0);
+  tb_model_t *chain = tb_model_alloc(1, 1);
+
+  check_true(tb_ribbon_bands(NULL, 0.0, 4, e, NULL) == TB_ERR_INVALID,
+             "NULL model rejected");
+  check_true(tb_ribbon_bands(m, 0.0, 0, e, NULL) == TB_ERR_INVALID,
+             "zero width rejected");
+  check_true(tb_ribbon_bands(m, NAN, 4, e, NULL) == TB_ERR_INVALID,
+             "NaN k rejected");
+  check_true(tb_ribbon_bands(m, 0.0, 4, NULL, NULL) == TB_ERR_INVALID,
+             "NULL output rejected");
+  check_true(tb_ribbon_bands(chain, 0.0, 4, e, NULL) == TB_ERR_INVALID,
+             "1D model rejected");
+  check_true(tb_ribbon_profile(m, 0.0, 2, 99, prob) == TB_ERR_INVALID,
+             "state out of range rejected");
+
+  tb_model_free(m);
+  tb_model_free(chain);
+}
+
+int main(void) {
+  printf(" > Haldane ribbon spectra tests:\n");
+
+  test_graphene_zigzag_ribbon();
+  test_haldane_chern_phase();
+  test_haldane_trivial_phase();
+  test_edge_state_profile();
+  test_invalid_input();
 
   if (failures) {
     printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
-  printf("\nTB Ribbon all checks passed\n");
+  printf("\nAll TB ribbon checks passed\n");
   return 0;
 }

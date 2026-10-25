@@ -5,6 +5,7 @@
  * Handles RFC 4180 string escaping, configurable delimiters and numerical
  * precision, and optional policy for writing non-finite values (NaN/Inf)
  */
+
 #include "csv_writer.h"
 
 #include <fcntl.h>

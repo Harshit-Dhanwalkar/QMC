@@ -57,7 +57,7 @@ static double chern(const tb_model_t *m, int first, int count, int n_k) {
 }
 
 static void test_dispersions(void) {
-  printf("  === Dispersions, DOS, band lines ===\n");
+  printf("  === Test: Dispersions, DOS, band lines ===\n");
 
   tb_model_t *chain = tb_model_chain(0.7);
   tb_model_t *sq = tb_model_square(-0.9);
@@ -177,7 +177,7 @@ static void test_dispersions(void) {
 }
 
 static void test_haldane(void) {
-  printf("  === Haldane model ===\n");
+  printf("  === Test: Haldane model ===\n");
   const double t1 = 1.0;
   const double t2 = 0.1;
   const double phis[3] = {M_PI / 2.0, -M_PI / 2.0, 0.6};
@@ -291,7 +291,7 @@ static void test_haldane(void) {
 }
 
 static void test_ssh(void) {
-  printf("  === SSH chain ===\n");
+  printf("  === Test: SSH chain ===\n");
 
   const double vs[3] = {1.0, 0.4, 0.8};
   const double ws[3] = {0.4, 1.0, -1.1};
@@ -351,7 +351,7 @@ static void test_ssh(void) {
 }
 
 static void test_kagome(void) {
-  printf("  === Kagome lattice ===\n");
+  printf("  === Test: Kagome lattice ===\n");
 
   const double ts[2] = {1.0, -0.6};
   for (int s = 0; s < 2; s++) {
@@ -401,7 +401,7 @@ static void test_kagome(void) {
 }
 
 static void test_hofstadter(void) {
-  printf("  === Hofstadter ===\n");
+  printf("  === Test: Hofstadter ===\n");
 
   // Bloch matrix equals lattice.h's
   const int pq[3][2] = {{1, 3}, {2, 5}, {1, 4}};
@@ -507,7 +507,7 @@ static void test_hofstadter(void) {
 }
 
 static void test_wilson_winding(void) {
-  printf("  ===  Wilson-loop winding ===\n");
+  printf("  === Test: Wilson-loop winding ===\n");
 
   tb_model_t *h = tb_model_haldane(1.0, 0.1, M_PI / 2.0, 0.2);
   tb_model_t *hm = tb_model_haldane(1.0, 0.1, -M_PI / 2.0, 0.2);
@@ -551,7 +551,7 @@ static void test_wilson_winding(void) {
 }
 
 static void test_invalid(void) {
-  printf("  === Invalid input ===\n");
+  printf("  === Test: Invalid input ===\n");
 
   check_true(tb_model_alloc(0, 2) == NULL, "dim 0 rejected");
   check_true(tb_model_alloc(3, 2) == NULL, "dim 3 rejected");
@@ -643,7 +643,7 @@ static void test_invalid(void) {
 }
 
 int main(void) {
-  printf(" > Tight-binding tests:\n");
+  printf(" > Tight-binding band structure and band topology tests:\n");
 
   test_dispersions();
   test_haldane();

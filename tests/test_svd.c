@@ -7,7 +7,7 @@
  * structs
  *
  * Checks (against 4x3 real matrix with singular values):
- *  1. Singular values match the numpy reference
+ *  1. Singular values match numpy reference
  *  2. A = U * diag(S) * V^T reconstructs original matrix
  *  3. U and V both have orthonormal columns
  */
@@ -137,7 +137,7 @@ static void test_svd_4x3(void) {
 }
 
 int main(void) {
-  printf(" > SVD decomposition tests\n");
+  printf(" > SVD decomposition tests:\n");
 
   test_svd_4x3();
 

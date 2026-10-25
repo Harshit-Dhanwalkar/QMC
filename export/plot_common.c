@@ -3,7 +3,7 @@
  *
  * Provides common logic for resolving output file paths and extensions, mapping
  * status codes to human-readable error strings, and implementing
- * PLOT_FORMAT_TEXT (CSV) fallback used when graphical backends are unavailable.
+ * PLOT_FORMAT_TEXT (CSV) fallback used when graphical backends are unavailable
  */
 
 #include "plot.h"
@@ -17,9 +17,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/* Extension per format
- *
- * NULL for WINDOW and unrecognized */
+// Extension per format
+//
+// NULL for WINDOW and unrecognized
 static const char *format_extension(plot_format_t format) {
   switch (format) {
   case PLOT_FORMAT_PNG:
@@ -96,8 +96,8 @@ plot_status_t plot_output_path(const char *filename, plot_format_t format,
 
 // PLOT_FORMAT_TEXT writers
 
-/* Full-precision decimal formatting: try 1..17 significant digits and stop at
- * first whose strtod round-trips bit-exactly */
+// Full-precision decimal formatting: try 1..17 significant digits and stop at
+// first whose strtod round-trips bit-exactly
 static void write_double(FILE *f, double v) {
   char buf[64];
   for (int precision = 1; precision <= 17; precision++) {
@@ -164,6 +164,7 @@ plot_status_t plot_write_text_nd(const char *path, const double *x,
   if (!path || n_series <= 0 || n_pts < 0) {
     return PLOT_ERR_INVALID_ARGUMENT;
   }
+
   if (n_pts > 0 && (!x || !ys)) {
     return PLOT_ERR_INVALID_ARGUMENT;
   }
@@ -183,6 +184,7 @@ plot_status_t plot_write_text_nd(const char *path, const double *x,
   fputs(opts && opts->xlabel ? opts->xlabel : "x", f);
   for (int s = 0; s < n_series; s++) {
     fputc(',', f);
+
     if (labels && labels[s]) {
       fputs(labels[s], f);
     } else {

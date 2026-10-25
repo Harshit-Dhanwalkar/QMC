@@ -35,7 +35,7 @@ static int json_double_bit_equal(double a, double b) {
     return signbit(a) == signbit(b);
   }
 
-  return a == b;
+  return memcmp(&a, &b, sizeof(double)) == 0;
 }
 
 // Write `s` as a JSON string literal (with surrounding quotes), escaping

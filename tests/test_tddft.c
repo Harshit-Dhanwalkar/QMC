@@ -59,7 +59,7 @@ static void test_h2(void) {
     check(td->dim == 1, "H2/STO-3G has exactly 1 possible excitation "
                         "(1 occ x 1 virt)");
     check_close(td->excitation_energies[0], 0.97123268, 1e-4,
-                "H2/STO-3G TDA-LDA excitation energ matches referencey");
+                "H2/STO-3G TDA-LDA excitation energ matches reference");
 
     tddft_result_free(td);
   }
@@ -130,17 +130,16 @@ static void test_invalid_inputs(void) {
 }
 
 int main(void) {
-  printf(" > TDDFT for H2 and LiH tests\n");
+  printf(" > TDDFT for H2 and LiH tests:\n");
 
   test_h2();
   test_lih();
   test_invalid_inputs();
 
-  if (failures == 0) {
-    printf("\nAll test_tddft checks passed.\n");
-    return 0;
-  } else {
-    printf("\n%d check(s) FAILED.\n", failures);
+  if (failures) {
+    printf("\n%d check(s) FAILED\n", failures);
     return 1;
   }
+  printf("\nAll TDDFT checks passed\n");
+  return 0;
 }

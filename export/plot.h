@@ -45,12 +45,10 @@ typedef struct {
   int tex_text; // GR backend only: 1 = render for title/xlabel/ylabel/legend as
                 // TeX math 0 = plain text (default)
 
-  /*
-   * Output directory prefix:
+  /* Output directory prefix:
    *   NULL          -> use QMC_OUTPUT_DIR (default)
    *   ""            -> no prefix; use filename verbatim
-   *   "/some/path"  -> prefix "/some/path/"
-   */
+   *   "/some/path"  -> prefix "/some/path/" */
   const char *output_dir;
 } plot_opts_t;
 
@@ -60,29 +58,23 @@ const char *plot_strerror(plot_status_t status);
 /* Name of compiled-in backend: "gr", "gnuplot", "matplotlib", "none" */
 const char *plot_backend_name(void);
 
-/*
- * Resolve full output path plot_line/plot_lines would write to
+/* Resolve full output path plot_line/plot_lines would write to
  *
  * Returns PLOT_ERR_FORMAT_UNSUPPORTED for PLOT_FORMAT_WINDOW (no file), or
- * PLOT_ERR_PATH_TOO_LONG if the result would not fit in `out`
- */
+ * PLOT_ERR_PATH_TOO_LONG if the result would not fit in `out` */
 plot_status_t plot_output_path(const char *filename, plot_format_t format,
                                const plot_opts_t *opts, char *out,
                                size_t out_size);
 
-/*
- * plot_line: plot y(x) to a file (or window)
+/* plot_line: plot y(x) to a file (or window)
  * 
- * Returns PLOT_OK on success, a negative plot_status_t on error
- */
+ * Returns PLOT_OK on success, a negative plot_status_t on error */
 int plot_line(const char *filename, plot_format_t format, const double *x,
               const double *y, int n, const plot_opts_t *opts);
 
-/*
- * plot_lines: plot multiple series on one axes
+/* plot_lines: plot multiple series on one axes
  *  - ys[k]     : k-th series
- *  - labels[k] : its legend label (NULL = no legend)
- */
+ *  - labels[k] : its legend label (NULL = no legend) */
 int plot_lines(const char *filename, plot_format_t format, const double *x,
                const double **ys, int n_series, int n_pts, const char **labels,
                const plot_opts_t *opts);

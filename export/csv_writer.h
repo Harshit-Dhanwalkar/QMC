@@ -48,8 +48,7 @@ csv_writer_t *csv_open_append(const char *path, const csv_options_t *options);
 
 /* Flush, close, free
  *
- * Returns CSV_OK only if flush+close+checks all succeeded
- */
+ * Returns CSV_OK only if flush+close+checks all succeeded */
 csv_status_t csv_close(csv_writer_t *writer);
 
 /* Streaming row API */
