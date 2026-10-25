@@ -61,7 +61,7 @@ static void free_h2(molecular_system_t *sys, void *userdata) {
 }
 
 int main(void) {
-  printf(" > Harmonic Vibrational Frequency Analysis: H2/STO-3G\n\n");
+  printf(" > Harmonic Vibrational Frequency Analysis: H2/STO-3G\n");
 
   double R = 1.4; // bohr, close to STO-3G/RHF equilibrium bond length
   double geom0[2][3] = {{0, 0, 0}, {0, 0, R}};

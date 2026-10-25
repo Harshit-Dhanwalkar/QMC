@@ -128,6 +128,20 @@ int main(void) {
     double inv = (norm > 0.0) ? 1.0 / sqrt(norm) : 1.0;
 
     double *y = malloc(n_grid * sizeof *y);
+    if (!y) {
+      fprintf(stderr, "Memory allocation failed\n");
+
+      cvector_free(psi_full);
+      cvector_free(col);
+      free(x);
+      free(V);
+      free(diag);
+      free(offdiag);
+      eigen_free(eig);
+
+      return 1;
+    }
+
     for (int j = 0; j < n_grid; j++) {
       psi_full->data[j].re *= inv;
       psi_full->data[j].im *= inv;
@@ -159,6 +173,18 @@ int main(void) {
   // Save eigenvalues
   int n_save = (eig->n < 10) ? eig->n : 10;
   double *E_vals = malloc(n_save * sizeof *E_vals);
+  if (!E_vals) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(x);
+    free(V);
+    free(diag);
+    free(offdiag);
+    eigen_free(eig);
+
+    return 1;
+  }
+
   for (int i = 0; i < n_save; i++) {
     E_vals[i] = eig->eigenvalues[i];
   }

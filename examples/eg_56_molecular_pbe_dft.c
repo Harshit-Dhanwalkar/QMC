@@ -9,10 +9,10 @@
  * Perdew-Zunger, since that is what PBE's enhancement factor is analytically
  * parametrized against), so it needs each basis function's gradient in addition
  * to its value at every grid point : that's molecular_integrals.h's
- * basis_function_gradient.
- * Runs RHF, KS-LDA and KS-PBE side by side for H2 and LiH so the three levels
- * of exchange-correlation treatment can be compared directly on the same
- * minimal STO-3G basis.
+ * basis_function_gradient
+ * Runs RHF, KS-LDA and KS-PBE side by side for H2 and LiH so 3 levels of
+ * exchange-correlation treatment can be compared directly on same minimal
+ * STO-3G basis
  */
 
 #include "../physics/dft.h"
@@ -24,7 +24,7 @@
 static void run_comparison(const char *label, basis_function_t **basis,
                            int n_basis, const molecule_t *mol,
                            int n_electrons) {
-  printf(" > %s\n\n", label);
+  printf(" > %s\n", label);
 
   molecular_hf_result_t *hf =
       molecular_rhf(basis, n_basis, mol, n_electrons, 1e-10, 200);
@@ -74,11 +74,12 @@ static void run_comparison(const char *label, basis_function_t **basis,
 }
 
 int main(void) {
-  printf(" > Molecular Kohn-Sham PBE (GGA) DFT (Becke Grid): H2 and LiH\n\n");
+  printf(" > Molecular Kohn-Sham PBE (GGA) DFT (Becke Grid): H2 and LiH\n");
 
   {
     double R = 1.4;
-    double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+    double c0[3] = {0, 0, 0};
+    double c1[3] = {0, 0, R};
     basis_function_t *h0 = molint_basis_sto3g_h(c0);
     basis_function_t *h1 = molint_basis_sto3g_h(c1);
     basis_function_t *basis[2] = {h0, h1};
@@ -95,7 +96,8 @@ int main(void) {
 
   {
     double R = 3.015;
-    double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
+    double c_li[3] = {0, 0, 0};
+    double c_h[3] = {0, 0, R};
     basis_function_t *li_orbs[5];
     molint_basis_sto3g_li(c_li, li_orbs);
     basis_function_t *h_orb = molint_basis_sto3g_h(c_h);

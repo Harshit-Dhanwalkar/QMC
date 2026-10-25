@@ -18,10 +18,22 @@ static double well_condition(double E, double V0, double a, double m,
   return k / tan(k * a) + kappa;
 }
 
+// Run a set of 3D central-potential radial Schrodinger examples and print
+// numerical spectra alongside known reference values
+//
+//  - isotropic harmonic oscillator energies compared to exact E(n,l)
+//  - finite spherical well bound states compared to transcendental-condition
+//    estimates
+//
+// Each section follows: build a radial grid, solve radial eigenproblem for
+// selected angular momentum channels, print low-lying eigenvalues and release
+// allocated resources
 int main(void) {
   printf(" > General 3D Central Potentials: Beyond Hydrogen\n\n");
 
   // 3D isotropic harmonic oscillator
+  // Solve for l=0..2 and compare first 3 numerical levels to exact expression
+  // E(n,l)=2n+l+3/2 in units with \hbar=m=\omega=1
   printf("   3D isotropic harmonic oscillator (\\hbar=m=\\omega=1), exact "
          "E(n,l)=2n+l+3/2:\n");
   printf("   %4s  %8s  %10s  %10s\n", "l", "n", "numeric", "exact");
@@ -31,6 +43,7 @@ int main(void) {
     double omega = 1.0;
 
     for (int l = 0; l <= 2; l++) {
+      // Solve radial equation for fixed l using harmonic potential callback
       eigen_t *eig =
           central_potential_radial_solve(r, N, l, 1.0, 1.0, V_harmonic, &omega);
       if (eig == NULL) {
@@ -44,6 +57,7 @@ int main(void) {
         return 1;
       }
 
+      // Print lowest 3 radial quantum numbers for this l
       for (int n = 0; n < 3; n++) {
         printf("   %4d  %8d  %10.5f  %10.5f\n", l, n, eig->eigenvalues[n],
                2.0 * n + l + 1.5);
@@ -56,7 +70,7 @@ int main(void) {
   }
   printf("\n");
 
-  // 3D finite spherical well
+  // 3D Finite spherical well; report l=0 bound-state energies
   printf("   3D finite spherical well (V0=5, a=3), l=0 bound states:\n");
   {
     double a = 3.0;

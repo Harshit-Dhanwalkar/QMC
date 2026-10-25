@@ -7,12 +7,12 @@
  *  1. For fixed chain length N, ground-energy error (and discarded
  *     reduced-density-matrix weight, "truncation_error") shrinks rapidly as
  *     retained bond dimension m grows, becoming lossless once m is
- *     large enough to span chain's actual entanglement.
+ *     large enough to span chain's actual entanglement
  *  2. For fixed (generous) m, per-site ground energy approaches
  *     exact Bethe-ansatz thermodynamic-limit value E0/N -> 1/4 - ln(2)
  *     (Reference: Hulthen 1938) as chain length N grows - isotropic Heisenberg
  *     chain is gapless/critical, so finite chains approach infinite-chain
- *     energy density only algebraically slowly in N.
+ *     energy density only algebraically slowly in N
  */
 
 #include "../export/plot.h"
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Infinite-system DMRG: Heisenberg antiferromagnetic chain\n\n");
+  printf(" > Infinite-system DMRG: Heisenberg antiferromagnetic chain\n");
 
   // isotropic (critical) Heisenberg AFM
   double Jz = 1.0;
@@ -65,7 +65,7 @@ int main(void) {
   free(m_vals_d);
   free(trunc_err);
 
-  /* Part 2: approach to Bethe-ansatz thermodynamic limit */
+  // Part 2: approach to Bethe-ansatz thermodynamic limit
   double bethe_limit =
       0.25 - log(2.0); // Reference: Hulthen 1938, exact for N->\infty
   int N_vals[] = {8, 12, 16, 20, 24, 30};
@@ -96,7 +96,7 @@ int main(void) {
     free(r);
   }
 
-  printf("    exact thermodynamic limit 1/4 - ln(2) = %.8f\n\n", bethe_limit);
+  printf("    exact thermodynamic limit 1/4 - \\ln(2) = %.8f\n\n", bethe_limit);
 
   plot_opts_t opts2 = {0};
   opts2.title = "DMRG per-site energy vs exact Bethe-ansatz limit";
@@ -104,7 +104,7 @@ int main(void) {
   opts2.ylabel = "E0/N";
 
   const double *series[2] = {e_per_site, bethe_ref};
-  const char *labels[2] = {"DMRG (m=24)", "exact limit (1/4 - ln 2)"};
+  const char *labels[2] = {"DMRG (m=24)", "exact limit (1/4 - \\ln(2)"};
 
   plot_lines("dmrg_bethe_ansatz_limit", PLOT_FORMAT_PNG, N_vals_d, series, 2,
              n_N, labels, &opts2);

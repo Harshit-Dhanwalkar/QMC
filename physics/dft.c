@@ -1,3 +1,34 @@
+/*
+ * Density Functional Theory (DFT) for closed-shell, s-orbitals-only atoms and
+ * ions, plus LDA and PBE exchange-correlation functionals
+ *
+ * Two layers:
+ *  1. Exchange-correlation functionals
+ *     - LDA exchange (Dirac) and correlation (Perdew-Zunger 1981, PZ81).
+ *     - PW92 (Perdew-Wang 1992) LDA correlation, unpolarized branch,
+ *       in its closed-form G(rs) parametrization
+ *     - PBE (Refrenece: Perdew-Burke-Ernzerhof, 1996) GGA exchange and
+ *       correlation built on top of PW92
+ *     Each functional exposes both energy density eps(n, \sigma) and potential
+ *     pieces vrho = d(n*eps)/dn and vsigma = d(eps)/d(\sigma), so callers can
+ *     assemble Kohn-Sham potential without needing to differentiate energy
+ *     density themselves
+ *  2. Self-consistent Kohn-Sham machinery
+ *     - Builds radial Kohn-Sham Hamiltonian on a uniform grid, with classical
+ *       Hartree potential (compute_Y0, reused verbatim from hartree_fock.c) and
+ *       local LDA exchange-correlation potential on diagonal
+ *     - Iterates to self-consistency via linear mixing of orbitals and a
+ *       convergence criterion on sum of orbital energies
+ *     - Reports per-orbital energies, total energy, its Hartree and xc
+ *       contributions, iteration count, and convergence status
+ *     - Dirichlet boundaries u(r_min) = u(r_max) = 0 are enforced by decoupling
+ *       endpoint rows of Hamiltonian
+ *
+ * Structure deliberately parallels hartree_fock.c so two methods can be
+ * compared term-by-term: only physics difference is replacing dense Fock
+ * exchange matrix K_ab with local V_xc[n(r)] diagonal
+ */
+
 #include "dft.h"
 #include "../core/complex.h"
 #include "../core/linalg/eigen_generic.h"
@@ -7,6 +38,7 @@
 #include "hartree_fock.h" // reuse compute_Y0: l=0 Coulomb kernel
 #include "potentials.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,10 +46,7 @@ static const double CONST_THREE = 3.0;
 static const double CONST_FOUR = 4.0;
 static const double CONST_TWO = 2.0;
 
-/*
- * LDA exchange-correlation functional
- */
-
+// LDA exchange-correlation functional
 double lda_exchange_energy_density(double n) {
   if (n <= 0.0) {
     return 0.0;
@@ -47,7 +76,10 @@ double lda_correlation_energy_density_pz81(double n) {
 
   double rs = rs_of_density(n);
   if (rs < 1.0) {
-    const double A = 0.0311, B = -0.048, C = 0.0020, D = -0.0116;
+    const double A = 0.0311;
+    const double B = -0.048;
+    const double C = 0.0020;
+    const double D = -0.0116;
 
     return A * log(rs) + B + C * rs * log(rs) + D * rs;
   } else {
@@ -64,12 +96,17 @@ double lda_correlation_potential_pz81(double n) {
 
   double rs = rs_of_density(n);
   if (rs < 1.0) {
-    const double A = 0.0311, B = -0.048, C = 0.0020, D = -0.0116;
+    const double A = 0.0311;
+    const double B = -0.048;
+    const double C = 0.0020;
+    const double D = -0.0116;
 
     return A * log(rs) + (B - A / 3.0) + (2.0 / 3.0) * C * rs * log(rs) +
            (2.0 * D - C) / 3.0 * rs;
   } else {
-    const double gamma = -0.1423, beta1 = 1.0529, beta2 = 0.3334;
+    const double gamma = -0.1423;
+    const double beta1 = 1.0529;
+    const double beta2 = 0.3334;
     double sq = sqrt(rs);
     double denom = 1.0 + beta1 * sq + beta2 * rs;
     double ec = gamma / denom;
@@ -88,23 +125,24 @@ double lda_xc_potential(double n) {
   return lda_exchange_potential(n) + lda_correlation_potential_pz81(n);
 }
 
-/*
- * PW92 LDA correlation (\zeta=0), and PBE GGA exchange-correlation built on it.
- * Reference: Perdew & Wang, Phys. Rev. B 45, 13244 (1992); Perdew, Burke &
- * Ernzerhof (PBE), Phys. Rev. Lett. 77, 3865 (1996).
- */
+// PW92 LDA correlation (\zeta=0), and PBE GGA exchange-correlation built on it
+// Reference: Perdew & Wang, Phys. Rev. B 45, 13244 (1992); Perdew, Burke &
+// Ernzerhof (PBE), Phys. Rev. Lett. 77, 3865 (1996)
 
-/* PW92's G(rs) parametrization (unpolarized/zeta=0 branch) and its
- * rs-derivative, both needed (latter for LDA potential and as PBE correlation's
- * LDA-limit ingredient). Closed forms below (reference PBE subroutine CORPBE):
- *   Q1 = 2 * A * (b1 * \sqrt(rs) + b2 * rs + b3 * rs^(3/2) + b4 * rs^2),
- *   ec = -2 * A * (1+ a1 *rs) * \ln(1 + 1 / Q1),
- * and its derivative follows by direct product + chain rule differentiation of
- * that closed form.
- */
+// PW92's G(rs) parametrization (unpolarized/zeta=0 branch) and its
+// rs-derivative, both needed (latter for LDA potential and as PBE correlation's
+// LDA-limit ingredient). Closed forms below (reference PBE subroutine CORPBE):
+//   Q1 = 2 * A * (b1 * \sqrt(rs) + b2 * rs + b3 * rs^(3/2) + b4 * rs^2)
+//   ec = -2 * A * (1+ a1 *rs) * \ln(1 + 1 / Q1)
+// and its derivative follows by direct product + chain rule differentiation of
+// that closed form
 static void pw92_g_and_derivative(double rs, double *g, double *dg_drs) {
-  const double A = 0.031091, a1 = 0.21370;
-  const double b1 = 7.5957, b2 = 3.5876, b3 = 1.6382, b4 = 0.49294;
+  const double A = 0.031091;
+  const double a1 = 0.21370;
+  const double b1 = 7.5957;
+  const double b2 = 3.5876;
+  const double b3 = 1.6382;
+  const double b4 = 0.49294;
 
   double sq = sqrt(rs);
   double Q0 = -2.0 * A * (1.0 + a1 * rs);
@@ -122,7 +160,8 @@ double pw92_correlation_energy_density(double n) {
   }
 
   double rs = rs_of_density(n);
-  double ec, decdrs;
+  double ec;
+  double decdrs;
 
   pw92_g_and_derivative(rs, &ec, &decdrs);
 
@@ -135,13 +174,14 @@ double pw92_correlation_potential(double n) {
   }
 
   double rs = rs_of_density(n);
-  double ec, decdrs;
+  double ec;
+  double decdrs;
 
   pw92_g_and_derivative(rs, &ec, &decdrs);
 
   // V_c = d(n * ec) / dn = ec + n * (dec / drs) * (drs / dn)
-  //     = ec - (rs / 3) * decdrs,
-  // since drs/dn = -rs / (3 * n).
+  //     = ec - (rs / 3) * decdrs
+  // since drs/dn = -rs / (3 * n)
   return ec - (rs / 3.0) * decdrs;
 }
 
@@ -150,7 +190,8 @@ double pbe_exchange_energy_density(double n, double sigma) {
     return 0.0;
   }
 
-  const double kappa = 0.804, mu = 0.2195149727645171;
+  const double kappa = 0.804;
+  const double mu = 0.2195149727645171;
 
   double kF = cbrt(3.0 * M_PI * M_PI * n);
   double grad_n = sqrt(sigma);
@@ -169,7 +210,8 @@ void pbe_exchange_potential(double n, double sigma, double *vrho,
     return;
   }
 
-  const double kappa = 0.804, mu = 0.2195149727645171;
+  const double kappa = 0.804;
+  const double mu = 0.2195149727645171;
 
   double kF = cbrt(3.0 * M_PI * M_PI * n);
   double grad_n = sqrt(sigma);
@@ -181,7 +223,7 @@ void pbe_exchange_potential(double n, double sigma, double *vrho,
   //   s(n, \sigma) = \sqrt(\sigma) / (2 * kF(n) * n)
   // since kF * n scales as n^(4/3),
   //   d(s)/dn = -(4/3) * s / n
-  // and d(s) / d\sigma = s / (2 * \sigma) (\sigma>0).
+  // and d(s) / d\sigma = s / (2 * \sigma) (\sigma>0)
   double ds_dn = -(4.0 / 3.0) * s / n;
   double ds_dsigma = sigma > 0.0 ? s / (2.0 * sigma) : 0.0;
 
@@ -302,16 +344,14 @@ void pbe_xc_potential(double n, double sigma, double *vrho, double *vsigma) {
   *vsigma = vsigma_x + vsigma_c;
 }
 
-/*
- * SCF machinery : structurally parallel to hartree_fock.c's, with dense Fock
- * exchange (K) matrix replaced by local V_xc(n(r)) diagonal potential.
- */
-
+// SCF machinery : structurally parallel to hartree_fock.c's, with dense Fock
+// exchange (K) matrix replaced by local V_xc(n(r)) diagonal potential
 static void normalize_u(double *u, int N, double dr) {
   double norm_sq = 0.0;
   for (int i = 0; i < N; i++) {
     norm_sq += u[i] * u[i] * dr;
   }
+
   if (norm_sq < 1e-300) {
     return;
   }
@@ -322,11 +362,9 @@ static void normalize_u(double *u, int N, double dr) {
   }
 }
 
-/*
- * Kohn-Sham Hamiltonian matrix at current density (encoded via u[],
- * n_orbitals doubly-occupied orbitals). Diagonal-only potential (kinetic
- * off-diagonals aside), unlike hartree_fock.c's dense exchange matrix.
- */
+// Kohn-Sham Hamiltonian matrix at current density (encoded via u[], n_orbitals
+// doubly-occupied orbitals). Diagonal-only potential (kinetic off-diagonals
+// aside), unlike hartree_fock.c's dense exchange matrix
 static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
                                   double Z, double **radial_u, int n_orbitals) {
   double coeff = 0.5;
@@ -352,9 +390,9 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
     V_H[i] = 0.0;
   }
 
-  /* NOTE: Classical Hartree potential: V_H(r) = sum_k occ_k * Y0_kk(r), occ=2
-   * per doubly-occupied orbital - identical formula/kernel to hartree_fock.c's
-   * direct (J) term, reused verbatim via compute_Y0. */
+  // NOTE: Classical Hartree potential: V_H(r) = sum_k occ_k * Y0_kk(r), occ=2
+  // per doubly-occupied orbital - identical formula/kernel to hartree_fock.c's
+  // direct (J) term, reused verbatim via compute_Y0
   double *coulomb_y0 = (double *)malloc((size_t)N * sizeof(double));
   if (!coulomb_y0) {
     free(V_H);
@@ -375,7 +413,7 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
   free(coulomb_y0);
 
   // n(r) = \sum_k 2 * u_k(r)^2 / (4 * \pi * r^2): total electron density in
-  // electrons/bohr^3, from all doubly-occupied orbitals.
+  // electrons/bohr^3, from all doubly-occupied orbitals
   for (int i = 0; i < N; i++) {
     double radius_sq = r[i] * r[i];
     double u2_sum = 0.0;
@@ -407,11 +445,11 @@ static cmatrix_t *build_ks_matrix(const double *r, int N, double step_r,
   free(V_H);
   free(n_dens);
 
-  /* Dirichlet boundaries: fully decouple endpoints so u(r_min)=u(r_max)=0
-   * exactly
-   *  WARN: avoids -Z/r_min singularity acting as a spurious deep attractive
-   * well pinned to a single grid point, which would otherwise dominate low
-   * end of spectrum */
+  // Dirichlet boundaries: fully decouple endpoints so u(r_min)=u(r_max)=0
+  // exactly
+  // WARN: avoids -Z/r_min singularity acting as a spurious deep attractive
+  // well pinned to a single grid point, which would otherwise dominate low
+  // end of spectrum
   for (int j = 0; j < N; j++) {
     CMAT(hamiltonian, 0, j) = c_zero();
     CMAT(hamiltonian, N - 1, j) = c_zero();
@@ -523,6 +561,14 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
 
     for (int k = 0; k < n_orbitals; k++) {
       double *u_new = malloc((size_t)N * sizeof(double));
+      if (!u_new) {
+        eigen_free(eig);
+        free_orbital_arrays(u, n_orbitals);
+        free(orbital_energies);
+
+        return NULL;
+      }
+
       for (int i = 0; i < N; i++) {
         u_new[i] = CMAT(eig->eigenvectors, i, k).re;
       }
@@ -560,8 +606,32 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
 
   // Final energetics at converged density
   double *n_dens = malloc((size_t)N * sizeof(double));
+  if (!n_dens) {
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   double *V_H = malloc((size_t)N * sizeof(double));
+  if (!V_H) {
+    free(n_dens);
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   double *Y0 = malloc((size_t)N * sizeof(double));
+  if (!Y0) {
+    free(V_H);
+    free(n_dens);
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   memset(V_H, 0, (size_t)N * sizeof(double));
   for (int k = 0; k < n_orbitals; k++) {
     compute_Y0(r, N, dr, u[k], u[k], Y0);
@@ -584,12 +654,12 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
     n_dens[i] = (r2 > 0.0) ? 2.0 * u2_sum / (4.0 * M_PI * r2) : 0.0;
   }
 
-  /* E_H = \int u_tot(r)^2 * V_H(r) dr,
-   * Where
-   *  u_tot^2 = \sum_k u_k^2
-   *  n(r) * 4 * \pi * r^2 = 2 * \sum_k u_k(r)^2, so this integral over dr is
-   *  (1/2) * \int n(r) V_H(r) 4 * \pi * r^2 dr, Hartree energy.
-   */
+  // E_H = \int u_tot(r)^2 * V_H(r) dr,
+  //
+  // Where
+  //  u_tot^2 = \sum_k u_k^2
+  //  n(r) * 4 * \pi * r^2 = 2 * \sum_k u_k(r)^2, so this integral over dr is
+  //  (1/2) * \int n(r) V_H(r) 4 * \pi * r^2 dr, Hartree energy
   double E_hartree = 0.0, E_xc = 0.0, Vxc_n_integral = 0.0;
   for (int i = 0; i < N; i++) {
     double u2_sum = 0.0;
@@ -610,6 +680,7 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
   for (int k = 0; k < n_orbitals; k++) {
     eps_sum += orbital_energies[k];
   }
+
   double total_energy = 2.0 * eps_sum - E_hartree + E_xc - Vxc_n_integral;
 
   dft_result_t *res = malloc(sizeof(dft_result_t));
@@ -631,8 +702,29 @@ dft_result_t *dft_lda_atom_s_orbitals(const double *r, int N, double Z,
   res->converged = converged;
 
   res->orbitals = malloc((size_t)n_orbitals * sizeof(cvector_t *));
+  if (!res->orbitals) {
+    free(res->orbital_energies);
+    free(res);
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   for (int k = 0; k < n_orbitals; k++) {
     res->orbitals[k] = cvector_alloc(N);
+    if (!res->orbitals[k]) {
+      for (int j = 0; j < k; j++) {
+        cvector_free(res->orbitals[j]);
+      }
+      free(res->orbitals);
+      free(res->orbital_energies);
+      free(res);
+      free_orbital_arrays(u, n_orbitals);
+      free(orbital_energies);
+
+      return NULL;
+    }
 
     for (int i = 0; i < N; i++) {
       res->orbitals[k]->data[i] = c_real(u[k][i]);

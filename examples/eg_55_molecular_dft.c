@@ -2,12 +2,12 @@
  * Molecular Multi-Atom Kohn-Sham LDA DFT via Becke Grids: H2 and LiH
  *
  * physics/dft.c implements KS-LDA for single atoms, exploiting spherical
- * symmetry to reduce the problem to a 1D radial grid. This example uses
- * physics/molecular_dft.c's generalization to arbitrary molecules : a 3D Becke
+ * symmetry to reduce problem to a 1D radial grid. This example uses
+ * physics/molecular_dft.c's generalization to arbitrary molecules: a 3D Becke
  * fuzzy-cell atomic-partition grid, with no symmetry assumption. It runs H2 and
  * LiH, and for each also runs plain RHF for comparison, showing how (and how
  * much) LDA's exchange- correlation treatment differs from Hartree-Fock's
- * exact-exchange-only treatment for these small systems.
+ * exact-exchange-only treatment for these small systems
  */
 
 #include "../physics/molecular_dft.h"
@@ -18,7 +18,7 @@
 static void run_comparison(const char *label, basis_function_t **basis,
                            int n_basis, const molecule_t *mol,
                            int n_electrons) {
-  printf(" > %s\n\n", label);
+  printf(" > %s\n", label);
 
   molecular_hf_result_t *hf =
       molecular_rhf(basis, n_basis, mol, n_electrons, 1e-10, 200);
@@ -38,7 +38,7 @@ static void run_comparison(const char *label, basis_function_t **basis,
            "nuclear=%.6f\n",
            dft->e_core, dft->e_coulomb, dft->e_xc, dft->e_nuclear);
     printf("  RHF - KS-LDA = %.6f Hartree (LDA's local-density XC treatment "
-           "vs. RHF's exact nonlocal exchange : neither is strictly 'more "
+           "vs. RHF's exact nonlocal exchange: neither is strictly 'more "
            "correct' for a minimal STO-3G basis)\n\n",
            hf->total_energy - dft->total_energy);
   }
@@ -51,7 +51,7 @@ static void run_comparison(const char *label, basis_function_t **basis,
 }
 
 int main(void) {
-  printf(" > Molecular Kohn-Sham LDA DFT (Becke Grid): H2 and LiH\n\n");
+  printf(" > Molecular Kohn-Sham LDA DFT (Becke Grid): H2 and LiH\n");
 
   {
     double R = 1.4;

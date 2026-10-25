@@ -1,6 +1,23 @@
 /*
-* V(x) library: infinite well, finite well, harmonic, barrier
-*/
+ * 1D and radial potential library
+ *
+ * Provides potential callbacks used by 1D Schrodinger solvers
+ * (eg_02_harmonic.c, eg_04_infinite_well.c, finite-well/step/barrier examples)
+ * and radial atomic solvers (central_potential.c, hartree_fock.c, dft.c)
+ *
+ * Included potentials:
+ *   V_infinite_well(x, &a)       0 inside |x| < a, ~\infty outside
+ *   V_finite_well(x, {a, V0})    -V0 inside |x| < a, 0 outside
+ *   V_harmonic(x, &omega)        (1/2) * \omega^2 * x^2
+ *   V_step(x, &V0)               V0 for x >= 0, 0 otherwise
+ *   V_barrier(x, {a, V0})        V0 for 0 < x < a, 0 otherwise
+ *   V_coulomb(r, &k)             -k / r  (radial)
+ *   V_yukawa(r, {g, mu})        -(g/r) * \exp(-\mu * r)  (radial)
+ *   V_morse(x, {D, a, x0})       D * (1 - \exp(-a * (x-x0)))^2
+ *
+ * potential_array() evaluates any one of these on a grid: it is a thin
+ * loop calling V(x[i], params) for i in [0, n), writing V_out[i]
+ */
 
 #include "potentials.h"
 #include <math.h>
@@ -16,10 +33,10 @@ double V_infinite_well(double x, void *params) {
 }
 
 double V_finite_well(double x, void *params) {
-  const double *p = (double *)params;
-  double a = p[0], V0 = p[1];
+  const double *p = (const double *)params;
+  double a = p[0];
   if (fabs(x) < a) {
-    return -V0;
+    return -p[1];
   }
 
   return 0.0;
@@ -38,10 +55,10 @@ double V_step(double x, void *params) {
 }
 
 double V_barrier(double x, void *params) {
-  const double *p = (double *)params;
-  double a = p[0], V0 = p[1];
+  const double *p = (const double *)params;
+  double a = p[0];
   if (x > 0 && x < a) {
-    return V0;
+    return p[1];
   }
 
   return 0.0;

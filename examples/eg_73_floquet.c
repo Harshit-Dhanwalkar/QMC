@@ -43,8 +43,11 @@ typedef struct {
   double w0, Om, om;
 } circ_t;
 
+typedef void (*floquet_h_fn)(double, void *, cmatrix_t *);
+typedef double (*golden_fn)(double, void *);
+
 static void circular_H(double t, void *p, cmatrix_t *H) {
-  const circ_t *q = p;
+  const circ_t *q = (const circ_t *)p;
 
   put(H, 0, 0, 0.5 * q->w0, 0.0);
   put(H, 1, 1, -0.5 * q->w0, 0.0);
@@ -87,7 +90,7 @@ typedef struct {
 } bs_t;
 
 static double bs_gap(double om, void *p) {
-  const bs_t *q = p;
+  const bs_t *q = (const bs_t *)p;
   cmatrix_t *h[3];
 
   make_harmonics(h, 0.5 * q->w0, 0.0, 0.0, 0.5 * q->Om);
@@ -104,14 +107,14 @@ static double bs_gap(double om, void *p) {
 }
 
 static void demo_rabi(void) {
-  printf("  === Rabi avoided crossing (circular drive, w0 = 1, \\Omega = 0.3) "
-         "===\n");
+  printf("  Rabi avoided crossing (circular drive, w0 = 1, \\Omega = 0.3) n");
   printf("     %-8s  %-12s  %-12s  %-12s  %-12s\n", "omega", "time e-",
          "analytic e-", "time e+", "analytic e+");
   const double oms[5] = {0.70, 0.90, 1.00, 1.10, 1.30};
   for (int k = 0; k < 5; k++) {
     circ_t p = {1.0, 0.3, oms[k]};
-    floquet_result_t *r = floquet_solve_time(2, circular_H, &p, oms[k], 2000);
+    floquet_result_t *r =
+        floquet_solve_time(2, (floquet_h_fn)circular_H, &p, oms[k], 2000);
 
     double a = floquet_circular_rabi_quasienergy(p.w0, p.Om, p.om, -1);
     double b = floquet_circular_rabi_quasienergy(p.w0, p.Om, p.om, +1);
@@ -135,9 +138,9 @@ static void demo_rabi(void) {
 static void demo_cdt(void) {
   double Delta = 0.1;
   double om = 4.0;
-  printf("  === Coherent destruction of tunneling (\\Delta = %.2f, \\omega = "
-         "%.1f) ===\n",
-         Delta, om);
+  printf(
+      "  Coherent destruction of tunneling (\\Delta = %.2f, \\omega = %.1f)\n",
+      Delta, om);
   printf("     %-8s  %-14s  %-14s\n", "A/\\omega", "splitting",
          "\\Delta|J0(A/w)|");
   const double xs[7] = {
@@ -161,13 +164,14 @@ static void demo_cdt(void) {
 }
 
 static void demo_bloch_siegert(void) {
-  printf("  === Bloch-Siegert shift (linear drive, w0 = 1) ===\n");
+  printf("  Bloch-Siegert shift (linear drive, w0 = 1)\n");
   printf("     %-8s  %-14s  %-14s  %-10s\n", "\\Omega", "found shift",
          "\\Omega^2/(4w0)", "min gap");
   const double Oms[3] = {0.05, 0.10, 0.15};
   for (int k = 0; k < 3; k++) {
     bs_t q = {1.0, Oms[k]};
-    double res = golden_section_minimize(0.99, 1.04, bs_gap, &q, 1e-10);
+    double res =
+        golden_section_minimize(0.99, 1.04, (golden_fn)bs_gap, &q, 1e-10);
 
     printf("     %-8.2f  %-14.6e  %-14.6e  %-10.6f\n", Oms[k], res - q.w0,
            Oms[k] * Oms[k] / (4.0 * q.w0), bs_gap(res, &q));
@@ -177,7 +181,7 @@ static void demo_bloch_siegert(void) {
 }
 
 int main(void) {
-  printf(" > Floquet quasi-energies of periodically driven qubits\n\n");
+  printf(" > Floquet quasi-energies of periodically driven qubits\n");
 
   demo_rabi();
   demo_cdt();

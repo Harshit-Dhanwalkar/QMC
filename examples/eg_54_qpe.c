@@ -40,9 +40,9 @@ static void run_estimate(double phi_true, int n_count) {
          n_count, 1 << n_count, d->phi_estimate, phi_true,
          fabs(d->phi_estimate - phi_true), 1.0 / (1 << n_count));
 
-  /* NOTE: Show top 3 most-probable measurement outcomes, to make "spread across
-   * neighboring bins" behavior visible when \phi doesn't fall exactly on a
-   * representable 1/2^n_count fraction */
+  // NOTE: Show top 3 most-probable measurement outcomes, to make "spread across
+  // neighboring bins" behavior visible when \phi doesn't fall exactly on a
+  // representable 1/2^n_count fraction
   int dim = 1 << n_count;
   for (int rank = 0; rank < 3 && rank < dim; rank++) {
     int best = -1;
@@ -66,11 +66,11 @@ static void run_estimate(double phi_true, int n_count) {
 }
 
 int main(void) {
-  printf(" > Quantum Phase Estimation: Single-Qubit Phase Gate\n\n");
+  printf(" > Quantum Phase Estimation: Single-Qubit Phase Gate\n");
 
-  /* \phi = 3/8 is exactly representable with 3 counting qubits (QPE should be
-   * exact, zero spread). \phi = 0.3 is not exactly representable at any finite
-   * n_count, so QPE's estimate only converges as n_count grows */
+  // \phi = 3/8 is exactly representable with 3 counting qubits (QPE should be
+  // exact, zero spread). \phi = 0.3 is not exactly representable at any finite
+  // n_count, so QPE's estimate only converges as n_count grows
   printf("  Case 1: \\phi = 3/8 = 0.375, exactly representable at n_count=3\n");
   run_estimate(3.0 / 8.0, 3);
 

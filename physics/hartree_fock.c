@@ -1,6 +1,32 @@
 /*
-Restricted Hartree-Fock for closed-shell, s-orbitals-only atoms/ions.
-*/
+ * Restricted Hartree-Fock (RHF) for closed-shell, s-orbitals-only atoms and
+ * ions, plus radial Coulomb kernel shared with dft.c
+ *
+ * Structure:
+ *  1. compute_Y0()
+ *     l=0 ("monopole") radial Coulomb kernel
+ *       Y0_{ab}(r_i) = (1/r_i) * int_0^{r_i} u_a u_b dr'
+ *                    + int_{r_i}^{r_max} (u_a u_b / r') dr'
+ *     evaluated by trapezoidal integration on radial grid. For a=b this reduces
+ *     to shell-theorem "charge enclosed over r plus charge outside" form
+ *     dft.c reuses this verbatim for its Hartree potential, so changes here
+ *     propagate to DFT driver as well
+ *  2. build_fock_matrix()
+ *     Dense Fock matrix F = T + V_nuc + sum_k (2 J_k - K_k) on radial grid,
+ *     with direct (J) and exchange (K) contributions expressed via Y0
+ *     Dirichlet boundaries u(r_min) = u(r_max) = 0 are enforced by decoupling
+ *     endpoint rows, both for kinetic stencil and for dense exchange
+ *     contribution
+ *  3. hartree_fock_atom_s_orbitals()
+ *     SCF driver: bare-nucleus l=0 eigenstates as initial guess, linear mixing
+ *     of orbitals with an overall-sign fix, and convergence on maximum
+ *     per-point orbital change. On exit returns occupied orbitals and energies,
+ *     full set of virtual orbitals and energies, and total electronic energy
+ *       E = \sum_k 2 eps_k - \sum_{ij} (2 J_ij - K_ij)
+ *  4. compute_Y0() is also exported because dft.c depends on exactly same
+ *     kernel, any change to trapezoidal quadrature here must be applied
+ *     consistently on both sides
+ */
 
 #include "hartree_fock.h"
 #include "../core/complex.h"
@@ -14,7 +40,7 @@ Restricted Hartree-Fock for closed-shell, s-orbitals-only atoms/ions.
 #include <stdlib.h>
 #include <string.h>
 
-// Rectangle-rule quadrature normalization: \int u^2 dr = 1.
+// Rectangle-rule quadrature normalization: \int u^2 dr = 1
 static void normalize_u(double *wavefunction, int num_points,
                         double grid_spacing) {
   double norm_sq = 0.0;
@@ -32,13 +58,11 @@ static void normalize_u(double *wavefunction, int num_points,
   }
 }
 
-/*
- * Y0_{ab}(r_i) = (1/r_i) * \int_0^{r_i} u_a(r')u_b(r') dr' +
- *                \int_{r_i}^{r_max} [u_a(r')u_b(r')/r'] dr'
- * NOTE: The l=0 ("monopole") radial Coulomb kernel: electrostatic potential of
- * a spherical charge density proportional to u_a(r)u_b(r), and (for a=b)
- * reduces to "charge enclosed / r + charge outside" shell-theorem formula.
- */
+// Y0_{ab}(r_i) = (1/r_i) * \int_0^{r_i} u_a(r')u_b(r') dr' +
+//                \int_{r_i}^{r_max} [u_a(r')u_b(r')/r'] dr'
+// NOTE: The l=0 ("monopole") radial Coulomb kernel: electrostatic potential of
+// a spherical charge density proportional to u_a(r)u_b(r), and (for a=b)
+// reduces to "charge enclosed / r + charge outside" shell-theorem formula
 void compute_Y0(const double *r, int N, double dr, const double *ua,
                 const double *ub, double *Y0_out) {
   double *inner = malloc(N * sizeof *inner);
@@ -79,16 +103,14 @@ void compute_Y0(const double *r, int N, double dr, const double *ua,
   free(outer);
 }
 
-/*
- * Dense real-symmetric (stored as complex-Hermitian, imaginary parts 0)
- * Fock matrix on the radial grid:
- *   F = T + V_nuc + \sum_k 2 * Y0_kk(r) * \delta_ab - \sum_k K_k(a,b)
- *
- *  Where
- *   K_k(a,b) = dr * u_k(r_a) * u_k(r_b) / max(r_a, r_b)
- * with Dirichlet boundary conditions u(r[0]) = u(r[N-1]) = 0 enforced by fully
- * decoupling boundary rows/columns.
- */
+// Dense real-symmetric (stored as complex-Hermitian, imaginary parts 0)
+// Fock matrix on the radial grid:
+//   F = T + V_nuc + \sum_k 2 * Y0_kk(r) * \delta_ab - \sum_k K_k(a,b)
+//
+//  Where
+//   K_k(a,b) = dr * u_k(r_a) * u_k(r_b) / max(r_a, r_b)
+// with Dirichlet boundary conditions u(r[0]) = u(r[N-1]) = 0 enforced by fully
+// decoupling boundary rows/columns
 static cmatrix_t *build_fock_matrix(const double *r, int N, double dr, double Z,
                                     double **u, int n_orbitals) {
   double coeff = 0.5; // \hbar^2/(2m), atomic units: \hbar=m=1
@@ -126,6 +148,7 @@ static cmatrix_t *build_fock_matrix(const double *r, int N, double dr, double Z,
       CMAT(F, i, i) = c_add(CMAT(F, i, i), c_real(2.0 * Y0[i]));
     }
   }
+
   free(Y0);
 
   for (int k = 0; k < n_orbitals; k++) {
@@ -144,7 +167,7 @@ static cmatrix_t *build_fock_matrix(const double *r, int N, double dr, double Z,
 
   // Dirichlet boundaries
   // NOTE: fully decouple endpoints so u(r_min)=u(r_max)=0 exactly, regardless
-  // of dense exchange contribution above.
+  // of dense exchange contribution above
   for (int j = 0; j < N; j++) {
     CMAT(F, 0, j) = c_zero();
     CMAT(F, N - 1, j) = c_zero();
@@ -190,6 +213,14 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
 
   for (int k = 0; k < n_orbitals; k++) {
     u[k] = malloc(N * sizeof(double));
+    if (!u[k]) {
+      for (int j = 0; j < k; j++) {
+        free(u[j]);
+      }
+      free(u);
+
+      return NULL;
+    }
   }
 
   // Initial guess: lowest n_orbitals bare-nucleus (l=0) eigenstates
@@ -252,6 +283,13 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
     double max_delta = 0.0;
     for (int k = 0; k < n_orbitals; k++) {
       double *u_new = malloc(N * sizeof(double));
+      if (!u_new) {
+        eigen_free(eig);
+        free_orbital_arrays(u, n_orbitals);
+        free(orbital_energies);
+
+        return NULL;
+      }
 
       for (int i = 0; i < N; i++) {
         u_new[i] = CMAT(eig->eigenvectors, i, k).re;
@@ -259,7 +297,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
 
       normalize_u(u_new, N, dr);
 
-      // Fix arbitrary overall sign of eigenvector before mixing.
+      // Fix arbitrary overall sign of eigenvector before mixing
       double dot = 0.0;
       for (int i = 0; i < N; i++) {
         dot += u[k][i] * u_new[i] * dr;
@@ -300,7 +338,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
 
   // Fock and eigenpairs pass on converged orbitals
   // NOTE: so that returned energies/orbitals are mutually an eigenpair of
-  // same Fock matrix.
+  // same Fock matrix
   cmatrix_t *F_final = build_fock_matrix(r, N, dr, Z, u, n_orbitals);
   eigen_t *eig_final = F_final ? cmatrix_eigh_generic(F_final) : NULL;
   if (F_final) {
@@ -346,6 +384,19 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
   for (int k = 0; k < n_virtual; k++) {
     int col = n_orbitals + k;
     double *uv = malloc((size_t)N * sizeof *uv);
+    if (!uv) {
+      for (int j = 0; j < k; j++) {
+        cvector_free(virtual_orbitals[j]);
+      }
+      free(virtual_orbitals);
+      free(virtual_energies);
+      eigen_free(eig_final);
+      free_orbital_arrays(u, n_orbitals);
+      free(orbital_energies);
+
+      return NULL;
+    }
+
     for (int i = 0; i < N; i++) {
       uv[i] = CMAT(eig_final->eigenvectors, i, col).re;
     }
@@ -358,6 +409,7 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
     }
 
     free(uv);
+
     virtual_energies[k] = eig_final->eigenvalues[col];
   }
 
@@ -370,6 +422,18 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
   }
 
   double *Y0_buf = malloc(N * sizeof *Y0_buf);
+  if (!Y0_buf) {
+    for (int k = 0; k < n_virtual; k++) {
+      cvector_free(virtual_orbitals[k]);
+    }
+    free(virtual_orbitals);
+    free(virtual_energies);
+    free_orbital_arrays(u, n_orbitals);
+    free(orbital_energies);
+
+    return NULL;
+  }
+
   double correction = 0.0;
   for (int i = 0; i < n_orbitals; i++) {
     for (int j = 0; j < n_orbitals; j++) {
@@ -409,14 +473,33 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
   res->iterations = iter;
   res->converged = converged;
   res->orbitals = malloc(n_orbitals * sizeof(cvector_t *));
+  if (!res->orbitals) {
+    free(res->orbital_energies);
+    free(res);
+    free_orbital_arrays(u, n_orbitals);
+
+    return NULL;
+  }
 
   for (int k = 0; k < n_orbitals; k++) {
     res->orbitals[k] = cvector_alloc(N);
+    if (!res->orbitals[k]) {
+      for (int j = 0; j < k; j++) {
+        cvector_free(res->orbitals[j]);
+      }
+      free(res->orbitals);
+      free(res->orbital_energies);
+      free(res);
+      free_orbital_arrays(u, n_orbitals);
+
+      return NULL;
+    }
 
     for (int i = 0; i < N; i++) {
       res->orbitals[k]->data[i] = c_real(u[k][i]);
     }
   }
+
   free_orbital_arrays(u, n_orbitals);
 
   res->n_virtual = n_virtual;

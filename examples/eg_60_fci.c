@@ -67,11 +67,12 @@ static void run_method_ladder(const char *label, basis_function_t **basis,
 }
 
 int main(void) {
-  printf(" > FCI and the Quantum-Chemistry Method Hierarchy\n\n");
+  printf(" > FCI and the Quantum-Chemistry Method Hierarchy\n");
 
   {
     double R = 1.4;
-    double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+    double c0[3] = {0, 0, 0};
+    double c1[3] = {0, 0, R};
     basis_function_t *h0 = molint_basis_sto3g_h(c0);
     basis_function_t *h1 = molint_basis_sto3g_h(c1);
     basis_function_t *basis[2] = {h0, h1};
@@ -88,7 +89,8 @@ int main(void) {
 
   {
     double R = 3.015;
-    double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
+    double c_li[3] = {0, 0, 0};
+    double c_h[3] = {0, 0, R};
     basis_function_t *li_orbs[5];
     molint_basis_sto3g_li(c_li, li_orbs);
     basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
@@ -110,7 +112,7 @@ int main(void) {
   printf(" NOTE: For H2 (a 2-electron system), CCSD is exactly equivalent to "
          "FCI error vs. FCI above is essentially zero. LiH shows CCSD(T)'s "
          "usual  pattern: recovering vast majority of RHF's missing "
-         "correlation energy that plain CCSD leaves behind.\n");
+         "correlation energy that plain CCSD leaves behind\n");
 
   return 0;
 }

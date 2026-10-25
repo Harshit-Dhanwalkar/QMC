@@ -1,3 +1,59 @@
+/*
+ * Symmetry-adapted exact diagonalization of XXZ spin-1/2 ring, plus Lanczos
+ * continued-fraction evaluation of dynamical structure factor S^{zz}(q, \omega)
+ *
+ * Model:
+ *   H = \sum_j [ Jxy ( S^x_j S^x_{j+1} + S^y_j S^y_{j+1} )
+ *              + Jz  S^z_j S^z_{j+1} ]
+ *   on a periodic N-site ring (N <= 63, so a configuration fits in a
+ *   uint64_t). Isotropic Heisenberg corresponds to Jxy = Jz
+ *
+ * Symmetries exploited:
+ *  1. Translation T: site j -> site j+1 (mod N). Sectors labelled by (nup, k),
+ *     where nup is number of down spins and k in [0, N) is momentum quantum
+ *     number. Constructed by walking every computational basis state, keeping
+ *     only orbit representatives (spin_sector_build) and requiring k*R == 0
+ *     (mod N) so that a nonzero-norm momentum state exists on that orbit (R =
+ *     orbit period)
+ *  2. Reflection R: site j -> N-1-j. Only closes within a fixed (nup, k) sector
+ *     when \exp(i * k * r) = \exp(-i * k * r), i.e. k = 0 or k = N/2, so
+ *     spin_sector_reflection_matrix returns NULL for other k
+ *  3. Global spin inversion I: bit-complement of whole word. Commutes with T
+ *     trivially (position vs value), preserves k for any k, but maps nup -> N -
+ *     nup, so it only closes on a fixed sector at half filling (N even, nup =
+ *     N/2)
+ *
+ * Matrix-free Hamiltonian:
+ *   spin_sector_hamiltonian builds a sparse matrix in (nup, k) sector without
+ *   ever materializing full 2^N-dimensional space, using derived matrix element
+ *
+ *     <k,b|H|k,a> = c_i * \sqrt(R_a / R_b) * \exp(-i * 2 * \pi * k * l / N)
+ *
+ *   for each bond-level transition |a> -> c_i |s_i>, with s_i = T^l rep_b
+ *   Both nnz-counting pass and fill pass are row-parallel; each row owns a
+ *   disjoint slice of col_ind/values, so no locks are needed
+ *
+ * Excitations:
+ *   spin_apply_szq applies S^z_q = \sum_j exp(i*q*j) S^z_j to ground
+ *   state, returning target sector, projected vector, and its norm I0 =
+ *   <\phi0|\phi0> = S(q) (equal-time structure factor)
+ *
+ *   spin_dsf_continued_fraction evaluates Lanczos continued fraction
+ *
+ *     S(q, \omega) = -(I0 / \pi) * Im [ 1 / (z - \alpha_0
+ *                      - \beta_0^2 / (z - \alpha_1 - ...)) ]
+ *
+ *   at complex z = E0 + \omega + i * \eta, giving S^{zz}(q, \omega) broadened
+ *   by Lorentzian width \eta
+ *
+ * Symmetry projection:
+ *   spin_sector_parity_project / spin_sector_inversion_project project sparse H
+ *   into a definite-reflection or definite-inversion subspace via
+ *    P = (1 \pm U)/2,
+ *  using modified Gram-Schmidt with pivoting on P's columns to build
+ *  orthonormal basis V, then forming V^dag H V
+ */
+
 #include "spin_chain.h"
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -11,14 +67,11 @@
 #include <omp.h>
 #endif
 
-/* bit-level helpers
- *
- * NOTE: Bit j = 0 -> spin up (S^z_j = +1/2); bit j = 1 -> spin down (S^z_j =
- * -1/2). translate() implements one step of the cyclic shift T: site j -> site
- * j+1 (mod N), i.e. it moves every bit one position to the left, wrapping
- * the bit that falls off the top back into bit 0.
- */
-
+// bit-level helpers
+// NOTE: Bit j = 0 -> spin up (S^z_j = +1/2); bit j = 1 -> spin down (S^z_j =
+// -1/2). translate() implements one step of cyclic shift T: site j -> site j+1
+// (mod N), i.e. it moves every bit one position to left, wrapping bit that
+// falls off top back into bit 0
 static inline uint64_t translate(uint64_t s, int N, uint64_t mask) {
   uint64_t top = (s >> (N - 1)) & 1ULL;
 
@@ -29,13 +82,11 @@ static inline double sz_bit(uint64_t s, int j) {
   return ((s >> j) & 1ULL) ? -0.5 : 0.5;
 }
 
-/* Find the representative (numerically smallest bitstring in the
- * translation orbit) of s, and l such that translate^l(rep) == s.
- *
- * This scans the whole N-element orbit, so sector construction and
- * Hamiltonian assembly
- * WARN: sector dimension itself is bottleneck, not this scan.
- */
+// Find representative (numerically smallest bitstring in translation orbit) of
+// s, and l such that translate^l(rep) == s
+// This scans whole N-element orbit, so sector construction and Hamiltonian
+// assembly
+//  WARN: sector dimension itself is bottleneck, not this scan
 static uint64_t find_representative(uint64_t s, int N, uint64_t mask,
                                     int *l_out) {
   uint64_t best = s;
@@ -80,8 +131,7 @@ static inline int popcount64(uint64_t x) {
   return c;
 }
 
-/* sector construction */
-
+// Sector construction
 spin_sector_t *spin_sector_build(int N, int nup, int k) {
   if (N <= 0 || N > 63 || nup < 0 || nup > N || k < 0 || k >= N) {
     return NULL;
@@ -102,7 +152,7 @@ spin_sector_t *spin_sector_build(int N, int nup, int k) {
     int l;
     uint64_t rep = find_representative(s, N, mask, &l);
     if (rep != s) {
-      continue; // s is not the representative of its own orbit
+      continue; // s is not representative of its own orbit
     }
 
     int R = compute_period(rep, N, mask);
@@ -181,30 +231,29 @@ int spin_sector_find(const spin_sector_t *sec, uint64_t rep) {
   return -1;
 }
 
-/* matrix-free Hamiltonian in one symmetry sector
- *
- * For representative row a, walking every bond once gives H|rep_a> as a short
- * list of (image state, coefficient) pairs - at most N+1 entries  (1 diagonal
- * Jz accumulator + up to N flip-flop terms). Each image state maps to some
- * (rep_b, l) via find_representative, and the sector matrix element is :
- *
- *   <k,b|H|k,a> += c_i * \sqrt(R_a / R_b) * \exp(-i * 2 * \pi * k * l / N)
- *
- * INFO: Derivation :
- *  expand |k,a> = (1 / \sqrt(R_a)) \sum_p \exp(i * 2 * \pi * k * p  / N)
- *   T^p|a>, commute H past each T^p onto the \bra, and use T|k,b> =
- *  \exp(-i * 2 * \pi * k / N)|k,b> to collapse resulting sum over p into a
- *  factor of R_a.
- *  Remains is \sqrt(R_a) * <k,b|H|a>, and expanding only \bra  <k,b| = (1 /
- *  \sqrt(R_b)) \sum_p' \exp(-i * 2 * \pi*k * p' / N) <T^p' b| against (already
- *  computational-basis) image states from H|a> gives \sqrt(R_a / R_b) shown
- *  above.
- *
- * Row a's nonzero list depends only on rep[a] so both nnz-counting pass and
- * fill pass are row-parallel: give each row its own pre-computed disjoint slice
- * of col_ind/values and there is nothing to lock, no scatter/gather race, and
- * no thread-private buffer to reduce afterward.
- */
+// Matrix-free Hamiltonian in one symmetry sector
+//
+// For representative row a, walking every bond once gives H|rep_a> as a short
+// list of (image state, coefficient) pairs - at most N+1 entries  (1 diagonal
+// Jz accumulator + up to N flip-flop terms). Each image state maps to some
+// (rep_b, l) via find_representative, and sector matrix element is:
+//
+//   <k,b|H|k,a> += c_i * \sqrt(R_a / R_b) * \exp(-i * 2 * \pi * k * l / N)
+//
+// INFO: Derivation :
+//  expand |k,a> = (1 / \sqrt(R_a)) \sum_p \exp(i * 2 * \pi * k * p  / N)
+//   T^p|a>, commute H past each T^p onto \bra, and use T|k,b> =
+//  \exp(-i * 2 * \pi * k / N)|k,b> to collapse resulting sum over p into a
+//  factor of R_a
+//  Remains is \sqrt(R_a) * <k,b|H|a>, and expanding only \bra  <k,b| = (1 /
+//  \sqrt(R_b)) \sum_p' \exp(-i * 2 * \pi*k * p' / N) <T^p' b| against (already
+//  computational-basis) image states from H|a> gives \sqrt(R_a / R_b) shown
+//  above
+//
+// Row a's nonzero list depends only on rep[a] so both nnz-counting pass and
+// fill pass are row-parallel: give each row its own pre-computed disjoint slice
+// of col_ind/values and there is nothing to lock, no scatter/gather race, and
+// no thread-private buffer to reduce afterward
 sparse_matrix_t *spin_sector_hamiltonian(const spin_sector_t *sec, double Jxy,
                                          double Jz, int pbc) {
   if (!sec || sec->dim <= 0) {
@@ -220,8 +269,8 @@ sparse_matrix_t *spin_sector_hamiltonian(const spin_sector_t *sec, double Jxy,
     return NULL;
   }
 
-  /* Pass 1: count nonzeros per row (1 diagonal slot + one slot per
-   * spin-flipping bond). Purely a function of rep[a]; independent rows. */
+  // Pass 1: count nonzeros per row (1 diagonal slot + one slot per
+  // spin-flipping bond). Purely a function of rep[a]; independent rows
 #pragma omp parallel for schedule(guided)
   for (int a = 0; a < dim; a++) {
     uint64_t s = sec->rep[a];
@@ -267,7 +316,7 @@ sparse_matrix_t *spin_sector_hamiltonian(const spin_sector_t *sec, double Jxy,
 
   free(row_ptr);
 
-  /* Pass 2: fill each row's already-known, disjoint slice in parallel. */
+  // Pass 2: fill each row's already-known, disjoint slice in parallel
 #pragma omp parallel for schedule(guided)
   for (int a = 0; a < dim; a++) {
     uint64_t s = sec->rep[a];
@@ -297,9 +346,9 @@ sparse_matrix_t *spin_sector_hamiltonian(const spin_sector_t *sec, double Jxy,
       uint64_t rep_b = find_representative(flipped, N, mask, &l);
       int bcol = spin_sector_find(sec, rep_b);
       if (bcol < 0) {
-        /* NOTE: H commutes with T, so any state reachable from a compatible
-         * representative is itself compatible. Emit an explicit zero rather
-         * than leaving the slot uninitialized. */
+        // NOTE: H commutes with T, so any state reachable from a compatible
+        // representative is itself compatible. Emit an explicit zero rather
+        // than leaving slot uninitialized
         H->col_ind[idx] = a;
         H->values[idx] = c_zero();
         idx++;
@@ -320,8 +369,7 @@ sparse_matrix_t *spin_sector_hamiltonian(const spin_sector_t *sec, double Jxy,
   return H;
 }
 
-/* S^z_q excitation */
-
+// S^z_q excitation
 int spin_apply_szq(const spin_sector_t *src, const cvector_t *psi0, int q_index,
                    spin_sector_t **out_target, cvector_t **out_phi0,
                    double *out_I0) {
@@ -358,10 +406,9 @@ int spin_apply_szq(const spin_sector_t *src, const cvector_t *psi0, int q_index,
     }
 
     uint64_t s = src->rep[a];
-    /* NOTE: c_a = \sum_j \exp(i * q * j) * S^z_j(s); this vanishes
-     * automatically when q_index*R_a is not a multiple of N, which is the
-     * compatibility condition for rep a to also carry a valid k_target state.
-     */
+    // NOTE: c_a = \sum_j \exp(i * q * j) * S^z_j(s); this vanishes
+    // automatically when q_index*R_a is not a multiple of N, which is
+    // compatibility condition for rep a to also carry a valid k_target state
     complex_t weight = c_zero();
     for (int j = 0; j < N; j++) {
       double phase = q * (double)j;
@@ -395,8 +442,7 @@ int spin_apply_szq(const spin_sector_t *src, const cvector_t *psi0, int q_index,
   return 0;
 }
 
-/* continued-fraction DSF */
-
+// Continued-fraction DSF
 double spin_dsf_continued_fraction(const double *alpha, const double *beta,
                                    int m, double E0, double I0, double omega,
                                    double eta) {
@@ -407,8 +453,8 @@ double spin_dsf_continued_fraction(const double *alpha, const double *beta,
   complex_t z = c_new(E0 + omega, eta);
   complex_t one = c_new(1.0, 0.0);
 
-  /* Bottom-up evaluation: g_{m-1} = 1/(z - alpha_{m-1}), then
-   * g_i = 1/(z - alpha_i - beta_i^2 * g_{i+1}) for i = m-2 downto 0. */
+  // Bottom-up evaluation: g_{m-1} = 1/(z - alpha_{m-1}), then
+  // g_i = 1/(z - \alpha_i - \beta_i^2 * g_{i+1}) for i = m-2 downto 0
   complex_t g = c_div(one, c_sub(z, c_new(alpha[m - 1], 0.0)));
 
   for (int i = m - 2; i >= 0; i--) {
@@ -422,14 +468,12 @@ double spin_dsf_continued_fraction(const double *alpha, const double *beta,
   return -G.im / M_PI;
 }
 
-/* Reflection (spatial parity) symmetry */
-
-/* Reflection R: site j -> N-1-j, applied directly to a computational basis
- * bitstring.
- * NOTE: this is a different operation from spin inversion (bit-flip s -> s ^
- * mask, i.e. S^z_j -> -S^z_j on every site) - two symmetries are independent
- * and must not be conflated.
- */
+// Reflection (spatial parity) symmetry
+// Reflection R: site j -> N-1-j, applied directly to a computational basis
+// bitstring
+// NOTE: this is a different operation from spin inversion
+// (bit-flip s -> s ^ mask, i.e. S^z_j -> -S^z_j on every site) - 2 symmetries
+// are independent and must not be conflated
 static uint64_t reflect_bits(uint64_t s, int N) {
   uint64_t r = 0;
   for (int j = 0; j < N; j++) {
@@ -437,6 +481,7 @@ static uint64_t reflect_bits(uint64_t s, int N) {
       r |= 1ULL << (N - 1 - j);
     }
   }
+
   return r;
 }
 
@@ -449,7 +494,7 @@ cmatrix_t *spin_sector_reflection_matrix(const spin_sector_t *sec) {
   int is_zero = (k == 0);
   int is_pi = (N % 2 == 0) && (k == N / 2);
   if (!is_zero && !is_pi) {
-    return NULL; /* no reflection quantum number at this momentum */
+    return NULL; // no reflection quantum number at this momentum
   }
 
   uint64_t mask = (N == 64) ? ~0ULL : ((1ULL << N) - 1ULL);
@@ -463,31 +508,30 @@ cmatrix_t *spin_sector_reflection_matrix(const spin_sector_t *sec) {
     R->data[i] = c_zero();
   }
 
-  /* Derivation: writing normalized momentum state as :
-   *  |k,a> = (\sqrt(R_a) / N) * \sum_{r=0}^{N-1} \exp(-i * \theta * r) T^r
-   *            |rep_a>
-   * and using dihedral relation R T^r = T^{-r} R, one gets :
-   *  R|k,a> = (\sqrt(R_a) / N) * \exp(-i * \theta * l0) * \sum_r \exp(+i *
-   *             \theta * r) T^r |rep_b>
-   *
-   * Where
-   *   rep_b = representative of s0 = R|rep_a>
-   *   T^{l0}(rep_b) = s0
-   *  At k=0 or k=N/2, \theta * r is always an integer multiple of \pi, so
-   * \exp(+i * \theta * r) == \exp(-i* \theta * r) exactly - this is why a
-   * reflection quantum number only exists at these two momenta and sum
-   * collapses to (N / \sqrt(R_b)) |k,b>, giving <k,b|R|k,a> = \sqrt(R_a / R_b)
-   * * \exp(-i * \theta * l0).
-   */
+  // Derivation: writing normalized momentum state as:
+  //  |k,a> = (\sqrt(R_a) / N) * \sum_{r=0}^{N-1} \exp(-i * \theta * r) T^r
+  //            |rep_a>
+  // and using dihedral relation R T^r = T^{-r} R, one gets :
+  //  R|k,a> = (\sqrt(R_a) / N) * \exp(-i * \theta * l0) * \sum_r \exp(+i *
+  //             \theta * r) T^r |rep_b>
+  //
+  // Where
+  //   rep_b = representative of s0 = R|rep_a>
+  //   T^{l0}(rep_b) = s0
+  //  At k=0 or k=N/2, \theta * r is always an integer multiple of \pi, so
+  // \exp(+i * \theta * r) == \exp(-i* \theta * r) exactly - this is why a
+  // reflection quantum number only exists at these two momenta and sum
+  // collapses to (N / \sqrt(R_b)) |k,b>, giving
+  //  <k,b|R|k,a> = \sqrt(R_a / R_b) * \exp(-i * \theta * l0)
   for (int a = 0; a < dim; a++) {
     uint64_t s0 = reflect_bits(sec->rep[a], N);
     int l0;
     uint64_t rep_b = find_representative(s0, N, mask, &l0);
     int b = spin_sector_find(sec, rep_b);
     if (b < 0) {
-      /* Should not happen: H (and hence sector's compatibility condition) is
-       * reflection-symmetric, so a compatible rep's mirror image is always
-       * itself compatible at k=0/N/2. */
+      // Should not happen: H (and hence sector's compatibility condition) is
+      // reflection-symmetric, so a compatible rep's mirror image is always
+      // itself compatible at k=0/N/2
       cmatrix_free(R);
 
       return NULL;
@@ -544,8 +588,8 @@ static cmatrix_t *sector_project_by_involution(const sparse_matrix_t *H,
     return cmatrix_alloc(0, 0);
   }
 
-  /* NOTE: Modified Gram-Schmidt with pivoting on P's own columns, stopping once
-   * expected_dim orthonormal vectors are found. */
+  // NOTE: Modified Gram-Schmidt with pivoting on P's own columns, stopping once
+  // expected_dim orthonormal vectors are found
   cmatrix_t *V = cmatrix_alloc(dim, expected_dim);
   if (!V) {
     cmatrix_free(P);
@@ -554,6 +598,13 @@ static cmatrix_t *sector_project_by_involution(const sparse_matrix_t *H,
   }
 
   complex_t *col = malloc((size_t)dim * sizeof *col);
+  if (!col) {
+    cmatrix_free(V);
+    cmatrix_free(P);
+
+    return NULL;
+  }
+
   int accepted = 0;
   const double norm_tol = 1e-8;
   for (int c = 0; c < dim && accepted < expected_dim; c++) {
@@ -619,8 +670,8 @@ static cmatrix_t *sector_project_by_involution(const sparse_matrix_t *H,
   }
 
   cmatrix_t *Vd = cmatrix_adjoint(V);
-  cmatrix_t *HV = cmatrix_multiply(Hd, V);
-  cmatrix_t *Hblock = (Vd && HV) ? cmatrix_multiply(Vd, HV) : NULL;
+  cmatrix_t *HV = (Vd != NULL) ? cmatrix_multiply(Hd, V) : NULL;
+  cmatrix_t *Hblock = (HV != NULL) ? cmatrix_multiply(Vd, HV) : NULL;
 
   cmatrix_free(V);
   cmatrix_free(Vd);
@@ -645,16 +696,14 @@ cmatrix_t *spin_sector_parity_project(const spin_sector_t *sec,
   return sector_project_by_involution(H, R, parity, dim_out);
 }
 
-/* ---- Spin-inversion (global spin-flip) symmetry --------------------------
- *
- * NOTE: I: flip every spin (bit-complement the whole word). I commutes exactly
- * with translation (T and bit-complement act on completely independent aspects
- * of the state - position vs value - so they trivially commute), which means I
- * preserves momentum k for *any* k The only restriction is that I maps the nup
- * sector to the (N-nup) sector, so it's only a symmetry of a *fixed* (nup, k)
- * sector when nup == N-nup, i.e. at half filling (N even, nup = N/2)
- */
+// Spin-inversion (global spin-flip) symmetry
 
+// NOTE: I: flip every spin (bit-complement whole word). I commutes exactly with
+// translation (T and bit-complement act on completely independent aspects of
+// state - position vs value - so they trivially commute), which means I
+// preserves momentum k for any k only restriction is that I maps nup sector to
+// (N-nup) sector, so it's only a symmetry of a *fixed* (nup, k) sector when nup
+// == N-nup, i.e. at half filling (N even, nup = N/2)
 static uint64_t invert_bits(uint64_t s, int N, uint64_t mask) {
   (void)N;
 
@@ -678,25 +727,24 @@ cmatrix_t *spin_sector_inversion_matrix(const spin_sector_t *sec) {
     I->data[idx] = c_zero();
   }
 
-  /* Derivation:
-   *  I|k,a> = (\sqrt(R_a) / N) * \sum_r \exp(-i* \theta * r) T^r I|rep_a> =
-   * (\sqrt(R_a) / N) * \sum_r \exp(-i * \theta * r) T^r|s0>, s0 = I(rep_a)
-   *
-   * (using [T,I]=0 to move I past T^r). Writing s0 = T^{l0}(rep_b) and
-   * reindexing r' = r+l0 gives I|k,a> = \sqrt(R_a / R_b) * \exp(+i * \theta *
-   * l0)  * |k,b> - same momentum k as |k,a> (unlike reflection, which needs k
-   * -> -k and hence only closes at k=0/N/2), and phase sign is opposite
-   * reflection's because I commutes with T^r exactly instead of anti-commuting
-   * (R T^r = T^{-r} R).
-   */
+  // Derivation:
+  //  I|k,a> = (\sqrt(R_a) / N) * \sum_r \exp(-i* \theta * r) T^r I|rep_a> =
+  // (\sqrt(R_a) / N) * \sum_r \exp(-i * \theta * r) T^r|s0>, s0 = I(rep_a)
+  //
+  // (using [T,I]=0 to move I past T^r). Writing s0 = T^{l0}(rep_b) and
+  // reindexing r' = r+l0 gives I|k,a> = \sqrt(R_a / R_b) * \exp(+i * \theta *
+  // l0)  * |k,b> - same momentum k as |k,a> (unlike reflection, which needs k
+  // -> -k and hence only closes at k=0/N/2), and phase sign is opposite
+  // reflection's because I commutes with T^r exactly instead of anti-commuting
+  // (R T^r = T^{-r} R)
   for (int a = 0; a < dim; a++) {
     uint64_t s0 = invert_bits(sec->rep[a], N, mask);
     int l0;
     uint64_t rep_b = find_representative(s0, N, mask, &l0);
     int b = spin_sector_find(sec, rep_b);
     if (b < 0) {
-      /* Should not happen: at half filling, I(s) always has popcount N/2 too,
-       * so its representative is always in this same sector. */
+      // Should not happen: at half filling, I(s) always has popcount N/2 too,
+      // so its representative is always in this same sector
       cmatrix_free(I);
 
       return NULL;

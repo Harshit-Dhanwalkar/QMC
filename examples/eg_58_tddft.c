@@ -2,12 +2,12 @@
  * Linear-Response TDDFT (TDA): Electronic Excitation Energies from a
  * Ground-State DFT Calculation
  *
- * NOTE: molecular_ks_lda (physics/molecular_dft.c) gives only the ground state.
+ * NOTE: molecular_ks_lda (physics/molecular_dft.c) gives only ground state
  * TDDFT reuses that converged calculation's orbitals/energies to additionally
  * compute vertical excitation energies - energies of light absorbed in
  * promoting an electron from an occupied to a virtual Kohn-Sham orbital,
  * corrected for electron-electron interaction via same exchange-correlation
- * functional. This is the standard first-principles route to UV-Vis absorption
+ * functional. This is standard first-principles route to UV-Vis absorption
  * spectra
  */
 
@@ -18,7 +18,7 @@
 
 static void run_tddft(const char *label, basis_function_t **basis, int n_basis,
                       const molecule_t *mol, int n_electrons) {
-  printf(" > %s\n\n", label);
+  printf(" > %s\n", label);
 
   molecular_grid_t *grid = molecular_grid_build_default(mol);
   molecular_dft_result_t *ks =
@@ -30,7 +30,7 @@ static void run_tddft(const char *label, basis_function_t **basis, int n_basis,
   tddft_result_t *td = tddft_tda_lda(basis, n_basis, mol, ks, grid);
 
   printf("  Active space: %d occupied x %d virtual orbitals (%d possible "
-         "single excitations)\n\n",
+         "single excitations)\n",
          td->n_occ, td->n_virt, td->dim);
 
   printf("  Vertical singlet excitation energies (TDA-LDA):\n");
@@ -48,11 +48,12 @@ static void run_tddft(const char *label, basis_function_t **basis, int n_basis,
 }
 
 int main(void) {
-  printf(" > TDDFT: Electronic Excitation Energies\n\n");
+  printf(" > TDDFT: Electronic Excitation Energies\n");
 
   {
     double R = 1.4;
-    double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+    double c0[3] = {0, 0, 0};
+    double c1[3] = {0, 0, R};
     basis_function_t *h0 = molint_basis_sto3g_h(c0);
     basis_function_t *h1 = molint_basis_sto3g_h(c1);
     basis_function_t *basis[2] = {h0, h1};
@@ -69,7 +70,8 @@ int main(void) {
 
   {
     double R = 3.015;
-    double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
+    double c_li[3] = {0, 0, 0};
+    double c_h[3] = {0, 0, R};
     basis_function_t *li_orbs[5];
     molint_basis_sto3g_li(c_li, li_orbs);
     basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
@@ -90,7 +92,7 @@ int main(void) {
 
   printf(" NOTE: LiH's second and third excitations are degenerate (equal "
          "energy) - expected, since they correspond to excitations into a pair "
-         "of degenerate pi-symmetry virtual orbitals for a linear diatomic.\n");
+         "of degenerate pi-symmetry virtual orbitals for a linear diatomic\n");
 
   return 0;
 }

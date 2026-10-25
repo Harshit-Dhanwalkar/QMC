@@ -128,6 +128,18 @@ int main(void) {
     }
 
     double *y = malloc(n_grid * sizeof(double));
+    if (!y) {
+      fprintf(stderr, "Error: out of memory.\n");
+
+      cvector_free(col);
+      free(x);
+      free(V);
+      free(diag);
+      free(offdiag);
+      eigen_free(eig);
+
+      return 1;
+    }
 
     for (int j = 0; j < n_grid; j++) {
       y[j] = col->data[j].re; // real eigenfunctions
@@ -157,6 +169,18 @@ int main(void) {
 
   // Save eigenvalues
   double *E_vals = malloc(10 * sizeof(double));
+  if (!E_vals) {
+    fprintf(stderr, "Error: out of memory.\n");
+
+    free(x);
+    free(V);
+    free(diag);
+    free(offdiag);
+    eigen_free(eig);
+
+    return 1;
+  }
+
   for (int i = 0; i < 10 && i < eig->n; i++) {
     E_vals[i] = eig->eigenvalues[i];
   }

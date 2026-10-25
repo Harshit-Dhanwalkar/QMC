@@ -1,18 +1,19 @@
 /*
  * Landau Levels on a Tight-Binding Lattice (Peierls Substitution)
  *
- * A uniform perpendicular magnetic field is introduced on the 2D square lattice
- * by multiplying y-hopping amplitudes by a position-dependent phase (Landau
- * gauge A = (0, B*x, 0)) rather than by adding any new on-site term :
- * Hofstadter/Harper model.
- * In the weak-field (continuum) limit this reproduces harmonic-oscillator-like
+ * A uniform perpendicular magnetic field is introduced on 2D square lattice by
+ * multiplying y-hopping amplitudes by a position-dependent phase (Landau gauge
+ * A = (0, B*x, 0)) rather than by adding any new on-site term:
+ *
+ * Hofstadter/Harper model
+ * In weak-field (continuum) limit this reproduces harmonic-oscillator-like
  * Landau level ladder :
  *  E_n = -4 * t + \omega_c * (n + 1/2),
  *
  * Where:
  *  \omega_c = 4 * \pi * t * \alpha,
  * with macroscopic degeneracy per level (onestate per flux quantum threading
- * the sample).
+ * sample)
  */
 
 #include "../core/complex.h"
@@ -32,10 +33,10 @@ static int cmp_double(const void *a, const void *b) {
 
 int main(void) {
   printf(" > Landau Levels via Peierls Substitution (Hofstadter/Harper "
-         "model)\n\n");
+         "model):\n");
 
   double t = 1.0;
-  double alpha = 0.05; // flux per plaquette, in units of the flux quantum
+  double alpha = 0.05; // flux per plaquette, in units of flux quantum
   int nx = 10, ny = 10;
 
   printf("   2D square lattice, %dx%d sites, t=%.2f, alpha=%.3f (flux "
@@ -53,12 +54,22 @@ int main(void) {
 
   int N = nx * ny;
   double *E = malloc((size_t)N * sizeof *E);
+  if (!E) {
+    fprintf(stderr, "Error: out of memory.\n");
+
+    eigen_free(eig);
+    cmatrix_free(H);
+
+    return 1;
+  }
+
   for (int i = 0; i < N; i++) {
     E[i] = eig->eigenvalues[i];
   }
+
   qsort(E, (size_t)N, sizeof(double), cmp_double);
 
-  printf("   Lowest 8 numerical eigenvalues (note near-degenerate clustering : "
+  printf("   Lowest 8 numerical eigenvalues (note near-degenerate clustering: "
          "Landau-level degeneracy):\n");
   for (int i = 0; i < 8; i++) {
     printf("     E[%d] = %.6f\n", i, E[i]);
@@ -73,12 +84,12 @@ int main(void) {
       predicted_n0, E[0],
       fabs(E[0] - predicted_n0) / fabs(predicted_n0) * 100.0);
 
-  printf("\n   Only the n=0 level is cleanly resolved on a small lattice : "
-         "only ~\\alpha * nx * ny = %.1f flux quanta thread the sample, so "
-         "higher Landau levels are still broadened together with open-boundary "
-         "edge states.\n A much larger lattice is needed to resolve the higher "
-         "rungs cleanly but even here ground Landau level already matches "
-         "analytic continuum formula to well under 1%%.\n",
+  printf("\n   Only n=0 level is cleanly resolved on a small lattice : only "
+         "~\\alpha * nx * ny = %.1f flux quanta thread sample, so higher "
+         "Landau levels are still broadened together with open-boundary edge "
+         "states.\n A much larger lattice is needed to resolve higher rungs "
+         "cleanly but even here ground Landau level already matches analytic "
+         "continuum formula to well under 1%%\n",
          alpha * nx * ny);
 
   eigen_free(eig);

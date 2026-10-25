@@ -3,9 +3,9 @@
  *
  * Two canonical demonstrations of quantum speedup:
  * - Deutsch-Jozsa distinguishes constant from balanced functions in a single
- *   query (classically needs up to 2^(n-1)+1 in the worst case)
+ *   query (classically needs up to 2^(n-1)+1 in worst case)
  * - Grover's search finds a marked item among N with O(\sqrt(N)) queries
- *   instead of O(N).
+ *   instead of O(N)
  */
 
 #include "../physics/quantum_algorithms.h"
@@ -13,10 +13,10 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Deutsch-Jozsa and Grover's Search Algorithm\n\n");
+  printf(" > Deutsch-Jozsa and Grover's Search Algorithm\n");
 
-  printf("   --- Deutsch-Jozsa (n_input=4 bits) ---\n");
-  printf("   One oracle query distinguishes constant from balanced:\n\n");
+  printf("   Deutsch-Jozsa (n_input=4 bits):\n");
+  printf("   One oracle query distinguishes constant from balanced:\n");
 
   dj_result_t r0 = deutsch_jozsa(4, DJ_CONSTANT_0, NULL, 0);
   printf("   f(x)=0 for all x:              P(all-zero)=%.4f -> %s\n",
@@ -36,7 +36,7 @@ int main(void) {
   printf("   f(x)=x0 xor x1 xor x2:         P(all-zero)=%.4f -> %s\n\n",
          rb2.p_all_zero, rb2.is_constant ? "constant" : "BALANCED");
 
-  printf("   --- Grover's search (n=6 qubits, N=64 states) ---\n");
+  printf("   Grover's search (n=6 qubits, N=64 states):\n");
   int n_qubits = 6, target = 42;
   grover_result_t r = grover_search(n_qubits, target, -1);
   printf("   Searching for state |%d> among %d states, %d Grover "
@@ -50,6 +50,14 @@ int main(void) {
 
   printf("   Top 5 most probable outcomes:\n");
   int *order = malloc((1 << n_qubits) * sizeof(int));
+  if (!order) {
+    fprintf(stderr, "Error: out of memory.\n");
+
+    free(r.probabilities);
+
+    return 1;
+  }
+
   for (int i = 0; i < (1 << n_qubits); i++) {
     order[i] = i;
   }

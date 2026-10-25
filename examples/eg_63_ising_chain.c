@@ -12,7 +12,7 @@
  * phases are separated by a continuous quantum phase transition at h_c = J (for
  * N -> \infty chain), visible in finite N as an increasingly sharp crossover in
  * ground-state energy and transverse magnetization order parameter <\sigma^x>
- * as N grows.
+ * as N grows
  */
 
 #include "../core/complex.h"
@@ -30,10 +30,9 @@
 #define H_MIN 0.0
 #define H_MAX 2.0
 
-/* <\sigma^x_0> in ground state, from its Lanczos eigenvector.
- *  \sigma^x_0 flips bit 0 of computational basis, so
- *  <\psi|\sigma^x_0|\psi> = \sum_s conj(\psi[s]) * \psi[s^1] 
- */
+// <\sigma^x_0> in ground state, from its Lanczos eigenvector
+//  \sigma^x_0 flips bit 0 of computational basis, so
+//  <\psi|\sigma^x_0|\psi> = \sum_s conj(\psi[s]) * \psi[s^1]
 static double transverse_magnetization(const cmatrix_t *psi, int dim) {
   complex_t acc = c_zero();
 
@@ -56,12 +55,19 @@ int main(void) {
     h_vals[i] = H_MIN + i * dh;
   }
 
-  /* NOTE: Ground energy per site: numerical ED vs the exact JW/Bogoliubov
-   * formula, for N=10 should overlap exactly, demonstrating the module against
-   * its own independent validation reference. */
+  // NOTE: Ground energy per site: numerical ED vs the exact JW/Bogoliubov
+  // formula, for N=10 should overlap exactly, demonstrating the module against
+  // its own independent validation reference
   int N_energy = 10;
   double *E0_numeric = malloc((size_t)N_H_POINTS * sizeof *E0_numeric);
   double *E0_exact = malloc((size_t)N_H_POINTS * sizeof *E0_exact);
+  if (!E0_numeric || !E0_exact) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(E0_numeric);
+
+    return 1;
+  }
 
   printf("   %-8s %-16s %-16s %-10s\n", "h/J", "E0/N (ED)", "E0/N (exact)",
          "diff");
@@ -93,15 +99,27 @@ int main(void) {
              labels1, &opts);
   printf("\n   Saved ising_ground_energy.png (two curves should overlap)\n");
 
-  /* NOTE: Transverse magnetization order parameter across transition, for 2
-   * system sizes to show finite-size crossover sharpening toward true N->\infty
-   * phase transition at h_c=J. */
+  // NOTE: Transverse magnetization order parameter across transition, for 2
+  // system sizes to show finite-size crossover sharpening toward true N->\infty
+  // phase transition at h_c=J
   const int Ns[2] = {6, 10};
   double *mag[2];
   for (int n_idx = 0; n_idx < 2; n_idx++) {
     int N = Ns[n_idx];
 
     mag[n_idx] = malloc((size_t)N_H_POINTS * sizeof *mag[n_idx]);
+    if (!mag[n_idx]) {
+      fprintf(stderr, "Memory allocation failed\n");
+
+      for (int j = 0; j < n_idx; j++) {
+        free(mag[j]);
+      }
+      free(E0_numeric);
+      free(E0_exact);
+
+      return 1;
+    }
+
     for (int i = 0; i < N_H_POINTS; i++) {
       sparse_matrix_t *H = ising_hamiltonian(N, J_COUPLING, h_vals[i], 1);
       int dim = 1 << N;
@@ -131,13 +149,24 @@ int main(void) {
   printf("   Saved ising_magnetization.png (N=10 crossover near h/J=1 should "
          "be visibly sharper than N=6's)\n");
 
-  /* Mid-chain entanglement entropy across the transition, for N=10
-   * NOTE: should peak near h_c=J (entanglement is largest at a critical point,
-   * where correlations are long-ranged) and fall off deep in either phase
-   * (product-state-like ground states on both the h=0 ferromagnetic side and
-   * h->infinity paramagnetic side have low entanglement). */
+  // Mid-chain entanglement entropy across the transition, for N=10
+  // NOTE: should peak near h_c=J (entanglement is largest at a critical point,
+  // where correlations are long-ranged) and fall off deep in either phase
+  // (product-state-like ground states on both the h=0 ferromagnetic side and
+  // h->infinity paramagnetic side have low entanglement)
   int N_ee = 10;
   double *S_mid = malloc((size_t)N_H_POINTS * sizeof *S_mid);
+  if (!S_mid) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(mag[0]);
+    free(mag[1]);
+    free(E0_numeric);
+    free(E0_exact);
+
+    return 1;
+  }
+
   for (int i = 0; i < N_H_POINTS; i++) {
     sparse_matrix_t *H = ising_hamiltonian(N_ee, J_COUPLING, h_vals[i], 1);
     lanczos_result_t *res = lanczos_eigs(H, 1, 150, 1e-12);
@@ -159,12 +188,12 @@ int main(void) {
   printf("   Saved ising_entanglement.png (should peak near h/J=1, critical "
          "point, and fall off in both phases)\n");
 
-  /* NOTE: Quantum quench: prepare the ground state at h_i deep in ferromagnetic
-   * phase, then suddenly switch the Hamiltonian to h_f deep in paramagnetic
-   * phase, and track Loschmidt echo L(t) = |<\psi(0)|\psi(t)>|^2. A quench
-   * across critical point typically shows L(t) dropping sharply from 1 and
-   * developing oscillations / near-recurrences, unlike a quench that stays
-   * within one phase. */
+  // NOTE: Quantum quench: prepare the ground state at h_i deep in ferromagnetic
+  // phase, then suddenly switch the Hamiltonian to h_f deep in paramagnetic
+  // phase, and track Loschmidt echo L(t) = |<\psi(0)|\psi(t)>|^2. A quench
+  // across critical point typically shows L(t) dropping sharply from 1 and
+  // developing oscillations / near-recurrences, unlike a quench that stays
+  // within one phase
   int N_q = 8;
   double h_i = 0.3, h_f = 3.0;
   int dim_q = 1 << N_q;
@@ -180,6 +209,23 @@ int main(void) {
   double T_MAX = 5.0;
   double *t_vals = malloc((size_t)N_T_POINTS * sizeof *t_vals);
   double *L_vals = malloc((size_t)N_T_POINTS * sizeof *L_vals);
+  if (!t_vals || !L_vals) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    eigen_free(eig_f);
+    cmatrix_free(Hf_dense);
+    lanczos_free(gs_i);
+    sparse_free(Hi);
+    free(t_vals);
+    free(S_mid);
+    free(mag[0]);
+    free(mag[1]);
+    free(E0_numeric);
+    free(E0_exact);
+
+    return 1;
+  }
+
   for (int i = 0; i < N_T_POINTS; i++) {
     t_vals[i] = (T_MAX * i) / (N_T_POINTS - 1);
     L_vals[i] = ising_loschmidt_echo(eig_f, psi_i, t_vals[i]);

@@ -1,9 +1,9 @@
 /*
  * VQE Beyond TFIM: A General Pauli-String Hamiltonian
  *
- * This example demonstrates the spin-1/2 XXZ Heisenberg chain - same model
+ * This example demonstrates spin-1/2 XXZ Heisenberg chain - same model
  * spin_chain.c diagonalizes exactly via symmetry-sector sparse diagonalization
- * (not dense tensor products) - using the spin-1/2 <-> qubit mapping:
+ * (not dense tensor products) - using spin-1/2 <-> qubit mapping:
  *   S^z_j = Z_j / 2
  *   S^+_j S^-_k + S^-_j S^+_k = (X_j X_k + Y_j Y_k) / 2
  * so H = \sum_j [Jz S^z_j S^z_{j+1} + (Jxy/2)(S^+_j S^-_{j+1} + h.c.)]
@@ -20,11 +20,11 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > VQE with a General Pauli-String Hamiltonian: the XXZ Chain\n\n");
+  printf(" > VQE with a General Pauli-String Hamiltonian: XXZ Chain\n");
 
   int N = 4;
   double Jz = 1.3, Jxy = 0.7;
-  printf("  N=%d sites, Jz=%.2f, Jxy=%.2f, periodic boundary conditions\n\n", N,
+  printf("  N=%d sites, Jz=%.2f, Jxy=%.2f, periodic boundary conditions\n", N,
          Jz, Jxy);
 
   // Build H = sum_j [(Jz/4) Z_jZ_{j+1} + (Jxy/4)(X_jX_{j+1} + Y_jY_{j+1})]
@@ -35,6 +35,13 @@ int main(void) {
   int n_terms = 3 * N;
   char **strings = malloc((size_t)n_terms * sizeof *strings);
   double *coeffs = malloc((size_t)n_terms * sizeof *coeffs);
+  if (!strings || !coeffs) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(strings);
+
+    return 1;
+  }
 
   int t = 0;
   for (int j = 0; j < N; j++) {
@@ -42,9 +49,22 @@ int main(void) {
 
     for (int o = 0; o < 3; o++) {
       strings[t] = malloc((size_t)N + 1);
+      if (!strings[t]) {
+        fprintf(stderr, "Memory allocation failed\n");
+
+        for (int k = 0; k < t; k++) {
+          free(strings[k]);
+        }
+        free(strings);
+        free(coeffs);
+
+        return 1;
+      }
+
       for (int q = 0; q < N; q++) {
         strings[t][q] = (q == j || q == jn) ? ops[o] : 'I';
       }
+
       strings[t][N] = '\0';
       coeffs[t] = base_coeff[o];
       t++;
@@ -53,6 +73,17 @@ int main(void) {
 
   cmatrix_t *H = vqe_build_pauli_hamiltonian(N, (const char *const *)strings,
                                              coeffs, n_terms);
+  if (!H) {
+    fprintf(stderr, "vqe_build_pauli_hamiltonian failed\n");
+
+    for (int i = 0; i < n_terms; i++) {
+      free(strings[i]);
+    }
+    free(strings);
+    free(coeffs);
+
+    return 1;
+  }
 
   printf("  Pauli-string decomposition (%d terms):\n", n_terms);
   for (int i = 0; i < n_terms; i++) {
@@ -66,7 +97,7 @@ int main(void) {
   double E_exact = eig->eigenvalues[0];
   eigen_free(eig);
 
-  printf("  Exact ground energy (dense diagonalization of the Pauli sum): "
+  printf("  Exact ground energy (dense diagonalization of Pauli sum): "
          "%.8f\n",
          E_exact);
 

@@ -1,29 +1,29 @@
 /*
- * Solving and Evolving the Schrodinger Equation: 4 Methods, One Physical System
+ * Solving and Evolving Schrodinger Equation: 4 Methods, One Physical System
  *
  * physics/schrodinger.c exposes five solvers/evolvers; only solve_tise_matrix
- * had any example before this one. This example demonstrates the other four on
- * the same physical system (the 1D quantum harmonic oscillator), cross-checking
- * each against either an exact analytic result or against each other:
+ * had any example before this one. This example demonstrates other 4 on same
+ * physical system (1D quantum harmonic oscillator), cross-checking each against
+ * either an exact analytic result or against each other:
  *
- * 1. solve_tise_shoot       - Numerov shooting for a specific bound-state
- *                                energy level, checked against the exact
- *                                (n + 1/2)*hbar*omega spectrum.
+ * 1. solve_tise_shoot          - Numerov shooting for a specific bound-state
+ *                                energy level, checked against exact
+ *                                (n + 1/2) * \hbar * \omega spectrum
  * 2. solve_tise_shoot_matching - log-derivative-matching shooting (distinct
  *                                from solve_tise_shoot, whose underlying
  *                                numerov_shoot() actually diagonalizes a
  *                                tridiagonal matrix despite its name),
- *                                cross-checked against both the exact spectrum
- *                                and solve_tise_shoot's independent
- *                                diagonalization result.
- * 3. evolve_tdse_crank      - Crank-Nicolson time evolution of a
- *                                state, cross-checked against both the exact
- *                                trajectory and evolve_tdse_crank's
- *                                independently-discretized result.
- * 4. evolve_tdse_split_step - FFT-based split-step evolution of same coherent
- *                                state, cross-checked against both the exact
- *                                trajectory and evolve_tdse_crank's
- *                                independently-discretized result.
+ *                                cross-checked against both exact spectrum and
+ *                                solve_tise_shoot's independent diagonalization
+ *                                result
+ * 3. evolve_tdse_crank         - Crank-Nicolson time evolution of a state,
+ *                                cross-checked against both exact trajectory
+ *                                and evolve_tdse_crank's independently
+ *                                discretized result
+ * 4. evolve_tdse_split_step    - FFT-based split-step evolution of same
+ *                                coherent state, cross-checked against both
+ *                                exact trajectory and evolve_tdse_crank's
+ *                                independently discretized result
  */
 
 #include "../core/complex.h"
@@ -64,18 +64,26 @@ static double compute_x_mean(const cvector_t *psi, const double *x, int n) {
 }
 
 int main(void) {
-  printf(" > 4 Ways to Solve/Evolve the Harmonic Oscillator\n\n");
+  printf(" > 4 Ways to Solve/Evolve the Harmonic Oscillator:\n");
 
   double omega = 1.0, mass = 1.0, hbar = 1.0;
 
   // 1. solve_tise_shoot: bound-state energies via Numerov shooting
-  printf("  Step 1: solve_tise_shoot - Numerov shooting for bound states\n\n");
+  printf("  Step 1: solve_tise_shoot - Numerov shooting for bound states\n");
 
   int n_shoot = 800;
   double L_shoot = 20.0;
   double dx_shoot = L_shoot / n_shoot;
   double *x_shoot = malloc((size_t)n_shoot * sizeof(double));
   double *V_shoot = malloc((size_t)n_shoot * sizeof(double));
+  if (!x_shoot || !V_shoot) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(x_shoot);
+    free(V_shoot);
+
+    return 1;
+  }
 
   for (int i = 0; i < n_shoot; i++) {
     x_shoot[i] = -L_shoot / 2.0 + i * dx_shoot;
@@ -105,13 +113,21 @@ int main(void) {
   // 1.5. solve_tise_shoot_matching: log-derivative-matching shooting
   printf("\n  Step 1.5: solve_tise_shoot_matching - log-derivative-matching "
          "shooting (distinct from solve_tise_shoot's diagonalization-based "
-         "numerov_shoot)\n\n");
+         "numerov_shoot)\n");
 
   int n_match = 2000;
   double L_match = 20.0;
   double dx_match = L_match / (n_match - 1);
   double *x_match = malloc((size_t)n_match * sizeof(double));
   double *V_match = malloc((size_t)n_match * sizeof(double));
+  if (!x_match || !V_match) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(x_match);
+    free(V_match);
+
+    return 1;
+  }
 
   for (int i = 0; i < n_match; i++) {
     x_match[i] = -L_match / 2.0 + i * dx_match;
@@ -145,7 +161,7 @@ int main(void) {
 
   // 2 & 3. Time evolution of a coherent-state wavepacket
   printf("\n  Step 2: evolve_tdse_crank and evolve_tdse_split_step - "
-         "coherent-state wavepacket dynamics\n\n");
+         "coherent-state wavepacket dynamics\n");
 
   int n = 1024;
   double L = 40.0, x0 = 3.0, dt = 0.001;
@@ -154,6 +170,15 @@ int main(void) {
 
   double *x = malloc((size_t)n * sizeof(double));
   double *V = malloc((size_t)n * sizeof(double));
+  if (!x || !V) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(x);
+    free(V);
+
+    return 1;
+  }
+
   for (int i = 0; i < n; i++) {
     x[i] = -L / 2.0 + i * dx;
     V[i] = 0.5 * mass * omega * omega * x[i] * x[i];
@@ -161,12 +186,34 @@ int main(void) {
 
   cvector_t *psi_crank = cvector_alloc(n);
   cvector_t *psi_split = cvector_alloc(n);
+  if (!psi_crank || !psi_split) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    cvector_free(psi_crank);
+    cvector_free(psi_split);
+    free(x);
+    free(V);
+
+    return 1;
+  }
 
   make_coherent_state(psi_crank, x, n, x0, hbar, mass, omega);
   make_coherent_state(psi_split, x, n, x0, hbar, mass, omega);
 
   double *diag = malloc((size_t)n * sizeof(double));
   double *offdiag = malloc((size_t)(n - 1) * sizeof(double));
+  if (!diag || !offdiag) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(diag);
+    free(offdiag);
+    cvector_free(psi_crank);
+    cvector_free(psi_split);
+    free(x);
+    free(V);
+
+    return 1;
+  }
 
   build_tridiagonal_hamiltonian(x, V, n, dx, 0.5, diag, offdiag);
 

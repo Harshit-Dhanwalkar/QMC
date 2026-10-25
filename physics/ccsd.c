@@ -80,7 +80,7 @@ static int spatial_of(int orb_idx) { return orb_idx / 2; }
 
 // Single-element on-the-fly version of build_antisymmetrized (below): same
 // <pq||rs> formula, computed directly from n_spatial-sized chemist eri_mo
-// tensor for one (p,q,r,s).
+// tensor for one (p,q,r,s)
 //
 // NOTE: Antisymmetrized integrals never need nso^4 = 16 * n_spatial^4 of
 // persistent storage during iterative solve - only n_spatial^4 is ever
@@ -231,6 +231,10 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
 // Build Fae(a,e): virtual-virtual dressed Fock-like intermediate
+// Structure mirrors standard CCSD equations:
+//   - linear singles/Fock coupling
+//   - singles-driven two-electron dressing
+//   - \tau_\tilde (T2 + disconnected T1T1) correction
 #pragma omp parallel for schedule(dynamic)
   for (int ai = 0; ai < nv; ai++) {
     int a = virt[ai];
@@ -241,10 +245,12 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
       for (int mi = 0; mi < no; mi++) {
         int m = occ[mi];
+        // -1/2 * f_me * t_m^a contribution
         s -= 0.5 * IDX2(Fso, nso, m, e) * IDX2(t1, nso, m, a);
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
+          // + t_m^f * <ma||fe>
           s += IDX2(t1, nso, m, f) * V(m, a, f, e);
         }
 
@@ -253,16 +259,23 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
+            // -1/2 * tau_tilde_mn^{af} * <mn||ef>
             s -= 0.5 * tau_tilde(t1, t2, nso, m, n, a, f) * V(m, n, e, f);
           }
         }
       }
 
+      // Diagonal uses 0.0 here (canonical convention in this implementation),
+      // then add accumulated dressing terms.
       IDX2(Fae, nso, a, e) = (a != e ? IDX2(Fso, nso, a, e) : 0.0) + s;
     }
   }
 
-// Build next intermediate block (Fmi/Fme/Wmnij/Wmbej as coded below)
+// Build Fmi(m,i): occupied-occupied dressed Fock-like intermediate
+// Structure mirrors standard CCSD equations:
+//   - linear singles/Fock coupling
+//   - singles-driven two-electron dressing
+//   - \tau_\tilde (T2 + disconnected T1T1) correction
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
@@ -273,10 +286,12 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
       for (int ei = 0; ei < nv; ei++) {
         int e = virt[ei];
+        // +1/2 * f_me * t_i^e contribution
         s += 0.5 * IDX2(t1, nso, i, e) * IDX2(Fso, nso, m, e);
 
         for (int ni = 0; ni < no; ni++) {
           int n = occ[ni];
+          // + t_n^e * <mn||ie>
           s += IDX2(t1, nso, n, e) * V(m, n, i, e);
         }
 
@@ -285,6 +300,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
+            // +1/2 * tau_tilde_in^{ef} * <mn||ef>
             s += 0.5 * tau_tilde(t1, t2, nso, i, n, e, f) * V(m, n, e, f);
           }
         }
@@ -294,12 +310,17 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+// Build Fme(m,e): occupied-virtual coupling intermediate
+// Structure:
+//   - bare Fock matrix element f_me
+//   - T1-driven two-electron dressing <mn||ef>
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
     for (int ei = 0; ei < nv; ei++) {
       int e = virt[ei];
+      // Bare Fock element f_me
       double s = IDX2(Fso, nso, m, e);
 
       for (int ni = 0; ni < no; ni++) {
@@ -307,6 +328,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
+          // + t_n^f * <mn||ef>
           s += IDX2(t1, nso, n, f) * V(m, n, e, f);
         }
       }
@@ -315,6 +337,11 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+// Build Wmnij(m,n,i,j): occupied-occupied two-body intermediate
+// Structure:
+//   - bare antisymmetrized integral <mn||ij>
+//   - linear singles dressing
+//   - \tau (T2 + full T1T1) dressing
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
@@ -327,10 +354,12 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ji = 0; ji < no; ji++) {
           int j = occ[ji];
+          // Bare integral <mn||ij>
           double s = V(m, n, i, j);
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
+            // + t_j^e <mn||ie> - t_i^e <mn||je>
             s += IDX2(t1, nso, j, e) * V(m, n, i, e) -
                  IDX2(t1, nso, i, e) * V(m, n, j, e);
           }
@@ -340,6 +369,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
+              // + 1/4 * tau_full_ij^{ef} * <mn||ef>
               s += 0.25 * tau_full(t1, t2, nso, i, j, e, f) * V(m, n, e, f);
             }
           }
@@ -350,6 +380,11 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+// Build Wmbej(m,b,e,j): mixed occupied/virtual two-body intermediate
+// Structure:
+//   - bare antisymmetrized integral <mb||ej>
+//   - linear singles dressing (both virtual and occupied)
+//   - quadratic T2 + T1T1 dressing
 #pragma omp parallel for schedule(dynamic)
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
@@ -362,16 +397,18 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ji = 0; ji < no; ji++) {
           int j = occ[ji];
+          // Bare integral <mb||ej>
           double s = V(m, b, e, j);
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
+            // + t_j^f * <mb||ef>
             s += IDX2(t1, nso, j, f) * V(m, b, e, f);
           }
 
           for (int ni = 0; ni < no; ni++) {
             int n = occ[ni];
-
+            // - t_n^b * <mn||ej>
             s -= IDX2(t1, nso, n, b) * V(m, n, e, j);
           }
 
@@ -380,7 +417,7 @@ static void build_intermediates(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
-
+              // - (1/2 t_jn^{fb} + t_j^f t_n^b) * <mn||ef>
               s -= (0.5 * IDX4(t2, nso, j, n, f, b) +
                     IDX2(t1, nso, j, f) * IDX2(t1, nso, n, b)) *
                    V(m, n, e, f);
@@ -409,11 +446,13 @@ static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
 
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
+  // Bare integral <ab||ef>
   double s = V(a, b, e, f);
 
   for (int mi = 0; mi < no; mi++) {
     int m = occ[mi];
 
+    // - t_m^b <am||ef> + t_m^a <bm||ef>
     s -= IDX2(t1, nso, m, b) * V(a, m, e, f) -
          IDX2(t1, nso, m, a) * V(b, m, e, f);
   }
@@ -423,7 +462,7 @@ static double wabef_elem(const ccsd_ctx_t *ctx, const double *t1,
 
     for (int ni = 0; ni < no; ni++) {
       int n = occ[ni];
-
+      // + 1/4 * tau_full_ab^{mn} * <mn||ef>
       s += 0.25 * tau_full(t1, t2, nso, m, n, a, b) * V(m, n, e, f);
     }
   }
@@ -466,30 +505,35 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 #define V(p, q, r, s) v_elem(n_spatial, eri_mo, (p), (q), (r), (s))
 
   // Build reusable intermediates once per iteration
-  // These tensors factor repeated contractions in T1/T2 equations and
-  // reduce amount of work inside deepest loops
   build_intermediates(ctx, t1, t2, Fae, Fmi, Fme, Wmnij, Wmbej);
 
 // T1 update:
-// - iterate occupied i and virtual a spin-orbitals
-// - assemble T1 residual numerator term-by-term
-// - apply denominator (\epsilon_i - \epsilon_a) after accumulation
-// Parallelization is safe because each (i,a) writes a unique new_t1 element
+// - assemble T1 residual for each (i,a)
+// - divide by energy denominator at end
+// Structure mirrors standard CCSD T1 diagrams:
+//   - bare f_ia
+//   - Fock dressings with singles (Fae, Fmi)
+//   - T2 x Fme coupling
+//   - bare <na||if> term
+//   - T2 x bare integral ring terms
 #pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
 
     for (int ai = 0; ai < nv; ai++) {
       int a = virt[ai];
+      // Bare f_ia
       double s = IDX2(Fso, nso, i, a);
 
       for (int ei = 0; ei < nv; ei++) {
         int e = virt[ei];
+        // + t_i^e * Fae_ae
         s += IDX2(t1, nso, i, e) * IDX2(Fae, nso, a, e);
       }
 
       for (int mi = 0; mi < no; mi++) {
         int m = occ[mi];
+        // - t_m^a * Fmi_mi
         s -= IDX2(t1, nso, m, a) * IDX2(Fmi, nso, m, i);
       }
 
@@ -498,6 +542,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int ei = 0; ei < nv; ei++) {
           int e = virt[ei];
+          // + t_im^{ae} * Fme_me
           s += IDX4(t2, nso, i, m, a, e) * IDX2(Fme, nso, m, e);
         }
       }
@@ -507,7 +552,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int fi = 0; fi < nv; fi++) {
           int f = virt[fi];
-
+          // - t_n^f * <na||if>
           s -= IDX2(t1, nso, n, f) * V(n, a, i, f);
         }
       }
@@ -520,7 +565,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int fi = 0; fi < nv; fi++) {
             int f = virt[fi];
-
+            // - 1/2 * t_im^{ef} * <ma||ef>
             s -= 0.5 * IDX4(t2, nso, i, m, e, f) * V(m, a, e, f);
           }
         }
@@ -534,7 +579,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int ni = 0; ni < no; ni++) {
             int n = occ[ni];
-
+            // - 1/2 * t_mn^{ae} * <nm||ei>
             s -= 0.5 * IDX4(t2, nso, m, n, a, e) * V(n, m, e, i);
           }
         }
@@ -544,6 +589,15 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
     }
   }
 
+// T2 update:
+// - assemble T2 residual for each (i,j,a,b)
+// - divide by energy denominator at end
+// Structure mirrors standard CCSD T2 diagrams:
+//   - bare <ij||ab>
+//   - Fock dressings with T2 (Fae, Fmi)
+//   - \tau x Wmnij / Wabef ladder terms
+//   - Wmbej crossed-ring term
+//   - T1 x bare integral linear terms
 #pragma omp parallel for schedule(dynamic)
   for (int ii = 0; ii < no; ii++) {
     int i = occ[ii];
@@ -556,19 +610,22 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
         for (int bi = 0; bi < nv; bi++) {
           int b = virt[bi];
+          // Bare integral <ij||ab>
           double s = V(i, j, a, b);
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
-            double corr_b = 0.0, corr_a = 0.0;
+            double corr_b = 0.0;
+            double corr_a = 0.0;
 
             for (int mi = 0; mi < no; mi++) {
               int m = occ[mi];
-
               corr_b += IDX2(t1, nso, m, b) * IDX2(Fme, nso, m, e);
               corr_a += IDX2(t1, nso, m, a) * IDX2(Fme, nso, m, e);
             }
 
+            // + t_ij^{ae} * (Fae_be - 1/2 t_m^b Fme_me)
+            // - t_ij^{be} * (Fae_ae - 1/2 t_m^a Fme_me)
             s += IDX4(t2, nso, i, j, a, e) *
                      (IDX2(Fae, nso, b, e) - 0.5 * corr_b) -
                  IDX4(t2, nso, i, j, b, e) *
@@ -581,11 +638,12 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int ei = 0; ei < nv; ei++) {
               int e = virt[ei];
-
               corr_j += IDX2(t1, nso, j, e) * IDX2(Fme, nso, m, e);
               corr_i += IDX2(t1, nso, i, e) * IDX2(Fme, nso, m, e);
             }
 
+            // - t_im^{ab} * (Fmi_mj + 1/2 t_j^e Fme_me)
+            // + t_jm^{ab} * (Fmi_mi + 1/2 t_i^e Fme_me)
             s -= IDX4(t2, nso, i, m, a, b) *
                      (IDX2(Fmi, nso, m, j) + 0.5 * corr_j) -
                  IDX4(t2, nso, j, m, a, b) *
@@ -597,6 +655,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int ni = 0; ni < no; ni++) {
               int n = occ[ni];
+              // + 1/2 * tau_mn^{ab} * Wmnij_mnij
               s += 0.5 * tau_full(t1, t2, nso, m, n, a, b) *
                    IDX4(Wmnij, nso, m, n, i, j);
             }
@@ -607,6 +666,7 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int fi = 0; fi < nv; fi++) {
               int f = virt[fi];
+              // + 1/2 * tau_ij^{ef} * Wabef_abef
               s += 0.5 * tau_full(t1, t2, nso, i, j, e, f) *
                    wabef_elem(ctx, t1, t2, a, b, e, f);
             }
@@ -617,6 +677,11 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
             for (int ei = 0; ei < nv; ei++) {
               int e = virt[ei];
+              // Crossed-ring Wmbej terms with T2 and T1T1:
+              // + t_im^{ae} Wmbej_mbej - t_i^e t_m^a <mb||ej>
+              // - t_im^{be} Wmbej_maej + t_i^e t_m^b <ma||ej>
+              // - t_jm^{ae} Wmbej_mbei + t_j^e t_m^a <mb||ei>
+              // + t_jm^{be} Wmbej_maei - t_j^e t_m^b <ma||ei>
               s += IDX4(t2, nso, i, m, a, e) * IDX4(Wmbej, nso, m, b, e, j) -
                    IDX2(t1, nso, i, e) * IDX2(t1, nso, m, a) * V(m, b, e, j);
               s -= IDX4(t2, nso, i, m, b, e) * IDX4(Wmbej, nso, m, a, e, j) -
@@ -630,12 +695,14 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 
           for (int ei = 0; ei < nv; ei++) {
             int e = virt[ei];
+            // + t_i^e <ab||ej> - t_j^e <ab||ei>
             s += IDX2(t1, nso, i, e) * V(a, b, e, j) -
                  IDX2(t1, nso, j, e) * V(a, b, e, i);
           }
 
           for (int mi = 0; mi < no; mi++) {
             int m = occ[mi];
+            // - t_m^a <mb||ij> + t_m^b <ma||ij>
             s -= IDX2(t1, nso, m, a) * V(m, b, i, j) -
                  IDX2(t1, nso, m, b) * V(m, a, i, j);
           }
@@ -649,6 +716,12 @@ static void update_amplitudes(const ccsd_ctx_t *ctx, const double *t1,
 #undef V
 }
 
+// Compute CCSD correlation energy:
+//   E_corr = \sum_{ia} f_ia t_i^a
+//          + 1/4 \sum_{ijab} <ij||ab> t_ij^{ab}
+//          + 1/2 \sum_{ijab} <ij||ab> t_i^a t_j^b
+// This is standard CCSD energy expression (H_N * T1 * T2 diagram contributes
+// last term)
 static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
                           const double *t2) {
   int nso = ctx->nso;
@@ -666,7 +739,8 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
 
     for (int ai = 0; ai < nv; ai++) {
       int a = virt[ai];
-
+      // + f_ia t_i^a (Brillouin's theorem makes this zero for canonical RHF,
+      // but kept for generality)
       E += IDX2(Fso, nso, i, a) * IDX2(t1, nso, i, a);
     }
   }
@@ -684,7 +758,9 @@ static double ccsd_energy(const ccsd_ctx_t *ctx, const double *t1,
           int b = virt[bi];
           double v = V(i, j, a, b);
 
+          // + 1/4 <ij||ab> t_ij^{ab}
           E += 0.25 * v * IDX4(t2, nso, i, j, a, b);
+          // + 1/2 <ij||ab> t_i^a t_j^b
           E += 0.5 * v * IDX2(t1, nso, i, a) * IDX2(t1, nso, j, b);
         }
       }

@@ -63,10 +63,10 @@ static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
   double E_elec_old = 0.0;
 
   // Self-consistent-field loop:
-  // 1) build F(D)
-  // 2) solve Roothaan equations
-  // 3) rebuild D
-  // 4) test energy convergence
+  // 1. build F(D)
+  // 2. solve Roothaan equations
+  // 3. rebuild D
+  // 4. test energy convergence
   for (int it = 0; it < 50; it++) {
     cmatrix_t *F = cmatrix_alloc(2, 2);
 
@@ -154,7 +154,7 @@ static double rhf(cmatrix_t *Hcore, const double *eri, double C_out[2][2],
 }
 
 static void ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
-                     double C[2][2], double h_mo[4], double *eri_mo) {
+                     const double C[2][2], double h_mo[4], double *eri_mo) {
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       double v = 0.0;

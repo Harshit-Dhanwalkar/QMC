@@ -1,35 +1,36 @@
 /*
- * Dynamical Structure Factor of the Spin-1/2 Heisenberg Ring via
- * Symmetry-Adapted Lanczos Continued Fractions
+ * Dynamical Structure Factor of Spin-1/2 Heisenberg Ring via Symmetry-Adapted
+ * Lanczos Continued Fractions
  *
  * physics/spin_chain.c implements translation-symmetry-adapted exact
  * diagonalization of XXZ ring plus a Lanczos continued-fraction evaluator for
- * S^{zz}(q, \omega). Ground energies vs full-space ED, the S^z_q excitation's
- * sum rule, and the continued fraction's integral-over-omega sum rule. This
- * example is end-to-end demonstration of build ground state once, sweep the
- * excitation over every momentum transfer q in the Brillouin zone, and plot the
- * resulting S(q, \omega) spectrum.
+ * S^{zz}(q, \omega). Ground energies vs full-space ED, S^z_q excitation's
+ * sum rule and continued fraction's integral-over-omega sum rule. This example
+ * is end-to-end demonstration of build ground state once, sweep excitation over
+ * every momentum transfer q in Brillouin zone, and plot resulting S(q, \omega)
+ * spectrum
  *
  * Workflow:
  *   1. Ground state |psi_0>, E0: scan every (nup, k) sector and Lanczos
- *      each one for its lowest eigenvalue -- the Heisenberg antiferromagnet's
- *      ground state on a finite ring is always in the nup = N/2 sector, but
- *      we scan everything so this doesn't silently assume that.
+ *      each one for its lowest eigenvalue - Heisenberg antiferromagnet's ground
+ *      state on a finite ring is always in nup = N/2 sector, but scan
+ *      everything so this doesn't silently assume that
  *   2. For each q_index = 0..N-1:
- *        |phi_0> = S^z_q |psi_0>      (spin_apply_szq)
- *        I0 = <phi_0|phi_0>           (equal-time structure factor S(q))
- *        |f0> = |phi_0> / sqrt(I0)    (normalized Lanczos start vector)
- *        (\alpha, \beta) = Lanczos tridiagonalization of H in the target
- *                          sector, starting from |f0>
- *   3. Evaluate the continued fraction on a frequency mesh to get S(q,omega)
- *      for that q, and cross-check that integral(S(q,omega) domega) == I0
- *      (this is theoretical quantitative check: the module's f-sum rule).
+ *        |\phi_0> = S^z_q |\psi_0>      (spin_apply_szq)
+ *        I0 = <\phi_0|\phi_0>           (equal-time structure factor S(q))
+ *        |f0> = |\phi_0> / \sqrt(I0)    (normalized Lanczos start vector)
+ *        (\alpha, \beta) = Lanczos tridiagonalization of H in target sector,
+ *                          starting from |f0>
  *
- * NOTE: Physics : for an N=8 ring the spectrum is still a handful of discrete
- * delta functions broadened by \eta, not the smooth two-spinon continuum of the
- * N -> \infty chain - des Cloizeaux-Pearson's exact lower-bound dispersion
+ *   3. Evaluate continued fraction on a frequency mesh to get S(q, \omega) for
+ *      that q, and cross-check that \int(S(q, \omega) d\omega) == I0 (this is
+ *      theoretical quantitative check: module's f-sum rule)
+ *
+ * NOTE: Physics: for an N=8 ring spectrum is still a handful of discrete
+ * \delta-functions broadened by \eta, not smooth two-spinon continuum of N ->
+ * \infty chain - des Cloizeaux-Pearson's exact lower-bound dispersion
  * \omega_{LB}(q) = (\pi / 2) * J * |\sin(q)| is an infinite-chain result, only
- * expect to approximately bound the dominant finite-size peaks, not match them.
+ * expect to approximately bound dominant finite-size peaks, not match them
  */
 
 #include "../core/matrix.h"
@@ -50,9 +51,9 @@
 #define PLOT_OMEGA_MIN -0.5
 #define PLOT_OMEGA_MAX 4.0
 
-/* Scan every (nup, k) sector, Lanczos each, and return global ground state:
- * energy, its own sector, and its coefficient vector in that sector's
- * symmetry-adapted basis. */
+// Scan every (nup, k) sector, Lanczos each, and return global ground state:
+// energy, its own sector, and its coefficient vector in that sector's
+// symmetry-adapted basis
 static double find_ground_state(int N, spin_sector_t **out_sector,
                                 cvector_t **out_psi0) {
   double best_E = 1e300;
@@ -104,7 +105,7 @@ static double find_ground_state(int N, spin_sector_t **out_sector,
 }
 
 int main(void) {
-  printf(" > Dynamical Structure Factor S(q, omega): N=%d Heisenberg Ring "
+  printf(" > Dynamical Structure Factor S(q, \\omega): N=%d Heisenberg Ring "
          "(J=%.2f)\n\n",
          N_SITES, J_COUPLING);
 
@@ -118,18 +119,37 @@ int main(void) {
          "-3.651093)\n\n");
 
   double *omega = malloc((size_t)N_OMEGA * sizeof *omega);
+  if (!omega) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    cvector_free(psi0);
+    spin_sector_free(gs_sector);
+
+    return 1;
+  }
+
   double domega = (OMEGA_MAX - OMEGA_MIN) / N_OMEGA;
   for (int i = 0; i < N_OMEGA; i++) {
     omega[i] = OMEGA_MIN + (i + 0.5) * domega;
   }
 
-  /* NOTE: S(q, \omega) for every q, stored row-major [q_index][\omega_{index}]
-   * so both print equal-time structure factor S(q) = I0(q) and plot a few
-   * representative cuts afterward. */
+  // NOTE: S(q, \omega) for every q, stored row-major [q_index][\omega_{index}]
+  // so both print equal-time structure factor S(q) = I0(q) and plot a few
+  // representative cuts afterward
   double **S_q_omega = malloc((size_t)N_SITES * sizeof *S_q_omega);
   double *I0_of_q = malloc((size_t)N_SITES * sizeof *I0_of_q);
+  if (!I0_of_q || !S_q_omega) {
+    fprintf(stderr, "Memory allocation failed\n");
 
-  printf("   %-8s %-14s %-14s %-16s\n", "q_index", "q/pi", "I0=S(q)",
+    free(omega);
+    free(S_q_omega);
+    cvector_free(psi0);
+    spin_sector_free(gs_sector);
+
+    return 1;
+  }
+
+  printf("   %-8s %-14s %-14s %-16s\n", "q_index", "q/\\pi", "I0=S(q)",
          "sum-rule check");
   printf("   -----------------------------------------------------------\n");
 
@@ -140,12 +160,29 @@ int main(void) {
 
     int rc = spin_apply_szq(gs_sector, psi0, qi, &target, &phi0, &I0);
     S_q_omega[qi] = malloc((size_t)N_OMEGA * sizeof *S_q_omega[qi]);
+    if (!S_q_omega[qi]) {
+      fprintf(stderr, "Memory allocation failed\n");
+
+      cvector_free(phi0);
+      spin_sector_free(target);
+      for (int j = 0; j < qi; j++) {
+        free(S_q_omega[j]);
+      }
+      free(S_q_omega);
+      free(I0_of_q);
+      free(omega);
+      cvector_free(psi0);
+      spin_sector_free(gs_sector);
+
+      return 1;
+    }
+
     I0_of_q[qi] = I0;
 
     if (rc != 0 || I0 < 1e-14) {
-      /* Zero spectral weight at this q (can happen at q=0 for an S^z
-       * excitation, since S^z_0 is proportional to the conserved total S^z and
-       * annihilates the ground state up to a constant). */
+      // Zero spectral weight at this q (can happen at q=0 for an S^z
+      // excitation, since S^z_0 is proportional to conserved total S^z and
+      // annihilates ground state up to a constant)
       for (int i = 0; i < N_OMEGA; i++) {
         S_q_omega[qi][i] = 0.0;
       }
@@ -178,7 +215,7 @@ int main(void) {
 
     printf("   %-8d %-14.4f %-14.6e %-16s\n", qi,
            2.0 * (double)qi / (double)N_SITES, I0, "");
-    printf("            (numeric integral of S(q,w) over the mesh = %.6e, "
+    printf("            (numeric integral of S(q,w) over mesh = %.6e, "
            "vs I0 = %.6e)\n",
            integral, I0);
 
@@ -189,8 +226,8 @@ int main(void) {
     spin_sector_free(target);
   }
 
-  /* Plot 3 representative cuts: q=0 (should be flat/near-zero, S^z_0 is
-   * ~conserved), q near \pi/2, and q=\pi (dominant AFM peak). */
+  // Plot 3 representative cuts: q=0 (should be flat/near-zero, S^z_0 is
+  // ~conserved), q near \pi/2, and q=\pi (dominant AFM peak)
   const int q_show[3] = {1, N_SITES / 4 > 0 ? N_SITES / 4 : 1, N_SITES / 2};
   const char *labels[3];
   char label_buf[3][32];
@@ -218,8 +255,23 @@ int main(void) {
          2.0 * q_show[0] / N_SITES, 2.0 * q_show[1] / N_SITES,
          2.0 * q_show[2] / N_SITES);
 
-  // Static structure factor S(q) = I0(q) across the whole zone
+  // Static structure factor S(q) = I0(q) across whole zone
   double *q_over_pi = malloc((size_t)N_SITES * sizeof *q_over_pi);
+  if (!q_over_pi) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    for (int qi = 0; qi < N_SITES; qi++) {
+      free(S_q_omega[qi]);
+    }
+    free(S_q_omega);
+    free(I0_of_q);
+    free(omega);
+    cvector_free(psi0);
+    spin_sector_free(gs_sector);
+
+    return 1;
+  }
+
   for (int qi = 0; qi < N_SITES; qi++) {
     q_over_pi[qi] = 2.0 * (double)qi / (double)N_SITES;
   }
@@ -230,7 +282,7 @@ int main(void) {
   opts2.ylabel = "S(q)";
   plot_line("spin_chain_static_sq", PLOT_FORMAT_PNG, q_over_pi, I0_of_q,
             N_SITES, &opts2);
-  printf("   Saved spin_chain_static_sq.png (S(q) peaks at q=\\pi, the "
+  printf("   Saved spin_chain_static_sq.png (S(q) peaks at q=\\pi, "
          "antiferromagnetic wavevector, as expected)\n");
 
   free(q_over_pi);

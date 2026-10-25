@@ -43,16 +43,16 @@ typedef struct {
   double tau;
 } pulse_params_t;
 
-static void constant_V(double t, void *p, cmatrix_t *V) {
+static void constant_V(double t, const void *p, cmatrix_t *V) {
   (void)t;
 
-  const pulse_params_t *q = p;
+  const pulse_params_t *q = (const pulse_params_t *)p;
   put(V, 0, 1, q->eps, 0.0);
   put(V, 1, 0, q->eps, 0.0);
 }
 
-static void gaussian_V(double t, void *p, cmatrix_t *V) {
-  const pulse_params_t *q = p;
+static void gaussian_V(double t, const void *p, cmatrix_t *V) {
+  const pulse_params_t *q = (const pulse_params_t *)p;
   double v = q->eps * exp(-t * t / (2.0 * q->tau * q->tau));
 
   put(V, 0, 1, v, 0.0);
@@ -61,7 +61,7 @@ static void gaussian_V(double t, void *p, cmatrix_t *V) {
 
 static const cmatrix_t *g_band = NULL;
 
-static void band_V(double t, void *p, cmatrix_t *V) {
+static void band_V(double t, const void *p, cmatrix_t *V) {
   (void)t;
   (void)p;
 
@@ -78,6 +78,8 @@ static cvector_t *ground_state(int n) {
   return v;
 }
 
+typedef void (*tdpt_v_fn)(double, void *, cmatrix_t *);
+
 static void demo_series(void) {
   printf("  1. Series truncation vs exact two-level solution\n");
   printf("     E = {0, 0.2}, constant coupling V = 0.1 (V t ~ 1 at t ~ 10)\n");
@@ -92,8 +94,8 @@ static void demo_series(void) {
   double half = 0.5 * (E[1] - E[0]);
   double W = sqrt(half * half + V * V);
   for (int k = 0; k < 5; k++) {
-    tdpt_result_t *r = tdpt_dyson(2, E, constant_V, &p, psi0, 0.0, ts[k],
-                                  (int)(100 * ts[k]), 3);
+    tdpt_result_t *r = tdpt_dyson(2, E, (tdpt_v_fn)constant_V, &p, psi0, 0.0,
+                                  ts[k], (int)(100 * ts[k]), 3);
     if (r) {
       double exact = (V / W) * (V / W) * pow(sin(W * ts[k]), 2);
       printf("     %-6.1f  %-10.6f  %-10.6f  %-10.6f  %-10.6f\n", ts[k], exact,
@@ -112,16 +114,17 @@ static void demo_series(void) {
 }
 
 static void demo_adiabatic(void) {
-  printf("  2. Adiabatic suppression by a Gaussian pulse (omega_fi = 1.1, V0 = "
-         "0.03)\n");
-  printf("     %-6s  %-14s  %-14s\n", "tau", "P numeric", "P closed form");
+  printf(
+      "  2. Adiabatic suppression by a Gaussian pulse (\\omega_fi = 1.1, V0 = "
+      "0.03)\n");
+  printf("     %-6s  %-14s  %-14s\n", "\\tau", "P numeric", "P closed form");
   const double E[2] = {0.0, 1.1};
   const double taus[4] = {0.5, 1.0, 2.0, 3.0};
   cvector_t *psi0 = ground_state(2);
   for (int k = 0; k < 4; k++) {
     pulse_params_t p = {0.03, taus[k]};
-    tdpt_result_t *r = tdpt_dyson(2, E, gaussian_V, &p, psi0, -9.0 * taus[k],
-                                  9.0 * taus[k], 4000, 1);
+    tdpt_result_t *r = tdpt_dyson(2, E, (tdpt_v_fn)gaussian_V, &p, psi0,
+                                  -9.0 * taus[k], 9.0 * taus[k], 4000, 1);
     if (r) {
       complex_t ana = tdpt_gaussian_first_order(c_new(0.03, 0.0), 1.1, taus[k]);
       printf("     %-6.1f  %-14.6e  %-14.6e\n", taus[k],
@@ -132,8 +135,9 @@ static void demo_adiabatic(void) {
   }
 
   cvector_free(psi0);
-  printf("     (probability falls like exp(-omega^2 tau^2): slow pulses are "
-         "adiabatic)\n\n");
+  printf(
+      "     (probability falls like \\exp(-\\omega^2 \\tau^2): slow pulses are "
+      "adiabatic)\n\n");
 }
 
 static void demo_golden_rule(void) {
@@ -168,8 +172,8 @@ static void demo_golden_rule(void) {
 
   const double Ts[3] = {10.0, 20.0, 40.0};
   for (int k = 0; k < 3; k++) {
-    tdpt_result_t *r = tdpt_dyson(n, E, band_V, NULL, psi0, 0.0, Ts[k],
-                                  (int)(30.0 * Ts[k]), 1);
+    tdpt_result_t *r = tdpt_dyson(n, E, (tdpt_v_fn)band_V, NULL, psi0, 0.0,
+                                  Ts[k], (int)(30.0 * Ts[k]), 1);
     if (r) {
       double P = 0.0;
 
@@ -193,7 +197,7 @@ static void demo_golden_rule(void) {
 }
 
 int main(void) {
-  printf(" > Time-dependent perturbation theory (Dyson series)\n\n");
+  printf(" > Time-dependent perturbation theory (Dyson series)\n");
 
   demo_series();
   demo_adiabatic();

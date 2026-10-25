@@ -1,18 +1,18 @@
 /*
  * QAOA: Quantum Approximate Optimization Algorithm on MaxCut
  *
- * NOTE: eg_31_vqe.c and eg_67_vqe_pauli_hamiltonian.c minimize the energy of a
+ * NOTE: eg_31_vqe.c and eg_67_vqe_pauli_hamiltonian.c minimize energy of a
  * quantum Hamiltonian. QAOA attacks a *classical* combinatorial problem
- * instead: the cost function is diagonal in the computational basis, and a
- * depth-p circuit of alternating "phase separator" e^{-i \gamma C} and
- * "mixer" \exp^{-i \beta \sum X} layers steers uniform superposition toward
- * good bitstrings
+ * instead: cost function is diagonal in computational basis, and a depth-p
+ * circuit of alternating "phase separator" \exp(-i \gamma C) and "mixer"
+ * \exp^(-i \beta \sum X) layers steers uniform superposition toward good
+ * bitstrings
  *
  * Problem: MaxCut on Petersen graph (10 vertices, 15 edges, triangle-free,
  * 3-regular). Its exact maximum cut is 12. At depth 1 every edge of a
  * triangle-free 3-regular graph has same closed-form expectation, so optimum is
- * <C> = |E| (1/2 + 1/(3 sqrt 3)) = 0.6925 |E| (Farhi et al. 2014), which
- * optimizer must reproduce; deeper circuits climb toward 12
+ * <C> = |E| (1/2 + 1/(3 sqrt(3))) = 0.6925 |E| (Reference: Farhi et al. 2014),
+ * which optimizer must reproduce; deeper circuits climb toward 12
  */
 
 #include "../physics/qaoa.h"
@@ -45,7 +45,7 @@ static void print_partition(int bitstring) {
 }
 
 int main(void) {
-  printf(" > QAOA: MaxCut on the Petersen graph\n\n");
+  printf(" > QAOA: MaxCut on Petersen graph\n");
 
   // Outer 5-cycle, five spokes, inner pentagram
   const int u[N_EDGE] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 5, 7, 9, 6, 8};
@@ -63,7 +63,7 @@ int main(void) {
          "2^%d bitstrings)\n\n",
          N_VERT, N_EDGE, c_max, N_VERT);
 
-  // Depth 1: compare the optimizer to the closed form
+  // Depth 1: compare optimizer to closed form
   double p1_exact = N_EDGE * (0.5 + 1.0 / (3.0 * sqrt(3.0)));
   qaoa_result_t r1 = qaoa_run(pr, 1, 4, 6, 0.4, 2026);
   printf("  Depth-1 optimum:\n");
@@ -72,7 +72,7 @@ int main(void) {
   printf("    closed form        = %.8f  (|E|(1/2 + 1/(3 sqrt 3)))\n",
          p1_exact);
   printf(
-      "    Wang p=1 formula   = %.8f  (evaluated at the optimized angles)\n\n",
+      "    Wang p=1 formula   = %.8f  (evaluated at optimized angles)\n\n",
       qaoa_maxcut_p1_expectation(pr, r1.gamma[0], r1.beta[0]));
 
   qaoa_result_free(&r1);

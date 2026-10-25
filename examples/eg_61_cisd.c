@@ -1,12 +1,12 @@
 /*
- * CISD in the Quantum-Chemistry Method Hierarchy: H2 and LiH
+ * CISD in Quantum-Chemistry Method Hierarchy: H2 and LiH
  *
  * NOTE: physics/cisd.c restricts FCI's fixed-electron-number Fock-space sector
- * further, to just the reference (HF) determinant plus all single and double
- * excitations out of it.
+ * further, to just reference (HF) determinant plus all single and double
+ * excitations out of it
  * eg_57_fci.c's RHF/CCSD/CCSD(T)/FCI ladder: for H2 (only 2 electrons) CISD is
  * exactly FCI, since no higher-than-double excitation is even possible; for LiH
- * it's a truncated approximation, sitting between RHF and FCI.
+ * it's a truncated approximation, sitting between RHF and FCI
  */
 
 #include "../core/matrix.h"
@@ -70,11 +70,12 @@ static void run_method_ladder(const char *label, basis_function_t **basis,
 }
 
 int main(void) {
-  printf(" > CISD and the Quantum-Chemistry Method Hierarchy\n\n");
+  printf(" > CISD and Quantum-Chemistry Method Hierarchy\n");
 
   {
     double R = 1.4;
-    double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+    double c0[3] = {0, 0, 0};
+    double c1[3] = {0, 0, R};
     basis_function_t *h0 = molint_basis_sto3g_h(c0);
     basis_function_t *h1 = molint_basis_sto3g_h(c1);
     basis_function_t *basis[2] = {h0, h1};
@@ -91,7 +92,8 @@ int main(void) {
 
   {
     double R = 3.015;
-    double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
+    double c_li[3] = {0, 0, 0};
+    double c_h[3] = {0, 0, R};
     basis_function_t *li_orbs[5];
     molint_basis_sto3g_li(c_li, li_orbs);
     basis_function_t *h_orb = molint_basis_sto3g_h(c_h);

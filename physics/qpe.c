@@ -23,22 +23,21 @@
  * matrix powers (up to floating-point matrix-multiplication rounding)
  *
  * Two entry points:
- * qpe_run()               applies circuit to a caller-supplied state
- *                         vector, in place. Both counting and target
- *                         registers are consumed; caller chooses their
- *                         initial values
- * qpe_estimate_phase()    high-level helper: given an eigenstate, prepares
- *                         full register, runs circuit, marginalizes
- *                         over target register, and returns full
- *                         probability distribution over 2^{n_count}
- *                         counting outcomes along with most-probable
- *                         phase estimate
+ * qpe_run()               applies circuit to a caller-supplied state vector, in
+ *                         place. Both counting and target registers are
+ *                         consumed; caller chooses their initial values
+ * qpe_estimate_phase()    high-level helper: given an eigenstate, prepares full
+ *                         register, runs circuit, marginalizes over target
+ *                         register, and returns full probability distribution
+ *                         over 2^{n_count} counting outcomes along with
+ *                         most-probable phase estimate
  *
  * Distribution is essential for physics: even for an exact eigenstate, when
  * \phi is not dyadic probability mass is spread over several neighboring bins,
  * and comparing exact distribution to closed-form Dirichlet kernel is how test
  * suite checks circuit
  */
+
 #include "qpe.h"
 #include "../core/complex.h"
 #include "../core/matrix.h"
@@ -69,20 +68,38 @@ void qpe_run(cvector_t *psi, int n_count, int n_target, const cmatrix_t *U) {
     targets[t] = n_count + t;
   }
 
+  // Precompute U^(2^i) for i = 0..n_count-1 via repeated squaring:
+  //   pow[0] = U, pow[i] = pow[i-1] * pow[i - 1]
+  cmatrix_t **pow = malloc((size_t)n_count * sizeof(cmatrix_t *));
+  if (!pow) {
+    return;
+  }
+
+  pow[0] = cmatrix_copy(U);
+  if (!pow[0]) {
+    free(pow);
+
+    return;
+  }
+
+  for (int i = 1; i < n_count; i++) {
+    pow[i] = cmatrix_multiply(pow[i - 1], pow[i - 1]);
+    if (!pow[i]) {
+      for (int j = 0; j < i; j++) {
+        cmatrix_free(pow[j]);
+      }
+      free(pow);
+
+      return;
+    }
+  }
+
   for (int k = 0; k < n_count; k++) {
     qstate_apply_gate1(psi, n_qubits, counting[k], hadamard_gate);
   }
 
-  // Precompute U^(2^i) for i = 0..n_count-1 via repeated squaring:
-  //   pow[0] = U, pow[i] = pow[i-1] * pow[i - 1]
-  cmatrix_t **pow = malloc((size_t)n_count * sizeof(cmatrix_t *));
-  pow[0] = cmatrix_copy(U);
-  for (int i = 1; i < n_count; i++) {
-    pow[i] = cmatrix_multiply(pow[i - 1], pow[i - 1]);
-  }
-
-  // Counting qubit k (0 = most - significant / first) controls U^(2^(n_count -
-  // 1 - k)), so first qubit gets highest power : convention so inverse-QFT
+  // Counting qubit k (0 = most-significant / first) controls U^(2^(n_count -
+  // 1 - k)), so first qubit gets highest power: convention so inverse-QFT
   // readout comes out as a big-endian binary fraction of \phi
   for (int k = 0; k < n_count; k++) {
     int exponent = n_count - 1 - k;

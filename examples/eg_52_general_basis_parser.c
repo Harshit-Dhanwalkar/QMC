@@ -13,7 +13,7 @@
  * published STO-3G parameters (Reference: Hehre, Stewart & Pople 1969). It
  * demonstrates general path any new element/basis combination would take from
  * here: write/download a Gaussian94-format .gbs text file, parse it once, then
- * build any molecule made of elements it contains.
+ * build any molecule made of elements it contains
  */
 
 #include "../physics/basis_parser.h"
@@ -31,7 +31,7 @@
  * every SP shell's s-/p-parts respectively) are same "universal" STO-3G values
  * used across the periodic table; only per-element exponents change. Same
  * numeric family already validated in tests/test_basis_parser.c against the
- * hardcoded H/Li builders.
+ * hardcoded H/Li builders
  */
 static const char *STO3G_H_O_TEXT =
     "!  STO-3G  (Hehre, Stewart & Pople 1969)\n"
@@ -54,9 +54,9 @@ static const char *STO3G_H_O_TEXT =
     "****\n";
 
 int main(void) {
-  printf(" > General Basis-Set-File Parser: Water (H2O), STO-3G\n\n");
+  printf(" > General Basis-Set-File Parser: Water (H2O), STO-3G\n");
 
-  printf("  Step 1: parse the STO-3G Gaussian94-format text (H + O)\n\n");
+  printf("  Step 1: parse the STO-3G Gaussian94-format text (H + O)\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_H_O_TEXT);
   if (!bs) {
@@ -78,10 +78,10 @@ int main(void) {
 
   printf("\n");
 
-  /* Near-experimental water geometry: r(O-H) = 0.9584 Angstrom = 1.8111 bohr,
-   * HOH angle = 104.45 degrees, O at the origin with the bisector along -z. */
+  // Near-experimental water geometry: r(O-H) = 0.9584 Angstrom = 1.8111 bohr,
+  // HOH angle = 104.45 degrees, O at the origin with the bisector along -z
   printf("  Step 2: build the water molecule (near-experimental geometry: "
-         "r(O-H)=1.8111 bohr, angle=104.45 deg)\n\n");
+         "r(O-H)=1.8111 bohr, angle=104.45 deg)\n");
 
   double r_oh = 1.8111;
   double half_angle_rad = (104.45 / 2.0) * M_PI / 180.0;
@@ -105,13 +105,13 @@ int main(void) {
   }
 
   printf("    Total basis functions: %d (O: 1s,2s,2px,2py,2pz = 5, H x2: 1s "
-         "each = 2)\n\n",
+         "each = 2)\n",
          n_basis);
 
   molecule_t *mol = molecule_alloc(3, charges, centers);
 
   printf("  Step 3: general N-basis RHF (10 valence+core electrons: O has 8, "
-         "each H has 1)\n\n");
+         "each H has 1)\n");
 
   molecular_hf_result_t *scf =
       molecular_rhf(basis, n_basis, mol, 10, 1e-9, 300);
@@ -121,8 +121,8 @@ int main(void) {
     printf("    Water/STO-3G RHF total energy: %.6f Hartree (converged=%d, %d "
            "iterations)\n"
            "    (Reference: STO-3G water near this geometry is documented in "
-           "theoretically at approximately -74.94 Hartree. The result, exact "
-           "digits depend on the precise geometry used)\n\n",
+           "theoretically at approximately -74.94 Hartree. Result, exact "
+           "digits depend on precise geometry used)\n",
            scf->total_energy, scf->converged, scf->iterations);
 
     printf("    Occupied orbital energies (Hartree):\n");

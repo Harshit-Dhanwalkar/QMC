@@ -44,6 +44,14 @@ int main(void) {
   }
 
   double *sweep_idx = malloc((size_t)n_sweeps * sizeof *sweep_idx);
+  if (!sweep_idx) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    finite_dmrg_result_free(r);
+
+    return 1;
+  }
+
   for (int s = 0; s < n_sweeps; s++) {
     sweep_idx[s] = s + 1;
     printf("    sweep %d:  E=%.10f\n", s + 1, r->sweep_energy[s]);
@@ -69,6 +77,15 @@ int main(void) {
   double *N_vals_d = malloc((size_t)n_N * sizeof *N_vals_d);
   double *e_infinite = malloc((size_t)n_N * sizeof *e_infinite);
   double *e_finite = malloc((size_t)n_N * sizeof *e_finite);
+  if (!N_vals_d || !e_infinite || !e_finite) {
+    fprintf(stderr, "Memory allocation failed\n");
+
+    free(N_vals_d);
+    free(e_infinite);
+    free(e_finite);
+
+    return 1;
+  }
 
   printf("  m=%d (small, truncation-limited), sweeping chain length N:\n",
          m_compare);

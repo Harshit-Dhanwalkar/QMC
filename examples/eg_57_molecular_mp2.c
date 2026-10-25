@@ -1,16 +1,16 @@
 /*
- * General Molecular MP2: Beyond the s-Orbital Restriction
+ * General Molecular MP2: Beyond s-Orbital Restriction
  *
  * NOTE: eg_32_mp2.c's MP2 is restricted to s-only atomic orbitals, so it can
- * only ever recover the l=0 slice of the true correlation energy - there's no
- * way to describe correlation into p, d, ... virtuals with that machinery.
- * molecular_mp2() : it works on the same general Gaussian-basis MO integrals
+ * only ever recover l=0 slice of true correlation energy - there's no way to
+ * describe correlation into p, d, ... virtuals with that machinery.
+ * molecular_mp2() : it works on same general Gaussian-basis MO integrals
  * ccsd_run() uses (McMurchie-Davidson AO integrals + molecular_ao_to_mo), so
  * real molecules with real angular momentum in their virtual space are fully in
- * scope.
+ * scope
  *
  * This runs RHF -> MP2 on LiH/STO-3G (which has genuine 2px/2py virtual
- * character on Li), both with and without a frozen Li 1s core.
+ * character on Li), both with and without a frozen Li 1s core
  */
 
 #include "../core/matrix.h"
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > General Molecular MP2: Correlation Energy for LiH/STO-3G\n\n");
+  printf(" > General Molecular MP2: Correlation Energy for LiH/STO-3G\n");
 
   double R = 3.015; // bohr, same near-equilibrium bond length as eg_47_ccsd
   double c_li[3] = {0.0, 0.0, 0.0};
@@ -43,11 +43,11 @@ int main(void) {
   printf("    RHF total energy: %.10f Hartree (%d iterations)\n\n",
          hf->total_energy, hf->iterations);
 
-  printf("  Step 2: transform integrals to the MO basis, run MP2\n\n");
+  printf("  Step 2: transform integrals to MO basis, run MP2\n\n");
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
   double *h_mo = malloc(36 * sizeof(double));
-  double *eri_mo = malloc(6 * 6 * 6 * 6 * sizeof(double));
+  double *eri_mo = malloc(6UL * 6UL * 6UL * 6UL * sizeof(double));
   molecular_ao_to_mo(h_ao, eri_ao, hf->C, 6, h_mo, eri_mo);
 
   molecular_mp2_result_t full =
@@ -66,10 +66,10 @@ int main(void) {
   printf("      (reference: -0.0126403353 Hartree, |diff| = %.2e)\n\n",
          fabs(frozen.e_mp2 - (-0.012640335346251669)));
 
-  printf("    Freezing the Li 1s core changes the correlation energy by only "
-         "%.2e Hartree (%.2f%%): 1s orbital is too tightly bound and too far "
-         "in energy from the virtuals to contribute much beyond-HF "
-         "correlation, exactly as chemical intuition expects.\n",
+  printf("    Freezing Li 1s core changes correlation energy by only %.2e "
+         "Hartree (%.2f%%): 1s orbital is too tightly bound and too far in "
+         "energy from virtuals to contribute much beyond-HF correlation, "
+         "exactly as chemical intuition expects\n",
          fabs(full.e_mp2 - frozen.e_mp2),
          100.0 * fabs(full.e_mp2 - frozen.e_mp2) / fabs(full.e_mp2));
 

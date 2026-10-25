@@ -4,7 +4,7 @@
  * UCC is implemented and validated in tests/test_ucc.c, but had no dedicated
  * example. Unlike CCSD's plain \exp(T) (not unitary), UCC's \exp(\kappa) with
  * anti-Hermitian \kappa is unitary by construction : a legitimate ansatz for
- * real quantum circuit. This example wires the full pipeline end to end:
+ * real quantum circuit. This example wires full pipeline end to end:
  *
  *   RHF -> MO integrals -> CCSD (for amplitudes) -> UCC generator ->
  *   state preparation -> energy expectation vs. exact FCI
@@ -12,7 +12,7 @@
  * and shows that seeding UCC's parameters directly from CCSD's converged
  * amplitudes already lands (for this 2-electron system) essentially exactly on
  * FCI ground state : physical basis for "UCCSD" as a practical VQE ansatz
- * initialization strategy.
+ * initialization strategy
  */
 
 #include "../core/complex.h"
@@ -29,10 +29,11 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > UCC Ansatz: CCSD-Seeded State Preparation for H2/STO-3G\n\n");
+  printf(" > UCC Ansatz: CCSD-Seeded State Preparation for H2/STO-3G\n");
 
   double R = 1.4;
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
   basis_function_t *basis[2] = {h0, h1};
@@ -40,7 +41,7 @@ int main(void) {
   double centers[2][3] = {{0, 0, 0}, {0, 0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  printf("  Step 1: RHF + MO integrals + CCSD (for amplitudes)\n\n");
+  printf("  Step 1: RHF + MO integrals + CCSD (for amplitudes)\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 2, mol, 2, 1e-12, 200);
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 2, mol);
   double *eri_ao = molecular_eri_tensor(basis, 2);
@@ -53,8 +54,8 @@ int main(void) {
                                     hf->total_energy, 1e-12, 100, &amp);
   printf("    CCSD total energy: %.10f Hartree\n\n", ccsd->total_energy);
 
-  printf("  Step 2: build the UCC generator from CCSD's converged T1/T2 "
-         "amplitudes\n\n");
+  printf(
+      "  Step 2: build UCC generator from CCSD's converged T1/T2 amplitudes\n");
   ucc_single_t *singles = NULL;
   double *theta_s = NULL;
   int n_singles = 0;
@@ -71,8 +72,8 @@ int main(void) {
   cmatrix_t *generator = ucc_build_generator(
       n_modes, singles, theta_s, n_singles, doubles, theta_d, n_doubles);
 
-  /* Hartree-Fock reference determinant: modes 0,1 occupied (two lowest spin
-   * orbitals), big-endian bit convention matching second_quant.c. */
+  // Hartree-Fock reference determinant: modes 0,1 occupied (2 lowest spin
+  // orbitals), big-endian bit convention matching second_quant.c
   cvector_t *hf_ref = cvector_alloc(1 << n_modes);
   for (int k = 0; k < (1 << n_modes); k++) {
     hf_ref->data[k] = c_zero();
@@ -83,7 +84,7 @@ int main(void) {
   cvector_t *psi = ucc_prepare_state(generator, hf_ref);
 
   printf("\n  Step 3: energy expectation "
-         "<\\psi(\\theta_{CCSD})|H|\\psi(\\theta_{CCSD})> vs. exact FCI\n\n");
+         "<\\psi(\\theta_{CCSD})|H|\\psi(\\theta_{CCSD})> vs. exact FCI\n");
   cmatrix_t *H = second_quant_build_molecular_hamiltonian(
       2, h_mo, eri_mo, molecule_nuclear_repulsion(mol));
 
@@ -115,7 +116,7 @@ int main(void) {
   printf("    UCC is variational (energy >= FCI always); CCSD-seeded "
          "parameters already essentially saturate that bound for this "
          "2-electron system, justification for using CCSD amplitudes as a VQE "
-         "UCCSD initialization.\n");
+         "UCCSD initialization\n");
 
   cvector_free(psi);
   cvector_free(hf_ref);

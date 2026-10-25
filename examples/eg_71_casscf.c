@@ -3,12 +3,12 @@
  *
  * NOTE: eg_68_cisd.c's CISD diagonalizes a fixed-orbital Hamiltonian
  * (RHF orbitals never change). CASSCF goes further: it simultaneously
- * re-optimizes the molecular orbitals themselves alongside a full CI
- * within a chosen "active space" of orbitals, recovering the multi-
- * reference (static) correlation that single-reference methods like RHF,
- * MP2, and CCSD can struggle with. This example shows the orbitals
- * actually rotating: each iteration's active-space CI energy improves as
- * the orbital-optimization loop proceeds.
+ * re-optimizes molecular orbitals themselves alongside a full CI within a
+ * chosen "active space" of orbitals, recovering multi- reference (static)
+ * correlation that single-reference methods like RHF, MP2, and CCSD can
+ * struggle with. This example shows orbitals actually rotating: each
+ * iteration's active-space CI energy improves as orbital-optimization loop
+ * proceeds
  */
 
 #include "../physics/casscf.h"
@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > CASSCF: Simultaneous Orbital + CI Optimization\n\n");
+  printf(" > CASSCF: Simultaneous Orbital + CI Optimization\n");
 
   double R = 3.015;
   double c_li[3] = {0, 0, 0}, c_h[3] = {0, 0, R};
@@ -35,21 +35,19 @@ int main(void) {
   printf("  LiH/STO-3G, R=%.3f bohr\n", R);
   printf("  RHF energy:            %.8f Hartree\n\n", hf->total_energy);
 
-  printf("  CASSCF(2e,2o), freezing the Li 1s core orbital:\n");
+  printf("  CASSCF(2e,2o), freezing Li 1s core orbital:\n");
   casscf_result_t *r1 = casscf_run(basis, 6, mol, hf->C, 1, 2, 2, 1e-6, 60);
-  printf("    Converged in %d iterations (final |grad|=%.2e)\n",
-         r1->iterations, r1->grad_norm);
-  printf("    CASSCF(2,2) energy:  %.8f Hartree\n",
-         r1->total_energy);
+  printf("    Converged in %d iterations (final |grad|=%.2e)\n", r1->iterations,
+         r1->grad_norm);
+  printf("    CASSCF(2,2) energy:  %.8f Hartree\n", r1->total_energy);
   printf("    Correlation recovered vs RHF: %.6f Hartree\n\n",
          hf->total_energy - r1->total_energy);
 
   printf("  CASSCF(4e,3o), all 4 electrons active, no frozen core:\n");
   casscf_result_t *r2 = casscf_run(basis, 6, mol, hf->C, 0, 3, 4, 1e-6, 60);
-  printf("    Converged in %d iterations (final |grad|=%.2e)\n",
-         r2->iterations, r2->grad_norm);
-  printf("    CASSCF(4,3) energy:  %.8f Hartree\n",
-         r2->total_energy);
+  printf("    Converged in %d iterations (final |grad|=%.2e)\n", r2->iterations,
+         r2->grad_norm);
+  printf("    CASSCF(4,3) energy:  %.8f Hartree\n", r2->total_energy);
   printf("    Correlation recovered vs RHF: %.6f Hartree\n\n",
          hf->total_energy - r2->total_energy);
 

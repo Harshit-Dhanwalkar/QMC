@@ -4,17 +4,17 @@
  * molecular_rhf() forces \alpha and \beta electrons into same spatial orbitals,
  * paired up two at a time. molecular_uhf() \alpha and \beta electrons each get
  * their own density matrix and their own Fock operator, self-consistently
- * coupled only through the shared Coulomb (J) term built from the total density
+ * coupled only through shared Coulomb (J) term built from total density
  * (Reference: UHF equations, Szabo & Ostlund Ch. 3.8)
  *
  * This example runs three cases that build on each other:
- *   1. The hydrogen atom (1 electron - the simplest possible open shell,
- *      no beta electrons at all).
- *   2. The lithium atom's doublet ground state (2 alpha, 1 beta - a real
- *      radical), checked against an independent reference.
+ *   1. Hydrogen atom (1 electron - simplest possible open shell, no \beta
+ *      electrons at all)
+ *   2. Lithium atom's doublet ground state (2 alpha, 1 beta - a real radical),
+ *      checked against an independent reference
  *   3. Li+ (2 electrons, closed-shell) run through same UHF code with n_alpha =
  *      n_beta, to show that UHF reduces to RHF exactly when there's nothing
- *      asymmetric left to describe.
+ *      asymmetric left to describe
  */
 
 #include "../physics/molecular_hf.h"
@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 static void run_h_atom(void) {
-  printf("  === Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta) ===\n\n");
+  printf("  === Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta) ===\n");
 
   double center[3] = {0.0, 0.0, 0.0};
   basis_function_t *h_orb = molint_basis_sto3g_h(center);
@@ -35,7 +35,7 @@ static void run_h_atom(void) {
 
   molecular_uhf_result_t *uhf = molecular_uhf(&h_orb, 1, mol, 1, 0, 1e-10, 100);
   if (!uhf) {
-    fprintf(stderr, "  UHF failed to allocate for H atom.\n\n");
+    fprintf(stderr, "  UHF failed to allocate for H atom\n\n");
 
     molecule_free(mol);
     basis_function_free(h_orb);
@@ -63,11 +63,11 @@ static molecular_uhf_result_t *run_li(int n_alpha, int n_beta,
 }
 
 int main(void) {
-  printf(" > Unrestricted Hartree-Fock: Open-Shell Radicals\n\n");
+  printf(" > Unrestricted Hartree-Fock: Open-Shell Radicals\n");
 
   run_h_atom();
 
-  printf("  === Lithium atom (doublet radical: 2 alpha, 1 beta) ===\n\n");
+  printf("  === Lithium atom (doublet radical: 2 \\alpha, 1 \\beta) ===\n");
 
   double li_center[3] = {0.0, 0.0, 0.0};
   basis_function_t *li[5];
@@ -96,9 +96,8 @@ int main(void) {
   printf("  converged=%s in %d iterations\n", doublet->converged ? "yes" : "no",
          doublet->iterations);
   printf("  E_total = %.10f Hartree\n", doublet->total_energy);
-  printf(
-      "  (independent reference: -7.3155259813 Hartree, |diff| = %.2e)\n",
-      fabs(doublet->total_energy - (-7.3155259813)));
+  printf("  (independent reference: -7.3155259813 Hartree, |diff| = %.2e)\n",
+         fabs(doublet->total_energy - (-7.3155259813)));
 
   printf("  alpha orbital energies:");
   for (int k = 0; k < doublet->n_basis; k++) {
