@@ -42,6 +42,7 @@ static char *slurp(const char *path) {
   char *buf = malloc((size_t)len + 1);
   if (!buf) {
     fclose(f);
+
     return NULL;
   }
 
@@ -168,8 +169,8 @@ static void test_2d_round_trip(void) {
 
   parsed_vtk_t parsed = {0};
   int ok = parse_vtk(content, &parsed);
-  check_true(ok, "independent parser accepts the written file as valid "
-                 "legacy VTK ASCII");
+  check_true(
+      ok, "independent parser accepts written file as valid legacy VTK ASCII");
 
   if (ok) {
     check_true(parsed.nx == 3 && parsed.ny == 2 && parsed.nz == 1,
@@ -213,7 +214,7 @@ static void test_3d_field(void) {
 
   parsed_vtk_t parsed = {0};
   int ok = content && parse_vtk(content, &parsed);
-  check_true(ok, "independent parser accepts the 3D file");
+  check_true(ok, "independent parser accepts 3D file");
   if (ok) {
     check_true(parsed.nx == 2 && parsed.ny == 2 && parsed.nz == 2,
                "3D DIMENSIONS round-trips exactly (2 2 2)");
@@ -243,7 +244,7 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
-  printf(" > Test VTK writer ===\n");
+  printf(" > VTK writer test:\n");
 
   test_2d_round_trip();
   test_3d_field();

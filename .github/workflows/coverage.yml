@@ -57,7 +57,6 @@ jobs:
             --output-directory coverage-html \
             --title "QMC coverage report" \
             --legend \
-            --highlight \
             --prefix "$PWD"
 
       - name: Upload coverage HTML as artifact

@@ -1,12 +1,12 @@
 /*
- * Test: distance-3 rotated surface code ([[9,1,3]]).
+ * Test: distance-3 rotated surface code ([[9,1,3]])
  *
  * NOTE: Checks all 28 "no error or single-qubit error" cases (9 qubits * 3
  * Pauli types + no-error) against the syndrome and canonical (qubit, type)
  * correction and verifies exact recovery of the original logical amplitudes in
  * every case - including 4 syndrome-aliased pairs, where two distinct physical
  * errors share a syndrome but the canonical correction still restores the state
- * exactly (they differ by a stabilizer element, not a logical operator).
+ * exactly (they differ by a stabilizer element, not a logical operator)
  */
 
 #include "../core/complex.h"
@@ -33,6 +33,7 @@ static double cabs2_diff(complex_t a, complex_t b) {
 static void check_state_exact(complex_t got_a, complex_t got_b, complex_t exp_a,
                               complex_t exp_b, const char *label) {
   double err = sqrt(cabs2_diff(got_a, exp_a) + cabs2_diff(got_b, exp_b));
+
   printf("  %s: err=%.2e\n", label, err);
   if (err > 1e-9) {
     printf("  FAIL: %s\n", label);
@@ -128,7 +129,7 @@ static void run_all_errors(complex_t alpha, complex_t beta,
 }
 
 int main(void) {
-  printf("  > Test QEC surface17:\n");
+  printf("  > QEC surface17 tests:\n");
 
   complex_t alpha1 = c_real(0.6);
   complex_t beta1 = c_new(0.7368487952023082, 0.31153467384692046);

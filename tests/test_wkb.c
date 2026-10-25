@@ -1,16 +1,16 @@
 /*
- * Verifies WKB / Bohr-Sommerfeld quantization.
+ * Verifies WKB / Bohr-Sommerfeld quantization
  *
- * For the harmonic oscillator V(x) = 1/2x^2 (\hbar=m=\omega=1):
+ * For harmonic oscillator V(x) = 1/2x^2 (\hbar = m = \omega = 1):
  *   Exact: E_n = n + 1/2
  *   WKB:   \cint p dx = (n+1/2)*2 \pi * \hbar -> E_n = n + 1/2  (exact for HO)
  *
- * The HO is special where WKB is exact.
+ * HO is special where WKB is exact
  *
  * Also tests non-trivial potential: V(x) = x^4
- *   WKB E_n = C*(n+1/2)^(4/3) where C = (3 \pi/4)^(2/3) *
- * \Gamma(3/4)/\Gamma(1/4) * ... just verify numerical quadrature gives
- *  self-consistent results.
+ *   WKB E_n = C*(n+1/2)^(4/3)
+ * where C = (3 \pi/4)^(2/3) * \Gamma(3/4)/\Gamma(1/4) * ... just verify
+ * numerical quadrature gives self-consistent results
  */
 
 #include "../core/utils.h"
@@ -28,7 +28,7 @@ static int check(const char *name, double got, double expected, double tol) {
 }
 
 int main(void) {
-  printf(" > Testing WKB / Bohr-Sommerfeld quantization...\n\n");
+  printf(" > WKB / Bohr-Sommerfeld quantization tests:\n");
   int all_pass = 1;
 
   // Harmonic oscillator: WKB is exact
@@ -38,15 +38,15 @@ int main(void) {
     double E_wkb = wkb_energy_harmonic(n, 1.0, 1.0);
     double E_exact = n + 0.5;
     char label[64];
+
     snprintf(label, sizeof label, "E_%d (WKB)", n);
     all_pass &= check(label, E_wkb, E_exact, 0.01);
   }
 
   // Bohr-Sommerfeld action integral
-  /* For HO at E=0.5: action = 2 * integral_{-1}^{1} * sqrt(2*(E-V)) dx
-   *                         = 2 * integral_{-1}^{1} * sqrt(1-x^2) dx = \pi
-   * Quantization: action/(2 * \pi) = (n+1/2) -> n=0 at action = \pi
-   */
+  // For HO at E=0.5: action = 2 * \int_{-1}^{1} * \sqrt(2*(E-V)) dx
+  //                         = 2 * \int_{-1}^{1} * \sqrt(1-x^2) dx = \pi
+  // Quantization: action/(2 * \pi) = (n+1/2) -> n=0 at action = \pi
   printf("\n   Bohr-Sommerfeld action integral for HO at E=0.5:\n");
   double action = wkb_action_integral_harmonic(0.5, 1.0, 1.0);
   // Expected: \pi (= (n+1/2)* 2 * \pi * \hbar with n=0, \hbar=1)
@@ -55,12 +55,10 @@ int main(void) {
 
   // Tunneling probability through rectangular barrier
   printf("\n   WKB tunneling: rectangular barrier V0=2, width=1:\n");
-  /*
-    T = \exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E)
-   / hbar_sq_2m)
-    with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1): kappa =
-   \sqrt((2-1)/0.5) = \sqrt(2) ~= 1.41421356
-  */
+  // T = \exp(-2 * \kappa * L), \kappa = \sqrt(2m(V0-E)) / \hbar = \sqrt((V0-E)
+  // / hbar_sq_2m)
+  // with hbar_sq_2m = \hbar^2/(2m) = 0.5 (\hbar=1, m=1): \kappa =
+  // \sqrt((2-1)/0.5) = \sqrt(2) ~= 1.41421356
   double E = 1.0;
   double V0 = 2.0;
   double width = 1.0;

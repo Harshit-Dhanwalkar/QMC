@@ -1,5 +1,5 @@
 /*
- * Test: Quantum Phase Estimation (QPE), physics/qpe.c.
+ * Test: Quantum Phase Estimation (QPE)
  *
  * Closed-form result (Refernce: Nielsen & Chuang eq. 5.34): for a single-qubit
  * eigenstate with exact eigenphase \phi, n_count counting qubits, the
@@ -7,8 +7,8 @@
  *
  *   P(x) = (1/N^2) * |\sum_{k=0}^{N-1} \exp(2 * \pi * i * k * (\phi - x/N))|^2,
  *          N=2^n_count
- * which collapses to a delta function (P=1 at x = \phi*N) whenever \phi*N is an
- * integer, and a sinc^2-like spread otherwise.
+ * which collapses to a delta function (P=1 at x = \phi * N) whenever \phi * N
+ * is an integer, and a sinc^2-like spread otherwise
  *
  * 1. Single-qubit target, phase gate diag(1, \exp^{2 * \pi * i * \phi}) with
  *    eigenstate |1>, phi=3/8 exactly representable with n_count=3 bits: exact
@@ -49,9 +49,9 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-/* Closed-form QPE distribution (Nielsen & Chuang eq. 5.34) for a
- * single-eigenstate exact-phase input, computed independently of qpe.c for
- * cross-checking the full C-computed distribution, not just its peak */
+// Closed-form QPE distribution (Nielsen & Chuang eq. 5.34) for a
+// single-eigenstate exact-phase input, computed independently of qpe.c for
+// cross-checking the full C-computed distribution, not just its peak
 static double closed_form_prob(double phi, int n_count, int x) {
   long long N = 1LL << n_count;
   double re = 0.0;
@@ -68,7 +68,8 @@ static double closed_form_prob(double phi, int n_count, int x) {
 }
 
 static void test_h2_exact_phase(void) {
-  printf("test_qpe_exact_phase_3_8:\n");
+  printf("  === Test: qpe exact phase 3/8 ===\n");
+
   double phi = 3.0 / 8.0;
   int n_count = 3;
 
@@ -96,7 +97,8 @@ static void test_h2_exact_phase(void) {
 }
 
 static void test_inexact_phase_vs_closed_form(void) {
-  printf("test_qpe_inexact_phase_vs_closed_form:\n");
+  printf("  === Test: qpe inexact phase vs closed form ===\n");
+
   double phi = 0.2;
   int n_count = 5;
 
@@ -143,9 +145,10 @@ static void test_inexact_phase_vs_closed_form(void) {
 }
 
 static void test_two_qubit_target_register(void) {
-  printf("test_qpe_two_qubit_target:\n");
-  /* U = diag(1, 1, 1, \exp^{2 * \pi * i * \phi}) on 2 qubits, eigenstate |11>:
-   * exercises multi-qubit-target path of qstate_apply_controlled_unitary. */
+  printf("  === Test: qpe two qubit target ===\n");
+
+  // U = diag(1, 1, 1, \exp^{2 * \pi * i * \phi}) on 2 qubits, eigenstate |11>:
+  // exercises multi-qubit-target path of qstate_apply_controlled_unitary
   double phi = 0.25;
   int n_count = 2;
 
@@ -180,6 +183,8 @@ static void test_two_qubit_target_register(void) {
 }
 
 int main(void) {
+  printf(" > Quantum Phase Estimation (QPE) tests:\n");
+
   test_h2_exact_phase();
   test_inexact_phase_vs_closed_form();
   test_two_qubit_target_register();

@@ -1,15 +1,15 @@
 /*
- * Test: Quantum teleportation, superdense coding, CHSH/Bell inequality.
+ * Test: Quantum teleportation, superdense coding, CHSH/Bell inequality
  *
  * 1. Teleportation: for a fixed unknown state (\alpha, \beta), all 4 possible
  *    Bell-measurement outcomes (forced deterministically via u1,u2) must
  *    produce, after correction, Bob's qubit exactly matching original state.
  * 2. Superdense coding: all 4 two-bit messages must decode exactly (protocol is
- *    100% deterministic by construction).
- * 3. CHSH: correlator must match the known closed form \cos(\theta - \phi);
- *    optimal angle choice must saturate Tsirelson bound 2* \sqrt(2), and a
- *    naive/suboptimal angle choice must NOT reach it (sanity check that the
- *    module isn't trivially always returning same S).
+ *    100% deterministic by construction)
+ * 3. CHSH: correlator must match known closed form \cos(\theta - \phi); optimal
+ *    angle choice must saturate Tsirelson bound 2* \sqrt(2), and a
+ *    naive/suboptimal angle choice must NOT reach it (sanity check that module
+ *    isn't trivially always returning same S)
  */
 
 #include "../core/complex.h"
@@ -40,7 +40,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_teleport_all_outcomes(void) {
-  printf("test_teleport_all_outcomes:\n");
+  printf("  === Test: Teleport all outcomes ===\n");
 
   complex_t alpha = c_real(0.6);
   complex_t beta = c_new(0.7368487952023082, 0.31153467384692046);
@@ -48,7 +48,8 @@ static void test_teleport_all_outcomes(void) {
   // NOTE: u values that force each of 4 measurement outcomes: qstate_measure
   // _qubit picks outcome 0 if u < p0, else 1. Bell measurement here gives
   // p0=0.5 for both bits, so u=0.1 forces 0 and u=0.9 forces 1.
-  double u_for_0 = 0.1, u_for_1 = 0.9;
+  double u_for_0 = 0.1;
+  double u_for_1 = 0.9;
   const double u1_vals[2] = {u_for_0, u_for_1};
   const double u2_vals[2] = {u_for_0, u_for_1};
 
@@ -61,7 +62,8 @@ static void test_teleport_all_outcomes(void) {
                "m1=%d m2=%d: measured bits match forced outcome", r.m1, r.m2);
       check_true(r.m1 == i && r.m2 == j, label_m);
 
-      char label_a[64], label_b[64];
+      char label_a[64];
+      char label_b[64];
       snprintf(label_a, sizeof label_a, "m1=%d m2=%d: Bob \\alpha.re", i, j);
       snprintf(label_b, sizeof label_b, "m1=%d m2=%d: Bob \\beta.re", i, j);
       check_close(r.bob_alpha.re, alpha.re, 1e-9, label_a);
@@ -72,7 +74,7 @@ static void test_teleport_all_outcomes(void) {
 }
 
 static void test_superdense_all_messages(void) {
-  printf("test_superdense_all_messages:\n");
+  printf("  === Test: Superdense all messages ===\n");
 
   for (int b1 = 0; b1 <= 1; b1++) {
     for (int b2 = 0; b2 <= 1; b2++) {
@@ -86,13 +88,14 @@ static void test_superdense_all_messages(void) {
 }
 
 static void test_chsh_correlator_closed_form(void) {
-  printf("test_chsh_correlator_closed_form:\n");
+  printf("  === Test: CHSH correlator closed form ===\n");
 
   const double pairs[4][2] = {
       {0.0, 0.0}, {0.3, 0.7}, {1.2, -0.5}, {M_PI / 4, -M_PI / 4}};
 
   for (int i = 0; i < 4; i++) {
-    double theta = pairs[i][0], phi = pairs[i][1];
+    double theta = pairs[i][0];
+    double phi = pairs[i][1];
     double e = qi_chsh_correlator(theta, phi);
     double expected = cos(theta - phi);
 
@@ -104,10 +107,12 @@ static void test_chsh_correlator_closed_form(void) {
 }
 
 static void test_chsh_bell_violation(void) {
-  printf("test_chsh_bell_violation:\n");
+  printf("  === Test: CHSH bell violation ===\n");
 
-  double a = 0.0, a_prime = M_PI / 2.0;
-  double b = M_PI / 4.0, b_prime = 3.0 * M_PI / 4.0;
+  double a = 0.0;
+  double a_prime = M_PI / 2.0;
+  double b = M_PI / 4.0;
+  double b_prime = 3.0 * M_PI / 4.0;
 
   double S = qi_chsh_S(a, a_prime, b, b_prime);
   double tsirelson = 2.0 * sqrt(2.0);
@@ -117,10 +122,9 @@ static void test_chsh_bell_violation(void) {
          S, tsirelson);
 
   check_close(S, tsirelson, 1e-9,
-              "optimal angles saturate the Tsirelson bound 2 * \\sqrt(2)");
-  check_true(
-      S > 2.0,
-      "quantum S exceeds the classical (local hidden variable) bound of 2");
+              "optimal angles saturate Tsirelson bound 2 * \\sqrt(2)");
+  check_true(S > 2.0,
+             "quantum S exceeds classical (local hidden variable) bound of 2");
 
   double S_generic = qi_chsh_S(0.1, 0.4, 0.9, 1.3);
   printf("  S (generic angles) = %.8f\n", S_generic);
@@ -129,6 +133,9 @@ static void test_chsh_bell_violation(void) {
 }
 
 int main(void) {
+  printf(" > Quantum teleportation, superdense coding, CHSH/Bell inequality "
+         "tests:\n");
+
   test_teleport_all_outcomes();
   test_superdense_all_messages();
   test_chsh_correlator_closed_form();

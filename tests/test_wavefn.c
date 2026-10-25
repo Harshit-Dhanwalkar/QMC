@@ -1,16 +1,16 @@
 /*
  * Test: physics/wavefn.c's momentum-space expectation values
  * (wavefunction_expect_p, wavefunction_expect_p2, wavefunction_delta_p),
- * and physics/uncertainty.c's compute_uncertainties/compute_energy_expectation.
+ * and physics/uncertainty.c's compute_uncertainties/compute_energy_expectation
  *
- *   1. core/utils.c's position_to_momentum called fft_shift() after the
- *      FFT, but its only two consumers (wavefunction_expect_p/p2 below)
- *      both index the result using the standard unshifted fft bin order.
+ *   1. core/utils.c's position_to_momentum called fft_shift() after FFT, but
+ *     its only two consumers (wavefunction_expect_p/p2 below) both index the
+ *     result using the standard unshifted fft bin order
  *   2. core/utils.c's position_to_momentum used fft_normalized's unitary-DFT (1
  *      / \sqrt(N)) scaling convention directly, with no further rescaling
  *      position-to-momentum-space normalization for a continuous wavefunction
  *      needs an explicit dx-dependent prefactor (\phi(k) = (dx / \sqrt(2 *
- *      \pi)) * FFT_raw(\psi_x)), "signal processing" convention.
+ *      \pi)) * FFT_raw(\psi_x)), "signal processing" convention
  */
 
 #include "../physics/uncertainty.h"
@@ -30,9 +30,8 @@ static void check_close(double got, double expected, double tol,
   }
 }
 
-/* Build the exact QHO ground state (natural units: hbar=m=omega=1),
- * \psi(x) = \pi^(-1/4) * \exp(-x^2/2), on a grid of n points over [-L/2,L/2].
- */
+// Build the exact QHO ground state (natural units: \hbar= m = \omega = 1),
+// \psi(x) = \pi^(-1/4) * \exp(-x^2/2), on a grid of n points over [-L/2,L/2]
 static wavefunction_t *make_qho_ground_state(int n, double L) {
   wavefunction_t *wf = wavefunction_alloc(n);
   wf->dx = L / (n - 1);
@@ -50,8 +49,8 @@ static wavefunction_t *make_qho_ground_state(int n, double L) {
 }
 
 static void test_qho_momentum_expectations_power_of_two_grid(void) {
-  printf("Test: QHO ground state momentum expectations on a power-of-two grid "
-         "(radix-2 FFT path)\n");
+  printf("  === Test: QHO ground state momentum expectations on a power-of-two "
+         "grid (radix-2 FFT path) ===\n");
 
   wavefunction_t *wf = make_qho_ground_state(2048, 16.0);
 
@@ -73,8 +72,8 @@ static void test_qho_momentum_expectations_power_of_two_grid(void) {
 }
 
 static void test_qho_momentum_expectations_non_power_of_two_grid(void) {
-  printf("Test: QHO ground state momentum expectations on a NON-power-of-two "
-         "grid\n");
+  printf("  === Test: QHO ground state momentum expectations on a "
+         "NON-power-of-two grid ===\n");
 
   wavefunction_t *wf = make_qho_ground_state(2001, 16.0);
 
@@ -85,8 +84,9 @@ static void test_qho_momentum_expectations_non_power_of_two_grid(void) {
 }
 
 static void test_uncertainty_principle_saturated(void) {
-  printf("Test: compute_uncertainties on the QHO ground state saturates "
-         "Heisenberg bound exactly, \\Delta_x * \\Delta_p = \\hbar/2 = 0.5\n");
+  printf(
+      "  === Test: compute_uncertainties on the QHO ground state saturates "
+      "Heisenberg bound exactly, \\Delta_x * \\Delta_p = \\hbar/2 = 0.5 ===\n");
 
   wavefunction_t *wf = make_qho_ground_state(2048, 16.0);
   uncertainty_t u = compute_uncertainties(wf);
@@ -102,27 +102,27 @@ static void test_uncertainty_principle_saturated(void) {
   wavefunction_free(wf);
 }
 
-static double harmonic_V(double x, void *params) {
+static double harmonic_V(double x, const void *params) {
   (void)params;
   return 0.5 * x * x;
 }
 
 static void test_energy_expectation_matches_exact_ground_energy(void) {
-  printf("Test: compute_energy_expectation on the QHO ground state matches "
-         "exact ground-state energy \\hbar * \\omega/2 = 0.5\n");
+  printf("  === Test: compute_energy_expectation on QHO ground state matches "
+         "exact ground-state energy \\hbar * \\omega/2 = 0.5 ===\n");
 
   wavefunction_t *wf = make_qho_ground_state(2048, 16.0);
 
   double H = compute_energy_expectation(wf, harmonic_V, NULL, 1.0);
-  check_close(H, 0.5, 1e-3,
-              "<H> = <T>+<V> = 0.25+0.25 = 0.5, matching the exact "
-              "ground-state energy\n");
+  check_close(
+      H, 0.5, 1e-3,
+      "<H> = <T>+<V> = 0.25+0.25 = 0.5, matching exact ground-state energy\n");
 
   wavefunction_free(wf);
 }
 
 int main(void) {
-  printf("=== physics/wavefn.c momentum-expectation-value tests ===\n\n");
+  printf(" > Momentum-expectation-value tests:\n");
 
   test_qho_momentum_expectations_power_of_two_grid();
   test_qho_momentum_expectations_non_power_of_two_grid();

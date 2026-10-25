@@ -1,20 +1,20 @@
 /*
- * Test: Variational Monte Carlo for helium ground state.
+ * Test: Variational Monte Carlo for helium ground state
  *
  * 1. vmc_trial_wavefunction / vmc_local_energy at fixed configurations must
  *    match reference values -> these are deterministic, no Monte Carlo noise
- *    involved.
+ *    involved
  * 2. vmc_run at a reasonable fixed b must satisfy variational theorem (E >=
  *    -2.9037 Hartree, experimental ground state) and fall below plain
  *    product-orbital result (-2.84765625 Hartree, from
  *    helium_ground_state_energy_analytic(2.0)) since Jastrow factor recovers
- *    some correlation energy.
+ *    some correlation energy
  * 3. Acceptance rates from vmc_run must be in a sane range (order 30-60%),
  *    confirming step sizes are reasonably tuned and sampler isn't degenerate
- *    (always/never accepting).
- * 4. vmc_optimize_b must find a minimum energy at or below the b=0 (pure
+ *    (always/never accepting)
+ * 4. vmc_optimize_b must find a minimum energy at or below b=0 (pure
  *    product-orbital) energy, with b_opt in physically expected range for this
- *    ansatz.
+ *    ansatz
  */
 
 #include "../core/random.h"
@@ -50,7 +50,7 @@ static void check_true(int cond, const char *label) {
 
 // Deterministic fixture values
 static void test_local_energy_fixtures(void) {
-  printf("test_local_energy_fixtures:\n");
+  printf("  === Test: Local energy fixtures ===\n");
 
   {
     vmc_walker_t w = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
@@ -80,7 +80,7 @@ static void test_local_energy_fixtures(void) {
 
 // Degenerate configuration guard (r1 -> 0 must not produce NaN/\infty)
 static void test_degenerate_guard(void) {
-  printf("test_degenerate_guard:\n");
+  printf("  === Test: degenerate guard ===\n");
 
   vmc_walker_t w = {{0.0, 0.0, 0.0}, {1.0, 0.0, 0.0}};
   double E_L = vmc_local_energy(&w, 2.0, 2.0, 0.2);
@@ -90,7 +90,7 @@ static void test_degenerate_guard(void) {
 }
 
 static void test_vmc_run_bounds(void) {
-  printf("test_vmc_run_bounds:\n");
+  printf("  === Test: VMC run bounds ===\n");
 
   double Z = 2.0, Zeff = 2.0;
   double b = 0.15;
@@ -123,9 +123,10 @@ static void test_vmc_run_bounds(void) {
 }
 
 static void test_optimize_b(void) {
-  printf("test_optimize_b:\n");
+  printf("  === Test: Optimize b ===\n");
 
-  double Z = 2.0, Zeff = 2.0;
+  double Z = 2.0;
+  double Zeff = 2.0;
   double b_opt;
   int burn = RUNNING_ON_VALGRIND ? 500 : 1000;
   int samples = RUNNING_ON_VALGRIND ? 20000 : 500000;
@@ -150,10 +151,11 @@ static void test_optimize_b(void) {
 }
 
 static void test_local_energy_z_neq_zeff_fixture(void) {
-  printf("test_local_energy_z_neq_zeff_fixture:\n");
+  printf("  === Test: Local energy z neq zeff fixture ===\n");
 
   vmc_walker_t w = {{0.5, 0.3, -0.2}, {-0.4, 0.6, 0.1}};
-  double Z = 1.0, Zeff = 2.0; // H- (Z=1) with Zeff=2 trial orbital
+  double Z = 1.0;    // H- (Z=1)
+  double Zeff = 2.0; // with Zeff=2 trial orbital
   double b = 0.10;
   double E_L = vmc_local_energy(&w, Z, Zeff, b);
 
@@ -165,9 +167,10 @@ static void test_local_energy_z_neq_zeff_fixture(void) {
 // (Reference: -7.2799133 Hartree, Frolov 1997 SVM calculation) with a tolerance
 // appropriate for simple Slater-Jastrow
 static void test_vmc_run_different_ion(void) {
-  printf("test_vmc_run_different_ion:\n");
+  printf("  === Test: VMC run different ion ===\n");
 
-  double Z = 3.0, Zeff = 2.6; // Li+
+  double Z = 3.0;    // Li+
+  double Zeff = 2.6; // with Zeff=2.6 trial orbital
   double b = 0.12;
   int burn = RUNNING_ON_VALGRIND ? 500 : 2000;
   int samples = RUNNING_ON_VALGRIND ? 10000 : 20000;
@@ -189,11 +192,12 @@ static void test_vmc_run_different_ion(void) {
 // n_replicas=1 must reproduce vmc_run exactly: vmc_run_parallel's stream 0 is
 // rng_seed(master_seed) with zero rng_jump() calls applied, identical to what
 // vmc_run does internally, and both route through same vmc_run_with_rng()
-// sampling loop.
+// sampling loop
 static void test_vmc_run_parallel_matches_serial_at_one_replica(void) {
-  printf("test_vmc_run_parallel_matches_serial_at_one_replica:\n");
+  printf("  === Test: vmc run parallel matches serial at one replica ===\n");
 
-  double Z = 2.0, Zeff = 1.6875;
+  double Z = 2.0;
+  double Zeff = 1.6875;
   double b = 0.3;
   int burn = RUNNING_ON_VALGRIND ? 500 : 1000;
   int samples = RUNNING_ON_VALGRIND ? 20000 : 500000;
@@ -212,11 +216,12 @@ static void test_vmc_run_parallel_matches_serial_at_one_replica(void) {
 
 // Multiple replicas must be genuinely independent samples (not silently same
 // chain replayed): total n_samples should be n_replicas * n_samples, and
-// combined mean should still satisfy He's variational theorem.
+// combined mean should still satisfy He's variational theorem
 static void test_vmc_run_parallel_helium(void) {
-  printf("test_vmc_run_parallel_helium:\n");
+  printf("  === Test: vmc run parallel helium ===\n");
 
-  double Z = 2.0, Zeff = 1.6875;
+  double Z = 2.0;
+  double Zeff = 1.6875;
   double b = 0.3;
   int n_replicas = RUNNING_ON_VALGRIND ? 2 : 8;
   int n_samples = RUNNING_ON_VALGRIND ? 20000 : 40000;
@@ -242,20 +247,22 @@ static void test_vmc_run_parallel_helium(void) {
 }
 
 static void test_vmc_run_parallel_from_stream_matches_master_seed(void) {
-  printf("test_vmc_run_parallel_from_stream_matches_master_seed:\n");
+  printf("  === Test: vmc run parallel from stream matches master seed ===\n");
 
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  double Z = 2.0;
+  double Zeff = 1.6875;
+  double b = 0.3;
   int n_replicas = 4;
   int n_samples = RUNNING_ON_VALGRIND ? 5000 : 20000;
   int burn = RUNNING_ON_VALGRIND ? 300 : 1000;
   int block_size = RUNNING_ON_VALGRIND ? 50 : 100;
   uint64_t seed = 424242ULL;
 
-  /* rng_seed(seed) then handing the resulting stream to
-   * vmc_run_parallel_from_stream must be bit-identical to just calling
-   * vmc_run_parallel(seed): that's the whole contract being refactored
-   * around, since vmc_run_parallel itself is now a thin wrapper that does
-   * exactly this before calling the shared core. */
+  // rng_seed(seed) then handing resulting stream to
+  // vmc_run_parallel_from_stream must be bit-identical to just calling
+  // vmc_run_parallel(seed): that's whole contract being refactored
+  // around, since vmc_run_parallel itself is now a thin wrapper that does
+  // exactly this before calling shared core
   vmc_result_t r_seed = vmc_run_parallel(n_replicas, Z, Zeff, b, burn,
                                          n_samples, block_size, 0.9, 0.9, seed);
 
@@ -277,22 +284,25 @@ static void test_vmc_run_parallel_from_stream_matches_master_seed(void) {
 
 static void
 test_vmc_run_parallel_from_stream_long_jump_ranks_independent(void) {
-  printf("test_vmc_run_parallel_from_stream_long_jump_ranks_independent:\n");
+  printf("  === Test: VMC run parallel from stream long jump ranks independent "
+         "===\n");
 
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
+  double Z = 2.0;
+  double Zeff = 1.6875;
+  double b = 0.3;
   int n_replicas = 2;
   int n_samples = RUNNING_ON_VALGRIND ? 5000 : 20000;
   int burn = RUNNING_ON_VALGRIND ? 300 : 1000;
   int block_size = RUNNING_ON_VALGRIND ? 50 : 100;
 
-  /* NOTE: Simulates the hybrid MPI+OpenMP pattern documented in vmc.h: one
-   * shared master stream, each "rank" long-jumps a distinct number of times to
-   * land on its own non-overlapping partition, then runs its own
-   * OpenMP-parallel replicas from there. With 3 simulated ranks (0, 1, 2
-   * long-jumps from the same root seed) the three resulting VMC energy
-   * estimates must differ (proof any two ranks aren't silently reusing the same
-   * substream) while all three still land within a physically sane range of the
-   * exact ground-state energy. */
+  // NOTE: Simulates the hybrid MPI+OpenMP pattern documented in vmc.h: one
+  // shared master stream, each "rank" long-jumps a distinct number of times to
+  // land on its own non-overlapping partition, then runs its own
+  // OpenMP-parallel replicas from there. With 3 simulated ranks (0, 1, 2
+  // long-jumps from the same root seed) the three resulting VMC energy
+  // estimates must differ (proof any two ranks aren't silently reusing the same
+  // substream) while all three still land within a physically sane range of the
+  // exact ground-state energy
   int n_ranks = 3;
   double means[3];
 
@@ -323,6 +333,8 @@ test_vmc_run_parallel_from_stream_long_jump_ranks_independent(void) {
 }
 
 int main(void) {
+  printf(" > Variational Monte Carlo for helium ground state (VMC) tests:\n");
+
   test_local_energy_fixtures();
   test_local_energy_z_neq_zeff_fixture();
   test_degenerate_guard();

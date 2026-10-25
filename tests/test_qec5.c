@@ -1,12 +1,11 @@
 /*
  * Test: 5-qubit "perfect" quantum error correction code
  *
- * The code must correctly diagnose (via syndrome lookup, matching the known
- * syndrome table) and exactly correct every possible single-qubit error: no
- * error, or X/Y/Z on any of the 5 data qubits (16 cases total). Unlike the
- * 9-qubit Shor code, the 5-qubit code's syndrome identifies the exact Pauli
- * type directly, so recovery must be exact (no global-phase ambiguity) in every
- * one of the 16 cases.
+ * code must correctly diagnose (via syndrome lookup, matching known syndrome
+ * table) and exactly correct every possible single-qubit error: no error, or
+ * X/Y/Z on any of 5 data qubits (16 cases total). Unlike 9-qubit Shor code,
+ * 5-qubit code's syndrome identifies exact Pauli type directly, so recovery
+ * must be exact (no global-phase ambiguity) in every one of 16 cases
  */
 
 #include "../core/complex.h"
@@ -108,7 +107,7 @@ static void run_all_errors(complex_t alpha, complex_t beta,
 }
 
 int main(void) {
-  printf("test_qec5:\n");
+  printf(" > 5-qubit perfect quantum error correction code (QEC5) tests:\n");
 
   complex_t alpha1 = c_real(0.6);
   complex_t beta1 = c_new(0.7368487952023082, 0.31153467384692046);

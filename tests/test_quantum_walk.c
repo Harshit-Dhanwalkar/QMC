@@ -45,17 +45,15 @@ enum { N = 2048 };
 static double g_p[N];
 static double g_c[N];
 
-/*
- * Validation for discrete-time quantum walk behavior
- * This single test entrypoint runs a sequence of physics/statistics checks
- * against walk implementation and reports aggregated pass/fail status through
- * global `failures` counter
- * NOTE:
- * - `up` and `down` hold two coin components over 1D lattice
- * - `g_p` is reused as a probability workspace; `g_c` is reused for
- *   classical-reference probabilities
- * - Each section below targets one property listed in file header
- */
+// Validation for discrete-time quantum walk behavior
+// This single test entrypoint runs a sequence of physics/statistics checks
+// against walk implementation and reports aggregated pass/fail status through
+// global `failures` counter
+// NOTE:
+// - `up` and `down` hold two coin components over 1D lattice
+// - `g_p` is reused as a probability workspace; `g_c` is reused for
+//   classical-reference probabilities
+// - Each section below targets one property listed in file header
 int main(void) {
   printf(" > Quantum walk on a line test:\n");
 

@@ -1,17 +1,17 @@
 /*
- * Test: Deutsch-Jozsa and Grover's search algorithms.
+ * Test: Deutsch-Jozsa and Grover's search algorithms
  *
  * 1. Deutsch-Jozsa: DJ_CONSTANT_0/DJ_CONSTANT_1 must give P(all-zero)=1.0
  *    exactly; DJ_BALANCED (single-bit and multi-bit parity oracles) must give
  *    P(all-zero)=0.0 exactly : which are exact quantum-mechanical predictions
- *    (no measurement noise involved, deterministic outcome probabilities).
+ *    (no measurement noise involved, deterministic outcome probabilities)
  * 2. Grover's search: target's measurement probability after optimal number of
  *    iterations must match the closed-form \sin^2((2k + 1) * \theta),
  *    \sin(\theta)=1 / \sqrt(N), across several (n_qubits, target) combinations.
  *    Also checks that full probability distribution sums to 1 (normalization)
  *    and that iterating well past optimum ("over-rotation") measurably reduces
- *    the success probability.
- * 3. Invalid-input handling.
+ *    the success probability
+ * 3. Invalid-input handling
  */
 
 #include "../physics/quantum_algorithms.h"
@@ -42,7 +42,7 @@ static void check_true(int cond, const char *label) {
 }
 
 static void test_deutsch_jozsa(void) {
-  printf("test_deutsch_jozsa:\n");
+  printf("  === Test: Deutsch Jozsa ===\n");
 
   dj_result_t r0 = deutsch_jozsa(3, DJ_CONSTANT_0, NULL, 0);
   check_close(r0.p_all_zero, 1.0, 1e-9, "CONSTANT_0: P(all-zero) = 1");
@@ -70,7 +70,7 @@ static void test_deutsch_jozsa(void) {
 }
 
 static void test_deutsch_jozsa_invalid_input(void) {
-  printf("test_deutsch_jozsa_invalid_input:\n");
+  printf("  === Test: Deutsch Jozsa invalid input ===\n");
 
   dj_result_t r1 = deutsch_jozsa(0, DJ_CONSTANT_0, NULL, 0);
   check_true(r1.p_all_zero < 0.0, "n_input=0 rejected");
@@ -80,7 +80,7 @@ static void test_deutsch_jozsa_invalid_input(void) {
 }
 
 static void test_grover(void) {
-  printf("test_grover:\n");
+  printf("  === Test: Grover ===\n");
 
   int cases[3][2] = {{3, 5}, {5, 17}, {6, 50}}; // {n_qubits, target}
 
@@ -111,7 +111,7 @@ static void test_grover(void) {
 }
 
 static void test_grover_overrotation(void) {
-  printf("test_grover_overrotation:\n");
+  printf("  === Test: Grover overrotation ===\n");
 
   int n_qubits = 4, target = 7;
   int optimal_k = 3; // round((\pi / 4) * \sqrt(16)) = 3
@@ -137,7 +137,7 @@ static void test_grover_overrotation(void) {
 }
 
 static void test_grover_invalid_input(void) {
-  printf("test_grover_invalid_input:\n");
+  printf("  === Test: Grover invalid input ===\n");
 
   grover_result_t r1 = grover_search(0, 0, -1);
   check_true(r1.probabilities == NULL, "n_qubits=0 rejected");
@@ -150,6 +150,8 @@ static void test_grover_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Deutsch-Jozsa and Grover's search algorithms tests:\n");
+
   test_deutsch_jozsa();
   test_deutsch_jozsa_invalid_input();
   test_grover();

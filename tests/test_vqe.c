@@ -1,15 +1,15 @@
 /*
  * Test: Variational Quantum Eigensolver (hardware-efficient ansatz +
- * coordinate-descent optimizer).
+ * coordinate-descent optimizer)
  *
  * 1. Single-qubit H = a*X + b*Z: exact ground energy is -\sqrt{a^2 + b^2}
- *    (2x2 Hermitian, closed form).
+ *    (2x2 Hermitian, closed form)
  * 2. Transverse-field Ising model (n_qubits=3): cross-checked against exact
  *    diagonalization via cmatrix_eigh_complex, since TFIM's ground energy has
- *    no simple closed form for a small open chain.
+ *    no simple closed form for a small open chain
  * 3. vqe_expectation / vqe_energy fixture checks at fixed (untrained)
- *    parameters.
- * 4. Invalid-input handling.
+ *    parameters
+ * 4. Invalid-input handling
  */
 
 #include "../core/complex.h"
@@ -60,7 +60,7 @@ static int hermitian_ok(const cmatrix_t *H) {
 }
 
 static void test_expectation_fixtures(void) {
-  printf("test_expectation_fixtures:\n");
+  printf("  === Test: Expectation fixtures ===\n");
 
   // \theta=0 for a 1-qubit, 1-layer ansatz: RY(0)|0> = |0>, so <0|H|0> =
   // H[0][0]
@@ -83,9 +83,10 @@ static void test_expectation_fixtures(void) {
 }
 
 static void test_vqe_single_qubit(void) {
-  printf("test_vqe_single_qubit:\n");
+  printf("  === Test: VQE single qubit ===\n");
 
-  double a = 1.3, b = 0.7;
+  double a = 1.3;
+  double b = 0.7;
   cmatrix_t *H = cmatrix_alloc(2, 2);
   CMAT(H, 0, 0) = c_real(b);
   CMAT(H, 0, 1) = c_real(a);
@@ -113,7 +114,7 @@ static void test_vqe_single_qubit(void) {
 }
 
 static void test_vqe_tfim(void) {
-  printf("test_vqe_tfim:\n");
+  printf("  === Test: VQE TFIM ===\n");
 
   int n = 3;
   cmatrix_t *H = vqe_build_tfim(n, 1.0, 0.5);
@@ -148,7 +149,7 @@ static void test_vqe_tfim(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test: Invalid input ===\n");
 
   cmatrix_t *H = cmatrix_alloc(2, 2);
   CMAT(H, 0, 0) = c_real(1.0);
@@ -249,7 +250,7 @@ static cmatrix_t *reference_pauli_hamiltonian(int n_qubits,
 }
 
 static void test_pauli_hamiltonian(void) {
-  printf("test_pauli_hamiltonian:\n");
+  printf("  === Test: Pauli Hamiltonian ===\n");
 
   // Single-term sanity checks against hand-known 2x2/4x4 matrices.
   {
@@ -319,7 +320,8 @@ static void test_pauli_hamiltonian(void) {
   // layer, and confirm they agree element-by-element.
   {
     int n = 4;
-    double J = 1.0, h = 0.5;
+    double J = 1.0;
+    double h = 0.5;
     cmatrix_t *H_bits = vqe_build_tfim(n, J, h);
 
     const char *strings[7];
@@ -370,10 +372,11 @@ static void test_pauli_hamiltonian(void) {
   // same XXZ Hamiltonian spin_sector_hamiltonian() diagonalizes via completely
   // independent machinery (bit-manipulation + sparse matrices + symmetry
   // sectors, not dense tensor products). Comparing their ground energies is a
-  // strongc cross-check between two unrelated code paths in this codebase.
+  // strongc cross-check between two unrelated code paths in this codebase
   {
     int N = 4;
-    double Jz = 1.3, Jxy = 0.7;
+    double Jz = 1.3;
+    double Jxy = 0.7;
 
     const char *strings[12];
     double coeffs[12];
@@ -400,6 +403,7 @@ static void test_pauli_hamiltonian(void) {
 
     cmatrix_t *Hc = cmatrix_copy(H);
     eigen_t *eig = cmatrix_eigh_complex(Hc);
+
     cmatrix_free(Hc);
 
     double e0_pauli = eig ? eig->eigenvalues[0] : 1e300;
@@ -409,7 +413,7 @@ static void test_pauli_hamiltonian(void) {
 
     // Best (most negative) ground energy across every (nup, k) sector, matching
     // spin_sector_hamiltonian's own symmetry decomposition - full spectrum is
-    // the union of every sector's spectrum.
+    // the union of every sector's spectrum
     double e0_sector = 1e300;
     for (int nup = 0; nup <= N; nup++) {
       for (int k = 0; k < N; k++) {
@@ -423,7 +427,7 @@ static void test_pauli_hamiltonian(void) {
         // Dense diagonalization, not Lanczos: sectors are tiny for N=4 (up to a
         // handful of states), and Lanczos with max_iter == dim can hit early
         // breakdown on such small matrices - dense is exact and cheap here, and
-        // this cross-check needs to be authoritative.
+        // this cross-check needs to be authoritative
         int sdim = sec->dim;
         if (sdim <= 0) {
           sparse_free(Hs);
@@ -467,7 +471,7 @@ static void test_pauli_hamiltonian(void) {
     cmatrix_free(H);
   }
 
-  // Invalid input handling.
+  // Invalid input handling
   {
     const char *s1 = "X";
     double c1 = 1.0;
@@ -495,6 +499,8 @@ static void test_pauli_hamiltonian(void) {
 }
 
 int main(void) {
+  printf(" > Variational Quantum Eigensolver(VQE) tests:\n");
+
   test_expectation_fixtures();
   test_invalid_input();
   test_vqe_single_qubit();

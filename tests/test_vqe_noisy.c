@@ -1,17 +1,17 @@
 /*
  * Test: noisy VQE (density-matrix ansatz simulation under T1/T2 Lindblad noise,
  * layered on top of vqe.c's hardware-efficient ansatz) and zero-noise
- * extrapolation (ZNE).
+ * extrapolation (ZNE)
  *
  * 1. Zero-noise limit: \gamma1=\gamma2=0 must reproduce vqe.c's pure-state
- *    vqe_energy exactly, since a decoherence rate of zero degenerates the
- *    density-matrix evolution to ordinary unitary conjugation.
+ *    vqe_energy exactly, since a decoherence rate of zero degenerates
+ *    density-matrix evolution to ordinary unitary conjugation
  * 2. Physicality: Tr(\rho)=1 and purity in (0,1] at nonzero noise, and purity
- *    strictly decreases as gamma increases (state becomes more mixed).
- * 3. ZNE sanity: on a case with a controlled amount of noise, the extrapolated
- *    energy is closer to the true (noiseless) ground energy than the raw noisy
- *    energy at the base noise level.
- * 4. Invalid-input handling.
+ *    strictly decreases as gamma increases (state becomes more mixed)
+ * 3. ZNE sanity: on a case with a controlled amount of noise, extrapolated
+ *    energy is closer to true (noiseless) ground energy than raw noisy energy
+ *    at base noise level
+ * 4. Invalid-input handling
  */
 
 #include "../core/complex.h"
@@ -68,9 +68,10 @@ static double density_purity(const cmatrix_t *rho) {
 }
 
 static void test_zero_noise_limit(void) {
-  printf("test_zero_noise_limit:\n");
+  printf("  === Test: Zero noise limit ===\n");
 
-  int n_qubits = 3, n_layers = 2;
+  int n_qubits = 3;
+  int n_layers = 2;
   // int n_params = n_qubits * n_layers;
   const double theta[6] = {0.3, -0.7, 1.1, 0.2, -0.4, 0.9};
 
@@ -100,9 +101,10 @@ static void test_zero_noise_limit(void) {
 }
 
 static void test_physicality_and_purity_decay(void) {
-  printf("test_physicality_and_purity_decay:\n");
+  printf("  === Test: Physicality and purity decay ===\n");
 
-  int n_qubits = 2, n_layers = 2;
+  int n_qubits = 2;
+  int n_layers = 2;
   const double theta[4] = {0.8, -1.2, 0.5, 1.7};
 
   const double gammas[3] = {0.01, 0.05, 0.15};
@@ -134,10 +136,10 @@ static void test_physicality_and_purity_decay(void) {
 }
 
 static void test_zne_reduces_error(void) {
-  printf("test_zne_reduces_error:\n");
+  printf("  === Test: ZNE reduces error ===\n");
 
   // Small 2-qubit TFIM: cheap enough for repeated noisy density-matrix
-  // simulation across multiple noise scales in a unit test.
+  // simulation across multiple noise scales in a unit test
   int n_qubits = 2, n_layers = 2;
   cmatrix_t *H = vqe_build_tfim(n_qubits, 1.0, 0.6);
 
@@ -164,7 +166,7 @@ static void test_zne_reduces_error(void) {
          E_exact, raw_c1, err_raw, zne, err_zne);
 
   // HACK: Under Valgrind only 2 scales, so extrapolation may not be closer to
-  // exact. Skip this check when running under Valgrind.
+  // exact. Skip this check when running under Valgrind
   if (!RUNNING_ON_VALGRIND) {
     check_true(err_zne < err_raw,
                "ZNE-extrapolated energy is closer to exact than raw noisy "
@@ -180,7 +182,7 @@ static void test_zne_reduces_error(void) {
 }
 
 static void test_invalid_input(void) {
-  printf("test_invalid_input:\n");
+  printf("  === Test: Invalid input ===\n");
 
   const double theta[2] = {0.1, 0.2};
 
@@ -212,6 +214,8 @@ static void test_invalid_input(void) {
 }
 
 int main(void) {
+  printf(" > Noisy VQE tests:\n");
+
   test_zero_noise_limit();
   test_physicality_and_purity_decay();
   test_zne_reduces_error();
