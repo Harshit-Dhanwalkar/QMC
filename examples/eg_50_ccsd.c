@@ -3,7 +3,7 @@
  *
  * This example runs RHF -> CCSD on LiH, a real multi-orbital,
  * degenerate-orbital (2px/2py) system, and reports RHF energy,
- * CCSD correlation energy, and total CCSD energy.
+ * CCSD correlation energy, and total CCSD energy
  */
 
 #include "../core/matrix.h"
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > CCSD: Electron Correlation Energy for LiH/STO-3G\n\n");
+  printf(" > CCSD: Electron Correlation Energy for LiH/STO-3G\n");
 
   double R = 3.015; // bohr, near-equilibrium LiH bond length
   double c_li[3] = {0.0, 0.0, 0.0};
@@ -23,24 +23,26 @@ int main(void) {
 
   basis_function_t *li_orbs[5];
   molint_basis_sto3g_li(c_li, li_orbs);
-  basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
 
+  basis_function_t *h_orb = molint_basis_sto3g_h(c_h);
   basis_function_t *basis[6] = {li_orbs[0], li_orbs[1], li_orbs[2],
                                 li_orbs[3], li_orbs[4], h_orb};
+
   const double charges[2] = {3.0, 1.0};
   double centers[2][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, R}};
   molecule_t *mol = molecule_alloc(2, charges, centers);
 
-  printf("  Step 1: RHF (6 basis functions, 4 electrons)\n\n");
+  printf("  Step 1: RHF (6 basis functions, 4 electrons)\n");
   molecular_hf_result_t *hf = molecular_rhf(basis, 6, mol, 4, 1e-12, 200);
   printf("    RHF total energy: %.10f Hartree (%d iterations)\n\n",
          hf->total_energy, hf->iterations);
 
-  printf("  Step 2: transform integrals to the MO basis, run CCSD\n\n");
+  printf("  Step 2: transform integrals to MO basis, run CCSD\n");
   cmatrix_t *h_ao = molecular_core_hamiltonian(basis, 6, mol);
   double *eri_ao = molecular_eri_tensor(basis, 6);
   double *h_mo = malloc(36 * sizeof(double));
-  double *eri_mo = malloc(6 * 6 * 6 * 6 * sizeof(double));
+  double *eri_mo = malloc(6UL * 6UL * 6UL * 6UL * sizeof(double));
+
   molecular_ao_to_mo(h_ao, eri_ao, hf->C, 6, h_mo, eri_mo);
 
   ccsd_result_t *ccsd = ccsd_run(6, h_mo, eri_mo, hf->orbital_energies, 4, 0,
@@ -56,6 +58,7 @@ int main(void) {
            ccsd->total_energy);
     printf("    Correlation recovers %.4f%% additional binding beyond RHF.\n",
            100.0 * fabs(ccsd->correlation_energy) / fabs(hf->total_energy));
+
     free(ccsd);
   }
 

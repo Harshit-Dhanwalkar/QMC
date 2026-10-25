@@ -19,7 +19,7 @@
 #endif
 
 int main(void) {
-  printf(" > Ground state versus U / t (t = 1)\n\n  %6s %10s %10s %10s %10s\n",
+  printf(" > Ground state versus U / t (t = 1)\n  %6s %10s %10s %10s %10s\n",
          "U", "E0", "doublons", "<S1.S2>", "S_site");
   for (int i = 0; i <= 8; i++) {
     double u = 2.0 * i;
@@ -31,6 +31,7 @@ int main(void) {
     hd_solve(1.0, u, &s);
     hd_n2_states(&s, idx);
     hd_eigenstate(&s, idx[0], re, im);
+
     printf("  %6.1f %10.5f %10.5f %10.5f %10.5f\n", u, s.e[idx[0]],
            hd_expect_double_occ(re, im), hd_expect_ss(re, im),
            hd_site_entropy(re, im, 0));
@@ -38,7 +39,7 @@ int main(void) {
 
   printf(
       "\n > Neel quench at U = 20: 2<Sz1>(t) against \\cos(J t), J = 4 t^2 / "
-      "U\n\n  %6s %10s %10s\n",
+      "U\n  %6s %10s %10s\n",
       "time", "2<Sz1>", "\\cos(Jt)");
   {
     hd_solution_t s;
@@ -55,6 +56,7 @@ int main(void) {
       double time = 2.0 * M_PI / j * i / 8.0;
 
       hd_evolve(&s, re0, im0, time, re, im);
+
       printf("  %6.2f %10.5f %10.5f\n", time, 2 * hd_expect_sz(re, im, 0),
              cos(j * time));
     }

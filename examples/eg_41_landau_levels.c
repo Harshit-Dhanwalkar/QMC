@@ -33,7 +33,7 @@ static int cmp_double(const void *a, const void *b) {
 
 int main(void) {
   printf(" > Landau Levels via Peierls Substitution (Hofstadter/Harper "
-         "model):\n");
+         "model)\n");
 
   double t = 1.0;
   double alpha = 0.05; // flux per plaquette, in units of flux quantum

@@ -42,13 +42,12 @@
  *
  * NOTE: Real-valued orbitals throughout - C and orbital_energies are complex
  * matrices from cmatrix_eigh_complex(), but only .re component is used
- * See molecular_hf.h for full API documentation, ownership rules and
- * return-value contract of each entry point
  *
  * WARN: These routines are correct but not optimised; integral evaluation and
  * AO -> MO transform are O(N^4) / O(N^5) and intended for small active spaces
  * second_quant_build_molecular_hamiltonian already restricts to
  */
+
 #include "molecular_hf.h"
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"
@@ -371,7 +370,8 @@ molecular_uhf_result_t *molecular_uhf(basis_function_t **basis, int n_basis,
     return NULL;
   }
 
-  double E_elec = 0.0, E_elec_old = 0.0;
+  double E_elec = 0.0;
+  double E_elec_old = 0.0;
   int converged = 0;
   int iter = 0;
 
@@ -830,7 +830,8 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
 
   for (int u = 0; u < n; u++) {
     for (int v = 0; v < n; v++) {
-      double p_uv = 0.0, w_uv = 0.0;
+      double p_uv = 0.0;
+      double w_uv = 0.0;
 
       for (int i = 0; i < n_occ; i++) {
         double cu = CMAT(scf->C, u, i).re;
@@ -877,7 +878,8 @@ double *molecular_rhf_gradient(basis_function_t **basis, int n_basis,
       int atom_u = atom_of_basis[u];
       int atom_v = atom_of_basis[v];
 
-      double gT[3], gS[3];
+      double gT[3];
+      double gS[3];
       if (atom_u >= 0) {
         gto_kinetic_grad_a(basis[u], basis[v], gT);
         gto_overlap_grad_a(basis[u], basis[v], gS);
@@ -1021,7 +1023,8 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
 
   for (int u = 0; u < n; u++) {
     for (int v = 0; v < n; v++) {
-      double pa_uv = 0.0, wa_uv = 0.0;
+      double pa_uv = 0.0;
+      double wa_uv = 0.0;
 
       for (int i = 0; i < scf->n_alpha; i++) {
         double cu = CMAT(scf->C_alpha, u, i).re;
@@ -1031,7 +1034,8 @@ double *molecular_uhf_gradient(basis_function_t **basis, int n_basis,
         wa_uv += scf->orbital_energies_alpha[i] * cu * cv;
       }
 
-      double pb_uv = 0.0, wb_uv = 0.0;
+      double pb_uv = 0.0;
+      double wb_uv = 0.0;
 
       for (int i = 0; i < scf->n_beta; i++) {
         double cu = CMAT(scf->C_beta, u, i).re;

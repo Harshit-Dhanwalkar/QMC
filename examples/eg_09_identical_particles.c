@@ -5,8 +5,8 @@
  * demonstrates:
  *  - Fermions (Slater determinant): antisymmetric, vanishes exactly
  *    when two particles share a position (Pauli exclusion) or two
- *    orbitals coincide.
- *  - Bosons (permanent): symmetric, no such exclusion.
+ *    orbitals coincide
+ *  - Bosons (permanent): symmetric, no such exclusion
  */
 
 #include "../core/complex.h"
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Identical Particles: Slater Determinant / Permanent\n\n");
+  printf(" > Identical Particles: Slater Determinant / Permanent\n");
 
   // Particle-in-a-box orbitals (L=1, analytic): \phi_k(x) = \sin(k * \pi * x)
   int M = 50; // grid points

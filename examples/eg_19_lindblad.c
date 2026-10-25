@@ -11,9 +11,9 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Lindblad Master Equation: Open Quantum Systems\n\n");
+  printf(" > Lindblad Master Equation: Open Quantum Systems\n");
 
-  // 1. Amplitude damping (T1 relaxation) of an excited qubit
+  // Amplitude damping (T1 relaxation) of an excited qubit
   printf("   Amplitude damping: qubit starts excited (|1><1|), \\gamma=1.0\n");
   printf("   %6s  %10s  %10s  %10s\n", "t", "\\rho11", "\\exp(-t)", "purity");
   {
@@ -29,6 +29,7 @@ int main(void) {
       if (checkpoint > 0) {
         lindblad_evolve(rho, H, ops, 1, dt, 500); // advance by 0.5 each time
       }
+
       printf("   %6.2f  %10.6f  %10.6f  %10.6f\n", t, CMAT(rho, 1, 1).re,
              exp(-gamma * t), density_purity(rho));
     }
@@ -39,8 +40,8 @@ int main(void) {
   }
   printf("\n");
 
-  // 2. Pure dephasing (T2) of a |+> superposition
-  printf("   Pure dephasing: qubit starts in |+> = (|0>+|1>)/\\sqrt2, "
+  // Pure dephasing (T2) of a |+> superposition
+  printf("   Pure dephasing: qubit starts in |+> = (|0>+|1>)/\\sqrt(2), "
          "\\gamma=1.0\n");
   printf("   %6s  %10s  %10s  %10s\n", "t", "|\\rho01|", "0.5*\\exp(-t)",
          "purity");
@@ -60,6 +61,7 @@ int main(void) {
       if (checkpoint > 0) {
         lindblad_evolve(rho, H, ops, 1, dt, 500);
       }
+
       printf("   %6.2f  %10.6f  %10.6f  %10.6f\n", t, c_abs(CMAT(rho, 0, 1)),
              0.5 * exp(-gamma * t), density_purity(rho));
     }
@@ -70,11 +72,13 @@ int main(void) {
   }
   printf("\n");
 
-  // 3. Closed-system sanity check: no dissipation reproduces Rabi
+  // Closed-system sanity check: no dissipation reproduces Rabi
   printf("   Closed system (no jump operators) reproduces exact Rabi "
          "oscillation:\n");
   {
-    double Omega = 2.0, Delta = 1.0, dt = 1e-4;
+    double Omega = 2.0;
+    double Delta = 1.0;
+    double dt = 1e-4;
     cmatrix_t *H = cmatrix_alloc(2, 2);
     CMAT(H, 0, 0) = c_real(0.5 * Delta);
     CMAT(H, 0, 1) = c_real(0.5 * Omega);
@@ -98,7 +102,7 @@ int main(void) {
   }
   printf("\n");
 
-  // 4. Measurement collapse
+  // Measurement collapse
   printf(
       "   Measurement collapse of a mixed state (\\rho00=0.3, \\rho11=0.7):\n");
   {
@@ -107,6 +111,7 @@ int main(void) {
     CMAT(rho, 1, 1) = c_real(0.7);
     double u = 0.42; // caller-supplied uniform random draw
     int outcome = density_measure_computational_basis(rho, u);
+
     printf("     u=%.2f -> collapsed to |%d><%d|\n", u, outcome, outcome);
 
     cmatrix_free(rho);

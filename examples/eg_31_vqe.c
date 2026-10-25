@@ -2,14 +2,14 @@
  * Variational Quantum Eigensolver
  *
  * Hybrid quantum-classical ground-state solver: a hardware-efficient
- * ansatz circuit (qubits.c) prepares a trial state, and the same
- * golden-section optimizer VMC uses (variational.c) tunes its parameters
- * to minimize the energy expectation value -- the discrete-circuit analog
- * of VMC's continuous trial wavefunction.
+ * ansatz circuit (qubits.c) prepares a trial state, and same golden-section
+ * optimizer VMC uses (variational.c) tunes its parameters to minimize energy
+ * expectation value - discrete-circuit analog of VMC's continuous trial
+ * wavefunction
  *
  * Demonstrates two cases: an exactly-solvable single qubit (closed-form
- * ground energy), then the transverse-field Ising model on a small open
- * chain, cross-checked against exact diagonalization.
+ * ground energy), then transverse-field Ising model on a small open chain,
+ * cross-checked against exact diagonalization
  */
 
 #include "../core/complex.h"
@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Variational Quantum Eigensolver\n\n");
+  printf(" > Variational Quantum Eigensolver\n");
 
   printf(
       "   Ansatz: n_layers of [RY(\\theta) on every qubit, then CNOT chain]\n");
@@ -30,8 +30,9 @@ int main(void) {
          "parameter,\n");
   printf("   Jastrow parameter b).\n\n");
 
-  printf("   --- Single qubit: H = a*X + b*Z ---\n");
-  double a = 1.3, b = 0.7;
+  printf("   Single qubit: H = a*X + b*Z \n");
+  double a = 1.3;
+  double b = 0.7;
   cmatrix_t *H1 = cmatrix_alloc(2, 2);
   CMAT(H1, 0, 0) = c_real(b);
   CMAT(H1, 0, 1) = c_real(a);
@@ -54,16 +55,20 @@ int main(void) {
          best1, E1_exact);
   cmatrix_free(H1);
 
-  printf("   --- Transverse-field Ising model, n=3 open chain ---\n");
+  printf("   Transverse-field Ising model, n=3 open chain\n");
   printf("   H = -J*\\sum(Z_i Z_i+1) - h*\\sum(X_i)\n\n");
   int n = 3;
-  double J = 1.0, h = 0.5;
+  double J = 1.0;
+  double h = 0.5;
   cmatrix_t *H2 = vqe_build_tfim(n, J, h);
 
   cmatrix_t *H2_copy = cmatrix_copy(H2);
   eigen_t *eig = cmatrix_eigh_complex(H2_copy);
+
   cmatrix_free(H2_copy);
+
   double E2_exact = eig->eigenvalues[0];
+
   eigen_free(eig);
 
   double best2 = 1e9;

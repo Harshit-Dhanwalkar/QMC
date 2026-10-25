@@ -74,6 +74,7 @@ int main(void) {
     int tmp = order[i];
     order[i] = order[best];
     order[best] = tmp;
+
     printf("     state %2d: P=%.4f%s\n", order[i], r.probabilities[order[i]],
            order[i] == target ? "  <- target" : "");
   }

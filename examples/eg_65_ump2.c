@@ -33,6 +33,7 @@ int main(void) {
       "  Step 1: UHF (5 basis functions, 2 \\alpha + 1 \\beta electrons)\n\n");
   molecular_uhf_result_t *uhf =
       molecular_uhf(li_orbs, 5, mol, 2, 1, 1e-12, 300);
+
   printf("    UHF total energy: %.10f Hartree (%d iterations)\n",
          uhf->total_energy, uhf->iterations);
   printf("    <S^2> = %.6f (exact 0.75 for an uncontaminated doublet)\n\n",

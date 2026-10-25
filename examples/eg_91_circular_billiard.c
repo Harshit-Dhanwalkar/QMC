@@ -16,7 +16,7 @@ int main(void) {
   static cb_mode_t modes[512];
   int count = cb_modes(25.0, modes, 512);
 
-  printf(" > %d modes with k <= 25\n\n  %4s  %3s  %3s  %5s  %10s\n", count, "#",
+  printf(" > %d modes with k <= 25\n  %4s  %3s  %3s  %5s  %10s\n", count, "#",
          "m", "n", "trig", "E = k^2");
   for (int i = 0; i < 16; i++) {
     printf("  %4d  %3d  %3d  %5s  %10.5f\n", i, modes[i].m, modes[i].n,

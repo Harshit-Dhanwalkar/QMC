@@ -1,9 +1,9 @@
 /*
  * Tight-binding band structure and band topology
  *
- * NOTE: Every model here is the same object (a Bloch Hamiltonian H(k) built
- * from a list of hoppings) and the same two tools are applied to all of them:
- * band energies E_n(k) and gauge-invariant Berry phases of band groups
+ * NOTE: Every model here is same object (a Bloch Hamiltonian H(k) built from a
+ * list of hoppings) and same two tools are applied to all of them: band
+ * energies E_n(k) and gauge-invariant Berry phases of band groups
  * (Fukui-Hatsugai-Suzuki link variables)
  *
  *  1. Graphene: massless Dirac cones at K and K', density of states with
@@ -12,10 +12,10 @@
  *     second-neighbor hopping t2 e^{i phi} opens a topological one. Scanning
  *     M maps phase diagram C = \sign(t2 \sin(\phi)) for |M| < 3 \sqrt(3) |t2
  *     \sin(\phi)|, 0 beyond it
- *  3. SSH chain: Zak phase jumps 0 -> \pi when the intercell bond overtakes
- *     the intracell one
- *  4. Kagome lattice: the exactly flat band at -2t and a Dirac point
- *  5. Hofstadter butterfly bands: Chern numbers from the same code, including a
+ *  3. SSH chain: Zak phase jumps 0 -> \pi when intercell bond overtakes
+ *     intracell one
+ *  4. Kagome lattice: exactly flat band at -2t and a Dirac point
+ *  5. Hofstadter butterfly bands: Chern numbers from same code, including a
  *     band group for flux 1/4 where two bands touch
  */
 
@@ -33,7 +33,7 @@
 static double clean(double x) { return fabs(x) < 5e-5 ? 0.0 : x; }
 
 static void graphene_demo(void) {
-  printf("  === Graphene ===\n");
+  printf("  Graphene\n");
 
   tb_model_t *g = tb_model_graphene(1.0);
   if (!g) {
@@ -43,6 +43,7 @@ static void graphene_demo(void) {
   double e[2];
   tb_bands(g, 0.0, 0.0, e);
   printf("  \\Gamma: E = %+.4f, %+.4f   (band edges +-3t)\n", e[0], e[1]);
+
   tb_bands(g, 2.0 * M_PI / 3.0, -2.0 * M_PI / 3.0, e);
   printf("  K    : E = %+.4f, %+.4f   (Dirac point, gap %.1e)\n", e[0], e[1],
          e[1] - e[0]);
@@ -64,10 +65,11 @@ static void graphene_demo(void) {
 }
 
 static void haldane_demo(void) {
-  printf("  === Haldane model: Chern number of the lower band ===\n");
+  printf("  Haldane model: Chern number of lower band\n");
 
   const double t1 = 1.0;
   const double t2 = 0.1;
+
   printf("  t1 = %.1f, t2 = %.2f, transition at |M| = %.4f\n", t1, t2,
          3.0 * sqrt(3.0) * t2);
   printf("  %8s | %12s %12s\n", "M", "C(\\phi=+\\pi/2)", "C(\\phi=-\\pi/2)");
@@ -93,8 +95,8 @@ static void haldane_demo(void) {
   if (m) {
     double w = NAN;
     tb_wilson_winding(m, 0, 1, 48, 48, &w);
-    printf("  Wilson-loop winding at M = 0.3: %.4f (equals the Chern number)\n",
-           w);
+
+    printf("  Wilson-loop winding at M = 0.3: %.4f (equals Chern number)\n", w);
     for (int v = 1; v >= -1; v -= 2) {
       double k = v * 2.0 * M_PI / 3.0;
       double e[2];
@@ -109,7 +111,7 @@ static void haldane_demo(void) {
 }
 
 static void ssh_demo(void) {
-  printf("  === SSH chain: Zak phase ===\n");
+  printf("  SSH chain: Zak phase\n");
 
   const double v = 1.0;
   for (double w = 0.2; w <= 2.01; w += 0.4) {
@@ -130,7 +132,7 @@ static void ssh_demo(void) {
 }
 
 static void kagome_demo(void) {
-  printf("  === Kagome lattice ===\n");
+  printf("  Kagome lattice\n");
 
   tb_model_t *m = tb_model_kagome(1.0);
   if (!m) {
@@ -153,7 +155,8 @@ static void kagome_demo(void) {
 }
 
 static void hofstadter_demo(void) {
-  printf("  === Hofstadter bands ===\n");
+  printf("  Hofstadter bands\n");
+
   const int flux[3][2] = {{1, 3}, {2, 5}, {1, 4}};
   for (int f = 0; f < 3; f++) {
     int p = flux[f][0];
@@ -193,7 +196,7 @@ static void hofstadter_demo(void) {
 }
 
 int main(void) {
-  printf(" > Tight-binding band structure and topology (hbar = 1)\n");
+  printf(" > Tight-binding band structure and topology (\\hbar = 1)\n");
 
   graphene_demo();
   haldane_demo();

@@ -60,9 +60,9 @@ static void normalize_u(double *wavefunction, int num_points,
 
 // Y0_{ab}(r_i) = (1/r_i) * \int_0^{r_i} u_a(r')u_b(r') dr' +
 //                \int_{r_i}^{r_max} [u_a(r')u_b(r')/r'] dr'
-// NOTE: The l=0 ("monopole") radial Coulomb kernel: electrostatic potential of
-// a spherical charge density proportional to u_a(r)u_b(r), and (for a=b)
-// reduces to "charge enclosed / r + charge outside" shell-theorem formula
+// NOTE: l=0 ("monopole") radial Coulomb kernel: electrostatic potential of a
+// spherical charge density proportional to u_a(r)u_b(r), and (for a=b) reduces
+// to "charge enclosed / r + charge outside" shell-theorem formula
 void compute_Y0(const double *r, int N, double dr, const double *ua,
                 const double *ub, double *Y0_out) {
   double *inner = malloc(N * sizeof *inner);
@@ -104,7 +104,7 @@ void compute_Y0(const double *r, int N, double dr, const double *ua,
 }
 
 // Dense real-symmetric (stored as complex-Hermitian, imaginary parts 0)
-// Fock matrix on the radial grid:
+// Fock matrix on radial grid:
 //   F = T + V_nuc + \sum_k 2 * Y0_kk(r) * \delta_ab - \sum_k K_k(a,b)
 //
 //  Where
@@ -193,6 +193,19 @@ static void free_orbital_arrays(double **u, int n_orbitals) {
   free(u);
 }
 
+// Solve restricted Hartree-Fock for closed-shell atoms/ions using only
+// s-orbitals on a 1D radial grid
+//
+// High-level workflow:
+//   1. Validate inputs and infer grid spacing
+//   2. Allocate and initialize orbital/storage arrays
+//   3. Iterate SCF updates (build Fock matrix, solve, mix, normalize)
+//   4. Stop on convergence (or iteration limit) and package results
+//   5. Release temporary allocations on all exit paths
+//
+// NOTE:
+//   - `mix` controls linear mixing in SCF updates (0,1]
+//   - Routine returns NULL on invalid input or allocation failure
 hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
                                           int n_orbitals, double mix,
                                           double tol, int max_iter) {
@@ -201,11 +214,13 @@ hf_result_t *hartree_fock_atom_s_orbitals(const double *r, int N, double Z,
     return NULL;
   }
 
+  // Assume a uniform radial grid and derive spacing from first interval
   double dr = r[1] - r[0];
   if (dr <= 0.0) {
     return NULL;
   }
 
+  // Allocate orbital buffers used throughout SCF iterations
   double **u = malloc(n_orbitals * sizeof(double *));
   if (!u) {
     return NULL;

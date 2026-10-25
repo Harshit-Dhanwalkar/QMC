@@ -3,7 +3,7 @@
  *
  * NOTE: Both walkers start at origin and take one step per tick
  * Classical width is \sqrt(t). With a Hadamard coin quantum walker spreads as
- * sqrt(1 - 1 / \sqrt(2)) t = 0.541 t, with probability piled up near x = +/- t
+ * \sqrt(1 - 1 / \sqrt(2)) t = 0.541 t, with probability piled up near x = +/- t
  * / \sqrt(2)
  */
 
@@ -26,7 +26,7 @@ int main(void) {
     return 1;
   }
 
-  printf(" > Quantum walk (Hadamard coin, symmetric start)\n\n");
+  printf(" > Quantum walk (Hadamard coin, symmetric start)\n");
   printf("  %6s  %12s  %12s  %10s\n", "t", "quantum std", "classical", "ratio");
 
   qwalk_init(up, down, QWALK_COIN_SYM);

@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Infinite Square Well (Particle in a Box)\n\n");
+  printf(" > Infinite Square Well (Particle in a Box)\n");
 
   // Parameters (Atomic units \hbar=m=1)
   double L = 1.0;

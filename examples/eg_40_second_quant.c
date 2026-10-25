@@ -1,11 +1,11 @@
 /*
- * Second Quantization and the Jordan-Wigner Transformation
+ * Second Quantization and Jordan-Wigner Transformation
  *
  * Maps fermionic creation/annihilation operators to qubit operators, so
  * fermionic many-body Hamiltonians can be built and diagonalized. Demonstrates
- * the mapping's correctness two ways: defining anticommutation relations, and
- * an exact cross-check against a completely independent direct Fock-space
- * Hamiltonian construction.
+ * mapping's correctness two ways: defining anticommutation relations and an
+ * exact cross-check against a completely independent direct Fock-space
+ * Hamiltonian construction
  */
 
 #include "../core/complex.h"
@@ -16,7 +16,7 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Second Quantization and the Jordan-Wigner Transformation\n\n");
+  printf(" > Second Quantization and Jordan-Wigner Transformation\n");
 
   int n_modes = 4;
   // int dim = 1 << n_modes;
@@ -24,7 +24,7 @@ int main(void) {
   printf("   Fermionic modes map to qubits (mode j occupied <-> qubit j "
          "= |1>).\n");
   printf("   a_j = Z_0...Z_{j-1} (x) \\sigma^-_j (x) I...I : Z-string supplies "
-         "fermionic anticommutation sign.\n\n");
+         "fermionic anticommutation sign.\n");
 
   cmatrix_t *a2 = jw_annihilation_operator(2, n_modes);
   cmatrix_t *a2_dag = jw_creation_operator(2, n_modes);
@@ -40,8 +40,8 @@ int main(void) {
   cmatrix_free(a2_dag);
   cmatrix_free(n2);
 
-  printf("   --- Toy spinless Hubbard chain: H = \\sum(eps_i n_i) - "
-         "t * \\sum(hopping) + U * \\sum(n_i n_i+1), n_modes=%d ---\n\n",
+  printf("   Toy spinless Hubbard chain: H = \\sum(eps_i n_i) - "
+         "t * \\sum(hopping) + U * \\sum(n_i n_i+1), n_modes=%d\n",
          n_modes);
   const double epsilon[4] = {0.3, -0.1, 0.5, 0.2};
   double t = 1.0, U = 0.7;

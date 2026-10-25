@@ -106,7 +106,7 @@ static double find_ground_state(int N, spin_sector_t **out_sector,
 
 int main(void) {
   printf(" > Dynamical Structure Factor S(q, \\omega): N=%d Heisenberg Ring "
-         "(J=%.2f)\n\n",
+         "(J=%.2f)\n",
          N_SITES, J_COUPLING);
 
   spin_sector_t *gs_sector = NULL;
@@ -186,6 +186,7 @@ int main(void) {
       for (int i = 0; i < N_OMEGA; i++) {
         S_q_omega[qi][i] = 0.0;
       }
+
       printf("   %-8d %-14.4f %-14.6e %-16s\n", qi,
              2.0 * (double)qi / (double)N_SITES, I0, "(no weight)");
 

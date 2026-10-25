@@ -43,13 +43,14 @@ static double *diagonalize_sorted(const cmatrix_t *H, int n) {
 }
 
 int main(void) {
-  printf(" > Tight-Binding Lattice Models\n\n");
+  printf(" > Tight-Binding Lattice Models\n");
 
   // 1D nearest-neighbor chain (open boundaries)
   printf("   1D chain, n=10 sites, eps0=0.5, t=1.2\n");
   int n = 10;
   cmatrix_t *H1d = lattice_build_1d_chain(n, 0.5, 1.2, LATTICE_OPEN);
   double *E1d = diagonalize_sorted(H1d, n);
+
   printf("   lowest 3 energies (open chain): %.4f  %.4f  %.4f\n", E1d[0],
          E1d[1], E1d[2]);
   printf("   (matches Bloch's theorem / standing-wave analytic dispersion to "
@@ -80,7 +81,7 @@ int main(void) {
       eigen_t *eig = cmatrix_eigh_complex(copy);
       cmatrix_free(copy);
 
-      // Extract lowest-energy eigenstate into psi for IPR computation
+      // Extract lowest-energy eigenstate into \psi for IPR computation
       cvector_t *psi = cvector_alloc(60);
       for (int i = 0; i < 60; i++) {
         psi->data[i] = CMAT(eig->eigenvectors, i, 0);
@@ -119,8 +120,10 @@ int main(void) {
       min_abs_triv = fabs(E_triv[i]);
     }
   }
+
   printf("     closest-to-zero |E| = %.4f (gapped, no edge states)\n\n",
          min_abs_triv);
+
   free(E_triv);
   cmatrix_free(H_triv);
 

@@ -5,7 +5,7 @@
  * rotating-wave approximation (RWA). This module handles both : \Delta(t) and
  * \Omega(t) can be arbitrary caller-supplied functions of time (chirped pulses,
  * linear sweeps, ...), and driven_two_level_evolve_lab_frame goes back to
- * actual lab-frame Hamiltonian, keeping counter-rotating term RWA throws away.
+ * actual lab-frame Hamiltonian, keeping counter-rotating term RWA throws away
  */
 
 #include "../core/complex.h"
@@ -16,9 +16,9 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Driven Two-Level Systems: Sweeps and Beyond RWA\n\n");
+  printf(" > Driven Two-Level Systems: Sweeps and Beyond RWA\n");
 
-  // 1. Landau-Zener: diabatic vs adiabatic passage through crossing
+  // Landau-Zener: diabatic vs adiabatic passage through crossing
   printf("   Landau-Zener sweep \\Delta(t)=\\alpha*t through coupling "
          "\\Omega=1.0:\n");
   printf("   %10s  %14s  %14s\n", "\\alpha", "P(diabatic)", "formula");
@@ -43,11 +43,13 @@ int main(void) {
                               time_fn_constant, &Omega, params);
 
       double p_diabatic = c_abs2(psi->data[0]);
+
       printf("   %10.2f  %14.6f  %14.6e\n", alpha, p_diabatic,
              landau_zener_probability(Omega, alpha));
 
       cvector_free(psi);
     }
+
     printf("   (- Small \\alpha = slow/adiabatic sweep -> follows ground state "
            "across crossing, ends up flipped.\n");
     printf("    - Large \\alpha = fast/diabatic sweep -> no time to react, "
@@ -55,14 +57,17 @@ int main(void) {
   }
   printf("\n");
 
-  // 2. Beyond RWA: Bloch-Siegert shift grows with drive strength
+  // Beyond RWA: Bloch-Siegert shift grows with drive strength
   printf("   Lab-frame (no RWA) vs RWA prediction, resonant drive, growing "
          "\\Omega_0/\\omega_0 (weak-driving assumption behind RWA breaks down "
          "as this ratio grows):\n");
   printf("   %10s  %14s  %14s  %10s\n", "\\Omega0/\\omega0", "P_lab (exact)",
          "P_RWA", "|diff|");
   {
-    double omega0 = 50.0, omega_L = 50.0, T = 3.0, dt = 1e-4;
+    double omega0 = 50.0;
+    double omega_L = 50.0;
+    double T = 3.0;
+    double dt = 1e-4;
     int steps = (int)(T / dt);
     const double ratios[] = {0.02, 0.1, 0.3, 0.6};
 
@@ -80,8 +85,9 @@ int main(void) {
              fabs(p_lab - p_rwa));
       cvector_free(psi);
     }
+
     printf("   (RWA agrees closely while \\Omega0 << \\omega0, and visibly "
-           "drifts away.\n The Bloch-Siegert shift as drive gets strong enough "
+           "drifts away.\n Bloch-Siegert shift as drive gets strong enough "
            "to make counter-rotating term matter)\n");
   }
 

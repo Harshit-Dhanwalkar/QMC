@@ -21,7 +21,7 @@
 static void run_method_ladder(const char *label, basis_function_t **basis,
                               int n_basis, const molecule_t *mol,
                               int n_electrons) {
-  printf(" > %s\n\n", label);
+  printf(" > %s\n", label);
 
   molecular_hf_result_t *hf =
       molecular_rhf(basis, n_basis, mol, n_electrons, 1e-12, 200);

@@ -3,7 +3,7 @@
  *
  * s-wave phase shift for a hard-sphere-like barrier, and Born
  * approximation differential cross section for a screened Coulomb
- * (Yukawa) potential.
+ * (Yukawa) potential
  */
 
 #include "../core/complex.h"
@@ -16,9 +16,10 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Scattering Theory: Phase Shifts and Born Approximation\n\n");
+  printf(" > Scattering Theory: Phase Shifts and Born Approximation\n");
 
-  double a = 2.0, V0 = 1000.0;
+  double a = 2.0;
+  double V0 = 1000.0;
   double barrier_params[2] = {a, V0};
   double hbar_sq_2m = 0.5;
 
@@ -30,6 +31,7 @@ int main(void) {
   for (double k = 0.2; k <= 1.0; k += 0.2) {
     double delta = phase_shift(0, k, V_barrier, barrier_params, 0.01, 20.0,
                                2000, hbar_sq_2m);
+
     printf("   %4.2f   %13.4f   %11.4f\n", k, delta, -k * a);
   }
   printf("\n");

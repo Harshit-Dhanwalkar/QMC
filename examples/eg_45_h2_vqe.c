@@ -194,7 +194,7 @@ static void ao_to_mo(const cmatrix_t *h_ao, const double *eri_ao,
 }
 
 int main(void) {
-  printf(" > Real H2 VQE: Atomic Integrals -> Jordan-Wigner -> VQE\n\n");
+  printf(" > Real H2 VQE: Atomic Integrals -> Jordan-Wigner -> VQE\n");
 
   double R_bond = 1.4;
   double A[3] = {0, 0, 0};
@@ -255,7 +255,7 @@ int main(void) {
   printf("  Error vs. exact FCI : %.6f Hartree (%.4f mHartree)\n\n",
          vqe_res.energy - E_fci, 1000.0 * (vqe_res.energy - E_fci));
 
-  printf("  === Summary ===\n\n");
+  printf("  Summary:\n");
   printf("    %-25s %-14.6f\n", "RHF (mean-field)", E_rhf);
   printf("    %-25s %-14.6f\n", "FCI (exact, this basis)", E_fci);
   printf("    %-25s %-14.6f\n", "VQE (variational)", vqe_res.energy);

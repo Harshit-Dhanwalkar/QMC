@@ -2,9 +2,9 @@
  * Path Integral Monte Carlo: Helium Ground State
  *
  * Finite-temperature PIMC (Kelbg-regularized Coulomb, bisection sampling) at
- * low temperature (large \beta) projects toward the ground-state energy, same
+ * low temperature (large \beta) projects toward ground-state energy, same
  * target as VMC/DMC but via a completely different method: no trial
- * wavefunction, direct sampling of the imaginary-time path integral.
+ * wavefunction, direct sampling of imaginary-time path integral
  */
 
 #include "../core/constants.h"
@@ -14,19 +14,19 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Path Integral Monte Carlo: Helium Ground State\n\n");
+  printf(" > Path Integral Monte Carlo: Helium Ground State\n");
 
   double Z = 2.0;
-  double beta = 8.0; // low enough temperature that the finite-T PIMC estimator
-                     // approaches the ground state energy
+  double beta = 8.0; // low enough temperature that finite-T PIMC estimator
+                     // approaches ground state energy
   double E_exact = -2.9037;
 
   printf("   Two electrons as distinguishable ring polymers (valid here: "
          "helium ground state is nodeless, so there's no fermion sign problem "
          "for this system specifically).\n");
   printf("   Kelbg-regularized Coulomb pair potentials (finite at r=0) avoid "
-         "the path-collapse catastrophe a bare Coulomb singularity causes; "
-         "bisection moves resample whole path segments from the exact "
+         "path-collapse catastrophe a bare Coulomb singularity causes; "
+         "bisection moves resample whole path segments from exact "
          "free-particle distribution instead of diffusing bead by bead.\n\n");
 
   printf("   \\beta=%.1f fixed; \\tau-convergence via P: 64 -> 512 (\\tau = "
@@ -46,10 +46,9 @@ int main(void) {
     return 1;
   }
 
-  printf(
-      "   Two estimators are computed on the same sampled configurations:\n");
-  printf("  the thermodynamic estimator (E) and the lower-variance virial "
-         "estimator (E_virial, same expectation value, derived via a "
+  printf("   Two estimators are computed on same sampled configurations:\n");
+  printf("  thermodynamic estimator (E) and lower-variance virial estimator "
+         "(E_virial, same expectation value, derived via a "
          "coordinate-rescaling identity\n");
 
   for (int i = 0; i < n; i++) {

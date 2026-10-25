@@ -24,7 +24,7 @@
 #include <stdlib.h>
 
 static void run_h_atom(void) {
-  printf("  === Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta) ===\n");
+  printf("  Hydrogen atom (1 electron: 1 \\alpha, 0 \\beta)\n");
 
   double center[3] = {0.0, 0.0, 0.0};
   basis_function_t *h_orb = molint_basis_sto3g_h(center);
@@ -67,7 +67,7 @@ int main(void) {
 
   run_h_atom();
 
-  printf("  === Lithium atom (doublet radical: 2 \\alpha, 1 \\beta) ===\n");
+  printf("  Lithium atom (doublet radical: 2 \\alpha, 1 \\beta)\n");
 
   double li_center[3] = {0.0, 0.0, 0.0};
   basis_function_t *li[5];
@@ -108,12 +108,13 @@ int main(void) {
   for (int k = 0; k < doublet->n_basis; k++) {
     printf(" %+.6f", doublet->orbital_energies_beta[k]);
   }
+
   printf("\n  <S^2> = %.6f (exact Sz(Sz+1) for a clean doublet: 0.75 - 2s "
          "electron is well-separated in energy from other configurations here, "
          "so there's no spin contamination)\n\n",
          doublet->spin_squared);
 
-  printf("  === Li+ (2 electrons, closed-shell: n_alpha = n_beta = 1) ===\n");
+  printf("  Li+ (2 electrons, closed-shell: n_alpha = n_beta = 1)\n");
 
   molecular_uhf_result_t *liplus = run_li(1, 1, li, mol);
   molecular_hf_result_t *rhf_liplus = molecular_rhf(li, 5, mol, 2, 1e-10, 300);

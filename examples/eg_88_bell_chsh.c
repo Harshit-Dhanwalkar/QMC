@@ -17,10 +17,14 @@
 #endif
 
 int main(void) {
-  const double a = 0.0, a2 = M_PI / 2.0, b = M_PI / 4.0, b2 = 3.0 * M_PI / 4.0;
+  const double a = 0.0;
+  const double a2 = M_PI / 2.0;
+  const double b = M_PI / 4.0;
+  const double b2 = 3.0 * M_PI / 4.0;
 
-  printf(" > CHSH test, settings 0, 90, 45, 135 degrees\n\n");
-  printf("  local-model S: %.4f   deterministic bound: %.0f\n\n",
+  printf(" > CHSH test, settings 0, 90, 45, 135 degrees\n");
+
+  printf("  Local-model S: %.4f   deterministic bound: %.0f\n",
          fabs(bell_local_chsh(a, a2, b, b2)), bell_deterministic_bound());
   printf("  %10s  %12s  %12s  %10s\n", "visibility", "|S| quantum",
          "grid maximum", "violates?");

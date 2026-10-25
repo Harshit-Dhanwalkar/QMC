@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 int main(void) {
-  printf(" > Finite Square Well: Bound States vs V_0\n\n");
+  printf(" > Finite Square Well: Bound States vs V_0\n");
 
   // Parameters
   double a = 1.0;      // half-width of well

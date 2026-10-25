@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Quantum Harmonic Oscillator\n\n");
+  printf(" > Quantum Harmonic Oscillator\n");
 
   // Parameters (atomic units: \hbar=m=\omega=1)
   double omega = 1.0;

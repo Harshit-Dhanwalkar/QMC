@@ -1,8 +1,8 @@
 /*
  * Quantum Tunnelling
  *
- * A Gaussian wave packet hits a rectangular potential barrier.
- * Time evolution via Crank-Nicolson (unconditionally stable, norm-preserving).
+ * A Gaussian wave packet hits a rectangular potential barrier
+ * Time evolution via Crank-Nicolson (unconditionally stable, norm-preserving)
  *
  * Initial state:            \phi(x,0) = (2 * \pi * \sigma^2)^(-1/4) *
  *                           \exp(-(x-x_0)^2/4 * \sigma^2) * \exp(i * k_0x)
@@ -24,11 +24,12 @@
 #include <string.h>
 
 int main(void) {
-  printf(" > Quantum Tunnelling (Crank-Nicolson)\n\n");
+  printf(" > Quantum Tunnelling (Crank-Nicolson)\n");
 
   // Grid
   int N = 1001;
-  double x_min = -10.0, x_max = 10.0;
+  double x_min = -10.0;
+  double x_max = 10.0;
   double dx = (x_max - x_min) / (N - 1);
   double *x = linspace(x_min, x_max, N);
   if (!x) {

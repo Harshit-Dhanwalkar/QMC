@@ -22,7 +22,7 @@ static const double *pt(const double *p, int i) { return p + 4 * (size_t)i; }
 enum { COUNT = 100000 };
 
 int main(void) {
-  printf(" > Hydrogen orbital sampling (%d points each)\n\n", (int)COUNT);
+  printf(" > Hydrogen orbital sampling (%d points each)\n", (int)COUNT);
 
   double *pts = malloc(4 * (size_t)COUNT * sizeof *pts);
   if (!pts) {

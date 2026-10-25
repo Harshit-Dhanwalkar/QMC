@@ -3,9 +3,9 @@
  *
  * NOTE: A 256-site ring is prepared in ground state at h = 0.3 (ordered phase)
  * and field is switched to h = 2.0 (paramagnet), across critical point h = J
- * Free-fermion solution gives Loschmidt rate function -\ln L(t) / N, which has
+ * Free-fermion solution gives Loschmidt rate function -\ln(L(t) / N), which has
  * kinks at critical times \pi (n + 1/2) / \eps_k* (dynamical quantum phase
- * transitions), and transverse magnetisation
+ * transitions) and transverse magnetisation
  */
 
 #include "../physics/tfim_quench.h"
@@ -18,7 +18,8 @@ int main(void) {
   const double hf = 2.0;
   const int n = 256;
 
-  printf(" > TFIM quench h = %.1f -> %.1f, %d sites\n\n", hi, hf, n);
+  printf(" > TFIM quench h = %.1f -> %.1f, %d sites\n", hi, hf, n);
+
   printf("  critical times t*_n:");
   for (int k = 0; k < 4; k++) {
     printf(" %.4f", tfim_quench_critical_time(J, hi, hf, k));

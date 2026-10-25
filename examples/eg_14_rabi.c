@@ -1,9 +1,9 @@
 /*
  * Two-Level Rabi Oscillations
  *
- * Plots the excited-state probability P_e(t) for a driven two-level
- * system, on resonance and detuned, and verifies the resonant
- * pi-pulse gives full population inversion.
+ * Plots excited-state probability P_e(t) for a driven two-level system, on
+ * resonance and detuned and verifies resonant pi-pulse gives full population
+ * inversion
  */
 
 #include "../core/complex.h"
@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Two-Level Rabi Oscillations\n\n");
+  printf(" > Two-Level Rabi Oscillations\n");
 
   double Omega = 1.0;
   int N = 300;
@@ -42,11 +42,11 @@ int main(void) {
     P_detuned[i] = rabi_excited_probability(t[i], Omega, Delta_detuned);
   }
 
-  printf("   \\Omega=%.2f, resonant \\Delta=0, detuned Delta=%.2f\n\n", Omega,
+  printf("   \\Omega=%.2f, resonant \\Delta=0, detuned \\Delta=%.2f\n\n", Omega,
          Delta_detuned);
 
   double t_pi = M_PI / Omega;
-  printf("   Resonant pi-pulse at t=%.4f: P_e=%.6f (expect 1.0)\n\n", t_pi,
+  printf("   Resonant \\pi-pulse at t=%.4f: P_e=%.6f (expect 1.0)\n\n", t_pi,
          rabi_excited_probability(t_pi, Omega, 0.0));
 
   const double *ys[2] = {P_resonant, P_detuned};

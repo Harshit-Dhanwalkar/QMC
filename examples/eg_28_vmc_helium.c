@@ -1,10 +1,10 @@
 /*
  * Variational Monte Carlo: Helium Ground State
  *
- * Sweeps Jastrow parameter b to show VMC energy landscape.
- * Finds optimal b via golden-section minimization.
+ * Sweeps Jastrow parameter b to show VMC energy landscape
+ * Finds optimal b via golden-section minimization
  * Compare against plain product-orbital result (helium.c) and exact
- * ground-state energy.
+ * ground-state energy
  */
 
 #include "../core/constants.h"
@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Variational Monte Carlo: Helium Ground State\n\n");
+  printf(" > Variational Monte Carlo: Helium Ground State\n");
 
   double Z = 2.0;
   double Zeff = 2.0;
@@ -30,7 +30,8 @@ int main(void) {
          Zeff);
 
   int N = 25;
-  double b_min = 0.02, b_max = 0.5;
+  double b_min = 0.02;
+  double b_max = 0.5;
   double *b_vals = malloc(N * sizeof *b_vals);
   double *E_vals = malloc(N * sizeof *E_vals);
   if (!b_vals || !E_vals) {
@@ -44,6 +45,7 @@ int main(void) {
     double b = b_min + i * (b_max - b_min) / (N - 1);
     vmc_result_t r =
         vmc_run(Z, Zeff, b, 500, 20000, 200, 0.9, 0.9, 1000ULL + i);
+
     b_vals[i] = b;
     E_vals[i] = r.mean;
 

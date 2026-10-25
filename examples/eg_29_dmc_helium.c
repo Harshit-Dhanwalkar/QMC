@@ -1,10 +1,10 @@
 /*
  * Diffusion Monte Carlo: Helium Ground State
  *
- * DMC projecting past VMC's variational bound toward exact ground state energy.
+ * DMC projecting past VMC's variational bound toward exact ground state energy
  * For system trial wavefunction has no nodes, so plain DMC reaches exact answer
  * up to finite-timestep and finite-population effects (no fixed-node
- * approximation needed.)
+ * approximation needed)
  */
 
 #include "../core/constants.h"
@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Diffusion Monte Carlo: Helium Ground State\n\n");
+  printf(" > Diffusion Monte Carlo: Helium Ground State\n");
 
   double Z = 2.0;
   double Zeff = 2.0;
@@ -52,10 +52,10 @@ int main(void) {
   double vmc_gap = vmc_r.mean - E_exact;
   double dmc_gap = dmc_r.energy_mixed - E_exact;
   printf(
-      "   VMC is %.4f Hartree above exact; DMC is %.4f Hartree above exact.\n",
+      "   VMC is %.4f Hartree above exact; DMC is %.4f Hartree above exact\n",
       vmc_gap, dmc_gap);
-  printf("   DMC recovers the correlation energy VMC's finite Jastrow ansatz "
-         "misses.\n");
+  printf("   DMC recovers correlation energy VMC's finite Jastrow ansatz "
+         "misses\n");
 
   return 0;
 }

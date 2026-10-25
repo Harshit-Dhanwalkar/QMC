@@ -3,7 +3,7 @@
  *
  * Demonstrates couple_states() building coupled |J,M> states from
  * Clebsch-Gordan coefficients: two spin-1/2's -> triplet/singlet, and
- * l=1 (x) s=1/2 -> spin-orbit coupling basis.
+ * l=1 (x) s=1/2 -> spin-orbit coupling basis
  */
 
 #include "../core/complex.h"
@@ -29,7 +29,7 @@ static void print_two_spin_half(int J_2, int M_2, const char *name) {
 }
 
 int main(void) {
-  printf(" > Angular Momentum Coupling (Clebsch-Gordan)\n\n");
+  printf(" > Angular Momentum Coupling (Clebsch-Gordan)\n");
 
   printf("   Two spin-1/2 particles -> triplet (J=1) + singlet (J=0):\n");
   print_two_spin_half(2, 2, "Triplet M=+1");

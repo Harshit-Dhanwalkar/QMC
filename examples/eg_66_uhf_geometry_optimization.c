@@ -68,7 +68,7 @@ static double optimize_bond_length(double (*force_fn)(double, double *),
 
 int main(void) {
   printf(
-      " > Analytic UHF Nuclear Gradient: Open-Shell Geometry Optimization \n");
+      " > Analytic UHF Nuclear Gradient: Open-Shell Geometry Optimization\n");
 
   double R = optimize_bond_length(lih_cation_force, 2.5, 3.0, 150, 1e-6,
                                   "LiH+/STO-3G (doublet)");

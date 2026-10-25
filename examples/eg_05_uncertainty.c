@@ -4,7 +4,7 @@
  * The harmonic-oscillator ground state:
  *   \psi(x) = (m * \omega/(\pi * \hbar))^(1/4) * \exp(-m * \omega * x^2/(2 *
  *              \hbar))
- * is theoretical minimum-uncertainty state :
+ * is theoretical minimum-uncertainty state:
  *  \Delta_x * \Delta_p = \hbar/2, and <H> = \hbar * \omega/2
  */
 
@@ -18,11 +18,14 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Heisenberg Uncertainty: Minimum-Uncertainty Gaussian State\n\n");
+  printf(" > Heisenberg Uncertainty: Minimum-Uncertainty Gaussian State\n");
 
-  double hbar = 1.0, m = 1.0, omega = 1.0;
+  double hbar = 1.0;
+  double m = 1.0;
+  double omega = 1.0;
   int N = 2001;
-  double x_min = -8.0, x_max = 8.0;
+  double x_min = -8.0;
+  double x_max = 8.0;
 
   wavefunction_t *wf = wavefunction_alloc(N);
   if (!wf) {
@@ -34,6 +37,7 @@ int main(void) {
   double norm_const = pow(m * omega / (M_PI * hbar), 0.25);
   for (int i = 0; i < N; i++) {
     double xi = x_min + i * wf->dx;
+
     wf->x[i] = xi;
     wf->psi->data[i].re = norm_const * exp(-m * omega * xi * xi / (2.0 * hbar));
     wf->psi->data[i].im = 0.0;

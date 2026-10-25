@@ -29,7 +29,7 @@ static double well_condition(double E, double V0, double a, double m,
 // selected angular momentum channels, print low-lying eigenvalues and release
 // allocated resources
 int main(void) {
-  printf(" > General 3D Central Potentials: Beyond Hydrogen\n\n");
+  printf(" > General 3D Central Potentials: Beyond Hydrogen\n");
 
   // 3D isotropic harmonic oscillator
   // Solve for l=0..2 and compare first 3 numerical levels to exact expression

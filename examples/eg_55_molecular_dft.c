@@ -55,7 +55,8 @@ int main(void) {
 
   {
     double R = 1.4;
-    double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+    double c0[3] = {0, 0, 0};
+    double c1[3] = {0, 0, R};
     basis_function_t *h0 = molint_basis_sto3g_h(c0);
     basis_function_t *h1 = molint_basis_sto3g_h(c1);
     basis_function_t *basis[2] = {h0, h1};

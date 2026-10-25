@@ -1,8 +1,8 @@
 /*
  * Hydrogen Atom (radial equation)
  *
- * Solves radial Schrödinger equation for hydrogen using finite differences.
- * Compares numerical eigenvalues with analytic E_n = -13.6 eV / n^2.
+ * Solves radial Schrödinger equation for hydrogen using finite differences
+ * Compares numerical eigenvalues with analytic E_n = -13.6 eV / n^2
  */
 
 #include "../core/complex.h"
@@ -24,7 +24,7 @@
 #endif
 
 int main(void) {
-  printf(" > Hydrogen Atom (Radial Equation)\n\n");
+  printf(" > Hydrogen Atom (Radial Equation)\n");
 
   // Parameters (SI units)
   double hbar = HBAR;
@@ -55,6 +55,7 @@ int main(void) {
     fprintf(stderr, "Radial solve failed\n");
 
     free(r);
+
     return 1;
   }
 
@@ -67,6 +68,7 @@ int main(void) {
     int n = i + 1;
     double E_ana = -13.6 / (n * n);
     double err = fabs(E_num - E_ana) / fabs(E_ana) * 100.0;
+
     printf("   %2d   %15.6e   %15.6e   %7.2f%%\n", n, E_num, E_ana, err);
   }
   printf("\n");
@@ -95,6 +97,7 @@ int main(void) {
           }
 
           fclose(f);
+
           printf("    Saved %s\n", fname);
         } else {
           close(fd);

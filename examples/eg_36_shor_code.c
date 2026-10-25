@@ -1,13 +1,13 @@
 /*
- * The 9-Qubit Shor Code: Correcting Arbitrary Single-Qubit Errors
+ * 9-Qubit Shor Code: Correcting Arbitrary Single-Qubit Errors
  *
  * NOTE: eg_35_qec.c's 3-qubit codes each protect against exactly one error
  * type: bit-flip code catches X errors but is silent (and does nothing) for
  * Z errors, and vice versa. A Y error confuses both codes, since Y is
- * simultaneously a bit flip and a phase flip. The 9-qubit Shor code
+ * simultaneously a bit flip and a phase flip. 9-qubit Shor code
  * concatenates both 3-qubit codes - 3 blocks of bit-flip code, with 3 blocks
  * additionally wrapped in an outer phase-flip structure - so it corrects X, Y,
- * *and* Z errors on any single one of its 9 physical qubits.
+ * *and* Z errors on any single one of its 9 physical qubits
  */
 
 #include "../core/complex.h"
@@ -27,8 +27,7 @@ static const char *error_name(qec_error_type_t t) {
 }
 
 int main(void) {
-  printf(" > The 9-Qubit Shor Code: Correcting Arbitrary Single-Qubit "
-         "Errors\n\n");
+  printf(" > 9-Qubit Shor Code: Correcting Arbitrary Single-Qubit Errors\n");
 
   complex_t alpha = c_new(0.6, 0.2);
   complex_t beta = c_new(0.5, -0.3);
@@ -43,7 +42,7 @@ int main(void) {
 
   qec_error_type_t types[3] = {QEC_ERROR_X, QEC_ERROR_Y, QEC_ERROR_Z};
   for (int t = 0; t < 3; t++) {
-    printf("  --- %s errors ---\n", error_name(types[t]));
+    printf("  %s errors\n", error_name(types[t]));
 
     for (int q = -1; q < 9; q++) {
       qec_shor_result_t r = qec_shor_run(alpha, beta, q, types[t], u);
@@ -69,11 +68,10 @@ int main(void) {
     printf("\n");
   }
 
-  printf("  Every error type, on every one of the 9 physical qubits, is "
-         "corrected - the bit-flip syndromes (3 blocks) and the phase-flip "
-         "syndrome (across blocks) between them cover every possible single-"
-         "qubit Pauli error, which is exactly what the 3-qubit codes alone "
-         "could not do.\n");
+  printf("  Every error type, on every one of 9 physical qubits, is corrected "
+         "- bit-flip syndromes (3 blocks) and phase-flip syndrome (across "
+         "blocks) between them cover every possible single-qubit Pauli error, "
+         "which is exactly what 3-qubit codes alone could not do.\n");
 
   return 0;
 }

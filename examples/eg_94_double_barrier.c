@@ -21,7 +21,7 @@ int main(void) {
   const double d[3] = {0.5, 3.0, 0.5};
 
   printf(" > Barriers V = 30, thickness 0.5, well width 3 (infinite-well "
-         "levels %.3f, %.3f, %.3f)\n\n  %8s %12s %12s\n",
+         "levels %.3f, %.3f, %.3f)\n  %8s %12s %12s\n",
          pow(M_PI / 3, 2), pow(2 * M_PI / 3, 2), pow(3 * M_PI / 3, 2), "E", "T",
          "dwell");
   for (int i = 1; i <= 24; i++) {

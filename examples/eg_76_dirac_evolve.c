@@ -29,7 +29,7 @@ enum { N = 2048 };
 static const double DX = 0.1;
 
 static void zitterbewegung_demo(void) {
-  printf("  === Zitterbewegung ===\n");
+  printf("  Zitterbewegung\n");
 
   cvector_t *u = cvector_alloc(N);
   cvector_t *l = cvector_alloc(N);
@@ -64,7 +64,7 @@ static void zitterbewegung_demo(void) {
 }
 
 static void klein_demo(void) {
-  printf("  === Klein step: E = 2 m c^2 ===\n");
+  printf("  Klein step: E = 2 m c^2\n");
   printf("  %6s  %10s  %10s   regime\n", "V0", "T (sim)", "T (exact)");
 
   const double heights[] = {0.0, 0.5, 2.0, 4.0, 6.0, 10.0, 20.0};
@@ -111,7 +111,7 @@ static void klein_demo(void) {
 }
 
 int main(void) {
-  printf(" > Dirac wavepacket dynamics\n\n");
+  printf(" > Dirac wavepacket dynamics\n");
 
   zitterbewegung_demo();
   klein_demo();

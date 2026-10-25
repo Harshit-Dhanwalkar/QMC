@@ -22,7 +22,8 @@ enum { WIDTH = 20 };
 static void scan(double mass) {
   double t2 = 0.1;
   double phi = M_PI / 2;
-  double e[2 * WIDTH], mc[2 * WIDTH];
+  double e[2 * WIDTH];
+  double mc[2 * WIDTH];
 
   tb_model_t *m = tb_model_haldane(1.0, t2, phi, mass);
   if (!m) {
@@ -38,9 +39,11 @@ static void scan(double mass) {
     double k = M_PI * (0.5 + i / 6.0);
 
     tb_ribbon_bands(m, k, WIDTH, e, mc);
+
     printf("  %6.3f  E = %+7.4f (pos %+5.2f)   E = %+7.4f (pos %+5.2f)\n", k,
            e[WIDTH - 1], mc[WIDTH - 1], e[WIDTH], mc[WIDTH]);
   }
+
   tb_model_free(m);
 }
 

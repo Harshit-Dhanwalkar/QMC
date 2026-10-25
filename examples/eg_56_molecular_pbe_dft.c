@@ -8,7 +8,7 @@
  * correction on top of LDA (built on Perdew-Wang 1992 correlation rather than
  * Perdew-Zunger, since that is what PBE's enhancement factor is analytically
  * parametrized against), so it needs each basis function's gradient in addition
- * to its value at every grid point : that's molecular_integrals.h's
+ * to its value at every grid point: that's molecular_integrals.h's
  * basis_function_gradient
  * Runs RHF, KS-LDA and KS-PBE side by side for H2 and LiH so 3 levels of
  * exchange-correlation treatment can be compared directly on same minimal

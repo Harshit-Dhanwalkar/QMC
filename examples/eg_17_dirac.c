@@ -1,7 +1,7 @@
 /*
  * 1D Dirac Equation (Free Particle)
  *
- * Solves the 1D Dirac equation via the complex-Hermitian real-embedding solver
+ * Solves 1D Dirac equation via complex-Hermitian real-embedding solver
  * (cmatrix_eigh_complex). For a free particle, spectrum should split into two
  * branches separated by ~2mc^2, hard-wall-grid qualitative analog of
  * theoretical continuum result
@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > 1D Dirac Equation (Free Particle)\n\n");
+  printf(" > 1D Dirac Equation (Free Particle)\n");
 
   int N = 50;
   double dx = 0.2;
@@ -61,7 +61,7 @@ int main(void) {
   }
   printf("   %d states >= +mc^2 (positive-energy branch)\n", n_pos);
   printf("   %d states <= -mc^2 (negative-energy branch)\n", n_neg);
-  printf("   %d states in the gap (finite-grid artifact)\n\n", n_gap);
+  printf("   %d states in gap (finite-grid artifact)\n\n", n_gap);
 
   printf("   Lowest 5 positive-energy states:\n");
   printf("   idx    E\n");

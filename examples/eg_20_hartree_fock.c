@@ -1,5 +1,5 @@
 /*
- * Restricted Hartree-Fock - Beyond the Effective-Charge Trick
+ * Restricted Hartree-Fock - Beyond Effective-Charge Trick
  *
  * SCF loop instead solves self-consistently for orbital's actual radial *shape*
  * - direct + exchange mean-field potentials built from current orbitals, a
@@ -45,10 +45,11 @@ static void run_atom(const char *name, double Z, int n_orbitals, double r_max) {
 }
 
 int main(void) {
-  printf(" > Restricted Hartree-Fock: s-Orbital Closed-Shell Atoms\n\n");
+  printf(" > Restricted Hartree-Fock: s-Orbital Closed-Shell Atoms\n");
 
   double z_eff_he = helium_optimal_zeff_analytic(2.0);
   double e_simple_he = helium_ground_state_energy_analytic(2.0);
+
   printf("   helium.c's simple product-orbital variational estimate:\n");
   printf("     Z_eff = %.6f, E = %.6f Hartree\n\n", z_eff_he, e_simple_he);
 

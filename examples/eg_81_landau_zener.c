@@ -17,8 +17,8 @@ int main(void) {
   const double omega = 1.0;
   const double amp = 30.0;
 
-  printf(" > Landau-Zener sweep, Omega = %.1f, sweep +/- %.0f\n\n", omega, amp);
-  printf("  %8s  %12s  %12s\n", "rate", "integrated", "exp(-pi O^2/2v)");
+  printf(" > Landau-Zener sweep, Omega = %.1f, sweep +/- %.0f\n", omega, amp);
+  printf("  %8s  %12s  %12s\n", "rate", "integrated", "\\exp(-\\pi O^2/2v)");
   for (double rate = 0.1; rate <= 10.01; rate *= 2.0) {
     double v[3];
 

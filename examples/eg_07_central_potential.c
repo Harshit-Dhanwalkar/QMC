@@ -18,11 +18,11 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > General 3D Central-Potential Solver\n\n");
+  printf(" > General 3D Central-Potential Solver\n");
 
   // 3D isotropic harmonic oscillator, l=0
   printf("   3D Isotropic Harmonic Oscillator (l=0)\n");
-  printf("   Exact: E_{n_r,0} = (2 * n_r + 3/2) * \\hbar * \\omega\n\n");
+  printf("   Exact: E_{n_r,0} = (2 * n_r + 3/2) * \\hbar * \\omega\n");
 
   int N = 400;
   double r_min = 1e-3;

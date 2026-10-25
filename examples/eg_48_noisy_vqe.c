@@ -1,26 +1,26 @@
 /*
  * H2 Noisy VQE: T1/T2 Decoherence and Zero-Noise Extrapolation
  *
- * Takes the same H2/STO-3G 4-qubit Hamiltonian and VQE-optimized ansatz
+ * Takes same H2/STO-3G 4-qubit Hamiltonian and VQE-optimized ansatz
  * parameters as eg_42_h2_vqe.c, but instead of evaluating ansatz as a pure
  * state, evaluates it as a density matrix that picks up T1 (amplitude-damping)
  * and T2 (dephasing) noise after every gate, which drives lindblad.c's
  * already-validated GKSL machinery gate-by-gate rather than reimplementing
- * open-system dynamics.
+ * open-system dynamics
  *
- * This demonstrates two things a real NISQ device faces that the noiseless
+ * This demonstrates two things a real NISQ device faces that noiseless
  * VQE examples don't show at all:
- *   1. Decoherence during the circuit measurably degrades the energy estimate,
- *     growing with noise strength; even though the ansatz *parameters* found by
- *     noiseless VQE are unchanged.
- *   2. Zero-noise extrapolation (run the same circuit at amplified noise
- *     levels, then extrapolate back to zero) recovers a meaningfully better
- *     estimate than the raw noisy result, using nothing more than a linear fit
- *     across noise scales.
+ *   1. Decoherence during circuit measurably degrades energy estimate, growing
+ *     with noise strength; even though ansatz *parameters* found by noiseless
+ *     VQE are unchanged
+ *   2. Zero-noise extrapolation (run same circuit at amplified noise levels,
+ *     then extrapolate back to zero) recovers a meaningfully better estimate
+ *     than raw noisy result, using nothing more than a linear fit across noise
+ *     scales
  *
- * NOTE: VQE parameters used here are still the *noiseless*-optimal ones. This
+ * NOTE: VQE parameters used here are still *noiseless*-optimal ones. This
  * example is about evaluating a fixed circuit under noise and mitigating that
- * noise, not about re-optimizing parameters in the presence of noise.
+ * noise, not about re-optimizing parameters in presence of noise
  * TODO: noise-aware VQE  optimization
  */
 
@@ -74,7 +74,7 @@ int main(void) {
   printf("  Noiseless VQE: %.6f Hartree  (error vs FCI: %.4f mHartree)\n\n",
          vqe_res.energy, 1000.0 * fabs(vqe_res.energy - E_fci));
 
-  printf("  Step 3: Evaluate the SAME ansatz parameters under increasing T1/T2 "
+  printf("  Step 3: Evaluate same ansatz parameters under increasing T1/T2 "
          "noise (density-matrix simulation, physics/vqe_noisy.c)\n\n");
   double gate_time = 0.05; // natural units; a nominal per-gate duration
   const double noise_levels[4] = {0.0, 0.002, 0.005,
@@ -89,7 +89,7 @@ int main(void) {
     printf("    %-12.3f %-16.6f %-16.4f\n", gamma1, e_noisy,
            1000.0 * fabs(e_noisy - E_fci));
   }
-  printf("\n  Energy error grows with noise strength, even though the circuit "
+  printf("\n  Energy error grows with noise strength, even though circuit "
          "parameters never changed.\n\n");
 
   printf("  Step 4: Zero-noise extrapolation at a representative noise level "
@@ -111,8 +111,8 @@ int main(void) {
   printf("    %-30s %-14.6f\n", "VQE, noiseless", vqe_res.energy);
   printf("    %-30s %-14.6f\n", "VQE, noisy (raw, c=1)", raw_c1);
   printf("    %-30s %-14.6f\n", "VQE, noisy + ZNE", e_zne);
-  printf("\n   ZNE recovered %.4f mHartree of the %.4f mHartree that noise "
-         "cost the raw readout at this noise level, using only a polynomial "
+  printf("\n   ZNE recovered %.4f mHartree of %.4f mHartree that noise cost "
+         "raw readout at this noise level, using only a polynomial "
          "extrapolation across 3 amplified noise scales.\n",
          1000.0 * (fabs(raw_c1 - E_fci) - fabs(e_zne - E_fci)),
          1000.0 * fabs(raw_c1 - E_fci));

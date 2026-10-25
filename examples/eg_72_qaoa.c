@@ -110,6 +110,7 @@ int main(void) {
     printf("    exact ground energy = %.6f\n", e0);
     for (int p = 1; p <= 3; p += 2) {
       qaoa_result_t r = qaoa_run(is, p, 6, 6, 0.4, 99);
+
       printf("    p=%d  <C> = %.6f  ratio = %.4f  P(ground state) = %.4f\n", p,
              r.expectation, r.approx_ratio, r.optimum_prob);
 

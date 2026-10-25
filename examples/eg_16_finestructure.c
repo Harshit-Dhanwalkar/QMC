@@ -2,10 +2,10 @@
  * Hydrogen Fine Structure (Spin-Orbit Coupling)
  *
  * Demonstrates spin_orbit_ls_expect_from_coupling (built from
- * couple_states + ladder operators) matching the closed-form
+ * couple_states + ladder operators) matching closed-form
  * j(j+1)-l(l+1)-s(s+1) formula, then known total fine-structure
  * shift, checked against theoretical 2P_{3/2}-2P_{1/2} splitting
- * (~10.97 GHz).
+ * (~10.97 GHz)
  */
 
 #include "../core/constants.h"
@@ -16,7 +16,7 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Hydrogen Fine Structure (Spin-Orbit Coupling)\n\n");
+  printf(" > Hydrogen Fine Structure (Spin-Orbit Coupling)\n");
 
   printf("   <L.S>/\\hbar^2: closed form vs. CG-coupling reconstruction\n");
   printf("   l   j     closed-form   from-coupling   diff\n");

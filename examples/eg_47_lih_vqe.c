@@ -5,8 +5,8 @@
  * shell) and a heteronuclear pair. LiH's full minimal basis is 6 spatial
  * orbitals (12 qubits, 4096-dim), but freezing Li's tightly-bound, chemically
  * inert 1s core, reduces this to 5 active spatial orbitals (10 qubits,
- * 1024-dim) at a cost of only about 0.23 mHartree versus the exact full-space
- * answer.
+ * 1024-dim) at a cost of only about 0.23 mHartree versus exact full-space
+ * answer
  */
 
 #include "../core/matrix.h"
@@ -62,7 +62,7 @@ int main(void) {
   printf("    Frozen-core Hamiltonian: %dx%d\n\n", H->nrows, H->ncols);
 
 #ifdef USE_LAPACK
-  printf("  Step 4: Exact diagonalization (FCI within the frozen-core active "
+  printf("  Step 4: Exact diagonalization (FCI within frozen-core active "
          "space) : USE_LAPACK build, so this is tractable\n\n");
   int dim = H->nrows;
   cmatrix_t *H_copy = cmatrix_alloc(dim, dim);
@@ -81,7 +81,7 @@ int main(void) {
   vqe_result_t vqe_res = vqe_run(10, 4, H, 15, 0.6, 20260810ULL);
   printf("    VQE converged energy: %.6f Hartree\n\n", vqe_res.energy);
 
-  printf("  === Summary ===\n\n");
+  printf("  Summary:\n");
   printf("    %-30s %-14.6f\n", "RHF (mean-field)", hf->total_energy);
   printf("    %-30s %-14.6f\n", "Frozen-core FCI (exact)", E_fci);
   printf("    %-30s %-14.6f\n", "VQE (variational)", vqe_res.energy);
@@ -89,7 +89,7 @@ int main(void) {
       "\n   10-qubit VQE run does not reach H2's near-exact convergence with "
       "a optimizer budget : 40 ansatz parameters (10 qubits x 4 layers) is "
       "a harder non-convex landscape than H2's 12, and 10-qubit state "
-      "simulation itself is dominant cost here. The Hamiltonian and FCI "
+      "simulation itself is dominant cost here. Hamiltonian and FCI "
       "energy above are exact regardless.\n");
 
   free(vqe_res.theta_opt);
@@ -97,8 +97,8 @@ int main(void) {
   cmatrix_free(H_copy);
 #else
   printf("  Step 4: (skipped : exact diagonalization of a 1024x1024 complex "
-         "Hermitian matrix needs USE_LAPACK=1; rebuild with `make  "
-         "USE_LAPACK=1` to see the FCI energy and VQE run here. RHF and the "
+         "Hermitian matrix needs USE_LAPACK=1; rebuild with `make "
+         "USE_LAPACK=1` to see FCI energy and VQE run here. RHF and "
          "Hamiltonian construction above are unaffected either way.)\n\n");
 #endif
 

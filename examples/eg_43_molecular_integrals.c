@@ -181,15 +181,17 @@ static double h2_sto3g_rhf(double R_bond, int verbose) {
 
 int main(void) {
   printf(
-      " > General Molecular Integrals: H2/STO-3G Restricted Hartree-Fock\n\n");
+      " > General Molecular Integrals: H2/STO-3G Restricted Hartree-Fock\n");
 
-  printf("  === H2 at R=1.4 bohr (Szabo & Ostlund benchmark geometry) ===\n\n");
+  printf("  H2 at R=1.4 bohr (Szabo & Ostlund benchmark geometry)\n");
+
   double E = h2_sto3g_rhf(1.4, 1);
+
   printf(
-      "\n  E_total = %.6f Hartree (Theoretical reference: -1.1167 Hartree)\n\n",
+      "   E_total = %.6f Hartree (Theoretical reference: -1.1167 Hartree)\n",
       E);
 
-  printf("  === Bond-length scan ===\n\n");
+  printf("  Bond-length scan\n");
   printf("  %-10s %-12s\n", "R (bohr)", "E (Hartree)");
   for (int i = 0; i < 12; i++) {
     double R = 0.8 + i * 0.15;

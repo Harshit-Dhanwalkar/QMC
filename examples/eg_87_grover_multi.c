@@ -4,8 +4,7 @@
  * NOTE: A database of N = 1024 items has M marked entries. Each Grover
  * iteration (oracle sign flip, inversion about mean) rotates state by 2 \theta,
  * \sin(\theta) = \sqrt(M / N), towards uniform superposition of marked items
- * The success probability is \sin^2((2k + 1) \theta): it peaks at k* ~ (\pi /
- * 4)
+ * success probability is \sin^2((2k + 1) \theta): it peaks at k* ~ (\pi / 4)
  * \sqrt(N / M) and then falls again if you keep iterating
  */
 
@@ -29,6 +28,7 @@ int main(void) {
 
     printf("  M = %2d  \\theta = %.5f  best k = %d\n", m,
            grover_multi_theta(n, m), kopt);
+
     printf("  %4s  %12s  %12s\n", "k", "simulated", "\\sin^2");
     for (int k = 0; k <= 2 * kopt; k++) {
       if (k % ((kopt + 5) / 6) == 0 || k == kopt) {

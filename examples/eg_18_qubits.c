@@ -3,7 +3,7 @@
  *
  * Single-qubit gates alone never produce entanglement (product state, zero
  * entropy), while a single CNOT is enough to build a Bell/GHZ state (maximal
- * entanglement, exponential classical representation cost).
+ * entanglement, exponential classical representation cost)
  */
 
 #include "../core/complex.h"
@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 int main(void) {
-  printf(" > Multi-Qubit States: Trivial vs. Universal\n\n");
+  printf(" > Multi-Qubit States: Trivial vs. Universal\n");
 
   int n1 = 3;
   cvector_t *psi1 = qstate_alloc(n1);

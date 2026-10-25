@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Fermi's Golden Rule: Coupling to a Quasi-Continuum\n\n");
+  printf(" > Fermi's Golden Rule: Coupling to a Quasi-Continuum\n");
 
   int M = 150;      // no. of final states in manifold
   double W = 4.0;   // energy window manifold spans
@@ -73,6 +73,7 @@ int main(void) {
   double *c = malloc(dim * sizeof(double));
   if (!c) {
     fprintf(stderr, "Error: out of memory.\n");
+
     eigen_free(eig);
 
     return 1;
@@ -95,6 +96,7 @@ int main(void) {
     }
 
     double P = re * re + im * im;
+
     printf("   %6.2f  %14.6f  %14.6f\n", t, P, exp(-Gamma * t));
   }
 

@@ -2,15 +2,15 @@
  * Analytic RHF Nuclear Gradient / Forces (Pulay 1969) : Geometry Optimization
  *
  * NOTE: Every molecular_hf.c calculation has needed a bond length supplied by
- * hand (H2 at the theoretical R=1.4 bohr, LiH at its experimental R=3.015
+ * hand (H2 at theoretical R=1.4 bohr, LiH at its experimental R=3.015
  * bohr). This example uses molecular_rhf_gradient() an analytic derivative of
- * RHF energy with respect to nuclear coordinates, built from the
- * McMurchie-Davidson "increment/decrement" identity (Reference: Helgaker,
- * Jorgensen & Olsen eq. 9.3.8: differentiating a GTO wrt its own center is
- * itself expressible via the same integral routines with angular momentum
- * shifted by +-1) plus the Pulay energy-weighted-density-matrix term for
- * AO-basis-non-orthogonality (overlap) piece to instead find the equilibrium
- * bond length directly, by walking downhill on the force.
+ * RHF energy with respect to nuclear coordinates, built from McMurchie-Davidson
+ * "increment/decrement" identity (Reference: Helgaker, Jorgensen & Olsen
+ * eq. 9.3.8: differentiating a GTO wrt its own center is itself expressible via
+ * same integral routines with angular momentum shifted by +-1) plus Pulay
+ * energy-weighted-density-matrix term for AO-basis-non-orthogonality (overlap)
+ * piece to instead find equilibrium bond length directly, by walking downhill
+ * on force
  *
  * Two systems: H2 (for comparison point) and LiH (heteronuclear, p-orbitals,
  * multiple basis functions sharing a center)
@@ -22,10 +22,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Returns z-component force on atom 1 (bond-length direction) at bond length R,
- * and optionally the total energy. */
+// Returns z-component force on atom 1 (bond-length direction) at bond length R
+// and optionally total energy
 static double h2_force(double R, double *E_out) {
-  double c0[3] = {0, 0, 0}, c1[3] = {0, 0, R};
+  double c0[3] = {0, 0, 0};
+  double c1[3] = {0, 0, R};
 
   basis_function_t *h0 = molint_basis_sto3g_h(c0);
   basis_function_t *h1 = molint_basis_sto3g_h(c1);
@@ -52,7 +53,8 @@ static double h2_force(double R, double *E_out) {
 }
 
 static double lih_force(double R, double *E_out) {
-  double cLi[3] = {0, 0, 0}, cH[3] = {0, 0, R};
+  double cLi[3] = {0, 0, 0};
+  double cH[3] = {0, 0, R};
 
   basis_function_t *li[5];
   molint_basis_sto3g_li(cLi, li);
@@ -81,10 +83,9 @@ static double lih_force(double R, double *E_out) {
   return force_z;
 }
 
-/* Simple steepest-descent-on-the-force optimizer: at equilibrium the force
- * is zero, so a small step along the force direction with a fixed step size
- * converges to the minimum for these smooth, convex-near-the-minimum 1D
- * potential energy curves. */
+// Simple steepest-descent-on-the-force optimizer: at equilibrium force is zero,
+// so a small step along force direction with a fixed step size converges to
+// minimum for these smooth, convex-near-the-minimum 1D potential energy curves
 static double optimize_bond_length(double (*force_fn)(double, double *),
                                    double R0, double step, int max_iter,
                                    double tol, const char *name) {
@@ -103,22 +104,24 @@ static double optimize_bond_length(double (*force_fn)(double, double *),
       break;
     }
 
-    R += step * F; /* move along the force (downhill in energy) */
+    R += step * F; // move along force (downhill in energy)
   }
 
   return R;
 }
 
 int main(void) {
-  printf(" > Analytic RHF Nuclear Gradient : Geometry Optimizationn\n");
+  printf(" > Analytic RHF Nuclear Gradient: Geometry Optimizationn\n");
 
   double R_h2 = optimize_bond_length(h2_force, 1.0, 0.5, 30, 1e-6, "H2/STO-3G");
+
   printf("\n  H2/STO-3G equilibrium bond length: %.4f bohr (%.4f Angstrom)\n",
          R_h2, R_h2 * 0.529177);
   printf("  (Literature STO-3G/RHF equilibrium is ~1.34-1.40 bohr)\n\n");
 
   double R_lih =
       optimize_bond_length(lih_force, 2.5, 1.0, 100, 1e-6, "LiH/STO-3G");
+
   printf("\n  LiH/STO-3G equilibrium bond length: %.4f bohr (%.4f "
          "Angstrom)\n",
          R_lih, R_lih * 0.529177);

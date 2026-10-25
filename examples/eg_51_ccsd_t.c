@@ -10,7 +10,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > CCSD(T): Perturbative Triples on an Asymmetric H4 Cluster\n\n");
+  printf(" > CCSD(T): Perturbative Triples on an Asymmetric H4 Cluster\n");
 
   // Arbitrary non-collinear geometry (bohr)
   double centers[4][3] = {
@@ -35,8 +35,8 @@ int main(void) {
 
   molecular_ao_to_mo(h_ao, eri_ao, hf->C, 4, h_mo, eri_mo);
 
-  printf("  Step 2: CCSD(T) (CCSD to convergence, then the perturbative "
-         "triples correction)\n\n");
+  printf("  Step 2: CCSD(T) (CCSD to convergence, then perturbative triples "
+         "correction)\n\n");
   ccsdt_result_t *res = ccsdt_run(4, h_mo, eri_mo, hf->orbital_energies, 4, 0,
                                   hf->total_energy, 1e-10, 100);
 
@@ -49,10 +49,11 @@ int main(void) {
            res->perturbative_correction);
     printf("    CCSD(T) total energy:         %.10f Hartree\n\n",
            res->total_energy);
-    printf("    (T) correction is %.3f%% of the CCSD correlation energy on "
-           "this non-symmetric cluster : small but nonzero, as expected for a "
+    printf("    (T) correction is %.3f%% of CCSD correlation energy on this "
+           "non-symmetric cluster : small but nonzero, as expected for a "
            "perturbative refinement.\n",
            100.0 * res->perturbative_correction / res->ccsd_correlation_energy);
+
     free(res);
   }
 

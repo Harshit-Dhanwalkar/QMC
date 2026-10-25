@@ -50,7 +50,8 @@ static void make_coherent_state(cvector_t *psi, const double *x, int n,
 }
 
 static double compute_x_mean(const cvector_t *psi, const double *x, int n) {
-  double s = 0.0, norm = 0.0;
+  double s = 0.0;
+  double norm = 0.0;
 
   for (int i = 0; i < n; i++) {
     double p =
@@ -63,12 +64,25 @@ static double compute_x_mean(const cvector_t *psi, const double *x, int n) {
   return s / norm;
 }
 
+// Demonstration driver:
+//  - Build a 1D harmonic-oscillator test system
+//  - Run multiple independent Schrödinger solvers/evolvers
+//  - Compare numerical outputs against analytic expectations and/or
+//    independently discretized methods to sanity-check implementation
+//
+// This example prioritizes cross-validation and clarity of stages over
+// compactness; each step prints diagnostics suitable for quick inspection
 int main(void) {
-  printf(" > 4 Ways to Solve/Evolve the Harmonic Oscillator:\n");
+  printf(" > 4 Ways to Solve/Evolve Harmonic Oscillator\n");
 
-  double omega = 1.0, mass = 1.0, hbar = 1.0;
+  // Natural units
+  double omega = 1.0;
+  double mass = 1.0;
+  double hbar = 1.0;
 
-  // 1. solve_tise_shoot: bound-state energies via Numerov shooting
+  // solve_tise_shoot: Build a spatial grid and harmonic potential, then
+  // compute bound-state energies via shooting/Numerov-style workflow for
+  // comparison to spectrum
   printf("  Step 1: solve_tise_shoot - Numerov shooting for bound states\n");
 
   int n_shoot = 800;
@@ -79,6 +93,7 @@ int main(void) {
   if (!x_shoot || !V_shoot) {
     fprintf(stderr, "Memory allocation failed\n");
 
+    // Early-exit cleanup for partially successful allocations
     free(x_shoot);
     free(V_shoot);
 
@@ -100,6 +115,7 @@ int main(void) {
     numerov_solution_t *sol = solve_tise_shoot(&params, (double)level, 1e-8);
     if (sol) {
       double exact = (level + 0.5) * omega;
+
       printf("  n=%d: E_shoot = %.6f  (exact = %.6f, diff = %.2e)\n", level,
              sol->energy, exact, fabs(sol->energy - exact));
 
@@ -110,7 +126,7 @@ int main(void) {
   free(x_shoot);
   free(V_shoot);
 
-  // 1.5. solve_tise_shoot_matching: log-derivative-matching shooting
+  // solve_tise_shoot_matching: log-derivative-matching shooting
   printf("\n  Step 1.5: solve_tise_shoot_matching - log-derivative-matching "
          "shooting (distinct from solve_tise_shoot's diagonalization-based "
          "numerov_shoot)\n");
@@ -142,7 +158,8 @@ int main(void) {
 
   const double levels[3] = {0.5, 1.5, 2.5};
   for (int level = 0; level < 3; level++) {
-    double E_min = levels[level] - 0.4, E_max = levels[level] + 0.4;
+    double E_min = levels[level] - 0.4;
+    double E_max = levels[level] + 0.4;
 
     numerov_solution_t *sol =
         solve_tise_shoot_matching(&match_params, E_min, E_max, 200, 1e-8);
@@ -159,12 +176,14 @@ int main(void) {
   free(x_match);
   free(V_match);
 
-  // 2 & 3. Time evolution of a coherent-state wavepacket
+  // Time evolution of a coherent-state wavepacket
   printf("\n  Step 2: evolve_tdse_crank and evolve_tdse_split_step - "
          "coherent-state wavepacket dynamics\n");
 
   int n = 1024;
-  double L = 40.0, x0 = 3.0, dt = 0.001;
+  double L = 40.0;
+  double x0 = 3.0;
+  double dt = 0.001;
   int steps = 3000;
   double dx = L / n;
 

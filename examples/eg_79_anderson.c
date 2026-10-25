@@ -21,7 +21,7 @@ int main(void) {
   static double eps[N];
   const double strengths[] = {0.0, 1.0, 3.0, 8.0};
 
-  printf(" > Anderson localisation, N = %d sites, t = 1\n\n", N);
+  printf(" > Anderson localisation, N = %d sites, t = 1\n", N);
   printf("  %6s | %7s %9s %7s | %7s %9s %7s\n", "W", "\\tau", "width", "IPR",
          "\\tau", "width", "IPR");
 

@@ -21,7 +21,7 @@ static double V_free(double x, double t, void *params) {
 }
 
 int main(void) {
-  printf(" > Complex Absorbing Potential (CAP) and Time-Dependent TDSE\n\n");
+  printf(" > Complex Absorbing Potential (CAP) and Time-Dependent TDSE\n");
 
   int N = 400;
   double x_min = -20.0;

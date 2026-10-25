@@ -3,7 +3,7 @@
  *
  * Lande g-factors for hydrogen-like S,P,D terms, cross-checked against a
  * direct Clebsch-Gordan-coupling computation of <Sz>, and a "Zeeman fan"
- * of energy vs B for the 2P_3/2 term's four mj sublevels.
+ * of energy vs B for the 2P_3/2 term's four mj sublevels
  */
 
 #include "../core/utils.h"
@@ -28,7 +28,7 @@ static void print_term(const char *name, int l, int j_2) {
 }
 
 int main(void) {
-  printf(" > Zeeman Effect: Lande g-factors and Weak-Field Splitting\n\n");
+  printf(" > Zeeman Effect: Lande g-factors and Weak-Field Splitting\n");
 
   print_term("S1/2", 0, 1);
   print_term("P1/2", 1, 1);
@@ -37,8 +37,9 @@ int main(void) {
   print_term("D5/2", 2, 5);
 
   // "Zeeman fan": energy shift vs B for 2P_3/2 (l=1, j=3/2), 4 mj
-  // sublevels, \mu_B = 1 (natural units).
-  int l = 1, j_2 = 3;
+  // sublevels, \mu_B = 1 (natural units)
+  int l = 1;
+  int j_2 = 3;
   int n_mj = j_2 + 1;
   int N = 100;
   double *B = linspace(0.0, 2.0, N);
@@ -67,6 +68,7 @@ int main(void) {
     E_const[idx] = E[idx];
 
     labels[idx] = malloc(16);
+
     snprintf(labels[idx], 16, "m_j=%.1f", mj_2 / 2.0);
   }
 

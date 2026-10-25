@@ -17,7 +17,7 @@ int main(void) {
   const int n = 16;
 
   printf(" > Persistent current of the N = %d ring (units of t / flux "
-         "quantum), t = 1\n\n  %6s %10s %10s\n",
+         "quantum), t = 1\n  %6s %10s %10s\n",
          n, "phi", "ne = 7", "ne = 8");
   for (int i = 1; i <= 9; i++) {
     double phi = 0.05 * i;
@@ -34,6 +34,7 @@ int main(void) {
     double phi = 0.05 * i;
 
     ar_scatter(n, 0, n / 2, phi, 0.6, 1.0, &s);
+
     printf("  %6.2f %10.5f %10.5f\n", phi, s.transmission, s.reflection);
   }
 

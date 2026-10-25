@@ -20,18 +20,24 @@
 #include <stdlib.h>
 
 int main(void) {
+  // High-level demo: build XXZ as a Pauli-string sum, compare exact vs VQE
   printf(" > VQE with a General Pauli-String Hamiltonian: XXZ Chain\n");
 
+  // Problem size and coupling constants for a small periodic chain
   int N = 4;
   double Jz = 1.3, Jxy = 0.7;
   printf("  N=%d sites, Jz=%.2f, Jxy=%.2f, periodic boundary conditions\n", N,
          Jz, Jxy);
 
   // Build H = sum_j [(Jz/4) Z_jZ_{j+1} + (Jxy/4)(X_jX_{j+1} + Y_jY_{j+1})]
-  // as a Pauli sum: 3 terms per bond (ZZ, XX, YY), N bonds for PBC.
+  // as a Pauli sum: 3 terms per bond (ZZ, XX, YY), N bonds for PBC
+  // "ops" indexes Pauli letter used on each interacting bond endpoint
   const char *ops = "ZXY";
   const double base_coeff[3] = {Jz / 4.0, Jxy / 4.0, Jxy / 4.0};
 
+  // Allocate arrays for full Pauli decomposition:
+  // - strings[t]: N-character Pauli word plus terminating '\0'
+  // - coeffs[t]:  scalar weight associated with strings[t]
   int n_terms = 3 * N;
   char **strings = malloc((size_t)n_terms * sizeof *strings);
   double *coeffs = malloc((size_t)n_terms * sizeof *coeffs);
@@ -43,10 +49,13 @@ int main(void) {
     return 1;
   }
 
+  // Populate one ZZ/XX/YY term per bond
+  // For each site j, jn is its periodic neighbor (j+1 mod N)
   int t = 0;
   for (int j = 0; j < N; j++) {
     int jn = (j + 1) % N;
 
+    // o=0->Z, o=1->X, o=2->Y with matching coefficients in base_coeff
     for (int o = 0; o < 3; o++) {
       strings[t] = malloc((size_t)N + 1);
       if (!strings[t]) {
@@ -61,6 +70,7 @@ int main(void) {
         return 1;
       }
 
+      // Put active Pauli on 2 bond sites; identity elsewhere
       for (int q = 0; q < N; q++) {
         strings[t][q] = (q == j || q == jn) ? ops[o] : 'I';
       }
@@ -71,6 +81,7 @@ int main(void) {
     }
   }
 
+  // Convert symbolic Pauli decomposition into a dense Hamiltonian matrix
   cmatrix_t *H = vqe_build_pauli_hamiltonian(N, (const char *const *)strings,
                                              coeffs, n_terms);
   if (!H) {
@@ -93,7 +104,9 @@ int main(void) {
 
   cmatrix_t *H_copy = cmatrix_copy(H);
   eigen_t *eig = cmatrix_eigh_complex(H_copy);
+
   cmatrix_free(H_copy);
+
   double E_exact = eig->eigenvalues[0];
   eigen_free(eig);
 
@@ -101,6 +114,8 @@ int main(void) {
          "%.8f\n",
          E_exact);
 
+  // Run multiple randomized VQE restarts and keep best energy found
+  // Seed is varied per trial to diversify initial parameter trajectories
   double best = 1e9;
   int n_restarts = 10;
   for (int trial = 0; trial < n_restarts; trial++) {
@@ -112,9 +127,11 @@ int main(void) {
     free(r.theta_opt);
   }
 
+  // Report best variational energy and its deviation from exact
   printf("  VQE (best of %d restarts): E=%.6f\n", n_restarts, best);
   printf("  gap above exact ground energy: %.6f\n", best - E_exact);
 
+  // Release all allocated resources before exit
   for (int i = 0; i < n_terms; i++) {
     free(strings[i]);
   }

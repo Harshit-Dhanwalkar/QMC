@@ -4,10 +4,10 @@
  * NOTE: physics/dft.c is a closed-shell Kohn-Sham DFT solver in Local Density
  * Approximation (Slater exchange + Perdew-Zunger 1981 correlation), for same
  * s-orbitals-only scope as hartree_fock.c's RHF same closed-shell
- * doubly-occupied-orbital model. The only physical difference: RHF's exact but
+ * doubly-occupied-orbital model. Only physical difference: RHF's exact but
  * expensive nonlocal exchange operator is replaced by a cheap *local*
  * exchange-correlation potential V_xc(n(r)), a function only of density at that
- * point.
+ * point
  *
  * This example runs He (1 orbital) and Be (2 orbitals: 1s, 2s) through both
  * hartree_fock_atom_s_orbitals and dft_lda_atom_s_orbitals on identical grids,
@@ -24,11 +24,12 @@
 static void run_atom(const char *name, double Z, int n_orbitals,
                      double exact_ref) {
   int N = 200;
-  double r_min = 1e-4, r_max = 14.0;
+  double r_min = 1e-4;
+  double r_max = 14.0;
   double *r = linspace(r_min, r_max, N);
 
-  printf("  === %s (Z=%.0f, %d orbital%s, %d electrons) ===\n\n", name, Z,
-         n_orbitals, n_orbitals > 1 ? "s" : "", 2 * n_orbitals);
+  printf("  %s (Z=%.0f, %d orbital%s, %d electrons)\n", name, Z, n_orbitals,
+         n_orbitals > 1 ? "s" : "", 2 * n_orbitals);
 
   hf_result_t *hf =
       hartree_fock_atom_s_orbitals(r, N, Z, n_orbitals, 0.3, 1e-9, 200);
@@ -61,8 +62,8 @@ static void run_atom(const char *name, double Z, int n_orbitals,
 }
 
 int main(void) {
-  printf(" > Kohn-Sham LDA DFT for Atoms (Slater exchange + PZ81 "
-         "correlation)\n\n");
+  printf(
+      " > Kohn-Sham LDA DFT for Atoms (Slater exchange + PZ81 correlation)\n");
 
   run_atom("  Helium", 2.0, 1, -2.903724);
   run_atom("  Beryllium", 4.0, 2, -14.667356);

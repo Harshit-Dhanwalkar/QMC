@@ -4,9 +4,9 @@
  * NOTE: A coherent state |alpha = 2.5> evolves under Kerr Hamiltonian
  * H = \chi n (n - 1). Its Wigner function smears into a ring (photon number is
  * conserved, phase is not), and at \chi(t) = \pi / 2 it is exactly Schroedinger
- * cat (\exp(-i \pi/4) |i \alpha> + \exp(i \pi/4) |-i \alpha>) / \sqrt(2): two blobs
- * plus interference fringes that go negative. Negative volume of W measures how
- * non-classical state is
+ * cat (\exp(-i \pi/4) |i \alpha> + \exp(i \pi/4) |-i \alpha>) / \sqrt(2): two
+ * blobs plus interference fringes that go negative. Negative volume of W
+ * measures how non-classical state is
  */
 
 #include "../physics/phase_space.h"
@@ -22,7 +22,8 @@
 #define NX 128
 
 int main(void) {
-  const double alpha = 2.5, dx = 0.125;
+  const double alpha = 2.5;
+  const double dx = 0.125;
   complex_t c[NMAX + 1];
   complex_t psi[NX];
   double xs[NX], ps[NX];
@@ -32,8 +33,9 @@ int main(void) {
     xs[i] = ps[i] = (i - (NX - 1) / 2.0) * dx;
   }
 
-  printf(" > Kerr evolution of a coherent state, \\alpha = %.1f, <n> = %.2f\n\n",
-         alpha, alpha * alpha);
+  printf(
+      " > Kerr evolution of a coherent state, \\alpha = %.1f, <n> = %.2f\n",
+      alpha, alpha * alpha);
   printf("  %8s  %10s  %14s  %12s\n", "\\chi(t)", "<n>", "W minimum",
          "neg. volume");
 

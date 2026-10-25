@@ -3,7 +3,7 @@
  *
  * Two-photon Hong-Ou-Mandel (HOM) dip through a 50:50 beam splitter:
  * indistinguishable bosons bunch together at the output, with two "one photon
- * in each output" amplitude paths interfering destructively.
+ * in each output" amplitude paths interfering destructively
  */
 
 #include "../core/complex.h"
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 
 int main(void) {
-  printf(" > Boson Sampling: Hong-Ou-Mandel Interference\n\n");
+  printf(" > Boson Sampling: Hong-Ou-Mandel Interference\n");
 
   cmatrix_t *U = beam_splitter_50_50();
   const int input_modes[2] = {0, 1};
@@ -58,6 +58,7 @@ int main(void) {
       total += p;
     }
   }
+
   printf("   sum = %.6f (expect 1.0 - unitarity check)\n", total);
 
   cmatrix_free(D);

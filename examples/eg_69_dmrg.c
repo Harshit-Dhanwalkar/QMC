@@ -2,7 +2,7 @@
  * Infinite-system DMRG: Heisenberg antiferromagnetic spin chain
  *
  * physics/dmrg.c implements White's infinite-system Density Matrix
- * Renormalization Group algorithm for open-boundary spin-1/2 XXZ chain.
+ * Renormalization Group algorithm for open-boundary spin-1/2 XXZ chain
  * This example demonstrates its two defining convergence properties:
  *  1. For fixed chain length N, ground-energy error (and discarded
  *     reduced-density-matrix weight, "truncation_error") shrinks rapidly as

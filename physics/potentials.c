@@ -1,9 +1,8 @@
 /*
  * 1D and radial potential library
  *
- * Provides potential callbacks used by 1D Schrodinger solvers
- * (eg_02_harmonic.c, eg_04_infinite_well.c, finite-well/step/barrier examples)
- * and radial atomic solvers (central_potential.c, hartree_fock.c, dft.c)
+ * Provides potential callbacks used by 1D Schrodinger solvers and radial atomic
+ * solvers
  *
  * Included potentials:
  *   V_infinite_well(x, &a)       0 inside |x| < a, ~\infty outside
@@ -22,8 +21,7 @@
 #include "potentials.h"
 #include <math.h>
 
-// cppcheck-suppress constParameterPointer
-double V_infinite_well(double x, void *params) {
+double V_infinite_well(double x, const void *params) {
   const double *a = (const double *)params;
   if (fabs(x) < *a) {
     return 0.0;
@@ -32,7 +30,7 @@ double V_infinite_well(double x, void *params) {
   return 1e10; // Approximate infinity
 }
 
-double V_finite_well(double x, void *params) {
+double V_finite_well(double x, const void *params) {
   const double *p = (const double *)params;
   double a = p[0];
   if (fabs(x) < a) {
@@ -42,19 +40,19 @@ double V_finite_well(double x, void *params) {
   return 0.0;
 }
 
-double V_harmonic(double x, void *params) {
-  const double *omega = (double *)params;
+double V_harmonic(double x, const void *params) {
+  const double *omega = (const double *)params;
 
   return 0.5 * (*omega) * (*omega) * x * x;
 }
 
-double V_step(double x, void *params) {
-  double *V0 = (double *)params;
+double V_step(double x, const void *params) {
+  const double *V0 = (const double *)params;
 
   return (x >= 0) ? *V0 : 0.0;
 }
 
-double V_barrier(double x, void *params) {
+double V_barrier(double x, const void *params) {
   const double *p = (const double *)params;
   double a = p[0];
   if (x > 0 && x < a) {
@@ -64,28 +62,31 @@ double V_barrier(double x, void *params) {
   return 0.0;
 }
 
-double V_coulomb(double r, void *params) {
-  const double *k = (double *)params; // Coulomb constant
+double V_coulomb(double r, const void *params) {
+  const double *k = (const double *)params; // Coulomb constant
 
   return -(*k) / r;
 }
 
-double V_yukawa(double r, void *params) {
-  const double *p = (double *)params;
-  double g = p[0], mu = p[1];
+double V_yukawa(double r, const void *params) {
+  const double *p = (const double *)params;
+  double g = p[0];
+  double mu = p[1];
 
   return -(g / r) * exp(-mu * r);
 }
 
-double V_morse(double x, void *params) {
-  const double *p = (double *)params;
-  double D = p[0], a = p[1], x0 = p[2];
+double V_morse(double x, const void *params) {
+  const double *p = (const double *)params;
+  double D = p[0];
+  double a = p[1];
+  double x0 = p[2];
   double y = 1.0 - exp(-a * (x - x0));
 
   return D * y * y;
 }
 
-void potential_array(double *x, int n, potential_fn V, void *params,
+void potential_array(double *x, int n, potential_fn V, const void *params,
                      double *V_out) {
   for (int i = 0; i < n; i++) {
     V_out[i] = V(x[i], params);

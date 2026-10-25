@@ -46,6 +46,7 @@ int main(void) {
   // hopping disorder does not move edge states
   ssh_chain_bonds(bond, CELLS, 1.0, 2.0, 0.5, 3);
   ssh_chain_solve(CELLS, bond, NULL, e, NULL);
+
   printf("\n  w = 2 with 50%% random hopping: E = %.2e, %.2e (chiral)\n",
          e[CELLS - 1], e[CELLS]);
 

@@ -2,7 +2,7 @@
  * Helium Ground State (Variational Method)
  *
  * Sweeps trial energy E(Z') for helium (and a couple of helium-like ions)
- * variational minimum against the analytic Z'_opt = Z - 5/16.
+ * variational minimum against the analytic Z'_opt = Z - 5/16
  */
 
 #include "../core/constants.h"
@@ -17,12 +17,13 @@ static void run_ion(double Z, const char *name) {
   double Zeff_opt;
   double E_hartree = helium_ground_state_energy_numeric(Z, 1e-12, &Zeff_opt);
   double E_eV = E_hartree * (AU_ENERGY / E_CHARGE);
+
   printf("   %-8s Z=%.0f:  Z'_opt=%.4f  E=%.6f Hartree (%.2f eV)\n", name, Z,
          Zeff_opt, E_hartree, E_eV);
 }
 
 int main(void) {
-  printf(" > Helium Ground State (Effective-Charge Variational Method)\n\n");
+  printf(" > Helium Ground State (Effective-Charge Variational Method)\n");
 
   run_ion(1.0, "H-");
   run_ion(2.0, "He");
@@ -47,6 +48,7 @@ int main(void) {
 
   double Zeff_analytic = helium_optimal_zeff_analytic(Z);
   double E_analytic = helium_ground_state_energy_analytic(Z);
+
   printf("   Helium: E(Z') minimized at Z'=%.4f, E=%.6f Hartree\n",
          Zeff_analytic, E_analytic);
   printf("   (theoretical: Z'=1.6875, E=-2.84765625 Hartree ~ -77.5 eV)\n\n");

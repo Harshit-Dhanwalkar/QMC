@@ -24,7 +24,7 @@ int main(void) {
   for (int n = 1; n <= 256; n *= 2) {
     printf("  %6d  %12.6f\n", n, zeno_survival_pulsed(omega, T, n));
   }
-  printf("\n > Continuous measurement: decay rate / Omega versus dephasing "
+  printf("\n > Continuous measurement: decay rate / \\Omega versus dephasing "
          "\\Gamma / \\Omega\n\n  %8s  %10s\n",
          "\\Gamma", "rate");
 
@@ -34,7 +34,7 @@ int main(void) {
     printf("  %8.2f  %10.5f\n", g, zeno_continuous_rate(omega, g));
   }
 
-  printf("\n  Survival at t = %.3f with \\Gamma = 20 Omega: %.5f\n", T,
+  printf("\n  Survival at t = %.3f with \\Gamma = 20 \\Omega: %.5f\n", T,
          zeno_survival_continuous(omega, 20.0, T));
 
   return 0;

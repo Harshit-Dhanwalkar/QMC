@@ -20,7 +20,7 @@
 // using SOFT, and prints numerical observables alongside analytical
 // expectations where available
 int main(void) {
-  printf(" > Split-Operator Fourier Transform: 2D and 3D Wavepackets\n\n");
+  printf(" > Split-Operator Fourier Transform: 2D and 3D Wavepackets\n");
 
   // Free-particle Gaussian: spreads and drifts with constant group velocity
   printf("   Free-particle 2D Gaussian wavepacket (V=0):\n");
@@ -149,6 +149,7 @@ int main(void) {
 
     if (!x || !y || !psi || !V) {
       fprintf(stderr, "Error: out of memory.\n");
+
       free(x);
       free(y);
       cvector_free(psi);

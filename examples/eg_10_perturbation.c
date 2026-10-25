@@ -41,7 +41,7 @@ static void fill_eigenbasis_column(cmatrix_t *V_pert, int col,
   for (int k = 0; k < n; k++) {
     cvector_t *phi_k = cvector_from_matrix_column(eig->eigenvectors, k);
     if (phi_k == NULL) {
-      fprintf(stderr, "Error: failed to extract eigenvector column %d.\n", k);
+      fprintf(stderr, "Error: failed to extract eigenvector column %d\n", k);
 
       cvector_free(phi_col);
 
@@ -72,7 +72,7 @@ static void fill_eigenbasis_column(cmatrix_t *V_pert, int col,
 }
 
 int main(void) {
-  printf(" > Non-degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n\n");
+  printf(" > Non-degenerate Perturbation Theory (Harmonic + \\lambda x^4)\n");
 
   // Parameters (atomic units: \hbar = m = \omega = 1)
   double omega = 1.0;

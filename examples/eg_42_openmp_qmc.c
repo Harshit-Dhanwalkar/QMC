@@ -3,7 +3,7 @@
  *
  * vmc_run_parallel / dmc_run_parallel / pimc_run_parallel each run n_replicas
  * fully independent chains - own walker(s), own equilibration, own statistics
- * -- and combine them. Independence between replicas is exact (not merely
+ * and combine them. Independence between replicas is exact (not merely
  * statistical): replica i's RNG stream is master seed's rng_jump()'d i times, a
  * proven non-overlapping 2^128-step advance of underlying xoshiro256**
  * generator (see core/random.h). Combined error reported is inter-replica
@@ -38,43 +38,50 @@ static double wall_seconds(void) {
 }
 
 int main(void) {
-  printf(" > OpenMP-Parallel Quantum Monte Carlo\n\n");
+  printf(" > OpenMP-Parallel Quantum Monte Carlo\n");
 
 #ifdef _OPENMP
   printf("  Built with OpenMP. Max threads available: %d\n",
          omp_get_max_threads());
   printf("  (Set OMP_NUM_THREADS to control this, e.g. OMP_NUM_THREADS=4 "
-         "./build/eg_40_openmp_qmc)\n\n");
+         "./build/eg_40_openmp_qmc)\n");
 #else
   printf("Built WITHOUT OpenMP (all _parallel functions still run "
          "correctly, just serially).\n\n");
 #endif
 
-  /* Helium ground state, same physical parameters throughout. */
-  double Z = 2.0, Zeff = 1.6875, b = 0.3;
-  int n_equilibration = 1000, n_samples = 60000, block_size = 100;
-  double step1 = 0.9, step2 = 0.9;
+  // Helium ground state, same physical parameters throughout
+  double Z = 2.0;
+  double Zeff = 1.6875;
+  double b = 0.3;
+  int n_equilibration = 1000;
+  int n_samples = 60000;
+  int block_size = 100;
+  double step1 = 0.9;
+  double step2 = 0.9;
   int n_replicas = 8;
 
-  printf("  === VMC: %d replicas, %d samples each (%d total) ===\n\n",
-         n_replicas, n_samples, n_replicas * n_samples);
+  printf("  VMC: %d replicas, %d samples each (%d total)\n", n_replicas,
+         n_samples, n_replicas * n_samples);
 
   double t0 = wall_seconds();
   double serial_sum_mean = 0.0;
   for (int i = 0; i < n_replicas; i++) {
-    /* Each iteration is its own independent single-chain run (n_replicas=1
-     * called n_replicas times), same total sampling work as parallel call
-     * below, but executed one chain at a time */
+    // Each iteration is its own independent single-chain run (n_replicas=1
+    // called n_replicas times), same total sampling work as parallel call
+    // below, but executed one chain at a time
     vmc_result_t r =
         vmc_run_parallel(1, Z, Zeff, b, n_equilibration, n_samples, block_size,
                          step1, step2, 1000ULL + (uint64_t)i);
     serial_sum_mean += r.mean;
   }
+
   double t1 = wall_seconds();
 
   vmc_result_t r_parallel =
       vmc_run_parallel(n_replicas, Z, Zeff, b, n_equilibration, n_samples,
                        block_size, step1, step2, 1000ULL);
+
   double t2 = wall_seconds();
 
   printf("  Sequential loop of %d single-replica calls: %.3f s (mean of means "
@@ -87,7 +94,9 @@ int main(void) {
     printf("  Speedup: %.2fx\n\n", (t1 - t0) / (t2 - t1));
   }
 
-  printf("  === DMC: 4 replicas, helium ===\n\n");
+  printf("\n");
+
+  printf("  DMC: 4 replicas, helium\n");
   double t3 = wall_seconds();
   dmc_result_t dr = dmc_run_parallel(4, Z, Zeff, 0.15,
                                      /*target_population=*/200,
@@ -101,7 +110,9 @@ int main(void) {
   printf("  dmc_run_parallel(4, ...): %.3f s, mixed = %.6f +- %.6f Hartree\n\n",
          t4 - t3, dr.energy_mixed, dr.error_mixed);
 
-  printf("  === PIMC: 4 replicas, helium ===\n\n");
+  printf("\n");
+
+  printf("  PIMC: 4 replicas, helium\n");
   double t5 = wall_seconds();
   int P = 256;
   double tau = 8.0 / P;

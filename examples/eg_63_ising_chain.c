@@ -47,7 +47,7 @@ static double transverse_magnetization(const cmatrix_t *psi, int dim) {
 }
 
 int main(void) {
-  printf(" > Transverse-Field Ising Model: quantum phase transition\n\n");
+  printf(" > Transverse-Field Ising Model: quantum phase transition\n");
 
   double h_vals[N_H_POINTS];
   double dh = (H_MAX - H_MIN) / (N_H_POINTS - 1);

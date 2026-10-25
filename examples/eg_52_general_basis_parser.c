@@ -25,13 +25,13 @@
 #include <string.h>
 
 /*
- * NOTE: Published STO-3G basis-set text (Gaussian94 format) for H and O. The
- * contraction coefficients (0.15432897/0.53532814/0.44463454 for every S shell;
+ * NOTE: Published STO-3G basis-set text (Gaussian94 format) for H and O.
+ * Contraction coefficients (0.15432897/0.53532814/0.44463454 for every S shell;
  * -0.09996723/0.39951283/0.70011547 and 0.15591627/0.60768372/ 0.39195739 for
  * every SP shell's s-/p-parts respectively) are same "universal" STO-3G values
- * used across the periodic table; only per-element exponents change. Same
- * numeric family already validated in tests/test_basis_parser.c against the
- * hardcoded H/Li builders
+ * used across periodic table; only per-element exponents change. Same numeric
+ * family already validated in tests/test_basis_parser.c against hardcoded H/Li
+ * builders
  */
 static const char *STO3G_H_O_TEXT =
     "!  STO-3G  (Hehre, Stewart & Pople 1969)\n"
@@ -56,7 +56,7 @@ static const char *STO3G_H_O_TEXT =
 int main(void) {
   printf(" > General Basis-Set-File Parser: Water (H2O), STO-3G\n");
 
-  printf("  Step 1: parse the STO-3G Gaussian94-format text (H + O)\n");
+  printf("  Step 1: parse STO-3G Gaussian94-format text (H + O)\n");
 
   basis_set_t *bs = basis_set_parse_string(STO3G_H_O_TEXT);
   if (!bs) {
@@ -79,8 +79,8 @@ int main(void) {
   printf("\n");
 
   // Near-experimental water geometry: r(O-H) = 0.9584 Angstrom = 1.8111 bohr,
-  // HOH angle = 104.45 degrees, O at the origin with the bisector along -z
-  printf("  Step 2: build the water molecule (near-experimental geometry: "
+  // HOH angle = 104.45 degrees, O at origin with bisector along -z
+  printf("  Step 2: build water molecule (near-experimental geometry: "
          "r(O-H)=1.8111 bohr, angle=104.45 deg)\n");
 
   double r_oh = 1.8111;
@@ -97,7 +97,7 @@ int main(void) {
   basis_function_t **basis = NULL;
   int n_basis = basis_set_build_molecule(bs, symbols, centers, 3, &basis);
   if (n_basis == 0) {
-    fprintf(stderr, "Failed to build the molecular basis.\n");
+    fprintf(stderr, "Failed to build molecular basis.\n");
 
     basis_set_free(bs);
 

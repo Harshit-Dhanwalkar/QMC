@@ -46,7 +46,7 @@ typedef struct {
 typedef void (*floquet_h_fn)(double, void *, cmatrix_t *);
 typedef double (*golden_fn)(double, void *);
 
-static void circular_H(double t, void *p, cmatrix_t *H) {
+static void circular_H(double t, const void *p, cmatrix_t *H) {
   const circ_t *q = (const circ_t *)p;
 
   put(H, 0, 0, 0.5 * q->w0, 0.0);
@@ -89,7 +89,7 @@ typedef struct {
   double w0, Om;
 } bs_t;
 
-static double bs_gap(double om, void *p) {
+static double bs_gap(double om, const void *p) {
   const bs_t *q = (const bs_t *)p;
   cmatrix_t *h[3];
 
