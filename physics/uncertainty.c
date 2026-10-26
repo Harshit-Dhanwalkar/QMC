@@ -1,9 +1,8 @@
 /*
-\Delta(x)\delta(p), \delta(E)\delta(t), generalized
-*/
+ * \Delta(x)\delta(p), \delta(E)\delta(t), generalized
+ */
+
 #include "uncertainty.h"
-#include "../core/complex.h"
-#include "../core/constants.h"
 #include "potentials.h"
 #include "variational.h"
 #include "wavefn.h"
@@ -23,27 +22,18 @@ uncertainty_t compute_uncertainties(const wavefunction_t *wf) {
   return u;
 }
 
-/*
- * Identical formula to variational.c's variational_energy (KE via
- * wavefunction_expect_p2 + potential expectation via direct grid quadrature)
- */
+// Energy expectation value for a given potential V(x) and particle mass m:
+//
+//   <H> = <T> + <V>
+//       = <p^2> / (2m) + \int |\psi(x)|^2 V(x) dx
+//
+// NOTE: Kinetic term <p^2> is evaluated in momentum space (via FFT) and
+// potential term via direct grid quadrature
+//
+// WARN: This wrapper provides a entry point for energy expectations within
+// uncertainty module (e.g., for future \Delta E \Delta t calculations), keeping
+// API cohesive for anyone who includes only uncertainty.h
 double compute_energy_expectation(const wavefunction_t *wf, potential_fn V,
                                   void *params, double mass) {
-  // if (!wf || !V) {
-  //   return 0.0;
-  // }
-  // double KE = wavefunction_expect_p2(wf) / (2.0 * mass);
-  // double PE = 0.0;
-  //
-  // for (int i = 0; i < wf->n; i++) {
-  //   double V_i = V(wf->x[i], params);
-  //
-  //   PE += V_i * c_abs2(wf->psi->data[i]);
-  // }
-  //
-  // PE *= wf->dx;
-  //
-  // return KE + PE;
-
   return variational_energy(wf, V, params, mass);
 }

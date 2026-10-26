@@ -102,9 +102,9 @@ Document builder
 typedef struct latex_document latex_document_t;
 ```
 
-## Functions (52)
+## Functions (55)
 
-[`latex_compiler_available`](#latex_compiler_available), [`latex_png_converter_available`](#latex_png_converter_available), [`latex_tools_available`](#latex_tools_available), [`latex_last_error`](#latex_last_error), [`latex_render_to_png`](#latex_render_to_png), [`latex_render_to_pdf`](#latex_render_to_pdf), [`latex_write_figure`](#latex_write_figure), [`latex_compile`](#latex_compile), [`latex_generate_article`](#latex_generate_article), [`latex_generate_table`](#latex_generate_table), [`latex_inline_math`](#latex_inline_math), [`latex_display_math`](#latex_display_math), [`latex_matrix`](#latex_matrix), [`latex_clean_temp`](#latex_clean_temp), [`latex_escape_text`](#latex_escape_text), [`latex_write_escaped_text`](#latex_write_escaped_text), [`latex_validate_label`](#latex_validate_label), [`latex_string_init`](#latex_string_init), [`latex_string_append`](#latex_string_append), [`latex_string_append_char`](#latex_string_append_char), [`latex_string_appendf`](#latex_string_appendf), [`latex_string_detach`](#latex_string_detach), [`latex_string_free`](#latex_string_free), [`latex_render_options_default`](#latex_render_options_default), [`latex_render_to_png_ex`](#latex_render_to_png_ex), [`latex_render_to_pdf_ex`](#latex_render_to_pdf_ex), [`latex_table_create`](#latex_table_create), [`latex_table_free`](#latex_table_free), [`latex_table_set`](#latex_table_set), [`latex_table_set_header`](#latex_table_set_header), [`latex_table_set_caption`](#latex_table_set_caption), [`latex_table_set_label`](#latex_table_set_label), [`latex_table_set_style`](#latex_table_set_style), [`latex_table_set_col_format`](#latex_table_set_col_format), [`latex_table_set_placement`](#latex_table_set_placement), [`latex_table_write`](#latex_table_write), [`latex_document_create`](#latex_document_create), [`latex_document_free`](#latex_document_free), [`latex_document_set_author`](#latex_document_set_author), [`latex_document_set_date`](#latex_document_set_date), [`latex_document_set_abstract`](#latex_document_set_abstract), [`latex_document_set_class`](#latex_document_set_class), [`latex_document_add_package`](#latex_document_add_package), [`latex_document_add_section`](#latex_document_add_section), [`latex_document_add_subsection`](#latex_document_add_subsection), [`latex_document_add_paragraph`](#latex_document_add_paragraph), [`latex_document_add_equation`](#latex_document_add_equation), [`latex_document_add_figure`](#latex_document_add_figure), [`latex_document_add_figure_ex`](#latex_document_add_figure_ex), [`latex_document_add_table`](#latex_document_add_table), [`latex_document_add_raw`](#latex_document_add_raw), [`latex_document_write`](#latex_document_write)
+[`latex_compiler_available`](#latex_compiler_available), [`latex_png_converter_available`](#latex_png_converter_available), [`latex_tools_available`](#latex_tools_available), [`latex_last_error`](#latex_last_error), [`latex_render_to_png`](#latex_render_to_png), [`latex_render_to_pdf`](#latex_render_to_pdf), [`latex_write_figure`](#latex_write_figure), [`latex_compile`](#latex_compile), [`latex_generate_article`](#latex_generate_article), [`latex_generate_table`](#latex_generate_table), [`latex_inline_math`](#latex_inline_math), [`latex_display_math`](#latex_display_math), [`latex_matrix`](#latex_matrix), [`latex_format_double`](#latex_format_double), [`latex_escape_text`](#latex_escape_text), [`latex_write_escaped_text`](#latex_write_escaped_text), [`latex_validate_label`](#latex_validate_label), [`latex_string_init`](#latex_string_init), [`latex_string_append`](#latex_string_append), [`latex_string_append_char`](#latex_string_append_char), [`latex_string_appendf`](#latex_string_appendf), [`latex_string_detach`](#latex_string_detach), [`latex_string_free`](#latex_string_free), [`latex_render_options_default`](#latex_render_options_default), [`latex_render_to_png_ex`](#latex_render_to_png_ex), [`latex_render_to_pdf_ex`](#latex_render_to_pdf_ex), [`latex_table_create`](#latex_table_create), [`latex_table_free`](#latex_table_free), [`latex_table_set`](#latex_table_set), [`latex_table_set_header`](#latex_table_set_header), [`latex_table_set_caption`](#latex_table_set_caption), [`latex_table_set_label`](#latex_table_set_label), [`latex_table_set_style`](#latex_table_set_style), [`latex_table_set_col_format`](#latex_table_set_col_format), [`latex_table_set_placement`](#latex_table_set_placement), [`latex_table_write`](#latex_table_write), [`latex_document_create`](#latex_document_create), [`latex_document_free`](#latex_document_free), [`latex_document_set_author`](#latex_document_set_author), [`latex_document_set_date`](#latex_document_set_date), [`latex_document_set_abstract`](#latex_document_set_abstract), [`latex_document_set_class`](#latex_document_set_class), [`latex_document_add_package`](#latex_document_add_package), [`latex_document_add_section`](#latex_document_add_section), [`latex_document_add_subsection`](#latex_document_add_subsection), [`latex_document_add_paragraph`](#latex_document_add_paragraph), [`latex_document_add_equation`](#latex_document_add_equation), [`latex_document_add_itemize`](#latex_document_add_itemize), [`latex_document_add_enumerate`](#latex_document_add_enumerate), [`latex_document_add_verbatim`](#latex_document_add_verbatim), [`latex_document_add_figure`](#latex_document_add_figure), [`latex_document_add_figure_ex`](#latex_document_add_figure_ex), [`latex_document_add_table`](#latex_document_add_table), [`latex_document_add_raw`](#latex_document_add_raw), [`latex_document_write`](#latex_document_write)
 
 ### `latex_compiler_available`
 
@@ -113,7 +113,7 @@ int latex_compiler_available(void);
 ```
 
 ```text
-Returns 1 if the configured LaTeX compiler (pdflatex/lualatex) is on PATH
+Returns 1 if configured LaTeX compiler (pdflatex/lualatex) is on PATH
 ```
 
 ### `latex_png_converter_available`
@@ -195,7 +195,7 @@ int latex_compile(const char *texfile, const char *compiler,
 
 ```text
 Compile a .tex file to PDF
-texfile: path to the .tex file
+texfile: path to .tex file
  - compiler   : "pdflatex" or "lualatex" (defaults to build's configured
                 QMC_LATEX_COMPILER, itself defaulting to "pdflatex", if NULL)
  - working_dir: directory to run compiler in (can be NULL for current dir)
@@ -216,7 +216,7 @@ int latex_generate_article(const char *texpath, const char *title,
 ```text
 Generate a full LaTeX article and write it to a file
 title, author, date (can be NULL), abstract (can be NULL), sections:
-NULL‑terminated array of char* (each is a LaTeX body)
+NULL-terminated array of char* (each is a LaTeX body)
 
 Returns 0 on success, <0 on file error
 ```
@@ -238,7 +238,7 @@ Generate a LaTeX table from a 2D array of strings
  - label     : \label value (can be NULL)
  - placement : e.g., "htbp" (can be NULL, defaults to "h")
 
- Returns 0 on success, <0 on file error
+Returns 0 on success, <0 on file error
 ```
 
 ### `latex_inline_math`
@@ -276,14 +276,18 @@ Returns a dynamically allocated string, or NULL on error (including rows<=0,
 cols<=0, or a NULL data pointer)
 ```
 
-### `latex_clean_temp`
+### `latex_format_double`
 
 ```c
-void latex_clean_temp(void);
+char *latex_format_double(double value, int precision);
 ```
 
 ```text
-Clean up temporary files created during PNG/PDF rendering
+Formats a double to a string suitable for math mode (e.g. "$1.23$")
+- value    : double to format
+- precision: number of significant digits (e.g. 4)
+
+Returns a dynamically allocated string, or NULL on allocation failure
 ```
 
 ### `latex_escape_text`
@@ -461,7 +465,7 @@ int latex_table_set(latex_table_t *table, size_t row, size_t col,
 ```
 
 ```text
-Set the (row, col) cell's content (0-indexed). If `escape` is nonzero,
+Set (row, col) cell's content (0-indexed). If `escape` is nonzero,
 `value` is treated as literal text and LaTeX-escaped on write; if zero,
 `value` is written verbatim as raw LaTeX (e.g. an already-formatted number,
 or inline math like "$3.14$")
@@ -476,10 +480,10 @@ int latex_table_set_header(latex_table_t *table, size_t col, const char *text);
 ```
 
 ```text
-Set a header cell (row 0 of the emitted table, rendered bold under
-LATEX_TABLE_STYLE_BOOKTABS). Optional - if never called, the table has no
-header row. `text` is always escaped (headers are conventionally literal
-column names, not LaTeX fragments)
+Set a header cell (row 0 of emitted table, rendered bold under
+LATEX_TABLE_STYLE_BOOKTABS). Optional - if never called, table has no header
+row. `text` is always escaped (headers are conventionally literal column
+names, not LaTeX fragments)
 
 Returns 0 on success, -1 on an out-of-range col or a NULL table/text
 ```
@@ -493,9 +497,9 @@ int latex_table_set_caption(latex_table_t *table, const char *caption);
 ```text
 All optional; `caption`/`label`/`col_format` may be passed NULL to omit/reset
 to default. `label`, if non-NULL, is validated with latex_validate_label()
-and rejected (-1) if invalid. `col_format` overrides the style-driven default
+and rejected (-1) if invalid. `col_format` overrides style-driven default
 (e.g. "lcr" or "|l|c|r|"). Every setter returns 0 on success, -1 on a NULL
-table or (for the label setter) an invalid label
+table or (for label setter) an invalid label
 ```
 
 ### `latex_table_set_label`
@@ -537,8 +541,10 @@ int latex_table_write(latex_table_t *table, const char *texpath);
 ```
 
 ```text
-Writes the table (as a complete \begin{table}...\end{table} block) to
-`texpath`. Returns 0 on success, -1 on a NULL argument or file error
+Writes table (as a complete \begin{table}...\end{table} block) to
+`texpath`
+
+Returns 0 on success, -1 on a NULL argument or file error
 ```
 
 ### `latex_document_create`
@@ -600,8 +606,8 @@ int latex_document_set_class(latex_document_t *doc, const char *document_class,
 ```
 
 ```text
-`options` is the documentclass's bracketed option list, e.g. "11pt" or
-"12pt,twocolumn"; NULL omits the brackets entirely
+`options` is documentclass's bracketed option list, e.g. "11pt" or
+"12pt,twocolumn"; NULL omits brackets entirely
 Default (if never called) is document_class="article" with no options
 ```
 
@@ -615,7 +621,7 @@ int latex_document_add_package(latex_document_t *doc, const char *package,
 ```text
 Adds \usepackage{package}, or \usepackage[options]{package} if options
 is non-NULL. A package added more than once is written more than once
-(LaTeX tolerates this; the builder does not deduplicate)
+(LaTeX tolerates this; builder does not deduplicate)
 ```
 
 ### `latex_document_add_section`
@@ -625,9 +631,10 @@ int latex_document_add_section(latex_document_t *doc, const char *title);
 ```
 
 ```text
-Body content, appended in the order called. Returns 0 on success, -1
-on a NULL doc/argument, allocation failure, or (add_figure/add_table)
-an invalid label
+Body content, appended in order called
+
+Returns 0 on success, -1 on a NULL doc/argument, allocation failure, or
+(add_figure/add_table) an invalid label
 ```
 
 ### `latex_document_add_subsection`
@@ -650,6 +657,31 @@ _No description in header yet._
 
 ```c
 int latex_document_add_equation(latex_document_t *doc, const char *equation);
+```
+
+_No description in header yet._
+
+### `latex_document_add_itemize`
+
+```c
+int latex_document_add_itemize(latex_document_t *doc, const char *const *items);
+```
+
+_No description in header yet._
+
+### `latex_document_add_enumerate`
+
+```c
+int latex_document_add_enumerate(latex_document_t *doc,
+                                 const char *const *items);
+```
+
+_No description in header yet._
+
+### `latex_document_add_verbatim`
+
+```c
+int latex_document_add_verbatim(latex_document_t *doc, const char *text);
 ```
 
 _No description in header yet._
@@ -679,9 +711,8 @@ int latex_document_add_table(latex_document_t *doc, latex_table_t *table);
 ```
 
 ```text
-Appends the table's current content and frees `table` (ownership transfers in
-on success; on failure -1 is returned and `table` is left for the caller to
-free)
+Appends table's current content and frees `table` (ownership transfers in on
+success; on failure -1 is returned and `table` is left for caller to free)
 ```
 
 ### `latex_document_add_raw`
@@ -702,9 +733,9 @@ int latex_document_write(latex_document_t *doc, const char *texpath);
 ```
 
 ```text
-Assembles and writes the complete .tex file (documentclass, packages,
+Assembles and writes complete .tex file (documentclass, packages,
 title/author/date, \begin{document}, \maketitle if a title/author/date was
-set, abstract if set, body content in the order added, \end{document})
+set, abstract if set, body content in order added, \end{document})
 
 Returns 0 on success, -1 on a NULL argument or file error
 ```

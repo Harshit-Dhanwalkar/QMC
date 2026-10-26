@@ -19,13 +19,8 @@
 #include <process.h> // _getpid()
 #include <sys/stat.h>
 
-// #define getpid _getpid
-// #define QMC_PATH_SEP "\\"
 #define QMC_SEP '\\'
 #define QMC_SEP_STR "\\"
-// #define QMC_DEVNULL_REDIRECT "> NUL 2>&1"
-// #define QMC_CD_CMD "cd /d" // /d also switches drive letter
-// #define QMC_CHECK_TOOL_FMT "where %s >NUL 2>&1"
 #define qmc_mkdir(p) _mkdir(p)
 #define qmc_rmdir(p) _rmdir(p)
 
@@ -37,12 +32,8 @@
 #include <sys/wait.h> // WIFEXITED/WEXITSTATUS
 #include <unistd.h>   // getpid()
 
-// #define QMC_PATH_SEP "/"
 #define QMC_SEP '/'
 #define QMC_SEP_STR "/"
-// #define QMC_DEVNULL_REDIRECT "> /dev/null 2>&1"
-// #define QMC_CD_CMD "cd"
-// #define QMC_CHECK_TOOL_FMT "command -v %s >/dev/null 2>&1"
 #define qmc_mkdir(p) mkdir((p), 0755)
 #define qmc_rmdir(p) rmdir(p)
 
@@ -56,23 +47,15 @@
 #endif
 
 #define QMC_PDFTOPPM "pdftoppm"
-// #define QMC_LATEX_MAX_TRACKED_TEMP 256
-//
-// static char g_tracked_temp_basenames[QMC_LATEX_MAX_TRACKED_TEMP][64];
-// static int g_tracked_temp_count = 0;
 
-/*
- * Base path buffers hold "<root>/<name>": root is [512], plus a separator,
- * plus longest base name ("equation.tex" = 12 chars). 640 is comfortably
- * above that maximum (512 + 1 + 12 + 1 = 526)
- */
+// Base path buffers hold "<root>/<name>": root is [512], plus a separator, plus
+// longest base name ("equation.tex" = 12 chars). 640 is comfortably above that
+// maximum (512 + 1 + 12 + 1 = 526)
 #define LATEX_TMP_PATH_MAX 640
 
-/*
- * Derived path buffers hold "<base><suffix>": png prefix plus a  suffix such as
- * "-1.png" (6 chars). 32 bytes of slack covers every current  case ("-1.png",
- * ".aux", ".aux"'s directory-suffixed form, etc)
- */
+// Derived path buffers hold "<base><suffix>": png prefix plus a  suffix such as
+// "-1.png" (6 chars). 32 bytes of slack covers every current  case ("-1.png",
+// ".aux", ".aux"'s directory-suffixed form, etc)
 #define LATEX_TMP_DERIVED_MAX (LATEX_TMP_PATH_MAX + 32)
 
 // Error state
@@ -88,73 +71,26 @@ static void set_last_error(const char *fmt, ...) {
 const char *latex_last_error(void) { return g_last_error; }
 
 // Path Helpers
+#ifdef _WIN32
+static const char *tmp_dir_prefix(void) {
+  const char *tmp_dir = getenv("TEMP");
+  if (!tmp_dir) {
+    tmp_dir = getenv("TMP");
+  }
+  if (!tmp_dir) {
+    tmp_dir = ".";
+  }
+  return tmp_dir;
+}
+#endif
+
 static const char *tmp_base(void) {
 #ifdef _WIN32
-
-  // NOTE: Windows has no fixed /tmp; conventional per-user scratch dir is
-  // whatever %TEMP% (or %TMP%) points to, falling back to current directory if
-  // neither is set
-  static const char *tmp_dir_prefix(void) {
-    const char *tmp_dir = getenv("TEMP");
-    if (!tmp_dir) {
-      tmp_dir = getenv("TMP");
-    }
-
-    if (!tmp_dir) {
-      tmp_dir = ".";
-    }
-
-    return tmp_dir;
-  }
-
+  return tmp_dir_prefix();
 #else
-
   return "/tmp";
-
 #endif
 }
-
-// static void make_tmp_path(const char *basename, const char *ext, char *buf,
-//                           size_t bufsz) {
-//   snprintf(buf, bufsz, "%s" QMC_PATH_SEP "%s.%s", tmp_dir_prefix(),
-//   basename,
-//            ext);
-// }
-//
-// static void make_unique_basename(char *buf, size_t bufsz) {
-//   static long counter = 0;
-//   long id = (long)getpid() * 1000003L + counter++;
-//   snprintf(buf, bufsz, "qmc_eq_%ld", id);
-//
-//   if (g_tracked_temp_count < QMC_LATEX_MAX_TRACKED_TEMP) {
-//     snprintf(g_tracked_temp_basenames[g_tracked_temp_count++],
-//              sizeof(g_tracked_temp_basenames[0]), "%s", buf);
-//   }
-// }
-
-// // Runs a shell command and reports success/failure correctly
-// static int run_system(const char *cmd) {
-//   int status = system(cmd);
-//   if (status == -1) {
-//     return -1;
-//   }
-//
-// #ifdef _WIN32
-//
-//   // cmd.exe's system() return value is child's exit code directly - no
-//   // POSIX-style wait-status encoding to unpack.
-//   return status == 0 ? 0 : -1;
-//
-// #else
-//
-//   if (WIFEXITED(status)) {
-//     return WEXITSTATUS(status) == 0 ? 0 : -1;
-//   }
-//
-//   return -1; // terminated by signal, etc.
-//
-// #endif
-// }
 
 static char *dupstr(const char *s) {
   if (!s) {
@@ -179,7 +115,6 @@ static int has_unsafe_shell_metachars(const char *s) {
 }
 
 // Runs `command -v <tool>` (POSIX) or `where <tool>` (Windows)
-//
 // Returns 1 if tool is on PATH
 static int check_tool_on_path(const char *tool) {
   if (!tool) {
@@ -187,22 +122,15 @@ static int check_tool_on_path(const char *tool) {
   }
 
   char cmd[256];
-  // snprintf(cmd, sizeof(cmd), QMC_CHECK_TOOL_FMT, tool);
-  //
-  // return run_system(cmd) == 0;
 
 #ifdef _WIN32
-
   snprintf(cmd, sizeof cmd, "where %s >NUL 2>&1", tool);
-
 #else
-
   snprintf(cmd, sizeof cmd, "command -v %s >/dev/null 2>&1", tool);
-
 #endif
 
-  /* NOTE: Tool name is a compile-time constant, never user-supplied, so shell
-   * here is not a security boundary */
+  // NOTE: Tool name is a compile-time constant, never user-supplied, so shell
+  // here is not a security boundary
   return system(cmd) == 0;
 }
 
@@ -220,20 +148,14 @@ int latex_tools_available(void) {
 
 // Process execution
 //
-// argv must be NULL-terminated; argv[0] is tool name
-// cwd, stdout_path, stderr_path may be NULL
+// argv must be NULL-terminated; argv[0] is tool name cwd, stdout_path,
+// stderr_path may be NULL
 //
-// 1) Optionally switch to `cwd` so tools that emit sidecar files do so in a
+// 1. Optionally switch to `cwd` so tools that emit sidecar files do so in a
 //    predictable directory
-// 2) Optionally redirect stdout/stderr to files for diagnostic capture
-// 3) Spawn tool and wait for completion
-// 4) Restore original stdout/stderr handles and working directory
-//
-// Error handling policy:
-//  - Any setup/launch failure returns -1
-//  - Best-effort restoration is performed for resources that were already
-//    changed before the failure happened (stdio and cwd)
-//
+// 2. Optionally redirect stdout/stderr to files for diagnostic capture
+// 3. Spawn tool and wait for completion
+// 4. Restore original stdout/stderr handles and working directory
 // Returns 0 if process exited with status 0, -1 otherwise
 static int run_tool(const char *tool, char *const argv[], const char *cwd,
                     const char *stdout_path, const char *stderr_path) {
@@ -361,7 +283,6 @@ static int job_create(latex_job_t *job) {
   memset(job, 0, sizeof *job);
 
 #ifdef _WIN32
-
   static long counter = 0;
   long id = (long)_getpid() * 1000003L + counter++;
 
@@ -369,14 +290,11 @@ static int job_create(latex_job_t *job) {
   if (qmc_mkdir(job->root) != 0 && errno != EEXIST) {
     return -1;
   }
-
 #else
-
   snprintf(job->root, sizeof job->root, "%s/qmc-latex-XXXXXX", tmp_base());
   if (!mkdtemp(job->root)) {
     return -1;
   }
-
 #endif
 
   snprintf(job->tex, sizeof job->tex, "%s%sequation.tex", job->root,
@@ -388,7 +306,7 @@ static int job_create(latex_job_t *job) {
   int n = snprintf(job->png_prefix, sizeof job->png_prefix, "%s%sequation",
                    job->root, QMC_SEP_STR);
   if (n < 0 || (size_t)n >= sizeof job->png_prefix) {
-    return -1; /* job_create failure */
+    return -1; // job_create failure
   }
 
   return 0;
@@ -1157,18 +1075,29 @@ char *latex_display_math(const char *expr) {
   return res;
 }
 
-/*
- * Build a \LaTeX matrix environment string from a 2D string table
- *
- * - `type` selects environment and must be one of:
- *     bmatrix, pmatrix, Bmatrix, vmatrix, Vmatrix
- *   If `type` is NULL, "bmatrix" is used
- * - `data` is a rows x cols table of cell strings; NULL cells are treated as
- *   empty placeholders when rendering
- * - Returns a newly allocated NUL-terminated string on success
- *   Caller owns returned memory and must free() it
- * - Returns NULL on invalid arguments or allocation/formatting failure
- */
+char *latex_format_double(double value, int precision) {
+  char buf[64];
+  snprintf(buf, sizeof buf, "%.*g", precision, value);
+
+  size_t len = strlen(buf) + 4;
+  char *res = malloc(len);
+  if (!res) {
+    return NULL;
+  }
+  snprintf(res, len, "$%s$", buf);
+  return res;
+}
+
+// Build a \LaTeX matrix environment string from a 2D string table
+//
+// - `type` selects environment and must be one of:
+//     bmatrix, pmatrix, Bmatrix, vmatrix, Vmatrix
+//   If `type` is NULL, "bmatrix" is used
+// - `data` is a rows x cols table of cell strings; NULL cells are treated as
+//   empty placeholders when rendering
+// - Returns a newly allocated NUL-terminated string on success
+//   Caller owns returned memory and must free() it
+// - Returns NULL on invalid arguments or allocation/formatting failure
 char *latex_matrix(const char *type, const char *const *const *data, int rows,
                    int cols) {
   if (!data || rows <= 0 || cols <= 0) {
@@ -1835,6 +1764,61 @@ int latex_document_add_equation(latex_document_t *doc, const char *equation) {
   return latex_string_appendf(&doc->body, "\\[ %s \\]\n\n", equation);
 }
 
+int latex_document_add_itemize(latex_document_t *doc,
+                               const char *const *items) {
+  if (!doc || !items) {
+    return -1;
+  }
+
+  int ok = latex_string_append(&doc->body, "\\begin{itemize}\n") == 0;
+  for (int i = 0; items[i] != NULL && ok; i++) {
+    char *escaped = latex_escape_text(items[i]);
+    if (!escaped) {
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&doc->body, "  \\item %s\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  ok &= latex_string_append(&doc->body, "\\end{itemize}\n\n") == 0;
+
+  return ok ? 0 : -1;
+}
+
+int latex_document_add_enumerate(latex_document_t *doc,
+                                 const char *const *items) {
+  if (!doc || !items) {
+    return -1;
+  }
+
+  int ok = latex_string_append(&doc->body, "\\begin{enumerate}\n") == 0;
+  for (int i = 0; items[i] != NULL && ok; i++) {
+    char *escaped = latex_escape_text(items[i]);
+    if (!escaped) {
+      return -1;
+    }
+
+    ok &= latex_string_appendf(&doc->body, "  \\item %s\n", escaped) == 0;
+
+    free(escaped);
+  }
+
+  ok &= latex_string_append(&doc->body, "\\end{enumerate}\n\n") == 0;
+
+  return ok ? 0 : -1;
+}
+
+int latex_document_add_verbatim(latex_document_t *doc, const char *text) {
+  if (!doc || !text) {
+    return -1;
+  }
+
+  return latex_string_appendf(
+      &doc->body, "\\begin{verbatim}\n%s\n\\end{verbatim}\n\n", text);
+}
+
 int latex_document_add_raw(latex_document_t *doc, const char *latex) {
   if (!doc || !latex) {
     return -1;
@@ -1915,7 +1899,6 @@ int latex_document_add_table(latex_document_t *doc, latex_table_t *table) {
 //  - Validate inputs and initialize a temporary output buffer
 //  - Assemble the final .tex content (document class, preamble, body, ending)
 //  - Persist the assembled text to disk
-//
 // Returns 0 on success, -1 on any validation, allocation, append, or I/O error
 int latex_document_write(latex_document_t *doc, const char *texpath) {
   // API contract validation
@@ -2023,45 +2006,4 @@ int latex_document_write(latex_document_t *doc, const char *texpath) {
   free(content);
 
   return rc;
-}
-
-// Cleanup
-void latex_clean_temp(void) {
-  // const char *exts[] = {"tex", "aux", "log", "pdf"};
-  // for (int i = 0; i < g_tracked_temp_count; i++) {
-  //   char path[192];
-  //
-  //   for (size_t e = 0; e < sizeof(exts) / sizeof(exts[0]); e++) {
-  //     snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "%.63s.%s",
-  //              tmp_dir_prefix(), g_tracked_temp_basenames[i], exts[e]);
-  //
-  //     remove(path);
-  //   }
-  //
-  //   snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "%.63s_out-1.png",
-  //            tmp_dir_prefix(), g_tracked_temp_basenames[i]);
-  //
-  //   remove(path);
-  // }
-  //
-  // g_tracked_temp_count = 0;
-  //
-  // char path[192];
-  // const char *leftover_exts[] = {"tex", "aux", "log", "pdf"};
-  // for (size_t e = 0; e < sizeof(leftover_exts) / sizeof(leftover_exts[0]);
-  //      e++) {
-  //   snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "qmc_eq.%s",
-  //            tmp_dir_prefix(), leftover_exts[e]);
-  //
-  //   remove(path);
-  // }
-  //
-  // snprintf(path, sizeof(path), "%s" QMC_PATH_SEP "qmc_eq_out-1.png",
-  //          tmp_dir_prefix());
-  //
-  // remove(path);
-
-  /* Every render job now removes its own temporary directory on
-   * completion, success or failure */
-  // WARN: This function is retained for backward source compatibility only
 }

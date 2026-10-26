@@ -45,7 +45,7 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-static int test_hard_sphere_s_wave(void) {
+static void test_hard_sphere_s_wave(void) {
   printf("  === Test: s-wave hard-sphere-like phase shift (vs exact "
          "\\delta_0 = -ka) ===\n");
 
@@ -105,7 +105,7 @@ static void test_born_yukawa(void) {
   }
 }
 
-static int test_cross_section_structural(void) {
+static void test_cross_section_structural(void) {
   printf("  === Test: born_cross_section structural check ===\n");
 
   complex_t f = c_add(c_real(1.5), c_imag(-0.7));
@@ -115,7 +115,7 @@ static int test_cross_section_structural(void) {
   check_close(sigma, expected, 1e-12, "born_cross_section = |f|^2");
 }
 
-static int test_optical_theorem(void) {
+static void test_optical_theorem(void) {
   printf("  === Test: optical theorem ===\n");
 
   // Weak Yukawa, several l's: \sigma_{tot} from partial-wave sum must equal
@@ -141,7 +141,7 @@ static int test_optical_theorem(void) {
               "optical theorem");
 }
 
-static int test_ls_vs_numerov(void) {
+static void test_ls_vs_numerov(void) {
   printf("  === Test: LS solver comparison with Numerov method ===\n");
 
   // Exact LS solve vs. independent Numerov-shooting phase_shift(), same
@@ -162,12 +162,11 @@ static int test_ls_vs_numerov(void) {
               "\\tan(\\delta_0): Numerov vs Lippmann-Schwinger");
 }
 
-static int test_born_series_convergence(void) {
+static void test_born_series_convergence(void) {
   printf("  === Test: Born series convergence ===\n");
 
   // Weak Yukawa: successive Born-series orders should converge toward exact LS
   // phase shift, and order=1 must equal existing weak-potential formula exactly
-  int fail = 0;
   double g = 0.2;
   double mu = 1.0;
   double yukawa_params[2] = {g, mu};

@@ -25,7 +25,7 @@ int main(void) {
   jj_sweep(&shap, 0.0, 2.0, 21, steps);
 
   printf(" > I-V curves (Q = 3 hysteresis; Q = 0.7 with ac drive 1.2 at \\Omega "
-         "= 0.8, steps at V = 0.8)\n\n  %6s %12s %12s %12s\n",
+         "= 0.8, steps at V = 0.8)\n  %6s %12s %12s %12s\n",
          "i", "V up", "V down", "V shapiro");
   for (int k = 0; k <= 20; k++) {
     printf("  %6.2f %12.4f %12.4f %12.4f\n", 0.1 * k,

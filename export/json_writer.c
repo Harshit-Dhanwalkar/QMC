@@ -2,8 +2,8 @@
  * JSON export backend
  *
  * A streaming JSON writer for metadata and structured output
- * Supports nested objects, arrays, scalars, and arrays of scalars
- * Handles string escaping, pretty-printing, and configurable handling of
+ * Supports nested objects, arrays, scalars and arrays of scalars
+ * Handles string escaping, pretty-printing and configurable handling of
  * non-finite numbers (NaN/Inf)
  */
 #include "json_writer.h"
@@ -91,7 +91,7 @@ static void write_json_bool(FILE *f, int value) {
   fputs(value ? "true" : "false", f);
 }
 
-/* Streaming writer */
+// Streaming writer
 typedef enum { JSON_CTX_OBJECT, JSON_CTX_ARRAY } json_ctx_t;
 
 struct json_writer {

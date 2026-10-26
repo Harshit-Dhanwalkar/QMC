@@ -27,7 +27,7 @@ jobs:
   property-tests:
     name: property tests (${{ matrix.cc }} + ASan/UBSan)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:

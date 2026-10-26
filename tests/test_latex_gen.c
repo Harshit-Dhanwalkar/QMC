@@ -66,6 +66,15 @@ static void test_inline_display_math(void) {
   check(latex_display_math(NULL) == NULL, "NULL input returns NULL cleanly");
 }
 
+static void test_new_math_helpers(void) {
+  printf("  === Test: latex_format_double ===\n");
+  char *fmt = latex_format_double(3.1415926535, 4);
+  check(fmt != NULL, "latex_format_double allocates a result");
+  check(fmt && strcmp(fmt, "$3.142$") == 0,
+        "latex_format_double formats precision correctly");
+  free(fmt);
+}
+
 static void test_matrix_generation(void) {
   printf("  === Test: latex_matrix, including a cell longer than rough "
          "10-char/cell size estimate ===\n");
@@ -510,6 +519,26 @@ static void test_document_builder(void) {
   check(latex_document_add_raw(doc, "\\noindent Custom raw LaTeX here.") == 0,
         "add_raw");
 
+  const char *items[] = {"First item", "Second item", NULL};
+  check(latex_document_add_itemize(doc, items) == 0, "add_itemize");
+  check(latex_document_add_enumerate(doc, items) == 0, "add_enumerate");
+  check(latex_document_add_verbatim(doc, "verbatim text: $ % &") == 0,
+        "add_verbatim");
+
+  // Failure checks for lists
+  check(latex_document_add_itemize(NULL, items) == -1,
+        "add_itemize(NULL doc) rejected");
+  check(latex_document_add_itemize(doc, NULL) == -1,
+        "add_itemize(NULL items) rejected");
+  check(latex_document_add_enumerate(NULL, items) == -1,
+        "add_enumerate(NULL doc) rejected");
+  check(latex_document_add_enumerate(doc, NULL) == -1,
+        "add_enumerate(NULL items) rejected");
+  check(latex_document_add_verbatim(NULL, "test") == -1,
+        "add_verbatim(NULL doc) rejected");
+  check(latex_document_add_verbatim(doc, NULL) == -1,
+        "add_verbatim(NULL text) rejected");
+
   latex_figure_t fig = {
       .path = "energy.pdf",
       .caption = "Energy vs. iteration (n=100%)",
@@ -568,6 +597,15 @@ static void test_document_builder(void) {
         "equation is written raw/unescaped (braces and backslashes intact)");
   check(strstr(buf, "\\noindent Custom raw LaTeX here.") != NULL,
         "add_raw content appears verbatim");
+  check(strstr(buf, "\\begin{itemize}") != NULL &&
+            strstr(buf, "\\item First item") != NULL,
+        "itemize block generated");
+  check(strstr(buf, "\\begin{enumerate}") != NULL &&
+            strstr(buf, "\\item Second item") != NULL,
+        "enumerate block generated");
+  check(strstr(buf, "\\begin{verbatim}") != NULL &&
+            strstr(buf, "verbatim text: $ % &") != NULL,
+        "verbatim block generated");
   check(strstr(buf, "\\includegraphics[width=0.6\\textwidth]{energy.pdf}") !=
             NULL,
         "figure_ex width_fraction/path appear");
@@ -630,6 +668,10 @@ static void test_document_compiles_for_real(void) {
   latex_document_add_paragraph(doc, "100% real text with & and # and $.");
   latex_document_add_equation(doc, "E = mc^2");
 
+  const char *items[] = {"Alpha", "Beta", NULL};
+  latex_document_add_itemize(doc, items);
+  latex_document_add_verbatim(doc, "Exact match: % & # $ _ { }");
+
   latex_table_t *tbl = latex_table_create(2, 2);
   latex_table_set_style(tbl, LATEX_TABLE_STYLE_BOOKTABS);
   latex_table_set_header(tbl, 0, "x");
@@ -685,7 +727,7 @@ static void test_unsafe_paths_rejected(void) {
          "===\n");
 
   if (!latex_tools_available()) {
-    printf("  (skipped: pdflatex/pdftoppm not available in this environment");
+    printf("  (skipped: pdflatex/pdftoppm not available in this environment)");
     return;
   }
 
@@ -737,14 +779,13 @@ static void test_actual_rendering(void) {
 
   remove(pdf_out);
   remove(pdf_out2);
-
-  latex_clean_temp();
 }
 
 int main(void) {
   printf(" > LaTeX Generation tests:\n");
 
   test_inline_display_math();
+  test_new_math_helpers();
   test_matrix_generation();
   test_escaping();
   test_string_builder();

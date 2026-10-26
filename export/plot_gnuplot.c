@@ -62,23 +62,6 @@ static void apply_opts(gnuplot_t *gp, const plot_opts_t *opts) {
   }
 }
 
-static const char *gp_ext(plot_format_t fmt) {
-  switch (fmt) {
-  case PLOT_FORMAT_PNG:
-    return ".png";
-  case PLOT_FORMAT_PDF:
-    return ".pdf";
-  case PLOT_FORMAT_SVG:
-    return ".svg";
-  case PLOT_FORMAT_EPS:
-    return ".eps";
-  case PLOT_FORMAT_JPEG:
-    return ".jpg";
-  default:
-    return ".png";
-  }
-}
-
 int plot_line(const char *filename, plot_format_t format, const double *x,
               const double *y, int n, const plot_opts_t *opts) {
   if (!filename || (n > 0 && (!x || !y))) {

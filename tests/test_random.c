@@ -1,5 +1,5 @@
 /*
- * Tests for core/random.c: xoshiro256** PRNG and derived distributions.
+ * Tests for core/random.c: xoshiro256** PRNG and derived distributions
  *
  * 1. Validates: seed reproducibility, stream divergence under distinct seeds,
  *    uniform range/moments, a chi-square goodness-of-fit check on rng_uniform,
@@ -31,7 +31,7 @@ static int failures = 0;
 
 // Reproducibility: same seed -> identical raw stream
 static void test_seed_reproducibility(void) {
-  printf("test_seed_reproducibility...\n");
+  printf("  === Test: Seed reproducibility ===\n");
 
   rng_state_t a, b;
   rng_seed(&a, 12345ULL);
@@ -53,7 +53,7 @@ static void test_seed_reproducibility(void) {
 
 // Distinct seeds should (with overwhelming probability) diverge immediately
 static void test_distinct_seeds_diverge(void) {
-  printf("test_distinct_seeds_diverge...\n");
+  printf("  === Test: Distinct seeds diverge ===\n");
 
   rng_state_t a, b;
   rng_seed(&a, 1ULL);
@@ -73,7 +73,7 @@ static void test_distinct_seeds_diverge(void) {
 
 // State must actually evolve
 static void test_state_evolves(void) {
-  printf("test_state_evolves...\n");
+  printf("  === Test: State evolves ===\n");
 
   rng_state_t r;
   rng_seed(&r, 42ULL);
@@ -93,13 +93,14 @@ static void test_state_evolves(void) {
 
 // rng_uniform: bounds, sample mean, sample variance
 static void test_uniform_moments(void) {
-  printf("test_uniform_moments...\n");
+  printf("  === Test: Uniform moments ===\n");
 
   rng_state_t r;
   rng_seed(&r, 777ULL);
 
   const int N = N_SAMPLES;
-  double sum = 0.0, sum2 = 0.0;
+  double sum = 0.0;
+  double sum2 = 0.0;
   int in_bounds = 1;
 
   for (int i = 0; i < N; i++) {
@@ -126,12 +127,13 @@ static void test_uniform_moments(void) {
 
 // rng_uniform_range: bounds and mean for non-trivial [a,b)
 static void test_uniform_range(void) {
-  printf("test_uniform_range...\n");
+  printf("  === Test: Uniform range ===\n");
 
   rng_state_t r;
   rng_seed(&r, 555ULL);
 
-  const double a = -3.0, b = 7.0;
+  const double a = -3.0;
+  const double b = 7.0;
   const int N = N_SAMPLES;
   double sum = 0.0;
   int in_bounds = 1;
@@ -154,9 +156,9 @@ static void test_uniform_range(void) {
         "rng_uniform_range sample mean near (a+b)/2");
 }
 
-// Chi-square goodness-of-fit on rng_uniform against uniform histogram
+// \Chi-square goodness-of-fit on rng_uniform against uniform histogram
 static void test_uniform_chi_square(void) {
-  printf("test_uniform_chi_square...\n");
+  printf("  === Test: Uniform \\chi-square ===\n");
 
   rng_state_t r;
   rng_seed(&r, 2024ULL);
@@ -193,13 +195,14 @@ static void test_uniform_chi_square(void) {
 
 // rng_gaussian: mean ~0, variance ~1
 static void test_gaussian_moments(void) {
-  printf("test_gaussian_moments...\n");
+  printf("  === Test: Gaussian moments ===\n");
 
   rng_state_t r;
   rng_seed(&r, 9999ULL);
 
   const int N = N_SAMPLES;
-  double sum = 0.0, sum2 = 0.0;
+  double sum = 0.0;
+  double sum2 = 0.0;
 
   for (int i = 0; i < N; i++) {
     double g = rng_gaussian(&r);
@@ -220,14 +223,16 @@ static void test_gaussian_moments(void) {
 
 // rng_gaussian_scaled: mean/variance track (mean, \sigma^2)
 static void test_gaussian_scaled(void) {
-  printf("test_gaussian_scaled...\n");
+  printf("  === Test: Gaussian scaled ===\n");
 
   rng_state_t r;
   rng_seed(&r, 31415ULL);
 
-  const double mu = 5.0, sigma = 2.0;
+  const double mu = 5.0;
+  const double sigma = 2.0;
   const int N = N_SAMPLES;
-  double sum = 0.0, sum2 = 0.0;
+  double sum = 0.0;
+  double sum2 = 0.0;
 
   for (int i = 0; i < N; i++) {
     double g = rng_gaussian_scaled(&r, mu, sigma);
@@ -247,9 +252,9 @@ static void test_gaussian_scaled(void) {
         "rng_gaussian_scaled sample variance near \\sigma^2");
 }
 
-// rng_jump: implementation of canonical xoshiro256** jump (seed=12345).
+// rng_jump: implementation of canonical xoshiro256** jump (seed=12345)
 static void test_jump_regression(void) {
-  printf("test_jump_regression:\n");
+  printf("  === Test:  Jump regression ===\n");
 
   rng_state_t rng;
   rng_seed(&rng, 12345);
@@ -269,9 +274,9 @@ static void test_jump_regression(void) {
 }
 
 // A jumped stream must not reproduce any of a large number of draws from
-// pre-jump stream (weak overlap sanity check).
+// pre-jump stream (weak overlap sanity check)
 static void test_jump_no_short_run_overlap(void) {
-  printf("test_jump_no_short_run_overlap:\n");
+  printf("  === Test: Jump no short run overlap ===\n");
 
   rng_state_t base;
   rng_seed(&base, 999);
@@ -305,10 +310,10 @@ static void test_jump_no_short_run_overlap(void) {
   free(orig);
 }
 
-// rng_jump must clear any pending Box-Muller spare deviate, and the spare cache
-// must live per-stream.
+// rng_jump must clear any pending Box-Muller spare deviate and spare cache must
+// live per-stream
 static void test_gaussian_cache_is_per_stream(void) {
-  printf("test_gaussian_cache_is_per_stream:\n");
+  printf("  === Test: Gaussian cache is per stream ===\n");
 
   rng_state_t a, a_ref;
   rng_seed(&a, 42);
@@ -320,7 +325,6 @@ static void test_gaussian_cache_is_per_stream(void) {
 
   rng_state_t b;
   rng_seed(&b, 777);
-  // double b1 = rng_gaussian(&b);
 
   double a1_ref = rng_gaussian(&a_ref); // independent stream, same seed as a
   CHECK(fabs(a1 - a1_ref) < 1e-15,
@@ -354,6 +358,8 @@ static void test_gaussian_cache_is_per_stream(void) {
 }
 
 int main(void) {
+  printf(" > Random xoshiro256** PRNG and derived distributions tests:\n");
+
   test_seed_reproducibility();
   test_distinct_seeds_diverge();
   test_state_evolves();

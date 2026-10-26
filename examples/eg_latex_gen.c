@@ -44,7 +44,32 @@ int main(void) {
            "Table~\\ref{tab:h2_energies} compares methods and overlap matrix "
            "is\n\\[ S = %s \\]",
            inline_eq, display_eq, S_matrix);
-  const char *sections[] = {section1, NULL};
+
+  // Build a list of key takeaways
+  char *energy_fmt = latex_format_double(-1.116714, 6);
+  char bullet1[128];
+  snprintf(bullet1, sizeof(bullet1), "RHF total energy: %s", energy_fmt);
+  const char *bullets[] = {bullet1, "CCSD shows significant correlation energy",
+                           "STO-3G is a minimal basis set", NULL};
+
+  char list_tex[512];
+  latex_string_t items_s;
+  latex_string_init(&items_s);
+  latex_string_append(&items_s, "\\begin{itemize}\n");
+  for (int i = 0; bullets[i]; i++) {
+    latex_string_appendf(&items_s, "  \\item %s\n", bullets[i]);
+  }
+  latex_string_append(&items_s, "\\end{itemize}\n");
+  snprintf(list_tex, sizeof(list_tex), "%s", items_s.data);
+  latex_string_free(&items_s);
+
+  char *verbatim_snippet = "\\begin{verbatim}\n"
+                           "Energy convergence log:\n"
+                           "Iteration 1: -1.1000\n"
+                           "Iteration 2: -1.1167\n"
+                           "\\end{verbatim}\n";
+
+  const char *sections[] = {section1, list_tex, verbatim_snippet, NULL};
 
   const char *article_path = "/tmp/qmc_report_article.tex";
   int rc = latex_generate_article(
@@ -81,7 +106,6 @@ int main(void) {
   }
 
   printf("\n  Cleaning up temp files created during this run...\n");
-  latex_clean_temp();
   remove(table_path);
   remove(article_path);
   remove("/tmp/qmc_report_article.pdf");
@@ -91,6 +115,7 @@ int main(void) {
   free(inline_eq);
   free(display_eq);
   free(S_matrix);
+  free(energy_fmt);
 
   return 0;
 }

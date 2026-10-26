@@ -168,7 +168,7 @@
   <tr>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/zeno.html">
-        <img src="docs/src/playground/thumbs/zeno.jpg" alt="Quantum Zeno effect: survival probability under pulsed and continuous measurement" width="260" height="260">
+        <img src="docs/src/playground/zeno.gif" alt="Quantum Zeno effect: survival probability under pulsed and continuous measurement" width="260" height="260">
       </a>
       <br>
       <b>Quantum Zeno effect</b>
@@ -186,7 +186,7 @@
     </td>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/hubbard.html">
-        <img src="docs/src/playground/thumbs/hubbard.jpg" alt="Two-site Hubbard model exact diagonalisation" width="260" height="260">
+        <img src="docs/src/playground/hubbard.gif" alt="Two-site Hubbard model exact diagonalisation" width="260" height="260">
       </a>
       <br>
       <b>Hubbard dimer</b>
@@ -197,7 +197,7 @@
   <tr>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/ring.html">
-        <img src="docs/src/playground/thumbs/ring.jpg" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
+        <img src="docs/src/playground/ring.gif" alt="Aharonov-Bohm ring: persistent current and transmission oscillations" width="260" height="260">
       </a>
       <br>
       <b>Aharonov-Bohm ring</b>
@@ -226,7 +226,7 @@
   <tr>
     <td align="center" width="33%">
       <a href="https://harshit-dhanwalkar.github.io/QMC/playground/doublewell.html">
-        <img src="docs/src/playground/thumbs/doublewell.jpg" alt="Symmetric double-well tunnelling and parity doublet" width="260" height="260">
+        <img src="docs/src/playground/doublewell.gif" alt="Symmetric double-well tunnelling and parity doublet" width="260" height="260">
       </a>
       <br>
       <b>Double well</b>

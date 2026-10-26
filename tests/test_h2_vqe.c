@@ -36,25 +36,23 @@ static void check_true(int cond, const char *label) {
   }
 }
 
-/*
- * RHF helper for minimal H2/STO-3G test system
- *
- * Purpose:
- *   - Run a closed-shell RHF SCF procedure in a 2-function AO basis
- *   - Return converged electronic energy.
- *   - Export converged MO coefficients in C_out for downstream AO->MO
- *     transforms
- *
- * Inputs:
- *   R_bond : kept for interface consistency with other helpers (unused here)
- *   funcs  : AO basis functions
- *   Hcore  : one-electron core Hamiltonian in AO basis
- *   eri    : two-electron AO integrals in physicist/chemist ordering used
- *            below
- *
- * Output:
- *   C_out  : converged MO coefficient matrix C (AO rows, MO columns)
- */
+// RHF helper for minimal H2/STO-3G test system
+//
+// Purpose:
+//   - Run a closed-shell RHF SCF procedure in a 2-function AO basis
+//   - Return converged electronic energy.
+//   - Export converged MO coefficients in C_out for downstream AO->MO
+//     transforms
+//
+// Inputs:
+//   R_bond : kept for interface consistency with other helpers (unused here)
+//   funcs  : AO basis functions
+//   Hcore  : one-electron core Hamiltonian in AO basis
+//   eri    : two-electron AO integrals in physicist/chemist ordering used
+//            below
+//
+// Output:
+//   C_out  : converged MO coefficient matrix C (AO rows, MO columns)
 static double h2_sto3g_rhf_with_C(double R_bond, basis_function_t **funcs,
                                   cmatrix_t *Hcore, const double *eri,
                                   double C_out[2][2]) {
