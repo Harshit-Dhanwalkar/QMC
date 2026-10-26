@@ -66,12 +66,10 @@ typedef struct {
   int tex_text; // GR backend only: 1 = render for title/xlabel/ylabel/legend as
                 // TeX math 0 = plain text (default)
 
-  /*
-   * Output directory prefix:
+  /* Output directory prefix:
    *   NULL          -> use QMC_OUTPUT_DIR (default)
    *   ""            -> no prefix; use filename verbatim
-   *   "/some/path"  -> prefix "/some/path/"
-   */
+   *   "/some/path"  -> prefix "/some/path/" */
   const char *output_dir;
 } plot_opts_t;
 ```
