@@ -40,8 +40,8 @@ Algorithm (infinite-system sweep only):
      and find its ground state by dense diagonalization
   4. Diagonalize ground state's reduced density matrix on enlarged-block
      subspace; keep m eigenvectors of largest eigenvalue ("density-matrix
-     truncation", method's namesake) These become new, truncated block
-     basis; go to 2
+     truncation", method's namesake)
+    These become new, truncated block basis; go to 2
   5. Stop once superblock's total site count reaches target N
 
 Each step grows total chain by 2 sites (one on each mirrored side), so N

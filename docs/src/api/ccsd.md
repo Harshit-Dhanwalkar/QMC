@@ -30,6 +30,7 @@ spin-orbital integrals built from the spatial RHF MOs (doubled into
 alternating \alpha / \beta spin orbitals), then the T1/T2 amplitude equations
 solved by plain fixed-point iteration through Fae/Fmi/Fme/Wmnij/Wabef/Wmbej
 intermediates
+
  HACK: Spin-orbital (not spin-adapted spatial-orbital) CCSD is used because
 its equations are simpler to state and verify correctly. A full spin-adapted
 rewrite would cut T1/T2 storage by roughly 16x but means re-deriving and
@@ -53,14 +54,13 @@ typedef struct {
 ### `ccsd_amplitudes_t`
 
 ```text
-Converged CCSD amplitudes and underlying spin-orbital machinery they
-were computed with, retained (rather than freed internally, as ccsd_run
-does) for downstream use
-The perturbative (T) triples correction (ccsd_t.c), which needs T1/T2 plus
-the antisymmetrized spin-orbital integrals V and Fock diagonal Fso to build
-the connected / disconnected T3 contractions. Same flat-array indexing
+Converged CCSD amplitudes and underlying spin-orbital machinery they were
+computed with, retained (rather than freed internally, as ccsd_run does) for
+downstream use perturbative (T) triples correction (ccsd_t.c), which needs
+T1/T2 plus antisymmetrized spin-orbital integrals V and Fock diagonal Fso to
+build connected / disconnected T3 contractions. Same flat-array indexing
 convention as ccsd.c internals: IDX2(arr, nso, p, q) = arr[p * nso + q], IDX4
-similarly; occ[]/virt[] list the nocc/nvirt active (frozen-core-excluded)
+similarly; occ[]/virt[] list nocc/nvirt active (frozen-core-excluded)
 spin-orbital indices actually populated in Fso/V/t1/t2 (all are allocated at
 full nso/nso^2/nso^4 size, but only entries touching occ[]/virt[] indices are
 meaningful)
@@ -99,10 +99,10 @@ ccsd_result_t *ccsd_run(int n_spatial, const double *h_mo, const double *eri_mo,
 ```
 
 ```text
-Runs CCSD on top of a converged RHF result.
+Runs CCSD on top of a converged RHF result
 
 n_spatial  : number of spatial MOs (basis functions)
-h_mo       : n_spatial x n_spatial core Hamiltonian in the MO basis (from
+h_mo       : n_spatial x n_spatial core Hamiltonian in MO basis (from
              molecular_ao_to_mo)
 eri_mo     : n_spatial^4 flat MO-basis ERI tensor, chemist notation (pq|rs),
              indexed via MOLINT_ERI (from molecular_ao_to_mo)
@@ -110,17 +110,16 @@ mo_energy  : n_spatial canonical RHF orbital energies (e.g.
              molecular_hf_result_t::orbital_energies)
 n_electrons: total electron count (must be even; closed-shell reference)
 n_frozen_spatial: number of lowest-energy spatial orbitals to exclude from
-             the correlation treatment (0 for none). Must satisfy
+             correlation treatment (0 for none). Must satisfy
              2*n_frozen_spatial < n_electrons. e_rhf: converged RHF total
              energy (electronic + nuclear repulsion), e.g.
              molecular_hf_result_t::total_energy
-conv_tol   : convergence threshold on the correlation energy between
-             iterations
+conv_tol   : convergence threshold on correlation energy between iterations
 max_iter   : iteration cap
 
 Returns a newly allocated ccsd_result_t, or NULL on invalid input (odd
 electron count, n_frozen_spatial too large, non-positive n_spatial) or
-allocation failure.
+allocation failure
 ```
 
 ### `ccsd_run_ex`

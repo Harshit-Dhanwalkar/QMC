@@ -21,18 +21,19 @@ Kohn-Sham LDA density functional theory for closed-shell atoms and ions.
 ## Overview
 
 ```text
-NOTE: Kohn-Sham DFT, Local Density Approximation (LDA), for closed-shell
-atoms/ions whose occupied subshells are all s-type.
-The direct DFT analogue of hartree_fock.c's RHF. The only physical difference
-from RHF is replaced exact exchange operator: RHF uses nonlocal Fock exchange
+Kohn-Sham DFT, Local Density Approximation (LDA), for closed-shell atoms/ions
+whose occupied subshells are all s-type
+
+Direct DFT analogue of hartree_fock.c's RHF. Only physical difference from
+RHF is replaced exact exchange operator: RHF uses nonlocal Fock exchange
 integral K; this uses local LDA exchange-correlation potential V_xc(n(r))
 below, which is a function only of density at that point (not an integral
-operator), making Kohn-Sham matrix purely diagonal in the potential.
+operator), making Kohn-Sham matrix purely diagonal in potential
 
 Exchange-correlation functional: Slater/Dirac exchange (exact for uniform
-electron gas) + Perdew-Zunger 1981 (PZ81) correlation (Perdew & Zunger, Phys.
-Rev. B 23, 5048 (1981)), parametrized from Ceperley-Alder QMC data for the
-unpolarized (paramagnetic, zeta=0) uniform electron gas.
+electron gas) + Perdew-Zunger 1981 (PZ81) correlation (Reference: Perdew &
+Zunger, Phys. Rev. B 23, 5048 (1981)), parametrized from Ceperley-Alder QMC
+data for unpolarized (paramagnetic, zeta=0) uniform electron gas
 ```
 
 ## Types
@@ -69,7 +70,7 @@ lda_exchange_energy_density(double n);
 ```
 
 ```text
-Slater/Dirac LDA exchange, n in electrons/bohr^3 (atomic units).
+Slater/Dirac LDA exchange, n in electrons/bohr^3 (atomic units)
 ```
 
 ### `lda_exchange_potential`
@@ -89,7 +90,7 @@ double lda_correlation_energy_density_pz81(double n);
 ```
 
 ```text
-PZ81 LDA correlation, unpolarized.
+PZ81 LDA correlation, unpolarized
 ```
 
 ### `lda_correlation_potential_pz81`
@@ -107,7 +108,7 @@ double lda_xc_energy_density(double n);
 ```
 
 ```text
-Sums of the above (what actually enters the Kohn-Sham potential/energy).
+Sums of above (what actually enters Kohn-Sham potential/energy)
 ```
 
 ### `lda_xc_potential`
@@ -125,19 +126,19 @@ double pw92_correlation_energy_density(double n);
 ```
 
 ```text
-PBE (Perdew-Burke-Ernzerhof 1996) GGA exchange-correlation functional.
-Reference: Perdew, Burke & Ernzerhof, Phys. Rev. Lett. 77, 3865 (1996).
+PBE (Perdew-Burke-Ernzerhof 1996) GGA exchange-correlation functional
+Reference: Perdew, Burke & Ernzerhof, Phys. Rev. Lett. 77, 3865 (1996)
 
 NOTE: PBE correlation's enhancement-factor H(rs,t) is analytically
 parametrized against Perdew-Wang 1992 (PW92) LDA correlation (Perdew & Wang,
 Phys. Rev. B 45, 13244 (1992)) -> NOT PZ81 above; so it needs its own
 LDA-correlation base, pw92_correlation_*, distinct from
-lda_correlation_*_pz81.
+lda_correlation_*_pz81
 
 Unpolarized (\zeta=0, restricted/closed-shell) only
- \sigma = |\grad n|^2 (atomic units).
+ \sigma = |\grad n|^2 (atomic units)
 All energy densities are per-electron (eps_xc(n, \sigma)); multiply by n to
-get energy density per volume.
+get energy density per volume
 ```
 
 ### `pw92_correlation_potential`
@@ -159,7 +160,7 @@ double pbe_exchange_energy_density(double n, double sigma);
 ```text
 PBE exchange eps_x(n,sigma) and its two functional derivatives:
  vrho = d(n * eps_x) / dn,
- vsigma = d(n*eps_x)/dsigma.
+ vsigma = d(n * eps_x) / d\sigma
 ```
 
 ### `pbe_exchange_potential`
@@ -178,8 +179,8 @@ double pbe_correlation_energy_density(double n, double sigma);
 ```
 
 ```text
-PBE correlation eps_c(n,sigma) = eps_c^PW92(n) + H(n, \sigma), and its two
-functional derivatives.
+PBE correlation eps_c(n, \sigma) = eps_c^PW92(n) + H(n, \sigma) and its 2
+functional derivatives
 ```
 
 ### `pbe_correlation_potential`
@@ -198,7 +199,7 @@ double pbe_xc_energy_density(double n, double sigma);
 ```
 
 ```text
-Sums of the above (what actually enters the GGA Kohn-Sham potential/energy).
+Sums of above (what actually enters GGA Kohn-Sham potential/energy)
 ```
 
 ### `pbe_xc_potential`
@@ -223,9 +224,9 @@ conventions as hartree_fock_atom_s_orbitals so two are directly comparable
 side by side on same grid/Z/n_orbitals: r (uniform grid, r[0]>0 recommended),
 N, Z, n_orbitals (electron count = 2 *  n_orbitals, all in s subshells: He=1,
 Be=2, ...), mix (linear density-mixing damping in (0,1]), tol (convergence
-threshold on successive eigenvalue change), max_iter.
+threshold on successive eigenvalue change), max_iter
 
-Returns NULL on invalid input / allocation failure.
+Returns NULL on invalid input / allocation failure
 ```
 
 ### `dft_result_free`

@@ -41,7 +41,7 @@ int main(void) {
   dw_potential(8.0, a, hw, N, v);
   dw_eigen(v, N, dx, 4, e, psi);
 
-  double c[4] = {M_SQRT1_2, -M_SQRT1_2, 0.0, 0.0};
+  const double c[4] = {M_SQRT1_2, -M_SQRT1_2, 0.0, 0.0};
   double d = e[1] - e[0];
 
   printf("\n > Packet prepared in left well at B = 8: "

@@ -20,7 +20,7 @@ Aharonov-Bohm ring: energy levels versus flux, persistent current and flux-depen
 
 ```text
 Aharonov-Bohm ring: a tight-binding ring of N sites with hopping t threaded
-by magnetic flux \Phi.
+by magnetic flux \Phi
 
 Gauge: flux phase exp(2 \pi i \phi), \phi = \Phi / \Phi_0, sits on one bond;
 eigenstates are plane waves with energies E_n = -2 t \cos(2 pi (n - \phi) /

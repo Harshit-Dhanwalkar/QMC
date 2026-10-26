@@ -84,6 +84,7 @@ int cb_modes(double k_max, cb_mode_t *modes, int max_modes);
 All modes with k <= k_max, sorted by k (ties: cos before sin, smaller m
 first) Writes at most max_modes entries and returns how many modes exist
 (which may exceed max_modes)
+
 Returns -1 on bad input
 ```
 

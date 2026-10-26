@@ -107,8 +107,8 @@ Racah's formula
 
 Returns 0 if inputs violate triangle inequality, m1+m2 != M, |m| > j for any
 of three, or required integer/half-integer parity (j1+j2+J must be an
-integer).
-Phase convention: Condon-Shortley.
+integer)
+Phase convention: Condon-Shortley
 ```
 
 ### `couple_states`
@@ -130,7 +130,7 @@ int couple_allowed_J(int j1_2, int j2_2, int *J2_out);
 
 ```text
 Enumerate allowed total-J values (doubled) for given j1_2, j2_2, i.e.
-J_2 = |j1_2-j2_2|, |j1_2-j2_2|+2, ..., j1_2+j2_2.
+J_2 = |j1_2-j2_2|, |j1_2-j2_2|+2, ..., j1_2+j2_2
 ```
 
 ### `gaunt_coefficient`
@@ -145,10 +145,10 @@ Y_kq Y_l'm' d\Omega, q = m - m'. Built from clebsch_gordan() above via
   c^k(l,m;l',m') = (-1)^(m-m') * sqrt((2l+1)/(2l'+1))
                    * <l0;k0|l'0> * <l,-m;k,q|l',-m'>
 l, m, k, l', m' are integers, since orbital angular momenta are always
-integers.
+integers
 
 Returns 0 if triangle inequality |l-l'| <= k <= l+l' is violated, if l+k+l'
-is odd or if |m|>l or |m'|>l'.
+is odd or if |m|>l or |m'|>l'
 ```
 
 ### `spin_sigma_x`

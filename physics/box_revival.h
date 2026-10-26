@@ -11,6 +11,7 @@
  * of packet and its mirror image (a cat), and so on for every rational fraction
  * of T (Talbot carpet)
  */
+
 #ifndef BOX_REVIVAL_H
 #define BOX_REVIVAL_H
 
@@ -20,16 +21,14 @@
 
 #define BOX_REVIVAL_TIME 6.283185307179586
 
-/*
- * Project a Gaussian packet onto first n_modes eigenstates:
+/* Project a Gaussian packet onto first n_modes eigenstates:
  *  \psi(x) ~ \exp(-(x - x0)^2 / (4 \sigma^2) + i k0 x)
  *  \sigma = position spread
  *  k0 = \pi * n0
  * so n0 is central mode number. Coefficients are then renormalised to unit
  * norm. Returns squared norm that fell inside first n_modes before
  * renormalisation (1 means no truncation error), or a negative number on bad
- * input (0 < x0 < 1, 0.005 <= sigma <= 0.25, 1 <= n_modes <= BOX_MAX_MODES)
- */
+ * input (0 < x0 < 1, 0.005 <= sigma <= 0.25, 1 <= n_modes <= BOX_MAX_MODES) */
 double box_gaussian_coefficients(complex_t *c, int n_modes, double x0,
                                  double sigma, double n0);
 
@@ -38,12 +37,10 @@ double box_gaussian_coefficients(complex_t *c, int n_modes, double x0,
 int box_wavefunction(const complex_t *c, int n_modes, double t, const double *x,
                      int nx, complex_t *psi);
 
-/*
- * Space-time density |\psi(x_j, t_i)|^2 for t_i = t_max i / (nt - 1), written
+/* Space-time density |\psi(x_j, t_i)|^2 for t_i = t_max i / (nt - 1), written
  * to \rho[i * nx + j]. Same physics as box_wavefunction but with sine table
  * computed once and negligible modes (|c_n|^2 < 1e-16) skipped. 0 on success,
- * -1 on bad input or allocation failure
- */
+ * -1 on bad input or allocation failure */
 int box_density_map(const complex_t *c, int n_modes, const double *x, int nx,
                     double t_max, int nt, double *rho);
 

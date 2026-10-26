@@ -23,10 +23,9 @@ General basis-set-file parser: reads Gaussian94-format basis-set text
 (plain-text format exported by Basis Set Exchange, (Refernce:
 https://www.basissetexchange.org), and used by Gaussian/psi4/NWChem's
 "Gaussian94" export option) and builds basis_function_t arrays for arbitrary
-elements and arbitrary basis sets.
+elements and arbitrary basis sets
 
 Format (one element block per element, blocks separated by a "****" line):
-
   H     0
   S   3   1.00
         3.42525091              0.15432897
@@ -46,14 +45,14 @@ Format (one element block per element, blocks separated by a "****" line):
 
 NOTE: Shell types S,P,D,F,G (angular momentum 0..4) are supported, each
 expanded into its full set of (l+1)(l+2)/2 Cartesian components (e.g. P ->
-px,py,pz; D -> the 6 Cartesian d components xx,xy,xz,yy,yz,zz). An "SP" shell
-(shared exponents, separate S and P contraction coefficients :
+px,py,pz; D -> 6 Cartesian d components xx,xy,xz,yy,yz,zz). An "SP" shell
+(shared exponents, separate S and P contraction coefficients:
 minimal-basis-set convention used by e.g. STO-3G/3-21G/6-31G for valence s+p
-shell) is split into one S basis_function_t and three P basis_function_t.
+shell) is split into one S basis_function_t and three P basis_function_t
 
 Every basis_function_t returned is already run through
 molint_normalize_contraction (own-primitive normalization + whole-contraction
-normalization to unit self-overlap).
+normalization to unit self-overlap)
 ```
 
 ## Types
@@ -62,9 +61,9 @@ normalization to unit self-overlap).
 
 ```text
 One shell as parsed from file: n_prim primitives shared by every Cartesian
-component of this shell. coef1 is the contraction for the shell's own
-angular momentum (S,P,D,... or the S-half of an SP shell); coef2 is the
-P-contraction of an SP shell, or NULL for any non-SP shell.
+component of this shell. coef1 is contraction for shell's own angular
+momentum (S,P,D,... or S-half of an SP shell); coef2 is P-contraction of an
+SP shell, or NULL for any non-SP shell
 ```
 
 ```c
@@ -108,9 +107,9 @@ basis_set_t *basis_set_parse_string(const char *text);
 ```
 
 ```text
-Parse basis-set text already in memory (NUL-terminated).
+Parse basis-set text already in memory (NUL-terminated)
 
-Returns NULL on malformed input or allocation failure.
+Returns NULL on malformed input or allocation failure
 ```
 
 ### `basis_set_parse_file`
@@ -120,9 +119,9 @@ basis_set_t *basis_set_parse_file(const char *path);
 ```
 
 ```text
-Parse a basis-set file from disk.
+Parse a basis-set file from disk
 
-Returns NULL if the file cannot be opened/read or the contents are malformed.
+Returns NULL if file cannot be opened/read or contents are malformed
 ```
 
 ### `basis_set_free`
@@ -141,9 +140,9 @@ const basis_element_t *basis_set_find_element(const basis_set_t *bs,
 ```
 
 ```text
-Case-insensitive element lookup.
+Case-insensitive element lookup
 
-Returns NULL if not present in bs.
+Returns NULL if not present in bs
 ```
 
 ### `basis_set_build_atom`
@@ -155,9 +154,9 @@ int basis_set_build_atom(const basis_element_t *elem, const double center[3],
 
 ```text
 Expand one element's shells, centered at `center`, into an array of
-newly-allocated, normalized basis_function_t. Writes the array to *out
+newly-allocated, normalized basis_function_t. Writes array to *out
 
-Returns the count, or returns 0 and sets *out=NULL on allocation failure.
+Returns count, or returns 0 and sets *out=NULL on allocation failure
 ```
 
 ### `basis_set_build_molecule`
@@ -169,12 +168,12 @@ int basis_set_build_molecule(const basis_set_t *bs, const char *const symbols[],
 ```
 
 ```text
-Build the full concatenated basis for a molecule in one call.
-symbols[i]/centers[i] give element symbol and 3D center of atom i.
+Build full concatenated basis for a molecule in one call
+symbols[i]/centers[i] give element symbol and 3D center of atom i
 
 Returns total basis function count (0 on failure, including any symbol
-missing from bs), writing the flat array to *out (ready to hand straight to
-molecular_overlap_matrix / molecular_core_hamiltonian / etc.).
+missing from bs), writing flat array to *out (ready to hand straight to
+molecular_overlap_matrix / molecular_core_hamiltonian / etc.)
 ```
 
 ### `basis_set_free_functions`
@@ -184,6 +183,6 @@ void basis_set_free_functions(basis_function_t **funcs, int num_funcs);
 ```
 
 ```text
-Frees an array of basis_function_t* (and the array itself) as returned by
-basis_set_build_atom / basis_set_build_molecule.
+Frees an array of basis_function_t* (and array itself) as returned by
+basis_set_build_atom / basis_set_build_molecule
 ```

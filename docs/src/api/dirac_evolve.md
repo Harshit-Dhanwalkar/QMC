@@ -89,10 +89,10 @@ branch selects the spinor structure:
   +1: positive-energy states only. Gaussian * spinor of E = +E_k0 is
       projected exactly onto positive-energy subspace in momentum space, so
       packet moves with group velocity +c^2 \hbar k / E and does not
-      tremble.
+      tremble
   -1: negative-energy states only (E = -E_k). Same construction. These
       "antiparticle-like" packets move with velocity -c^2 \hbar k / |E|,
-      opposite to k0.
+      opposite to k0
   0 : no projection, spinor (1, 0) (upper component only). Mixture of both
       energy signs with equal weight at k0 = 0, which produces Zitterbewegung
 
@@ -148,20 +148,25 @@ double dirac_step_transmission(double E, double V0, double m, double hbar,
 Analytic transmission probability of a plane wave of energy E > m c^2,
 incident from the left on a sharp potential step V(x) = V0 for x > 0 (0
 for x < 0), from continuity of the spinor at x = 0:
-  k = \sqrt{E^2 - m^2 c^4}/(\hbar c),  q = sgn(E') \sqrt{E'^2 - m^2
-c^4}/(\hbar c),  E' = E - V0
-  \kappa = (q/k) (E + m c^2) / (E' + m c^2),   T = 4 \kappa / (1 + \kappa)^2,
-R = 1 - T (q carries the sign of E' so that the transmitted wave has positive
-group velocity.) Three regimes: E' > m c^2          : ordinary transmission,
-T -> 1 as V0 -> 0 |E'| < m c^2        : no propagating state in the step, T =
-0 E' < -m c^2         : Klein regime (V0 > E + m c^2). The transmitted wave
-is a negative-energy state; T does NOT vanish as V0 grows (V0 -> infinity
-gives \kappa -> \sqrt{(E + mc^2)/(E - mc^2)}), unlike non-relativistic
-tunnelling which falls exponentially with barrier height Probability here is
-the transmitted share of the incident probability current. A finite-width
-packet reproduces it away from the thresholds V0 = E -+ m c^2, where T(E)
-varies quickly
+  k = \sqrt{E^2 - m^2 c^4}/(\hbar c)
+  q = sgn(E') \sqrt{E'^2 - m^2 c^4}/(\hbar c)
+  E' = E - V0 \kappa = (q/k) (E + m c^2) / (E' + m c^2)
+  T = 4 \kappa / (1 + \kappa)^2
+  R = 1 - T (q carries sign of E' so that transmitted wave has positive group
+      velocity)
 
-Returns NaN if E <= m c^2 or any argument is non-finite / m < 0 / hbar <= 0
+Three regimes:
+  E' > m c^2                       : ordinary transmission,
+  T -> 1 as V0 -> 0 |E'| < m c^2   : no propagating state in step
+  T = 0 E' < -m c^2                : Klein regime (V0 > E + m c^2)
+
+Transmitted wave is a negative-energy state; T does not vanish as V0 grows
+(V0 -> \infty gives \kappa -> \sqrt{(E + mc^2)/(E - mc^2)}), unlike
+non-relativistic tunnelling which falls exponentially with barrier height
+Probability here is transmitted share of incident probability current. A
+finite-width packet reproduces it away from thresholds V0 = E \pm m c^2,
+where T(E) varies quickly
+
+Returns NaN if E <= m c^2 or any argument is non-finite / m < 0 / \hbar <= 0
 / c <= 0
 ```

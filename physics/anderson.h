@@ -1,16 +1,11 @@
-#ifndef QMC_ANDERSON_H
-#define QMC_ANDERSON_H
-
-#include "../core/vector.h"
-
 /*
  * Anderson localisation on a 1D tight-binding chain (\hbar = 1)
  *
  *   H = -t \sum_j (|j><j+1| + h.c.) + \sum_j \epsilon_j |j><j|
  *
  * with n sites, open ends, hopping t > 0 and on-site energies \epsilon_j drawn
- * independently and uniformly from [-W/2, W/2] (W = disorder strength). Site j
- * sits at position x = j
+ * independently and uniformly from [-W/2, W/2] (W = disorder strength)
+ * Site j sits at position x = j
  *
  * NOTE: Without disorder (W = 0) a packet started on one site spreads
  * ballistically, \psi_j(\tau) = i^(j - j0) J_(j - j0)(2t\tau), so <x^2> = 2 t^2
@@ -25,21 +20,24 @@
  * which fails near band centre E = 0 (anomaly) and at band edges
  */
 
+#ifndef QMC_ANDERSON_H
+#define QMC_ANDERSON_H
+
+#include "../core/vector.h"
+
 /* Fill eps[0..n-1] with uniform samples in [-w/2, w/2] from a deterministic
  * generator seeded by `seed` (same seed -> same sequence on every platform)
  *
  * Returns 0 on success, -1 on NULL eps, n < 1, or w < 0 / non-finite */
 int anderson_disorder(double *eps, int n, double w, unsigned long long seed);
 
-/*
- * Advance psi (length n) by `steps` RK4 steps of size dt under chain
+/* Advance psi (length n) by `steps` RK4 steps of size dt under chain
  * Hamiltonian above. eps has length n. Returns 0 on success, -1 on invalid
  * input (NULL pointers, n < 2, hop <= 0, dt <= 0, steps < 1, non-finite eps),
  * -2 on allocation failure. On failure psi is untouched
  *
  * RK4 is not exactly unitary: with t = 1, dt = 0.01 norm drifts by about
- * 5e-10 over 2000 steps for a clean chain and 2e-8 over 6000 steps at W = 6
- */
+ * 5e-10 over 2000 steps for a clean chain and 2e-8 over 6000 steps at W = 6 */
 int anderson_evolve(cvector_t *psi, const double *eps, double hop, double dt,
                     int steps);
 
@@ -58,13 +56,11 @@ double anderson_ipr(const cvector_t *psi);
 /* Energy expectation <psi|H|psi> / <psi|psi>; NaN on invalid input */
 double anderson_energy(const cvector_t *psi, const double *eps, double hop);
 
-/*
- * Lyapunov exponent (inverse localisation length, per site) of amplitude at
+/* Lyapunov exponent (inverse localisation length, per site) of amplitude at
  * energy E for given on-site energies, from transfer-matrix recursion
- * \psi_(j+1) = ((E - \eps_j)/t) \psi_j -  \psi_(j-1) with periodic
- * renormalisation: \gamma = (1/n) sum ln(growth). Self-averaging, so use a long
- * chain (>= 1e5 sites). NaN on invalid input
- */
+ * \psi_(j+1) = ((E - \eps_j)/t) \psi_j - \psi_(j-1) with periodic
+ * renormalisation: \gamma = (1/n) \sum \ln(growth). Self-averaging, so use a
+ * long chain (>= 1e5 sites). NaN on invalid input */
 double anderson_lyapunov(const double *eps, int n, double hop, double energy);
 
 /* Weak-disorder estimate 1/xi = W^2 / (24 (4 t^2 - E^2)) for |E| < 2t; NaN
