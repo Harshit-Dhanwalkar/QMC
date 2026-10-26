@@ -1,0 +1,32 @@
+name: Set up Zig (cached)
+description: Download Zig once per version and put it on PATH (used by the WASM build)
+inputs:
+  version:
+    description: Zig release to install
+    required: false
+    default: "0.13.0"
+runs:
+  using: composite
+  steps:
+    - name: Cache Zig
+      id: cache-zig
+      uses: actions/cache@v6
+      with:
+        path: bin/zig
+        key: zig-${{ inputs.version }}-${{ runner.os }}
+
+    - name: Install Zig
+      if: steps.cache-zig.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        ZIG_VERSION: ${{ inputs.version }}
+      run: |
+        mkdir -p bin/zig
+        curl -fsSL --retry 3 "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
+          | tar -xJ --strip-components=1 -C bin/zig
+
+    - name: Put Zig on PATH
+      shell: bash
+      run: |
+        echo "$GITHUB_WORKSPACE/bin/zig" >> "$GITHUB_PATH"
+        "$GITHUB_WORKSPACE/bin/zig/zig" version

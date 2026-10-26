@@ -1,8 +1,8 @@
 name: Fuzz
 
 # NOTE: tests/test_molecular_integrals_fuzz.c is a property-based test with its
-# own main() and fixed seeds. It is not a libFuzzer target (no LLVMFuzzerTestOneInput),
-# so building it with -fsanitize=fuzzer and passing -max_total_time/corpus
+# own main() and fixed seeds. It is not a libFuzzer target (no
+# LLVMFuzzerTestOneInput), so it is built with ASan/UBSan and simply run
 
 on:
   pull_request:

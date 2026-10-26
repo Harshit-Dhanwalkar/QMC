@@ -1,4 +1,3 @@
-
 name: Commercial Licensing Request
 description: Request a commercial exemption license for the QMC project.
 title: "[Licensing Inquiry] "
@@ -26,6 +25,7 @@ body:
         - "Startup (1-10 employees)"
         - "Small/Medium Business (11-250 employees)"
         - "Enterprise (250+ employees)"
+        - ""
     validations:
       required: true
 

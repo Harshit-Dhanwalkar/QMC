@@ -1,11 +1,14 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "03:00"
+      timezone: "Asia/Kolkata"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -17,12 +20,13 @@ updates:
     commit-message:
       prefix: "ci"
 
+  # third_party/gr (GR plotting framework)
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "monthly"
-
-  # - package-ecosystem: "npm"
-  #   directory: "/"
-  #   schedule:
-  #     interval: weekly
+    labels:
+      - "dependencies"
+      - "submodule"
+    commit-message:
+      prefix: "deps"

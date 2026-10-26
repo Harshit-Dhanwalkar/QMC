@@ -3,20 +3,8 @@ name: QMC CI Build
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "LICENCE"
-      - "LICENSE"
-      - ".gitignore"
   pull_request:
     branches: ["main"]
-    paths-ignore:
-      - "docs/**"
-      - "**.md"
-      - "LICENCE"
-      - "LICENSE"
-      - ".gitignore"
 
 permissions:
   contents: read
@@ -33,7 +21,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      code: ${{ steps.filter.outputs.code }}
       core: ${{ steps.filter.outputs.core }}
+      export: ${{ steps.filter.outputs.export }}
       physics: ${{ steps.filter.outputs.physics }}
       tests: ${{ steps.filter.outputs.tests }}
       makefile: ${{ steps.filter.outputs.makefile }}
@@ -47,6 +37,29 @@ jobs:
         id: filter
         with:
           filters: |
+            code:
+              - 'core/**'
+              - 'physics/**'
+              - 'export/**'
+              - 'latex/**'
+              - 'tests/**'
+              - 'examples/**'
+              - 'benchmarks/**'
+              - 'bindings/**'
+              - 'third_party/**'
+              - 'Makefile'
+              - 'CMakeLists.txt'
+              - 'main.c'
+              - 'config.h'
+              - 'qmc.h'
+              - 'lsan.supp'
+              - 'valgrind.supp'
+              - '.clang-tidy'
+              - '.github/workflows/ci.yml'
+              - '.github/actions/**'
+            export:
+              - 'export/**'
+              - 'latex/**'
             core:
               - 'core/**'
             physics:
@@ -75,6 +88,9 @@ jobs:
               - '.github/actions/**'
 
   build-and-test:
+    needs: changes
+    if: |
+      !cancelled() && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -119,6 +135,7 @@ jobs:
       !cancelled() &&
       (needs.changes.outputs.physics == 'true' ||
        needs.changes.outputs.core    == 'true' ||
+       needs.changes.outputs.export  == 'true' ||
        needs.changes.outputs.tests   == 'true' ||
        needs.changes.outputs.makefile == 'true' ||
        needs.changes.outputs.workflows == 'true')
@@ -157,11 +174,11 @@ jobs:
       - name: Install compiledb
         run: pip install compiledb
 
-      - name: Cache pip packages
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+      # - name: Cache pip packages
+      #   uses: actions/cache@v6
+      #   with:
+      #     path: ~/.cache/pip
+      #     key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
 
       - name: Generate compilation database
         run: |
@@ -181,6 +198,7 @@ jobs:
       needs.build-and-test.result == 'success' &&
       (needs.changes.outputs.physics == 'true' ||
        needs.changes.outputs.core    == 'true' ||
+       needs.changes.outputs.export  == 'true' ||
        needs.changes.outputs.tests   == 'true' ||
        needs.changes.outputs.makefile == 'true' ||
        needs.changes.outputs.workflows == 'true')
@@ -261,34 +279,12 @@ jobs:
        needs.changes.outputs.workflows == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      ZIG_VERSION: "0.13.0"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Set up PATH
-        run: echo "$GITHUB_WORKSPACE/bin/zig" >> "$GITHUB_PATH"
-
-      - name: Cache Zig
-        id: cache-zig
-        uses: actions/cache@v6
-        with:
-          path: bin/zig
-          key: zig-${{ env.ZIG_VERSION }}-${{ runner.os }}
-
-      - name: Install Zig
-        if: steps.cache-zig.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p bin/zig
-          curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-            | tar -xJ --strip-components=1 -C bin/zig
-
-      - name: Sanity-check Zig on PATH
-        run: |
-          command -v zig
-          zig version
+      - uses: ./.github/actions/setup-zig
 
       - name: Build WASM playground
         run: |
@@ -298,7 +294,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Native vs WASM agreement + fringe physics
         run: |
@@ -311,6 +307,7 @@ jobs:
     if: always()
     needs:
       [
+        changes,
         build-and-test,
         static-analysis,
         sanitizers,

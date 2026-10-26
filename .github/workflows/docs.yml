@@ -40,7 +40,6 @@ jobs:
       MDBOOK_VERSION: "0.5.4"
       MDBOOK_KATEX_VERSION: "0.10.0"
       MDBOOK_LINKCHECK2_VERSION: "0.12.2"
-      ZIG_VERSION: "0.13.0"
       WASM_MODULES: >-
         qmc.wasm
         qmc_anderson.wasm qmc_bloch.wasm qmc_butterfly.wasm qmc_dirac.wasm
@@ -63,8 +62,7 @@ jobs:
 
       - name: Set up PATH
         run: |
-          echo "$GITHUB_WORKSPACE/bin"       >> $GITHUB_PATH
-          echo "$GITHUB_WORKSPACE/bin/zig"   >> $GITHUB_PATH
+          echo "$GITHUB_WORKSPACE/bin" >> "$GITHUB_PATH"
 
       # ------------------ mdBook toolchain  -------------------
       # Cache mdBook
@@ -79,7 +77,7 @@ jobs:
         if: steps.cache-mdbook.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
-          curl -sSL "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
+          curl -fsSL --retry 3 "https://github.com/rust-lang/mdBook/releases/download/v${MDBOOK_VERSION}/mdbook-v${MDBOOK_VERSION}-x86_64-unknown-linux-gnu.tar.gz" | tar -xz -C bin
 
       # Cache mdbook-katex
       - name: Cache mdbook-katex
@@ -90,14 +88,10 @@ jobs:
           key: mdbook-katex-v${{ env.MDBOOK_KATEX_VERSION }}-${{ runner.os }}
 
       - name: Install mdbook-katex
-      #   if: steps.cache-katex.outputs.cache-hit != 'true'
-      #   run: |
-      #     mkdir -p bin
-      #     cargo install mdbook-katex --version "${MDBOOK_KATEX_VERSION}" --root .
         if: steps.cache-katex.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
-          curl -sSL -o bin/katex.tar.gz \
+          curl -fsSL --retry 3 -o bin/katex.tar.gz \
             "https://github.com/lzanini/mdbook-katex/releases/download/v${MDBOOK_KATEX_VERSION}/mdbook-katex-v${MDBOOK_KATEX_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
           tar -xzf bin/katex.tar.gz -C bin
           chmod +x bin/mdbook-katex
@@ -115,26 +109,14 @@ jobs:
         if: steps.cache-linkcheck2.outputs.cache-hit != 'true'
         run: |
           mkdir -p bin
-          curl -sSL -o bin/mdbook-linkcheck2.tar.gz \
+          curl -fsSL --retry 3 -o bin/mdbook-linkcheck2.tar.gz \
             "https://github.com/marxin/mdbook-linkcheck2/releases/download/v${MDBOOK_LINKCHECK2_VERSION}/mdbook-linkcheck2-x86_64-unknown-linux-gnu.tar.gz"
           tar -xzf bin/mdbook-linkcheck2.tar.gz -C bin
           chmod +x bin/mdbook-linkcheck2
           rm bin/mdbook-linkcheck2.tar.gz
 
       # ---------------------- WASM playground  ---------------------
-      - name: Cache Zig
-        id: cache-zig
-        uses: actions/cache@v6
-        with:
-          path: bin/zig
-          key: zig-${{ env.ZIG_VERSION }}-${{ runner.os }}
-
-      - name: Install Zig
-        if: steps.cache-zig.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p bin/zig
-          curl -sSL "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-x86_64-${ZIG_VERSION}.tar.xz" \
-            | tar -xJ --strip-components=1 -C bin/zig
+      - uses: ./.github/actions/setup-zig
 
       - name: Build WASM playground
         run: |
