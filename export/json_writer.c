@@ -26,18 +26,6 @@
 #define JSON_MAX_DEPTH 32
 #define JSON_MAX_PATH 512
 
-// Exact equality for finite doubles based on raw representation
-static int json_double_bit_equal(double a, double b) {
-  if (isnan(a) && isnan(b)) {
-    return 1;
-  }
-  if (a == 0.0 && b == 0.0) {
-    return signbit(a) == signbit(b);
-  }
-
-  return memcmp(&a, &b, sizeof(double)) == 0;
-}
-
 // Write `s` as a JSON string literal (with surrounding quotes), escaping
 // characters per RFC 8259 §7 NULL writes as ""
 static json_status_t write_json_string(FILE *f, const char *s) {
