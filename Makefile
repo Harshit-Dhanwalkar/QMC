@@ -292,6 +292,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/ab_ring.c \
                $(PHYSICS_DIR)/double_barrier.c \
                $(PHYSICS_DIR)/josephson.c \
+               $(PHYSICS_DIR)/double_well.c \
                $(PHYSICS_DIR)/variational.c \
                $(PHYSICS_DIR)/wkb.c \
                $(PHYSICS_DIR)/scattering.c \
