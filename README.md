@@ -457,6 +457,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_93_ab_ring.c</code></li>
   <li><code>eg_94_double_barrier.c</code></li>
   <li><code>eg_95_josephson.c</code></li>
+  <li><code>eg_96_double_well.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -526,6 +527,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_ab_ring.c</code></li>
   <li><code>test_double_barrier.c</code></li>
   <li><code>test_josephson.c</code></li>
+  <li><code>test_double_well.c</code></li>
   <li><code>test_kicked_rotor.c</code></li>
   <li><code>test_ssh_chain.c</code></li>
   <li><code>test_tfim_quench.c</code></li>
