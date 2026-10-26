@@ -3,7 +3,7 @@
  *
  * tight-binding ring with flux: spectrum, persistent current, two-terminal
  * transmission through leads at sites 0 and b)
- * Hopping is the unit of energy (t = 1)
+ * Hopping is unit of energy (t = 1)
  * Rings have 4 .. 32 sites
  */
 
@@ -33,7 +33,7 @@ int qmc_ar_max_sites(void) { return AR_NMAX; }
 // (curve_len - 1)
 QMC_EXPORT(qmc_ar_spec_buffer)
 double *qmc_ar_spec_buffer(void) { return g_spec; }
-// Persistent current of ne electrons at the same fluxes
+// Persistent current of ne electrons at same fluxes
 QMC_EXPORT(qmc_ar_cur_buffer)
 double *qmc_ar_cur_buffer(void) { return g_cur; }
 // Transmission against flux \phi = i / (curve_len - 1) in [0, 1]

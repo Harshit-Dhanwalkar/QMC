@@ -45,7 +45,7 @@ double qmc_lz_time(void) { return g_t; }
 QMC_EXPORT(qmc_lz_total_time)
 double qmc_lz_total_time(void) { return g_passes * pass_duration(); }
 
-// Detuning at the current time (zigzag between -amp and +amp)
+// Detuning at current time (zigzag between -amp and +amp)
 QMC_EXPORT(qmc_lz_delta)
 double qmc_lz_delta(void) {
   double dur = pass_duration();
@@ -71,8 +71,9 @@ double qmc_lz_upper(void) {
 QMC_EXPORT(qmc_lz_exact)
 double qmc_lz_exact(void) { return lz_probability(g_omega, g_rate); }
 
-/* Start a sweep in lower adiabatic state at delta = -amp. \omega in
- * [0, 3], rate in (0, 20], amp in [2, 20], passes 1 or 2. Returns 0 */
+// Start a sweep in lower adiabatic state at delta = -amp
+// \omega in [0, 3], rate in (0, 20], amp in [2, 20], passes 1 or 2
+// Returns 0
 QMC_EXPORT(qmc_lz_reset)
 int qmc_lz_reset(double omega, double rate, double amp, int passes) {
   if (!(omega >= 0.0 && omega <= 3.0) || !(rate > 0.0 && rate <= 20.0) ||
@@ -89,8 +90,8 @@ int qmc_lz_reset(double omega, double rate, double amp, int passes) {
   return lz_lower_state(g_v, omega, -amp);
 }
 
-/* Advance by `duration` of sweep time (clipped to end)
- * Returns 0 while running, 1 once sweep has finished, -1 on error */
+// Advance by `duration` of sweep time (clipped to end)
+// Returns 0 while running, 1 once sweep has finished, -1 on error
 QMC_EXPORT(qmc_lz_step)
 int qmc_lz_step(double duration) {
   double total = qmc_lz_total_time();

@@ -223,6 +223,19 @@
       <sub>Phase particle in a tilted washboard potential: hysteresis, switching currents, and Shapiro steps</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/doublewell.html">
+        <img src="docs/src/playground/thumbs/doublewell.jpg" alt="Symmetric double-well tunnelling and parity doublet" width="260" height="260">
+      </a>
+      <br>
+      <b>Double well</b>
+      <br>
+      <sub>A particle prepared in one well tunnels to the other and back with period 2&pi;/&Delta;, the ammonia-inversion mechanism</sub>
+    </td>
+    <td align="center" width="33%"></td>
+    <td align="center" width="33%"></td>
+  </tr>
 </table>
 
 A pure-C library and simulation engine for numerical and semi-analytic quantum mechanics, covering undergraduate through early-graduate physics: wavefunctions, eigensolvers, time evolution, perturbation theory, scattering, angular momentum coupling, identical particles, open quantum systems, relativistic wave equations (Klein-Gordon, Dirac), Hartree-Fock self-consistent field theory, Josephson junction dynamics, and quantum Monte Carlo (variational and diffusion).
@@ -347,7 +360,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 
 - Core Math : Complex vectors/matrices, special functions (Hermite, Laguerre, Legendre, Spherical Harmonics, Bessel)
   - ODE solver : Numerov integrator, RK4, Crank-Nicolson propagator, FFT (1D, 2D, 3D), and custom eigensolvers (`tridiag_eigh`, `complex_eigh`).
-- 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, single and double tunneling barriers (transfer matrix), radial hydrogen, general 3D central potentials.
+- 1D & 3D Potentials: Particle in a box, finite square well, harmonic oscillator, single and double tunneling barriers (transfer matrix), symmetric double-well tunnelling, radial hydrogen, general 3D central potentials.
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP), exact Talbot-carpet time evolution of a Gaussian packet in a box, with closed-form revival identities checked against the state vector.
 - Many-Body & Chemistry: Identical particles (Slater determinants), exact diagonalisation of the two-site Hubbard model (doublons, spin correlations, canonical thermodynamics), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).

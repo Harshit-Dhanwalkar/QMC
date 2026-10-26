@@ -280,7 +280,7 @@ else
   exit 1
 fi
 
-echo "--- Resonant tunnelling: double-barrier transmission, dwell time and wavefunction, native vs WASM ---"
+echo "--- Resonant tunnelling: double-barrier transmission, doublewell time and wavefunction, native vs WASM ---"
 gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/tunnel_ref.c wasm/qmc_tunnel.c physics/double_barrier.c \
   -lm -o "$TMP/qmc_tunnel_ref"
 "$TMP/qmc_tunnel_ref" > "$TMP/qmc_tunnel_native.txt"
@@ -290,5 +290,18 @@ if diff -u "$TMP/qmc_tunnel_native.txt" "$TMP/qmc_tunnel_wasm.txt"; then
   echo "OK: tunnel WASM matches native"
 else
   echo "FAIL: tunnel WASM and native results differ" >&2
+  exit 1
+fi
+
+echo "--- Double well: parity doublet, WKB splitting and packet tunnelling, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/doublewell_ref.c wasm/qmc_doublewell.c physics/double_well.c \
+  -lm -o "$TMP/qmc_doublewell_ref"
+"$TMP/qmc_doublewell_ref" > "$TMP/qmc_doublewell_native.txt"
+cat "$TMP/qmc_doublewell_native.txt"
+node wasm/test/doublewell_check.mjs > "$TMP/qmc_doublewell_wasm.txt"
+if diff -u "$TMP/qmc_doublewell_native.txt" "$TMP/qmc_doublewell_wasm.txt"; then
+  echo "OK: doublewell WASM matches native"
+else
+  echo "FAIL: doublewell WASM and native results differ" >&2
   exit 1
 fi

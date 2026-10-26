@@ -37,11 +37,11 @@ double qmc_an_dt(void) { return AN_DT; }
 QMC_EXPORT(qmc_an_time)
 double qmc_an_time(void) { return g_t; }
 
-/* Scratch buffer: [0,N) |psi|^2, [N,2N) on-site energies */
+// Scratch buffer: [0,N) |\psi|^2, [N,2N) on-site energies
 QMC_EXPORT(qmc_an_buffer)
 double *qmc_an_buffer(void) { return g_buf; }
 
-/* Refresh scratch buffer from current state */
+// Refresh scratch buffer from current state
 QMC_EXPORT(qmc_an_density)
 void qmc_an_density(void) {
   if (!g_psi) {
@@ -54,19 +54,23 @@ void qmc_an_density(void) {
   }
 }
 
-/* New disorder (strength w in [0, 12], integer seed) and a packet on the
- * middle site at t = 0. Returns 0 on success */
+// New disorder (strength w in [0, 12], integer seed) and a packet on middle
+// site at t = 0
+// Returns 0 on success
 QMC_EXPORT(qmc_an_reset)
 int qmc_an_reset(double w, int seed) {
   if (!(w >= 0.0 && w <= 12.0)) {
     return -1;
   }
+
   if (!g_psi) {
     g_psi = cvector_alloc(AN_N);
   }
+
   if (!g_psi) {
     return -1;
   }
+
   if (anderson_disorder(g_eps, AN_N, w, (unsigned long long)(unsigned)seed) !=
       0) {
     return -1;
@@ -80,7 +84,8 @@ int qmc_an_reset(double w, int seed) {
   return 0;
 }
 
-/* Advance n steps of AN_DT. Returns 0 on success */
+// Advance n steps of AN_DT
+// Returns 0 on success
 QMC_EXPORT(qmc_an_step)
 int qmc_an_step(int n) {
   if (!g_psi) {
@@ -108,8 +113,8 @@ double qmc_an_ipr(void) { return anderson_ipr(g_psi); }
 QMC_EXPORT(qmc_an_energy)
 double qmc_an_energy(void) { return anderson_energy(g_psi, g_eps, AN_HOP); }
 
-/* Weak-disorder localisation length (1 / \gamma) at energy e (NaN outside band
- * or for w = 0, where it is infinite) */
+// Weak-disorder localisation length (1 / \gamma) at energy e (NaN outside band
+// or for w = 0, where it is infinite)
 QMC_EXPORT(qmc_an_xi)
 double qmc_an_xi(double w, double e) {
   double gamma = anderson_lyapunov_weak(w, AN_HOP, e);

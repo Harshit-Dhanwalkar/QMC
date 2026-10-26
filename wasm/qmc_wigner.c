@@ -74,16 +74,13 @@ double qmc_wg_wmin(void) { return g_wmin; }
 QMC_EXPORT(qmc_wg_wmax)
 double qmc_wg_wmax(void) { return g_wmax; }
 
-/*
- * Build a state, apply Kerr phase for \chi_t and compute its Wigner function
- *   kind 0 coherent: amp = |\alpha| (0..3.8), param = phase of alpha
- *   kind 1 Fock:     amp = n (0..12)
- *   kind 2/3 cat:    amp = |\alpha| (0..3.8), param = phase of alpha (even /
- *                    odd)
- *   kind 4 squeezed: amp = r (0..1.2), param = squeezing angle
- *
- * Returns 0 on success, -1 on invalid input
- */
+// Build a state, apply Kerr phase for \chi_t and compute its Wigner function
+//   kind 0 coherent: amp = |\alpha| (0..3.8), param = phase of \alpha
+//   kind 1 Fock:     amp = n (0..12)
+//   kind 2/3 cat:    amp = |\alpha| (0..3.8), param = phase of alpha (even /
+//                    odd)
+//   kind 4 squeezed: amp = r (0..1.2), param = squeezing angle
+// Returns 0 on success, -1 on invalid input
 QMC_EXPORT(qmc_wg_state)
 int qmc_wg_state(int kind, double amp, double param, double chi_t) {
   int status = -1;

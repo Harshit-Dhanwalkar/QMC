@@ -47,15 +47,14 @@ double *qmc_ssh_vectors(void) { return g_vec; }
 QMC_EXPORT(qmc_ssh_bonds)
 double *qmc_ssh_bonds(void) { return g_bond; }
 
-/* Energy of sweep point j, state s at [j * sites + s]. */
+// Energy of sweep point j, state s at [j * sites + s]
 QMC_EXPORT(qmc_ssh_sweep_buffer)
 double *qmc_ssh_sweep_buffer(void) { return g_sweep; }
 
-/* Build and diagonalise chain: v = 1, inter-cell hopping w in [0, 3],
- * hopping disorder `noise` in [0, 1), staggered potential m in [-1, 1] and a
- * seed for disorder
- *
- * Returns 0 on success */
+// Build and diagonalise chain: v = 1, inter-cell hopping w in [0, 3],
+// hopping disorder `noise` in [0, 1), staggered potential m in [-1, 1] and a
+// seed for disorder
+// Returns 0 on success 
 QMC_EXPORT(qmc_ssh_set)
 int qmc_ssh_set(double w, double noise, double m, int seed) {
   if (!(w >= 0.0 && w <= 3.0) || !(noise >= 0.0 && noise < 1.0) ||
@@ -78,9 +77,8 @@ int qmc_ssh_set(double w, double noise, double m, int seed) {
   return 0;
 }
 
-/* Spectrum of `count` chains with w from w0 to w1, into sweep buffer
- *
- * Returns 0 on success */
+// Spectrum of `count` chains with w from w0 to w1, into sweep buffer
+// Returns 0 on success
 QMC_EXPORT(qmc_ssh_sweep)
 int qmc_ssh_sweep(double w0, double w1, int count) {
   double bond[SSH_SITES - 1];

@@ -33,7 +33,7 @@ double *qmc_jj_up_buffer(void) { return g_up; }
 QMC_EXPORT(qmc_jj_down_buffer)
 double *qmc_jj_down_buffer(void) { return g_down; }
 
-// Set the junction: quality factor in [0.05, 20], dc current in [-5, 5], ac
+// Set junction: quality factor in [0.05, 20], dc current in [-5, 5], ac
 // amplitude in [0, 5], frequency in [0, 5]. 0 or -1
 QMC_EXPORT(qmc_jj_set)
 int qmc_jj_set(double q, double i_dc, double i_ac, double omega) {
@@ -58,7 +58,7 @@ int qmc_jj_reset(double phi, double v) {
   return 0;
 }
 
-// Advance the live state by `time` (0 .. 10)
+// Advance live state by `time` (0 .. 10)
 // Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_jj_advance)
 int qmc_jj_advance(double time) {

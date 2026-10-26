@@ -4,28 +4,29 @@
 #   ./wasm/build.sh            # uses emcc if installed, otherwise zig cc
 #
 # Output:
-#   docs/src/playground/qmc.wasm            2D double-slit playground
-#   docs/src/playground/qmc_butterfly.wasm  Hofstadter butterfly explorer
-#   docs/src/playground/qmc_dirac.wasm      Dirac Klein-paradox demo
-#   docs/src/playground/qmc_orbital.wasm    hydrogen orbital viewer
-#   docs/src/playground/qmc_bloch.wasm      Bloch-sphere qubit demo
-#   docs/src/playground/qmc_anderson.wasm   Anderson-localisation demo
-#   docs/src/playground/qmc_qwalk.wasm      quantum-walk demo
-#   docs/src/playground/qmc_lz.wasm         Landau-Zener / Stueckelberg demo
-#   docs/src/playground/qmc_rotor.wasm      kicked-rotor demo
-#   docs/src/playground/qmc_ssh.wasm        SSH topological-chain demo
-#   docs/src/playground/qmc_tfim.wasm       Ising-quench demo
-#   docs/src/playground/qmc_haldane.wasm    Haldane Chern-insulator demo
-#   docs/src/playground/qmc_wigner.wasm     Wigner-function / Kerr cat-state demo
-#   docs/src/playground/qmc_grover.wasm     Grover-search demo
-#   docs/src/playground/qmc_bell.wasm       CHSH Bell-test on a Werner state demo
-#   docs/src/playground/qmc_carpet.wasm     quantum-carpet / revival demo
-#   docs/src/playground/qmc_zeno.wasm       quantum-Zeno demo
-#   docs/src/playground/qmc_corral.wasm     quantum-corral (circular well) demo
-#   docs/src/playground/qmc_hubbard.wasm    Hubbard-dimer demo
-#   docs/src/playground/qmc_ring.wasm       Aharonov-Bohm ring demo
-#   docs/src/playground/qmc_tunnel.wasm     resonant-tunnelling (double barrier) demo
-#   docs/src/playground/qmc_josephson.wasm  Josephson-junction (RCSJ) demo
+#   docs/src/playground/qmc.wasm                 2D double-slit playground
+#   docs/src/playground/qmc_butterfly.wasm       Hofstadter butterfly explorer
+#   docs/src/playground/qmc_dirac.wasm           Dirac Klein-paradox demo
+#   docs/src/playground/qmc_orbital.wasm         hydrogen orbital viewer
+#   docs/src/playground/qmc_bloch.wasm           Bloch-sphere qubit demo
+#   docs/src/playground/qmc_anderson.wasm        Anderson-localisation demo
+#   docs/src/playground/qmc_qwalk.wasm           quantum-walk demo
+#   docs/src/playground/qmc_lz.wasm              Landau-Zener / Stueckelberg demo
+#   docs/src/playground/qmc_rotor.wasm           kicked-rotor demo
+#   docs/src/playground/qmc_ssh.wasm             SSH topological-chain demo
+#   docs/src/playground/qmc_tfim.wasm            Ising-quench demo
+#   docs/src/playground/qmc_haldane.wasm         Haldane Chern-insulator demo
+#   docs/src/playground/qmc_wigner.wasm          Wigner-function / Kerr cat-state demo
+#   docs/src/playground/qmc_grover.wasm          Grover-search demo
+#   docs/src/playground/qmc_bell.wasm            CHSH Bell-test on a Werner state demo
+#   docs/src/playground/qmc_carpet.wasm          quantum-carpet / revival demo
+#   docs/src/playground/qmc_zeno.wasm            quantum-Zeno demo
+#   docs/src/playground/qmc_corral.wasm          quantum-corral (circular well) demo
+#   docs/src/playground/qmc_hubbard.wasm         Hubbard-dimer demo
+#   docs/src/playground/qmc_ring.wasm            Aharonov-Bohm ring demo
+#   docs/src/playground/qmc_tunnel.wasm          resonant-tunnelling (double barrier) demo
+#   docs/src/playground/qmc_josephson.wasm       Josephson-junction (RCSJ) demo
+#   docs/src/playground/qmc_doublewell.wasm      double-well tunnelling demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -186,7 +187,7 @@ build_module "$OUT/qmc_carpet.wasm" \
 
 build_module "$OUT/qmc_zeno.wasm" \
   "qmc_zn_curve_len qmc_zn_max_n qmc_zn_time_buffer qmc_zn_n_buffer qmc_zn_rate_buffer \
-  qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \ 
+  qmc_zn_cont_buffer qmc_zn_alive_buffer qmc_zn_total_time qmc_zn_pulsed qmc_zn_pulsed_curves \
   qmc_zn_continuous qmc_zn_rates qmc_zn_rate qmc_zn_sample" \
   wasm/qmc_zeno.c physics/zeno.c
 
@@ -196,9 +197,9 @@ build_module "$OUT/qmc_corral.wasm" \
   wasm/qmc_corral.c physics/circular_billiard.c
 
 build_module "$OUT/qmc_hubbard.wasm" \
-  "qmc_hb_curve_len qmc_hb_time_len qmc_hb_spec_buffer qmc_hb_gs_d_buffer qmc_hb_gs_ss_buffer \ 
-  qmc_hb_gs_s_buffer qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer \ 
-  qmc_hb_th_d_buffer qmc_hb_th_ss_buffer qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer \ 
+  "qmc_hb_curve_len qmc_hb_time_len qmc_hb_spec_buffer qmc_hb_gs_d_buffer qmc_hb_gs_ss_buffer \
+  qmc_hb_gs_s_buffer qmc_hb_q_d_buffer qmc_hb_q_m_buffer qmc_hb_q_s_buffer qmc_hb_q_ss_buffer \
+  qmc_hb_th_d_buffer qmc_hb_th_ss_buffer qmc_hb_th_s_buffer qmc_hb_th_e_buffer qmc_hb_probs_buffer \
   qmc_hb_levels_buffer qmc_hb_curves qmc_hb_levels qmc_hb_quench qmc_hb_probs qmc_hb_thermal" \
   wasm/qmc_hubbard.c physics/hubbard_dimer.c
 
@@ -219,3 +220,9 @@ build_module "$OUT/qmc_josephson.wasm" \
   "qmc_jj_curve_len qmc_jj_up_buffer qmc_jj_down_buffer qmc_jj_set qmc_jj_reset qmc_jj_advance \
   qmc_jj_phi qmc_jj_v qmc_jj_time qmc_jj_iv" \
   wasm/qmc_josephson.c physics/josephson.c
+
+build_module "$OUT/qmc_doublewell.wasm" \
+  "qmc_dw_n qmc_dw_states qmc_dw_curve_len qmc_dw_half_width qmc_dw_x_buffer qmc_dw_v_buffer qmc_dw_density_buffer \
+qmc_dw_psi_buffer qmc_dw_e_buffer qmc_dw_split_buffer qmc_dw_wkb_buffer qmc_dw_set qmc_dw_splitting qmc_dw_wkb \
+qmc_dw_split_curve qmc_dw_launch qmc_dw_evolve qmc_dw_mean_x" \
+  wasm/qmc_doublewell.c physics/double_well.c

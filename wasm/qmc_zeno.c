@@ -20,8 +20,10 @@ enum { ZN_CURVE = 401, ZN_MAX_N = 400 };
 
 static const double ZN_OMEGA = 1.0;
 static const double ZN_T = 3.141592653589793;
-static double g_time[ZN_CURVE], g_n_curve[ZN_CURVE], g_rate[ZN_CURVE],
-    g_cont[ZN_CURVE];
+static double g_time[ZN_CURVE];
+static double g_n_curve[ZN_CURVE];
+static double g_rate[ZN_CURVE];
+static double g_cont[ZN_CURVE];
 static int g_alive[ZN_MAX_N + 1];
 static double g_alive_f[ZN_MAX_N + 1];
 
@@ -31,7 +33,8 @@ int qmc_zn_curve_len(void) { return ZN_CURVE; }
 QMC_EXPORT(qmc_zn_max_n)
 int qmc_zn_max_n(void) { return ZN_MAX_N; }
 
-// Survival during run for N measurements: P(t), t = T i / (CURVE - 1)
+// Survival during run for N measurements:
+// P(t), t = T i / (CURVE - 1)
 QMC_EXPORT(qmc_zn_time_buffer)
 double *qmc_zn_time_buffer(void) { return g_time; }
 
@@ -40,12 +43,13 @@ double *qmc_zn_time_buffer(void) { return g_time; }
 QMC_EXPORT(qmc_zn_n_buffer)
 double *qmc_zn_n_buffer(void) { return g_n_curve; }
 
-// Slowest decay rate (units of Omega) versus dephasing Gamma = gmax i / (CURVE
-// - 1)
+// Slowest decay rate (units of \Omega) versus dephasing \Gamma = gmax i /
+// (CURVE - 1)
 QMC_EXPORT(qmc_zn_rate_buffer)
 double *qmc_zn_rate_buffer(void) { return g_rate; }
 
-// Survival during run under continuous dephasing: P(t), t = T i / (CURVE - 1)
+// Survival during run under continuous dephasing:
+// P(t), t = T i / (CURVE - 1)
 QMC_EXPORT(qmc_zn_cont_buffer)
 double *qmc_zn_cont_buffer(void) { return g_cont; }
 
@@ -61,8 +65,8 @@ double qmc_zn_total_time(void) { return ZN_T; }
 QMC_EXPORT(qmc_zn_pulsed)
 double qmc_zn_pulsed(int n) { return zeno_survival_pulsed(ZN_OMEGA, ZN_T, n); }
 
-// Fill time curve for N measurements and all-N curve. Returns 0, or -1 on bad
-// input
+// Fill time curve for N measurements and all-N curve
+// Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_zn_pulsed_curves)
 int qmc_zn_pulsed_curves(int n) {
   if (n < 1 || n > ZN_MAX_N) {
@@ -82,7 +86,8 @@ int qmc_zn_pulsed_curves(int n) {
 }
 
 // Continuous measurement of strength \gamma (units of \Omega): fills time
-// curve. Returns survival at T
+// curve
+// Returns survival at T
 QMC_EXPORT(qmc_zn_continuous)
 double qmc_zn_continuous(double gamma) {
   if (!(gamma >= 0.0 && gamma <= 100.0)) {

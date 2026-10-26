@@ -1,7 +1,7 @@
 #ifndef QMC_CENTRAL_POTENTIAL_H
 #define QMC_CENTRAL_POTENTIAL_H
 
-#include "matrix.h"
+#include "../core/matrix.h"
 #include "potentials.h"
 
 /* General 3D central-potential radial solver
