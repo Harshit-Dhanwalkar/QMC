@@ -62,6 +62,7 @@
 #include "physics/dmc.h"
 #include "physics/dmrg.h"
 #include "physics/double_barrier.h"
+#include "physics/double_well.h"
 #include "physics/driven.h"
 #include "physics/fci.h"
 #include "physics/fine_structure.h"

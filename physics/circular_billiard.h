@@ -14,6 +14,7 @@
  * degenerate
  * A mode (m, n) has (n - 1) radial nodes and 2 m angular nodal lines
  */
+
 #ifndef CIRCULAR_BILLIARD_H
 #define CIRCULAR_BILLIARD_H
 
@@ -32,12 +33,11 @@ double cb_bessel_j(int m, double x);
 /* n-th positive zero of J_m (n >= 1), to about 1e-13; NaN on bad input */
 double cb_bessel_zero(int m, int n);
 
-/*
- * All modes with k <= k_max, sorted by k (ties: cos before sin, smaller m
+/* All modes with k <= k_max, sorted by k (ties: cos before sin, smaller m
  * first) Writes at most max_modes entries and returns how many modes exist
  * (which may exceed max_modes)
- * Returns -1 on bad input
- */
+ *
+ * Returns -1 on bad input */
 int cb_modes(double k_max, cb_mode_t *modes, int max_modes);
 
 /* psi at radius r in [0, 1] and angle \theta */

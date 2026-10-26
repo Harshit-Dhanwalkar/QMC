@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Double-well tunnelling</title>
+    <meta
+      name="description"
+      content="Put a particle in one well of a double well and watch it tunnel to the other and back. The energy doublet, its exponentially small splitting and the tunnelling period are computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Double-well tunnelling (the ammonia inversion) in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="A wave packet tunnels back and forth; the splitting of the energy doublet sets the period."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/doublewell.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #stage {
+        aspect-ratio: 4 / 3;
+        cursor: pointer;
+        touch-action: none;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .plots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      @media (max-width: 800px) {
+        .plots {
+          grid-template-columns: 1fr;
+        }
+      }
+      .plots .cv {
+        aspect-ratio: 16 / 10;
+      }
+      .ttl {
+        position: absolute;
+        left: 12px;
+        top: 8px;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .sw {
+        display: inline-block;
+        width: 12px;
+        height: 3px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground &mdash; double-well tunnelling</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        Classically a particle in one well of a double well stays there. Quantum
+        mechanically the two lowest levels form a <b>doublet</b> &mdash; an even
+        and an odd state a tiny energy &Delta; apart &mdash; and a particle
+        placed in the left well is the difference of the two, so it
+        <b>tunnels</b> to the right and back with period 2&pi;/&Delta;. Raise
+        the barrier and &Delta; collapses exponentially (compare with the WKB
+        estimate in the bottom plot). The same physics flips the nitrogen of the
+        ammonia molecule through its hydrogen plane, the transition behind the
+        first maser. Eigenstates of
+        H&nbsp;=&nbsp;&minus;&frac12;&part;&sup2;&nbsp;+&nbsp;B(1&minus;x&sup2;/a&sup2;)&sup2;
+        by the QMC library (<code>double_well.c</code>),
+        &hbar;&nbsp;=&nbsp;m&nbsp;=&nbsp;1.
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="stage">
+            <canvas id="sc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background: #8993a8"></i>potential</span>
+            <span
+              ><i class="sw" style="background: #3ddc97"></i>energy levels</span
+            >
+            <span
+              ><i class="sw" style="background: #ffb454"></i>|&psi;|&sup2; of
+              the packet</span
+            >
+            <span>click a well to place the packet there</span>
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Well</h2>
+            <div class="row">
+              <label
+                ><span>Barrier B</span
+                ><input
+                  id="b"
+                  type="range"
+                  min="2"
+                  max="40"
+                  step="0.5"
+                  value="8" /><b id="bv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Separation a</span
+                ><input
+                  id="a"
+                  type="range"
+                  min="0.8"
+                  max="2.5"
+                  step="0.05"
+                  value="1.5" /><b id="av"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Packet width</span
+                ><input
+                  id="sg"
+                  type="range"
+                  min="0.15"
+                  max="0.8"
+                  step="0.01"
+                  value="0.35" /><b id="sgv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Speed</span
+                ><input
+                  id="sp"
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                  value="1" /><b id="spv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <button id="left" class="primary">Left well</button
+              ><button id="right">Right well</button
+              ><button id="pause">Pause</button>
+            </div>
+            <div id="note"></div>
+          </div>
+          <div class="panel">
+            <h2>Readout</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="cv">
+          <canvas id="pc"></canvas>
+          <div class="ttl">Left-well probability over two periods</div>
+        </div>
+        <div class="cv">
+          <canvas id="dc"></canvas>
+          <div class="ttl">Splitting &Delta; versus barrier, log scale</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span
+          ><i class="sw" style="background: #ffb454"></i>P(x&nbsp;&lt;&nbsp;0)
+          of the packet</span
+        >
+        <span
+          ><i class="sw" style="background: #8993a8"></i
+          >cos&sup2;(&Delta;t/2)</span
+        >
+        <span><i class="sw" style="background: #3ddc97"></i>exact &Delta;</span>
+        <span><i class="sw" style="background: #ff6b81"></i>WKB estimate</span>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        The wells sit at x&nbsp;=&nbsp;&plusmn;a with small-oscillation
+        frequency &omega;&nbsp;=&nbsp;&radic;(8B)/a; WKB gives
+        &Delta;&nbsp;&asymp;&nbsp;(&omega;/&pi;)&nbsp;exp(&minus;&int;&radic;(2(V&minus;E<sub>0</sub>))dx)
+        across the barrier. A packet is projected onto the lowest eight
+        eigenstates (the captured weight is reported) and evolved exactly,
+        &psi;(t)&nbsp;=&nbsp;&Sigma;<sub>k</sub>&nbsp;c<sub>k</sub>&nbsp;e<sup>&minus;iE<sub>k</sub>t</sup>&nbsp;&psi;<sub>k</sub>.
+        Narrow packets in the harmonic ground state of a well are close to the
+        two-state form cos&sup2;(&Delta;t/2); wider or off-centre packets add
+        faster oscillations from the higher doublet. Time is shown as a fraction
+        of the tunnelling period so a deep barrier stays watchable. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/double_well.c"
+          ><code>physics/double_well.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_doublewell.c"
+          ><code>wasm/qmc_doublewell.c</code></a
+        >; the solver, the WKB scaling and the tunnelling law are verified in
+        <code>tests/test_double_well.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_doublewell.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_doublewell.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/doublewell.html</code>.",
+          );
+
+          return;
+        }
+
+        const N = w.qmc_dw_n();
+        const NS = w.qmc_dw_states();
+        const C = w.qmc_dw_curve_len();
+        const L = w.qmc_dw_half_width();
+        const B = (fn, n) =>
+          Array.from(new Float64Array(w.memory.buffer, fn(), n)); // copies: memory can grow
+        const COL = {
+          g: "#3ddc97",
+          a: "#ffb454",
+          red: "#ff6b81",
+          mut: "#8993a8",
+        };
+
+        let Bh = 8;
+        let A = 1.5;
+        let sg = 0.35;
+        let spd = 1;
+        let center = -1.5;
+        let paused = false;
+        let tf = 0;
+        let last = 0;
+        let xs = [];
+        let pot = [];
+        let es = [];
+        let dens = [];
+        let pcurve = [];
+        let splitc = [];
+        let wkbc = [];
+        let cap = 1;
+        let delta = 0;
+        let pleft = 1;
+        let meanx = -1.5;
+        let bmaxPlot = 40;
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        const Lm = 46;
+        const R = 12;
+        const Tp = 28;
+        const Bt = 36;
+        function axes(g, W, H, o) {
+          const X = (x) => Lm + ((W - Lm - R) * (x - o.x0)) / (o.x1 - o.x0);
+          const Y = (y) =>
+            H - Bt - ((H - Bt - Tp) * (y - o.y0)) / (o.y1 - o.y0);
+          g.font = "11px system-ui";
+          g.strokeStyle = "#232b3d";
+          g.lineWidth = 1;
+          g.fillStyle = COL.mut;
+          for (const [v, lab] of o.yt) {
+            g.beginPath();
+            g.moveTo(Lm, Y(v));
+            g.lineTo(W - R, Y(v));
+            g.stroke();
+            g.textAlign = "right";
+            g.fillText(lab, Lm - 5, Y(v) + 4);
+          }
+
+          g.textAlign = "center";
+          for (let i = 0; i <= 5; i++) {
+            const v = o.x0 + ((o.x1 - o.x0) * i) / 5;
+            g.fillText(+v.toFixed(2), X(v), H - 20);
+          }
+
+          g.fillText(o.xlabel, (Lm + W - R) / 2, H - 5);
+
+          return { X, Y };
+        }
+
+        const geo = {};
+        function drawStage() {
+          const { g, W, H } = fit($("sc"));
+          const ymax = Math.max(1.25 * Bh, es[3] * 1.15 + 1);
+          const a = axes(g, W, H, {
+            x0: -L,
+            x1: L,
+            y0: 0,
+            y1: ymax,
+            xlabel: "position x",
+            yt: [0, 0.25, 0.5, 0.75, 1].map((f) => [
+              f * ymax,
+              +(f * ymax).toFixed(1),
+            ]),
+          });
+
+          geo.s = { ...a, W, H };
+          g.fillStyle = "rgba(137,147,168,0.15)";
+          g.strokeStyle = COL.mut;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < N; i++) {
+            const x = a.X(xs[i]),
+              y = a.Y(Math.min(pot[i], ymax));
+            i ? g.lineTo(x, y) : g.moveTo(x, y);
+          }
+
+          g.stroke();
+          g.lineTo(a.X(xs[N - 1]), a.Y(0));
+          g.lineTo(a.X(xs[0]), a.Y(0));
+          g.closePath();
+          g.fill();
+
+          // levels
+          g.lineWidth = 1.6;
+          g.strokeStyle = COL.g;
+          for (let k = 0; k < NS; k++) {
+            if (es[k] > ymax) {
+              continue;
+            }
+            g.beginPath();
+            g.moveTo(Lm, a.Y(es[k]));
+            g.lineTo(W - R, a.Y(es[k]));
+            g.setLineDash(k < 2 ? [] : [3, 4]);
+            g.globalAlpha = k < 2 ? 0.9 : 0.4;
+            g.stroke();
+            g.globalAlpha = 1;
+            g.setLineDash([]);
+          }
+
+          // density on the mean energy of the packet
+          let dm = 1e-9;
+          for (const d of dens) {
+            dm = Math.max(dm, d);
+          }
+
+          const base = es[0];
+          const scale = (0.42 * ymax) / Math.max(dm, 0.5);
+          g.fillStyle = "rgba(255,180,84,0.35)";
+          g.strokeStyle = COL.a;
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < N; i++) {
+            const x = a.X(xs[i]);
+            const y = a.Y(base + scale * dens[i]);
+            i ? g.lineTo(x, y) : g.moveTo(x, y);
+          }
+
+          g.stroke();
+          g.lineTo(a.X(xs[N - 1]), a.Y(base));
+          g.lineTo(a.X(xs[0]), a.Y(base));
+          g.closePath();
+          g.fill();
+          g.fillStyle = COL.g;
+          g.font = "11px system-ui";
+          g.textAlign = "left";
+          g.fillText("doublet: \u0394 = " + fmt(delta), Lm + 8, a.Y(es[1]) - 6);
+          $("readout").textContent =
+            "t = " + tf.toFixed(3) + " periods   P(left) = " + pleft.toFixed(3);
+        }
+
+        const fmt = (v) => (v < 0.01 ? v.toExponential(2) : v.toFixed(4));
+        function drawP() {
+          const { g, W, H } = fit($("pc"));
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: 2,
+            y0: 0,
+            y1: 1,
+            xlabel: "time (tunnelling periods 2\u03c0/\u0394)",
+            yt: [0, 0.25, 0.5, 0.75, 1].map((v) => [v, v]),
+          });
+
+          g.strokeStyle = COL.mut;
+          g.setLineDash([4, 3]);
+          g.lineWidth = 1.2;
+          g.beginPath();
+          for (let k = 0; k <= 200; k++) {
+            const f = (2 * k) / 200;
+            const c0 = center < 0 ? 1 : -1;
+            const y =
+              center < 0
+                ? Math.cos(Math.PI * f) ** 2
+                : Math.sin(Math.PI * f) ** 2;
+            k ? g.lineTo(a.X(f), a.Y(y)) : g.moveTo(a.X(f), a.Y(y));
+          }
+
+          g.stroke();
+          g.setLineDash([]);
+          g.strokeStyle = COL.a;
+          g.lineWidth = 2;
+          g.beginPath();
+          pcurve.forEach((p, k) => {
+            const x = a.X((2 * k) / (pcurve.length - 1));
+            const y = a.Y(p);
+            k ? g.lineTo(x, y) : g.moveTo(x, y);
+          });
+
+          g.stroke();
+          g.strokeStyle = "#fff";
+          g.setLineDash([4, 3]);
+          g.beginPath();
+          g.moveTo(a.X(tf % 2), Tp);
+          g.lineTo(a.X(tf % 2), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        function drawD() {
+          const { g, W, H } = fit($("dc"));
+          let lo = 1e9;
+          const hi = -1e9;
+          for (const v of splitc.concat(wkbc)) {
+            if (v > 0) {
+              lo = Math.min(lo, Math.log10(v));
+              hi = Math.max(hi, Math.log10(v));
+            }
+          }
+
+          lo = Math.floor(lo);
+          hi = Math.ceil(hi);
+          const yt = [];
+          for (let v = lo; v <= hi; v++) {
+            yt.push([v, "1e" + v]);
+          }
+
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: bmaxPlot,
+            y0: lo,
+            y1: hi,
+            xlabel: "barrier height B",
+            yt,
+          });
+
+          const line = (arr, col, dash) => {
+            g.strokeStyle = col;
+            g.lineWidth = 2;
+            g.setLineDash(dash || []);
+            g.beginPath();
+            let f = true;
+            arr.forEach((v, i) => {
+              if (!(v > 0)) {
+                return;
+              }
+
+              const x = a.X((bmaxPlot * (i + 1)) / C);
+              const y = a.Y(Math.log10(v));
+              f ? g.moveTo(x, y) : g.lineTo(x, y);
+              f = false;
+            });
+
+            g.stroke();
+            g.setLineDash([]);
+          };
+
+          line(wkbc, COL.red, [5, 3]);
+          line(splitc, COL.g);
+          g.strokeStyle = "#fff";
+          g.setLineDash([4, 3]);
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(a.X(Bh), Tp);
+          g.lineTo(a.X(Bh), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        function stats() {
+          const wk = w.qmc_dw_wkb();
+          $("bv").textContent = Bh.toFixed(1);
+          $("av").textContent = A.toFixed(2);
+          $("sgv").textContent = sg.toFixed(2);
+          $("spv").textContent = spd.toFixed(2);
+          const rows = [
+            ["splitting \u0394 = E\u2081 \u2212 E\u2080", fmt(delta)],
+            [
+              "WKB estimate",
+              fmt(wk) + "  (" + (delta / wk).toFixed(2) + "\u00d7)",
+            ],
+            [
+              "tunnelling period 2\u03c0/\u0394",
+              ((2 * Math.PI) / delta).toFixed(1),
+            ],
+            ["E\u2080, E\u2081", es[0].toFixed(4) + ", " + es[1].toFixed(4)],
+            ["E\u2082, E\u2083", es[2].toFixed(3) + ", " + es[3].toFixed(3)],
+            [
+              "P(left)  \u27e8x\u27e9",
+              pleft.toFixed(3) + "   " + meanx.toFixed(3),
+            ],
+            ["weight in 8 states", (100 * cap).toFixed(2) + " %"],
+          ];
+
+          $("stats").innerHTML = rows
+            .map(
+              ([a, c]) =>
+                `<div class="stat"><span>${a}</span><span>${c}</span></div>`,
+            )
+            .join("");
+          $("note").textContent =
+            delta < 1e-3
+              ? "Deep barrier: the packet takes a very long time to tunnel (see the period)."
+              : "Click a well to drop the packet there; the dashed curve is the two-state law.";
+        }
+
+        function setWell() {
+          w.qmc_dw_set(Bh, A);
+          xs = B(w.qmc_dw_x_buffer, N);
+          pot = B(w.qmc_dw_v_buffer, N);
+          es = B(w.qmc_dw_e_buffer, NS);
+          delta = w.qmc_dw_splitting();
+          bmaxPlot = Math.max(10, Math.ceil((Bh * 1.5) / 5) * 5);
+          w.qmc_dw_split_curve(bmaxPlot);
+          splitc = B(w.qmc_dw_split_buffer, C);
+          wkbc = B(w.qmc_dw_wkb_buffer, C);
+          launch(center);
+        }
+
+        function launch(c) {
+          center = c < 0 ? -A : A;
+          cap = w.qmc_dw_launch(center, sg);
+          tf = 0;
+          pcurve = [];
+          const period = (2 * Math.PI) / delta;
+          for (let k = 0; k <= 240; k++) {
+            pcurve.push(w.qmc_dw_evolve((period * 2 * k) / 240));
+          }
+          update();
+        }
+
+        function update() {
+          const period = (2 * Math.PI) / delta;
+          pleft = w.qmc_dw_evolve(period * tf);
+          meanx = w.qmc_dw_mean_x();
+          dens = B(w.qmc_dw_density_buffer, N);
+          drawStage();
+          drawP();
+          drawD();
+          stats();
+        }
+
+        $("b").oninput = (e) => {
+          Bh = +e.target.value;
+          setWell();
+        };
+        $("a").oninput = (e) => {
+          A = +e.target.value;
+          setWell();
+        };
+        $("sg").oninput = (e) => {
+          sg = +e.target.value;
+          launch(center);
+        };
+        $("sp").oninput = (e) => {
+          spd = +e.target.value;
+          $("spv").textContent = spd.toFixed(2);
+        };
+        $("left").onclick = () => launch(-1);
+        $("right").onclick = () => launch(1);
+        $("pause").onclick = () => {
+          paused = !paused;
+          $("pause").textContent = paused ? "Play" : "Pause";
+        };
+        $("stage").onpointerdown = (e) => {
+          const r = $("sc").getBoundingClientRect(),
+            x = L * ((2 * (e.clientX - r.left - Lm)) / (geo.s.W - Lm - R) - 1);
+          launch(x < 0 ? -1 : 1);
+        };
+
+        function tick(ts) {
+          if (!paused && last) {
+            tf += (Math.min(0.1, (ts - last) / 1000) * spd) / 8;
+            update();
+          }
+
+          last = ts;
+          requestAnimationFrame(tick);
+        }
+
+        window.addEventListener("resize", update);
+        setWell();
+        requestAnimationFrame(tick);
+        window.__dw = {
+          set: (o) => {
+            if ("B" in o) {
+              Bh = o.B;
+              $("b").value = Bh;
+            }
+            if ("a" in o) {
+              A = o.a;
+              $("a").value = A;
+            }
+            if ("sg" in o) {
+              sg = o.sg;
+              $("sg").value = sg;
+            }
+            setWell();
+          },
+          setT: (f) => {
+            tf = f;
+            update();
+          },
+          pause: () => {
+            paused = true;
+          },
+        };
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

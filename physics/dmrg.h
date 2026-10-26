@@ -1,8 +1,3 @@
-#ifndef QMC_DMRG_H
-#define QMC_DMRG_H
-
-#include "../core/matrix.h"
-
 /*
  * Infinite-system Density Matrix Renormalization Group (Reference: White, Phys.
  * Rev. Lett. 69, 2863 (1992)) for open-boundary spin-1/2 XXZ chain:
@@ -24,8 +19,8 @@
  *      and find its ground state by dense diagonalization
  *   4. Diagonalize ground state's reduced density matrix on enlarged-block
  *      subspace; keep m eigenvectors of largest eigenvalue ("density-matrix
- *      truncation", method's namesake) These become new, truncated block
- *      basis; go to 2
+ *      truncation", method's namesake)
+ *     These become new, truncated block basis; go to 2
  *   5. Stop once superblock's total site count reaches target N
  *
  * Each step grows total chain by 2 sites (one on each mirrored side), so N
@@ -39,6 +34,11 @@
  * than a fully swept finite-system calculation would give for same m.
  * Finite-size sweeps are a natural follow-on extension, not implemented here
  */
+
+#ifndef QMC_DMRG_H
+#define QMC_DMRG_H
+
+#include "../core/matrix.h"
 
 typedef struct {
   int dim;           /* current (possibly truncated) block basis dimension */
@@ -66,15 +66,13 @@ typedef struct {
                               was reached before any  truncation was needed */
 } dmrg_result_t;
 
-/*
- * Run infinite-system algorithm until superblock's total site count is >=
+/* Run infinite-system algorithm until superblock's total site count is >=
  * N_target, truncating to at most m_max states at every intermediate step.
  * N_target is rounded up internally to nearest even number (each step grows
  * chain by 2 sites, one per mirrored side)
  *
  * Returns a malloc'd dmrg_result_t (free with free()), or NULL for invalid
- * input (N_target < 2, m_max < 1, Jz/Jxy non-finite) or allocation failure
- */
+ * input (N_target < 2, m_max < 1, Jz/Jxy non-finite) or allocation failure */
 dmrg_result_t *dmrg_run(int N_target, double Jz, double Jxy, int m_max);
 
 #endif

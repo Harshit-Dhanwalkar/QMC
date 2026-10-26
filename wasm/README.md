@@ -40,6 +40,8 @@
 
 `qmc_josephson.c` wraps the RCSJ Josephson junction (`physics/josephson.c`): `docs/src/playground/josephson.html` animates the phase in the washboard potential and sweeps the I-V curve with hysteresis and Shapiro steps.
 
+`qmc_dwell.c` wraps the double-well eigen-solver (`physics/double_well.c`): `docs/src/playground/doublewell.html` shows the parity doublet, the exponentially small splitting and a packet tunnelling between the wells.
+
 ## Build
 
 ```sh
@@ -99,11 +101,11 @@ stdio: `fd_write`, `fd_seek`, `fd_close`; see the page for a 10-line shim):
 | `qmc_bf_tknn(p, q, r)`       | Hall number of the gap above the lowest r bands (TKNN); `INT_MIN` if the gap is closed |
 | `qmc_bf_chern(p, q, r, n_k)` | the same number computed numerically by the library (NaN if closed or grid too coarse) |
 
-The numerical Chern number is an integer only when the k-grid resolves the Berry
-curvature; for large Hall numbers use `n_k` of at least about `2|t| + 8`.
+The numerical Chern number is an integer only when the k-grid resolves the Berry curvature;
+for large Hall numbers use `n_k` of at least about `2|t| + 8`.
 
-Dirac module (`qmc_dirac.wasm`, no imports; one global simulation, N = 2048,
-dx = 0.1, dt = 0.04, units hbar = m = c = 1):
+Dirac module (`qmc_dirac.wasm`, no imports;
+one global simulation, N = 2048, dx = 0.1, dt = 0.04, units hbar = m = c = 1):
 
 | function                                               | purpose                                                                 |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- |
@@ -118,13 +120,13 @@ Orbital module (`qmc_orbital.wasm`, no imports): `qmc_orb_sample(n, l, m, real, 
 
 Bloch module (`qmc_bloch.wasm`, no imports): `qmc_bl_reset(x, y, z)` sets the state, `qmc_bl_step(omega, delta, gamma1, gamma_phi, steps)` advances `steps` RK4 steps of 0.01 with `bloch_evolve`, `qmc_bl_vec()` points at the Bloch vector, `qmc_bl_rabi(t, omega, delta)` is the closed-form Rabi curve.
 
-Anderson module (`qmc_anderson.wasm`, no imports): `qmc_an_reset(w, seed)` draws new disorder of strength `w` and puts the particle on the middle of the 801-site chain, `qmc_an_step(n)` advances `n` RK4 steps of 0.01 (hop t = 1) with `anderson_evolve`, `qmc_an_buffer()` holds |psi|^2 then the on-site energies (refreshed by every step), `qmc_an_width()`, `qmc_an_ipr()`, `qmc_an_energy()` and `qmc_an_norm()` are the observables, and `qmc_an_xi(w, e)` is the weak-disorder localisation length.
+Anderson module (`qmc_anderson.wasm`, no imports): `qmc_an_reset(w, seed)` draws new disorder of strength `w` and puts the particle on the middle of the 801-site chain, `qmc_an_step(n)` advances `n` RK4 steps of 0.01 (hop t = 1) with `anderson_evolve`, `qmc_an_buffer()` holds $|\psi|^2$ then the on-site energies (refreshed by every step), `qmc_an_width()`, `qmc_an_ipr()`, `qmc_an_energy()` and `qmc_an_norm()` are the observables, and `qmc_an_xi(w, e)` is the weak-disorder localisation length.
 
 Quantum-walk module (`qmc_qwalk.wasm`, no imports): `qmc_qw_reset(theta, coin)` restarts the walk (coin 0 = up, 1 = down, 2 = symmetric), `qmc_qw_step(n)` advances `n` steps (at most 480 in total), `qmc_qw_buffer()` holds the quantum then the classical probability of each of the 1024 sites, and `qmc_qw_variance()` / `qmc_qw_mean()` / `qmc_qw_asymptote()` give the observables and the ($1 - \sin(\theta)$ limit of variance / $t^2$.
 
 Landau-Zener module (`qmc_lz.wasm`, no imports): `qmc_lz_reset(omega, rate, amp, passes)` starts a sweep of the detuning between -amp and +amp in the lower adiabatic state, `qmc_lz_step(duration)` advances it (returns 1 when finished), `qmc_lz_vec()` points at the Bloch vector, `qmc_lz_delta()` / `qmc_lz_upper()` / `qmc_lz_exact()` give the detuning, upper-level population and closed-form jump probability, and `qmc_lz_scan_rate` / `qmc_lz_scan_amp` fill `qmc_lz_scan_buffer()` with whole-sweep scans.
 
-Kicked-rotor module (`qmc_rotor.wasm`, no imports): `qmc_kr_reset(k, hbar, seed)` restarts the quantum state (momentum eigenstate m = 0 on 2048 angle points) and a classical ensemble of 3000 points, `qmc_kr_step(n)` applies `n` kicks (at most 400 in total), `qmc_kr_qbuffer()` holds the quantum momentum probabilities (index j is m = j - 1024), `qmc_kr_cbuffer()` the classical (theta, p) pairs, and `qmc_kr_qm2()` / `qmc_kr_cm2()` the two <m^2> values.
+Kicked-rotor module (`qmc_rotor.wasm`, no imports): `qmc_kr_reset(k, hbar, seed)` restarts the quantum state (momentum eigenstate $m = 0$ on 2048 angle points) and a classical ensemble of 3000 points, `qmc_kr_step(n)` applies `n` kicks (at most 400 in total), `qmc_kr_qbuffer()` holds the quantum momentum probabilities (index $j$ is $m = j - 1024$), `qmc_kr_cbuffer()` the classical (theta, p) pairs, and `qmc_kr_qm2()` / `qmc_kr_cm2()` the two $<m^2>$ values.
 
 SSH-chain module (`qmc_ssh.wasm`, no imports): `qmc_ssh_set(w, noise, m, seed)` builds the 20-cell chain (v = 1, inter-cell hopping w, random hopping `noise`, staggered potential m) and diagonalises it; `qmc_ssh_energies()` and `qmc_ssh_vectors()` hold the 40 eigenvalues and eigenvectors, `qmc_ssh_sweep(w0, w1, n)` fills `qmc_ssh_sweep_buffer()` with the spectrum for n values of w, and `qmc_ssh_winding()`, `qmc_ssh_zak()`, `qmc_ssh_xi()` and `qmc_ssh_gap()` give the topological invariants and length scales.
 
@@ -142,11 +144,13 @@ Zeno module (`qmc_zeno.wasm`, no imports): the drive is $\Omega = 1$ and the run
 
 Corral module (`qmc_corral.wasm`, no imports): the first call builds a table of every mode of the unit disc with k <= 26 on an 80 x 80 grid (about 10 MB, ~0.3 s). `qmc_cb_show_mode(i)` fills `qmc_cb_field_buffer()` with mode `i` (quantum numbers from `qmc_cb_mode_m/n/sine/k`), `qmc_cb_launch(x0, y0, s, px, py)` expands a Gaussian packet in the modes and `qmc_cb_evolve(t)` writes its density at time t into the same buffer.
 
-Ring module (`qmc_ring.wasm`, no imports): t = 1, rings of 4 .. 32 sites with leads at sites 0 and b. `qmc_ar_spectrum(n)` fills the sorted levels against flux in [-1, 1], `qmc_ar_current(n, ne)` the persistent current of ne electrons, `qmc_ar_trans_flux(n, b, e)` and `qmc_ar_trans_energy(n, b, flux)` the transmission curves, `qmc_ar_map(n, b)` a 64 x 64 transmission map over flux and energy and `qmc_ar_point(n, b, flux, e)` one value (`qmc_ar_last_reflection` gives R).
+Ring module (`qmc_ring.wasm`, no imports): $t = 1$, rings of 4 .. 32 sites with leads at sites 0 and b. `qmc_ar_spectrum(n)` fills the sorted levels against flux in $[-1, 1]$, `qmc_ar_current(n, ne)` the persistent current of ne electrons, `qmc_ar_trans_flux(n, b, e)` and `qmc_ar_trans_energy(n, b, flux)` the transmission curves, `qmc_ar_map(n, b)` a 64 x 64 transmission map over flux and energy and `qmc_ar_point(n, b, flux, e)` one value (`qmc_ar_last_reflection` gives R).
 
-Tunnel module (`qmc_tunnel.wasm`, no imports): units hbar^2/2m = 1. `qmc_dt_set(v1, b1, w, b2, v2, vw)` defines barrier, well and barrier, `qmc_dt_curves(emax)` fills T(E) and the dwell time, `qmc_dt_point(e)` returns T at one energy (`qmc_dt_last_reflection` gives R) and `qmc_dt_profile(e, xmin, xmax)` fills |psi|^2 and the potential along x.
+Tunnel module (`qmc_tunnel.wasm`, no imports): units $\hbar^2/2m = 1$. `qmc_dt_set(v1, b1, w, b2, v2, vw)` defines barrier, well and barrier, `qmc_dt_curves(emax)` fills T(E) and the dwell time, `qmc_dt_point(e)` returns T at one energy (`qmc_dt_last_reflection` gives R) and `qmc_dt_profile(e, xmin, xmax)` fills $|\psi|^2$ and the potential along x.
 
 Josephson module (`qmc_josephson.wasm`, no imports): time in units of 1/omega_p. `qmc_jj_set(q, i_dc, i_ac, omega)` sets the junction, `qmc_jj_reset(phi, v)` and `qmc_jj_advance(t)` step the live pendulum (`qmc_jj_phi/v/time` read it), and `qmc_jj_iv(imax)` fills the up and down sweep I-V curves.
+
+Double-well module (`qmc_dwell.wasm`, no imports): $\hbar = m = 1$, a 500-point grid on $[-5, 5]$. `qmc_dw_set(B, a)` solves the lowest eight states of $V = B(1 - x^2/a^2)^2$ (`qmc_dw_e_buffer`, `qmc_dw_psi_buffer`, `qmc_dw_splitting`, `qmc_dw_wkb`), `qmc_dw_launch(center, sigma)` projects a Gaussian and `qmc_dw_evolve(t)` fills the density buffer and returns P(x < 0); `qmc_dw_split_curve(bmax)` gives the splitting and WKB curves against barrier height.
 
 Regenerate the butterfly images:
 

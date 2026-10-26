@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: qmc-api-docs
+        name: Regenerate API docs
+        entry: bash -c 'python3 tools/gen_api.py && git add docs/src/api/ docs/src/SUMMARY.md core/catalog_data.inc qmc.h'
+        language: system
+        files: '^(core|physics|export|latex)/.*\.h$'
+        pass_filenames: false

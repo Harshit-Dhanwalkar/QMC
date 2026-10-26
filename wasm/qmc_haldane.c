@@ -55,7 +55,6 @@ double *qmc_hd_prob_buffer(void) { return g_prob; }
 
 // Set t2 in [0, 1/3], \phi in [-\pi, \pi] and sublattice mass M in [-3, 3] (t1
 // = 1)
-//
 // Returns 0 on success
 QMC_EXPORT(qmc_hd_set)
 int qmc_hd_set(double t2, double phi, double mass) {
@@ -93,7 +92,6 @@ int qmc_hd_set(double t2, double phi, double mass) {
 }
 
 // Ribbon bands at n_k wave numbers k1 = 2 \pi i / (n_k - 1)
-//
 // Returns 0
 QMC_EXPORT(qmc_hd_compute)
 int qmc_hd_compute(int n_k) {

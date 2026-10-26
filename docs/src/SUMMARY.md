@@ -82,6 +82,7 @@
   - [circular_billiard](api/circular_billiard.md)
   - [dirac_evolve](api/dirac_evolve.md)
   - [double_barrier](api/double_barrier.md)
+  - [double_well](api/double_well.md)
   - [hydrogen](api/hydrogen.md)
   - [orbital_sample](api/orbital_sample.md)
   - [potentials](api/potentials.md)

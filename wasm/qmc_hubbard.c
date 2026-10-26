@@ -89,7 +89,7 @@ static int u_ok(double u) { return u >= 0.0 && u <= 40.0; }
 
 // Exact degeneracies leave eigenvalues at +-1e-17 noise whose sign differs
 // between libm/FP orderings (native vs WASM), printing as "-0.00000" vs
-// "0.00000". Snap to a positive zero at the export boundary
+// "0.00000". Snap to a positive zero at export boundary
 static double clean0(double x) { return fabs(x) < 1e-12 ? 0.0 : x; }
 
 static void gs_state(const hd_solution_t *s, double *re, double *im) {
@@ -99,7 +99,8 @@ static void gs_state(const hd_solution_t *s, double *re, double *im) {
   hd_eigenstate(s, idx[0], re, im);
 }
 
-// Curves over U in [0, umax]. Returns 0, or -1 on bad input
+// Curves over U in [0, umax]
+// Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_hb_curves)
 int qmc_hb_curves(double umax) {
   if (!(umax > 0.0 && umax <= 40.0)) {
@@ -148,7 +149,6 @@ double qmc_hb_levels(double u) {
 }
 
 // Neel quench at interaction u over [0, tmax]
-//
 // Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_hb_quench)
 int qmc_hb_quench(double u, double tmax) {
@@ -178,7 +178,6 @@ int qmc_hb_quench(double u, double tmax) {
 
 // Site occupation probabilities. mode 0: ground state, mode 1: Neel state
 // evolved for `time`
-//
 // Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_hb_probs)
 int qmc_hb_probs(double u, int mode, double time) {
@@ -208,7 +207,6 @@ int qmc_hb_probs(double u, int mode, double time) {
 }
 
 // Thermal curves at interaction u over T in (0, tmax]
-//
 // Returns 0, or -1 on bad input
 QMC_EXPORT(qmc_hb_thermal)
 int qmc_hb_thermal(double u, double tmax) {

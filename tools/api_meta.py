@@ -68,6 +68,7 @@ SUMMARIES = {
     "circular_billiard": (SP, "Quantum billiard in a disk: Bessel functions and zeros, modes and Weyl counting."),
     "ab_ring": (SP, "Aharonov-Bohm ring: energy levels versus flux, persistent current and flux-dependent transmission."),
     "double_barrier": (SP, "Resonant tunnelling: transfer-matrix transmission through stacked square barriers, wavefunction profile and dwell time."),
+    "double_well": (SP, "Symmetric double-well tunnelling: parity eigenstates, exponential splitting versus barrier, coherent oscillation between wells."),
     "wkb": (SP, "WKB approximation: Bohr-Sommerfeld quantisation and tunnelling transmission."),
     "scattering": (SP, "Scattering theory: phase shifts, Born approximation, partial waves and the S-matrix."),
     "soft": (SP, "Split-operator Fourier method for 2D and 3D time-dependent Schrodinger evolution."),
@@ -156,12 +157,13 @@ START = {
     "angular": ["lz_matrix", "l2_matrix", "clebsch_gordan"],
     "potentials": ["V_harmonic", "V_finite_well", "V_barrier"],
     "schrodinger": ["solve_tise_matrix", "solve_tise_shoot", "evolve_tdse_crank"],
+    "double_well": ["dw_potential", "dw_eigen", "dw_project", "dw_evolve"],
     "wavefn": ["wavefunction_alloc", "wavefunction_normalize", "wavefunction_free"],
     "special": ["hermite", "laguerre", "legendre"],
 }
 
-# stem -> existing hand-written guide page (relative to docs/src), when the
-# name does not match docs/src/physics/<stem>.md
+# stem -> existing hand-written guide page (relative to docs/src), when name does not match
+# docs/src/physics/<stem>.md
 GUIDES = {
     "angular": "physics/angular_momentum.md",
     "wavefn": "physics/wavefunctions.md",

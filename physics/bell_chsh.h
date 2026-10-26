@@ -13,6 +13,7 @@
  * A concrete local model (a hidden angle, each side outputs sign of projection)
  * gives sawtooth correlation bell_local_correlation
  */
+
 #ifndef BELL_CHSH_H
 #define BELL_CHSH_H
 
@@ -36,14 +37,12 @@ double bell_deterministic_bound(void);
  * [0, 2 \pi); NaN on bad input */
 double bell_max_chsh(double visibility, int n_grid);
 
-/*
- * Simulate n_pairs measurements for each of four setting pairs (a,b), (a,b2),
+/* Simulate n_pairs measurements for each of four setting pairs (a,b), (a,b2),
  * (a2,b), (a2,b2) with a deterministic generator (seed)
  * outcome_sums[i] gets sum of products A*B (so E_est = outcome_sums[i] /
  * n_pairs)
  *
- * Returns estimate of S, or NaN on bad input
- */
+ * Returns estimate of S, or NaN on bad input */
 double bell_sample(double visibility, double a, double a2, double b, double b2,
                    int n_pairs, unsigned seed, double outcome_sums[4]);
 

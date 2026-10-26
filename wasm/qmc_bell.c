@@ -35,8 +35,8 @@ double *qmc_bl_quantum_buffer(void) { return g_q; }
 QMC_EXPORT(qmc_bl_local_buffer)
 double *qmc_bl_local_buffer(void) { return g_l; }
 
-// Angles are in radians: Alice a, a2; Bob b, b2. Returns 0 on success, -1 on
-// bad input
+// Angles are in radians: Alice a, a2; Bob b, b2
+// Returns 0 on success, -1 on bad input
 QMC_EXPORT(qmc_bl_set)
 int qmc_bl_set(double a, double a2, double b, double b2, double visibility) {
   if (!isfinite(a) || !isfinite(a2) || !isfinite(b) || !isfinite(b2) ||

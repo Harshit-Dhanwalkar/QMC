@@ -21,13 +21,13 @@ Complete-active-space SCF: joint optimisation of CI coefficients and orbitals.
 
 ```text
 NOTE: CASSCF (Complete Active Space Self-Consistent Field): simultaneously
-optimizes the CI coefficients and the molecular orbitals themselves, unlike
-CISD/FCI (physics/cisd.h, physics/fci.h) which diagonalize a fixed-orbital
-Hamiltonian. Partitions the n_basis spatial orbitals into n_frozen (always
-doubly occupied, excluded from the CI expansion), n_active (a full CI within
-this active space), and the remainder (n_basis - n_frozen - n_active, always
-empty "virtual" orbitals) - exactly same partition used by CASSCF in every
-quantum chemistry package.
+optimizes CI coefficients and molecular orbitals themselves, unlike CISD/FCI
+(physics/cisd.h, physics/fci.h) which diagonalize a fixed-orbital
+Hamiltonian. Partitions n_basis spatial orbitals into n_frozen (always doubly
+occupied, excluded from CI expansion), n_active (a full CI within this active
+space), and remainder (n_basis - n_frozen - n_active, always empty "virtual"
+orbitals) - exactly same partition used by CASSCF in every quantum chemistry
+package
 
 Algorithm:
   1. Active-space CI: build the frozen-core-effective Hamiltonian over just
@@ -50,9 +50,9 @@ Algorithm:
      direction even where the true curvature is tiny or slightly negative
   4. Backtracking line search on the actual (re-diagononalized) active-space
      CI energy, then rotate C <- C @ exp(kappa) using a  real matrix
-     exponential (scaling-and-squaring + Taylor series).
+     exponential (scaling-and-squaring + Taylor series)
   5. Repeat from step 1 with the rotated orbitals until the gradient norm
-     falls below conv_tol.
+     falls below conv_tol
 ```
 
 ## Types
@@ -87,21 +87,21 @@ casscf_result_t *casscf_run(basis_function_t **basis, int n_basis,
 ```
 
 ```text
-basis/n_basis/mol: as in molecular_hf.h/molecular_integrals.h.
+basis/n_basis/mol: as in molecular_hf.h/molecular_integrals.h
 C_initial: starting MO coefficients (n_basis x n_basis), e.g. from
   molecular_rhf's result->C -- CASSCF is a local optimization and, like
   any MCSCF method, needs a reasonable starting guess.
 n_frozen, n_active, n_electrons_active: active-space partition (see
   above). Requires 0 <= n_frozen, n_active >= 1,
   n_frozen + n_active <= n_basis, and
-  0 <= n_electrons_active <= 2*n_active.
-conv_tol: convergence threshold on the orbital-gradient norm (a
-  reasonable default is 1e-6).
-max_iter: maximum orbital-rotation iterations.
+  0 <= n_electrons_active <= 2*n_active
+conv_tol: convergence threshold on orbital-gradient norm (a
+  reasonable default is 1e-6)
+max_iter: maximum orbital-rotation iterations
 
-Returns NULL on invalid input or allocation failure. Check
-result->converged; a non-converged result still holds the best C/energy
-found within max_iter iterations.
+Returns NULL on invalid input or allocation failure. Check result->converged;
+a non-converged result still holds best C/energy found within max_iter
+iterations
 ```
 
 ### `casscf_result_free`

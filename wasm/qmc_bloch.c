@@ -24,14 +24,15 @@ static double g_t;
 QMC_EXPORT(qmc_bl_dt)
 double qmc_bl_dt(void) { return BL_DT; }
 
-/* Pointer to 3 doubles (x, y, z) of Bloch vector */
+// Pointer to 3 doubles (x, y, z) of Bloch vector
 QMC_EXPORT(qmc_bl_vec)
 double *qmc_bl_vec(void) { return g_v; }
 
 QMC_EXPORT(qmc_bl_time)
 double qmc_bl_time(void) { return g_t; }
 
-/* Set state (|v| <= 1) and restart clock. Returns 0 on success */
+// Set state (|v| <= 1) and restart clock
+// Returns 0 on success
 QMC_EXPORT(qmc_bl_reset)
 int qmc_bl_reset(double x, double y, double z) {
   if (!isfinite(x) || !isfinite(y) || !isfinite(z) ||
@@ -46,7 +47,8 @@ int qmc_bl_reset(double x, double y, double z) {
   return 0;
 }
 
-/* Advance `steps` steps of 0.01. Returns 0 on success */
+// Advance `steps` steps of 0.01
+// Returns 0 on success
 QMC_EXPORT(qmc_bl_step)
 int qmc_bl_step(double omega, double delta, double gamma1, double gamma_phi,
                 int steps) {
@@ -59,13 +61,13 @@ int qmc_bl_step(double omega, double delta, double gamma1, double gamma_phi,
   return rc;
 }
 
-/* Purity Tr(rho^2) = (1 + |v|^2)/2. */
+// Purity Tr(rho^2) = (1 + |v|^2)/2
 QMC_EXPORT(qmc_bl_purity)
 double qmc_bl_purity(void) {
   return 0.5 * (1.0 + g_v[0] * g_v[0] + g_v[1] * g_v[1] + g_v[2] * g_v[2]);
 }
 
-/* Closed-form excited-state probability from ground state. */
+// Closed-form excited-state probability from ground state
 QMC_EXPORT(qmc_bl_rabi)
 double qmc_bl_rabi(double t, double omega, double delta) {
   return rabi_excited_probability(t, omega, delta);

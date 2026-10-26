@@ -25,8 +25,8 @@ Anderson localisation on a 1D tight-binding chain (\hbar = 1)
   H = -t \sum_j (|j><j+1| + h.c.) + \sum_j \epsilon_j |j><j|
 
 with n sites, open ends, hopping t > 0 and on-site energies \epsilon_j drawn
-independently and uniformly from [-W/2, W/2] (W = disorder strength). Site j
-sits at position x = j
+independently and uniformly from [-W/2, W/2] (W = disorder strength)
+Site j sits at position x = j
 
 NOTE: Without disorder (W = 0) a packet started on one site spreads
 ballistically, \psi_j(\tau) = i^(j - j0) J_(j - j0)(2t\tau), so <x^2> = 2 t^2
@@ -127,9 +127,9 @@ double anderson_lyapunov(const double *eps, int n, double hop, double energy);
 ```text
 Lyapunov exponent (inverse localisation length, per site) of amplitude at
 energy E for given on-site energies, from transfer-matrix recursion
-\psi_(j+1) = ((E - \eps_j)/t) \psi_j -  \psi_(j-1) with periodic
-renormalisation: \gamma = (1/n) sum ln(growth). Self-averaging, so use a long
-chain (>= 1e5 sites). NaN on invalid input
+\psi_(j+1) = ((E - \eps_j)/t) \psi_j - \psi_(j-1) with periodic
+renormalisation: \gamma = (1/n) \sum \ln(growth). Self-averaging, so use a
+long chain (>= 1e5 sites). NaN on invalid input
 ```
 
 ### `anderson_lyapunov_weak`

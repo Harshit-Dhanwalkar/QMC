@@ -1,7 +1,7 @@
 /*
  * qmc_wasm.c - thin WebAssembly front end for QMC's 2D split-operator solver
  *
- * Units: hbar = m = 1
+ * Units: \hbar = m = 1
  * Grid layout: psi[ix * N + iy], so ix is x coordinate and iy the y coordinate
  * Same layout is used for potential and density buffers
  */
@@ -64,10 +64,9 @@ static void build_mask(int edge_cells, double strength) {
   }
 }
 
-/* n must be a power of two (library FFT is radix-2), 8 <= n <= 256
- * box is side length of simulation square, dt time step
- *
- * Returns 0 on success, -1 on bad arguments or out of memory */
+// n must be a power of two (library FFT is radix-2), 8 <= n <= 256
+// box is side length of simulation square, dt time step
+// Returns 0 on success, -1 on bad arguments or out of memory
 QMC_EXPORT(qmc_init)
 int qmc_init(int n, double box, double dt) {
   if (n < 8 || n > QMC_MAX_N || (n & (n - 1)) != 0 || box <= 0.0 || dt <= 0.0) {
@@ -105,8 +104,9 @@ int qmc_n(void) { return g_n; }
 QMC_EXPORT(qmc_box)
 double qmc_box(void) { return g_box; }
 
-/* Pointer to potential V[ix * N + iy] (double). JavaScript may write to it
- * directly (e.g. to paint walls); it is read at every qmc_step() */
+// Pointer to potential V[ix * N + iy] (double)
+// JavaScript may write to it directly (e.g. to paint walls); it is read at
+// every qmc_step()
 QMC_EXPORT(qmc_potential)
 double *qmc_potential(void) { return g_v; }
 
@@ -117,7 +117,7 @@ void qmc_clear_potential(void) {
   }
 }
 
-/* Fill a rectangle (physical coordinates) with potential value v0 */
+// Fill a rectangle (physical coordinates) with potential value v0
 QMC_EXPORT(qmc_fill_rect)
 void qmc_fill_rect(double x0, double x1, double y0, double y1, double v0) {
   if (!g_v) {
@@ -139,9 +139,9 @@ void qmc_fill_rect(double x0, double x1, double y0, double y1, double v0) {
   }
 }
 
-/* Vertical wall centred at wall_x with given thickness, with `slits` (1 or 2)
- * openings of width slit_w; for 2 slits centre-to-centre separation is sep
- * Wall height (potential) is v0 */
+// Vertical wall centred at wall_x with given thickness, with `slits` (1 or 2)
+// openings of width slit_w; for 2 slits centre-to-centre separation is sep Wall
+// height (potential) is v0
 QMC_EXPORT(qmc_build_slits)
 void qmc_build_slits(double wall_x, double thickness, int slits, double sep,
                      double slit_w, double v0) {
@@ -172,7 +172,7 @@ void qmc_build_slits(double wall_x, double thickness, int slits, double sep,
   }
 }
 
-/* Gaussian wavepacket with momentum (kx, ky) and position spread \sigma */
+// Gaussian wavepacket with momentum (kx, ky) and position spread \sigma
 QMC_EXPORT(qmc_wavepacket)
 int qmc_wavepacket(double x0, double y0, double kx, double ky, double sigma) {
   if (!g_psi || sigma <= 0.0) {
@@ -203,10 +203,8 @@ int qmc_wavepacket(double x0, double y0, double kx, double ky, double sigma) {
   return 0;
 }
 
-/* Advance by `steps` time steps
- *
- * Returns 0 on success, -1 on failure
- */
+// Advance by `steps` time steps
+// Returns 0 on success, -1 on failure
 QMC_EXPORT(qmc_step)
 int qmc_step(int steps) {
   if (!g_psi) {
@@ -232,7 +230,7 @@ int qmc_step(int steps) {
 QMC_EXPORT(qmc_norm)
 double qmc_norm(void) { return g_psi ? grid_norm(g_psi, g_dx * g_dx) : 0.0; }
 
-/* Refresh and return probability density |\psi|^2 (float, N*N) */
+// Refresh and return probability density |\psi|^2 (float, N*N)
 QMC_EXPORT(qmc_density)
 float *qmc_density(void) {
   if (!g_psi) {
