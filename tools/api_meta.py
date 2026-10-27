@@ -79,6 +79,7 @@ SUMMARIES = {
     "angular": (ATOMS, "Angular momentum and spin: Pauli matrices, L+/L-/L^2/Lz, Clebsch-Gordan and Gaunt coefficients."),
     "fine_structure": (ATOMS, "Hydrogen fine structure: spin-orbit coupling and the closed-form total fine-structure formula."),
     "zeeman": (ATOMS, "Weak-field anomalous Zeeman effect for a single valence electron."),
+    "zeeman_full": (ATOMS, "Exact Zeeman effect for a p-electron across all field strengths (weak to Paschen-Back), with line intensities."),
     "perturbation": (ATOMS, "Time-independent perturbation theory (non-degenerate and degenerate) and Fermi's golden rule."),
     "td_perturbation": (ATOMS, "Time-dependent perturbation theory: Dyson series to arbitrary order and first-order closed forms."),
     "variational": (ATOMS, "Variational method: generic golden-section minimiser and variational energy minimisation."),
@@ -154,12 +155,13 @@ START = {
     "netcdf_writer": ["netcdf_open", "netcdf_writer_write_1d", "netcdf_close"],
     "latex_gen": ["latex_tools_available", "latex_render_to_pdf", "latex_document_create"],
     "plot": ["plot_line", "plot_lines", "plot_backend_name"],
+    "special": ["hermite", "laguerre", "legendre"],
     "angular": ["lz_matrix", "l2_matrix", "clebsch_gordan"],
     "potentials": ["V_harmonic", "V_finite_well", "V_barrier"],
     "schrodinger": ["solve_tise_matrix", "solve_tise_shoot", "evolve_tdse_crank"],
     "double_well": ["dw_potential", "dw_eigen", "dw_project", "dw_evolve"],
     "wavefn": ["wavefunction_alloc", "wavefunction_normalize", "wavefunction_free"],
-    "special": ["hermite", "laguerre", "legendre"],
+    "zeeman_full": ["zf_solve", "zf_line_intensity", "zf_magnetic_moment"],
 }
 
 # stem -> existing hand-written guide page (relative to docs/src), when name does not match
