@@ -471,6 +471,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_94_double_barrier.c</code></li>
   <li><code>eg_95_josephson.c</code></li>
   <li><code>eg_96_double_well.c</code></li>
+  <li><code>eg_97_zeeman_full.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -583,6 +584,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_wavefn.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
+  <li><code>test_zeeman_full.c</code></li>
 </ul>
 </details>
 

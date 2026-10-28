@@ -12,6 +12,8 @@ Exact Zeeman effect for a p-electron across all field strengths (weak to Paschen
 
 **Start with:** [`zf_solve`](#zf_solve), [`zf_line_intensity`](#zf_line_intensity), [`zf_magnetic_moment`](#zf_magnetic_moment)
 
+- Example: `examples/eg_97_zeeman_full.c`
+- Test (every call with expected results): `tests/test_zeeman_full.c`
 - Runtime help: `qmc_help(stdout, "zeeman_full");` or `qmc-help zeeman_full`
 
 ## Overview

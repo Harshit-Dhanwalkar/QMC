@@ -129,7 +129,7 @@ static const qmc_module_t qmc_catalog_modules[] = {
     {"zeeman_full", "physics/zeeman_full.h", "Atomic structure & perturbation theory",
      "Exact Zeeman effect for a p-electron across all field strengths (weak to Paschen-Back), with line intensities.",
      "zf_solve, zf_line_intensity, zf_magnetic_moment",
-     "", "", "", 1},
+     "", "examples/eg_97_zeeman_full.c", "tests/test_zeeman_full.c", 1},
     {"bloch", "physics/bloch.h", "Two-level, open systems & quantum optics",
      "Single-qubit Bloch-vector picture on top of the Lindblad solver.",
      "bloch_vector_from_density, bloch_density_from_vector, bloch_evolve",
