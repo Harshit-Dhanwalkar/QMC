@@ -242,7 +242,15 @@
       <br>
       <sub>A p-electron transitioning from weak-field anomalous Zeeman splitting to strong-field Paschen-Back decoupling</sub>
     </td>
-    <td align="center" width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/sg.html">
+        <img src="docs/src/playground/sg.gif" alt="Stern-Gerlach experiment: sequential spin measurements and quantization" width="260" height="260">
+      </a>
+      <br>
+      <b>Stern-Gerlach</b>
+      <br>
+      <sub>Spin-1/2 particles through a non-uniform magnetic field: spatial quantization and sequential measurement collapse</sub>
+    </td>
   </tr>
 </table>
 
@@ -378,6 +386,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   - Quantum rings: Persistent currents and Aharonov-Bohm transmission (scattering matrix via Green's functions).
   - Josephson junctions: RCSJ model phase dynamics, I-V sweeps with hysteresis and Shapiro steps under AC drive.
   - Zeeman effect: Exact $6 \times 6$ diagonalisation of a p-electron transitioning from weak-field anomalous Zeeman splitting to the strong-field Paschen-Back regime.
+  - Stern-Gerlach effect: Sequential spin-1/2 measurements passing through a non-uniform magnetic field, demonstrating spatial quantization and state collapse.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - Optimised linear algebra (LAPACK/BLAS backend).
 

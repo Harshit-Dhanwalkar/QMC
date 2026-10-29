@@ -44,6 +44,8 @@
 
 `qmc_zeeman.c` wraps the full-field Zeeman solver (`physics/zeeman_full.c`): `docs/src/playground/zeeman.html` shows the 2P levels, the 2S to 2P lines with polarisation and intensity, from the anomalous Zeeman regime to Paschen-Back.
 
+`qmc_sg.c` wraps the Stern-Gerlach analyzer chain (`physics/stern_gerlach.c`): `docs/src/playground/sg.html` shows sequential measurements, recombining boxes and the screen pattern.
+
 ## Build
 
 ```sh
@@ -155,6 +157,8 @@ Josephson module (`qmc_josephson.wasm`, no imports): time in units of 1/omega_p.
 Double-well module (`qmc_dwell.wasm`, no imports): $\hbar = m = 1$, a 500-point grid on \[-5, 5\]. `qmc_dw_set(B, a)` solves the lowest eight states of $V = B(1 - x^2/a^2)^2$ (`qmc_dw_e_buffer`, `qmc_dw_psi_buffer`, `qmc_dw_splitting`, `qmc_dw_wkb`), `qmc_dw_launch(center, sigma)` projects a Gaussian and `qmc_dw_evolve(t)` fills the density buffer and returns P(x < 0); `qmc_dw_split_curve(bmax)` gives the splitting and WKB curves against barrier height.
 
 Zeeman module (`qmc_zeeman.wasm`, no imports): $H = \xi L.S + b (L_z + 2 S_z)$ for a p electron, energies in the unit of $\xi$ and b. `qmc_zm_curves(xi, bmax, npts)` fills `qmc_zm_curves_buffer` with the six 2P levels and the two 2S levels (level $k$ at $k \* npts$, `qmc_zm_mj_buffer` holds $2 m_j$), `qmc_zm_lines(xi, b)` fills `qmc_zm_lines_buffer` with twelve rows \[energy, intensity, q, P state, spin\] for the 2S to 2P lines and returns the number with non-zero weight and `qmc_zm_moment(xi, b, k)` returns $dE/db$ of state $k$.
+
+Stern-Gerlach module (`qmc_sg.wasm`, no imports): `qmc_sg_set(k, theta, phi, mode, coherence)` configures analyzer k (mode 0 pass up, 1 pass down, 2 pass both with recombination coherence), `qmc_sg_run(theta, phi, pol, n)` sends a source of polarisation pol through the first n and fills `qmc_sg_intensity_buffer` / `qmc_sg_r_buffer`, `qmc_sg_screen(pup, d, sigma, npts, zmax)` fills the quantum and classical screen patterns and returns the packet overlap, and `qmc_sg_shoot(n, pup, d, sigma, seed)` draws reproducible atom hits into `qmc_sg_hits_buffer`.
 
 Regenerate the butterfly images:
 

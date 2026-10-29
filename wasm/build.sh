@@ -28,6 +28,7 @@
 #   docs/src/playground/qmc_josephson.wasm       Josephson-junction (RCSJ) demo
 #   docs/src/playground/qmc_doublewell.wasm      double-well tunnelling demo
 #   docs/src/playground/qmc_zeeman.wasm          full-field Zeeman (Paschen-Back) demo
+#   docs/src/playground/qmc_sg.wasm              Stern-Gerlach analyzers demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -231,3 +232,8 @@ qmc_dw_split_curve qmc_dw_launch qmc_dw_evolve qmc_dw_mean_x" \
 build_module "$OUT/qmc_zeeman.wasm" \
   "qmc_zm_max_points qmc_zm_curves_buffer qmc_zm_lines_buffer qmc_zm_mj_buffer qmc_zm_curves qmc_zm_lines qmc_zm_moment" \
   wasm/qmc_zeeman.c physics/zeeman_full.c
+
+build_module "$OUT/qmc_sg.wasm" \
+  "qmc_sg_max_analyzers qmc_sg_max_points qmc_sg_max_shots qmc_sg_intensity_buffer qmc_sg_r_buffer qmc_sg_z_buffer \
+qmc_sg_quantum_buffer qmc_sg_classical_buffer qmc_sg_hits_buffer qmc_sg_set qmc_sg_run qmc_sg_screen qmc_sg_shoot" \
+  wasm/qmc_sg.c physics/stern_gerlach.c

@@ -28,6 +28,7 @@
     ["josephson", "Josephson junction", "Washboard pendulum: hysteresis and Shapiro steps"],
     ["doublewell", "Double-well tunnelling", "Ammonia inversion: a packet tunnels back and forth"],
     ["zeeman", "Zeeman effect", "Sodium D lines from weak field to Paschen-Back"],
+    ["sg", "Stern-Gerlach analyzers", "Why measuring spin changes it: z+, x+, z+ passes a quarter"],
   ];
 
   const GH =

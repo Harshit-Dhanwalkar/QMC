@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-23 interactive demos, all computed live by the same C library you can read
+24 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -30,6 +30,7 @@ what the C code returns.
 | [Josephson junction](playground/josephson.html)      | Washboard pendulum: hysteresis and Shapiro steps      | `jj_sweep`                          | 22 KB |
 | [Double-well tunnelling](playground/doublewell.html) | Ammonia inversion: a packet tunnels back and forth    | `dw_eigen`                          | 22 KB |
 | [Zeeman effect](playground/zeeman.html)              | Sodium D lines from weak field to Paschen-Back        | `zf_solve`                          | 16 KB |
+| [Stern-Gerlach analyzers](playground/sg.html)        | Why measuring spin changes it                         | `sg_chain`                          | 21 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -377,7 +378,7 @@ $J = 4t^2/U$ ($\langle S_1 \cdot S^2 \rangle$ goes from −3/8 to −3/4). The
 entanglement entropy of one site climbs from charge fluctuations to the pure-spin
 value $\ln(2)$. The page also quenches the Néel state $|uparrow,\downarrow\rangle$,
 whose staggered moment oscillates at J and shows how thermal excitation across the
-singlet–triplet gap melts the correlation. The tests check the spectrum and ground
+singlet-triplet gap melts the correlation. The tests check the spectrum and ground
 state against their closed forms, the large-U Heisenberg limit, energy and norm
 conservation in the quench and the infinite-temperature averages.
 
@@ -390,7 +391,7 @@ conservation in the quench and the infinite-temperature averages.
 One thin barrier reflects a slow particle almost completely. Put two of them
 around a well and, at a few special energies, the particle gets through with
 probability exactly 1: the waves bouncing between the barriers interfere
-constructively, just as light does in a Fabry–Perot cavity. Those energies are
+constructively, just as light does in a Fabry-Perot cavity. Those energies are
 the quasi-bound levels of the well, a little below the infinite-well values
 $(n\pi/w)^2$, and the more opaque the barriers the narrower the peaks and the
 longer the particle dwells inside. The page lets you set the heights and
@@ -415,7 +416,7 @@ is a ball rolling in a tilted washboard potential. Below the critical current
 the ball is trapped in a well and no voltage appears; above it the ball runs and
 the voltage is the average speed. A lightly damped junction is hysteretic: it
 switches to the voltage state at $i = 1$ but only retraps near $4/(\pi Q)$ on
-the way down. Add an ac drive and the running phase locks to it, so the I–V curve
+the way down. Add an ac drive and the running phase locks to it, so the I-V curve
 has flat Shapiro steps at $V = n \Omega$, the basis of the voltage standard. The
 page animates the ball, draws the washboard, and sweeps the I-V curve up and down.
 The tests check the supercurrent branch, the overdamped formula $V = Q\sqrt{(i^2−1)}$,
@@ -444,25 +445,46 @@ exponential splitting against WKB, and the $\cos^2(\Delta t/2)$ tunnelling law.
 
 [Open the demo](playground/doublewell.html)
 
-## Zeeman effect: from anomalous to Paschen–Back
+## Zeeman effect: from anomalous to Paschen-Back
 
 [![Zeeman effect](playground/zeeman.gif)](playground/zeeman.html)
 
 In a weak magnetic field every fine-structure level of an alkali atom splits
 evenly by $g_J m_j \mu_B B$, with $g = 4/3$ for $2P_{3/2}$ and 2/3 for $2P_{1/2}$:
 the "anomalous" Zeeman effect that puzzled early spectroscopists. Make the field
-larger than the spin–orbit coupling and $L$ and $S$ decouple, so the levels fan
+larger than the spin-orbit coupling and $L$ and $S$ decouple, so the levels fan
 out as $m_l + 2m_s$ and the ten lines of the sodium $D$ doublet regroup into the
-"normal" Zeeman triplet (Paschen–Back). The page shows the six $2P$ levels against
+"normal" Zeeman triplet (Paschen-Back). The page shows the six $2P$ levels against
 the field, the $2S \rightarrow 2P$ spectrum at the chosen field with each line's
 polarisation $(\pi, \sigma_+, \sigma_−)$ and relative intensity, and the full line
 fan, for Li, Na, K or Rb. The Hamiltonian is block diagonal in $m_j$, so each level
 comes from a closed-form $2 \times 2$ or $1 \times 1$ block. The tests check the
 zero-field levels and the 2:1 intensity ratio of $D2$ to $D1$, the g-factor slopes
-against `zeeman_lande_g_factor`, the Paschen–Back limit, the blocks against a $6 \times 6$
-diagonalisation, Hellmann–Feynman slopes and the intensity sum rules.
+against `zeeman_lande_g_factor`, the Paschen-Back limit, the blocks against a $6 \times 6$
+diagonalisation, Hellmann-Feynman slopes and the intensity sum rules.
 
 [Open the demo](playground/zeeman.html)
+
+## Stern-Gerlach analyzers: measurement changes the state
+
+[![Stern-Gerlach analyzers](playground/sg.gif)](playground/sg.html)
+
+Send spin-$1/2$ atoms through a Stern-Gerlach magnet, block the "down" beam, and
+you have prepared them "up". Turn the next magnet by $90^\circ$, block one output,
+and a third magnet along the original axis finds half of them "down" again: $z+
+\rightarrow x+ \rightarrow z+$ passes a quarter of the beam, though $z+ \rightarrow z+$
+passes all of it and $z+ \rightarrow z−$ none. The page chains up to 3 analyzers at
+any angle from a source of any polarisation, and shows the intensity after each.
+Letting both beams through and recombining them restores the state (Feynman's "Humpty
+Dumpty" magnet), but only as far as the two packets still overlap, $\exp(−d^2/8\sigma^2$):
+once they are separated by several widths the position of the atom records which beam it
+took and the spin is decohered as if measured. A screen below the first magnet compares
+the two-spot quantum pattern with the smear a classical magnetic moment would give and
+fires atoms at it. The tests check $P(+) = \cos^2(\theta/2)$, a four-analyzer chain
+against an independent spinor calculation, the Zeno staircase $\cos^{2N}(\pi/2N)$,
+recombination, and the packet overlap by quadrature.
+
+[Open the demo](playground/sg.html)
 
 ## Run it yourself
 

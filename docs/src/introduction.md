@@ -32,6 +32,7 @@ Quantum mechanics simulation and visualization engine written in pure C.
 <a class="card" href="playground/josephson.html"><img class="thumb" loading="lazy" alt="Josephson junction I-V curve with Shapiro steps" src="playground/thumbs/josephson.jpg"><span class="meta"><b>Josephson junction</b><small>Washboard pendulum: hysteresis and Shapiro steps</small></span></a>
 <a class="card" href="playground/doublewell.html"><img class="thumb" loading="lazy" alt="Double well tunnelling doublet" src="playground/thumbs/doublewell.jpg"><span class="meta"><b>Double-well tunnelling</b><small>Ammonia inversion: a packet tunnels back and forth</small></span></a>
 <a class="card" href="playground/zeeman.html"><img class="thumb" loading="lazy" alt="Zeeman effect to Paschen-Back" src="playground/thumbs/zeeman.jpg"><span class="meta"><b>Zeeman effect</b><small>Sodium D lines from weak field to Paschen-Back</small></span></a>
+<a class="card" href="playground/sg.html"><img class="thumb" loading="lazy" alt="Stern-Gerlach analyzers" src="playground/thumbs/sg.jpg"><span class="meta"><b>Stern-Gerlach analyzers</b><small>Why measuring spin changes it: z+, x+, z+ passes a quarter</small></span></a>
 </div>
 
 This book documents both the physics and the implementation - derivations

@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Stern-Gerlach analyzers</title>
+    <meta
+      name="description"
+      content="Send spin-1/2 atoms through chains of Stern-Gerlach analyzers: measurements disturb the state, a recombining magnet restores it only if the packets overlap. Computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Stern-Gerlach analyzers: why measuring spin changes it, in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="z+ then x+ then z+ passes a quarter of the beam, though z+ then z+ passes all of it."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/sg.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #stage {
+        aspect-ratio: 16 / 8;
+      }
+      .plots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      @media (max-width: 800px) {
+        .plots {
+          grid-template-columns: 1fr;
+        }
+      }
+      .plots .cv {
+        aspect-ratio: 16 / 9;
+      }
+      .ttl {
+        position: absolute;
+        left: 12px;
+        top: 8px;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .sw {
+        display: inline-block;
+        width: 12px;
+        height: 3px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+      select {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 5px 8px;
+        font: inherit;
+      }
+      .an {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        margin-top: 8px;
+      }
+      .an h3 {
+        font-size: 0.85rem;
+        margin: 0 0 4px;
+        color: var(--accent2);
+        font-weight: 600;
+      }
+      .an .row {
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Stern-Gerlach analyzers</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        A Stern-Gerlach magnet splits a beam of spin-&frac12; atoms into an
+        &ldquo;up&rdquo; and a &ldquo;down&rdquo; beam along its axis. Block one
+        output and you have <b>measured</b> the spin: send that beam through a
+        magnet turned by 90&deg;, block one output again, and a third magnet
+        along the original axis finds half of those atoms &ldquo;down&rdquo;
+        again &mdash; z+ &rarr; x+ &rarr; z+ passes <b>&frac14;</b> of the beam,
+        though z+ &rarr; z+ passes all of it and z+ &rarr; z&minus; none. Let
+        <i>both</i> beams through and bring them back together and the state is
+        restored (Feynman&rsquo;s &ldquo;Humpty Dumpty&rdquo; magnet) &mdash;
+        but only as far as the two packets still overlap. Chain up to three
+        analyzers, tilt them, mix the source, and compare the screen pattern
+        with the classical smear. Bloch-vector bookkeeping by the QMC library
+        (<code>stern_gerlach.c</code>).
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="stage"><canvas id="sc"></canvas></div>
+          <div class="legend">
+            <span
+              ><i class="sw" style="background: #3ddc97"></i>transmitted
+              beam</span
+            >
+            <span
+              ><i class="sw" style="background: #4b556b"></i>blocked
+              output</span
+            >
+            <span
+              >beam thickness = intensity; arrows show each magnet&rsquo;s axis
+              (z up, x right)</span
+            >
+          </div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Source and presets</h2>
+            <div class="row">
+              <label
+                ><span>Source axis</span
+                ><input
+                  id="s0"
+                  type="range"
+                  min="-180"
+                  max="180"
+                  step="5"
+                  value="0" /><b id="s0v"></b
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Polarisation</span
+                ><input
+                  id="sp"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="1" /><b id="spv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <button id="p1" class="primary">z+ &rarr; x+ &rarr; z+</button
+              ><button id="p2">z+ &rarr; z&minus;</button
+              ><button id="p3">Humpty Dumpty</button
+              ><button id="p4">Broken box</button>
+            </div>
+            <div id="note"></div>
+          </div>
+          <div class="panel">
+            <h2>Analyzers</h2>
+            <div class="row">
+              <label
+                ><span>Number</span
+                ><input
+                  id="n"
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="1"
+                  value="3" /><b id="nv"></b
+              ></label>
+            </div>
+            <div id="ans"></div>
+          </div>
+          <div class="panel">
+            <h2>Readout</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="cv">
+          <canvas id="pc"></canvas>
+          <div class="ttl">Screen behind the first magnet</div>
+        </div>
+        <div class="cv">
+          <canvas id="oc"></canvas>
+          <div class="ttl">Magnet strength and packet overlap</div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top: 14px">
+        <div class="row">
+          <label
+            ><span>Separation d</span
+            ><input
+              id="d"
+              type="range"
+              min="0"
+              max="8"
+              step="0.1"
+              value="4" /><b id="dv"></b
+          ></label>
+        </div>
+        <div class="row">
+          <label
+            ><span>Packet width &sigma;</span
+            ><input
+              id="sg"
+              type="range"
+              min="0.3"
+              max="2"
+              step="0.05"
+              value="0.7" /><b id="sgv"></b
+          ></label>
+        </div>
+        <div class="row">
+          <button id="shoot" class="primary">Fire atoms</button
+          ><button id="clear">Clear</button
+          ><button id="useov">Use packet overlap as box coherence</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span
+          ><i class="sw" style="background: #3ddc97"></i>quantum pattern</span
+        >
+        <span
+          ><i class="sw" style="background: #ff6b81"></i>classical smear (random
+          orientation)</span
+        >
+        <span><i class="sw" style="background: #ffb454"></i>fired atoms</span>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        The beam is a Bloch vector <b>r</b> with intensity I. An analyzer along
+        <b>n</b> has outputs I(1&nbsp;&plusmn;&nbsp;<b>r</b>&middot;<b>n</b>)/2;
+        blocking one gives r&nbsp;=&nbsp;&plusmn;<b>n</b> (a projective
+        measurement). Passing both through a reversed gradient maps
+        <b>r</b
+        >&nbsp;&rarr;&nbsp;(<b>r</b>&middot;<b>n</b>)<b>n</b>&nbsp;+&nbsp;c(<b>r</b>&nbsp;&minus;&nbsp;(<b>r</b>&middot;<b>n</b>)<b>n</b>),
+        where c&nbsp;=&nbsp;exp(&minus;d&sup2;/8&sigma;&sup2;) is the overlap of
+        the two Gaussian packets: for d&nbsp;&gg;&nbsp;&sigma; the &ldquo;which
+        beam&rdquo; record is in the atom&rsquo;s position and the spin is
+        decohered, exactly as if it had been measured. The classical curve is a
+        magnetic moment with random orientation,
+        z&nbsp;=&nbsp;(d/2)cos&thinsp;&alpha;, convolved with the packet width:
+        a smear rather than two spots. Axes are tilted in the x-z plane
+        (negative angles point toward &minus;x). Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/stern_gerlach.c"
+          ><code>physics/stern_gerlach.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_sg.c"
+          ><code>wasm/qmc_sg.c</code></a
+        >; the chains, the Zeno staircase, recombination and the packet overlap
+        are verified in <code>tests/test_stern_gerlach.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_sg.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_sg.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/sg.html</code>.",
+          );
+
+          return;
+        }
+
+        const B = (fn, n) =>
+          Array.from(new Float64Array(w.memory.buffer, fn(), n)); // copies: memory can grow
+        const G = "#3ddc97";
+        const MUT = "#4b556b";
+        const PI = Math.PI;
+        const MODES = ["pass +", "pass −", "pass both"];
+        const A = [
+          { a: 90, m: 0, c: 1 },
+          { a: 0, m: 0, c: 1 },
+          { a: 0, m: 0, c: 1 },
+        ];
+        let src = 0;
+        let pol = 1;
+        let n = 3;
+        let d = 4;
+        let sg = 0.7;
+        let inten = [];
+        let rv = [];
+        let hits = [];
+        let seed = 1;
+        let pup = 0.5;
+        let ov = 0;
+        A[0].a = 0;
+        A[1].a = 90;
+        A[2].a = 0;
+
+        const ang = (deg) => [(Math.abs(deg) * PI) / 180, deg < 0 ? PI : 0];
+        function configure() {
+          A.forEach((x, k) => {
+            const [t, p] = ang(x.a);
+            w.qmc_sg_set(k, t, p, x.m, x.c);
+          });
+        }
+
+        function run() {
+          configure();
+          const [t, p] = ang(src);
+          w.qmc_sg_run(t, p, pol, n);
+          inten = B(w.qmc_sg_intensity_buffer, n + 1);
+          rv = B(w.qmc_sg_r_buffer, 3 * (n + 1));
+        }
+
+        function firstUp() {
+          // probability of "up" along the first magnet axis, from the library itself
+          const [t, p] = ang(A[0].a);
+          const [ts, ps] = ang(src);
+          w.qmc_sg_set(0, t, p, 0, 1);
+          w.qmc_sg_run(ts, ps, pol, 1);
+
+          return B(w.qmc_sg_intensity_buffer, 2)[1];
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * dpr);
+          canvas.height = Math.max(2, r.height * dpr);
+          const g = canvas.getContext("2d");
+          g.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          return { g, W: r.width, H: r.height };
+        }
+
+        function arrow(g, x, y, deg, len, col) {
+          const t = (deg * PI) / 180;
+          const dx = Math.sin(t) * len;
+          const dy = -Math.cos(t) * len;
+
+          g.strokeStyle = col;
+          g.fillStyle = col;
+          g.lineWidth = 2.2;
+          g.beginPath();
+          g.moveTo(x - dx / 2, y - dy / 2);
+          g.lineTo(x + dx / 2, y + dy / 2);
+          g.stroke();
+
+          const hx = x + dx / 2;
+          const hy = y + dy / 2;
+          const a = Math.atan2(dy, dx);
+          g.beginPath();
+          g.moveTo(hx, hy);
+          g.lineTo(hx - 8 * Math.cos(a - 0.45), hy - 8 * Math.sin(a - 0.45));
+          g.lineTo(hx - 8 * Math.cos(a + 0.45), hy - 8 * Math.sin(a + 0.45));
+          g.closePath();
+          g.fill();
+        }
+
+        function drawChain() {
+          const { g, W, H } = fit($("sc"));
+          const y0 = H * 0.5;
+          const bw = 54;
+          const bh = 70;
+          const left = 62;
+          const right = W - 16;
+          const step = (right - left) / n;
+          const th = (I) => Math.max(0, 0.5 + 12 * I);
+
+          g.font = "12px system-ui";
+          g.textAlign = "center";
+          g.lineCap = "butt";
+          g.fillStyle = "#1b2234";
+          g.strokeStyle = "#232b3d";
+          g.lineWidth = 1;
+          g.beginPath();
+          g.arc(30, y0, 21, 0, 7);
+          g.fill();
+          g.stroke();
+          arrow(g, 30, y0, src, 28 * (0.3 + 0.7 * pol), "#ffb454");
+          g.fillStyle = "#8993a8";
+          g.fillText("source", 30, y0 + 38);
+
+          let xprev = 52;
+          for (let k = 0; k < n; k++) {
+            const bx = left + step * k + step * 0.45;
+            const x1 = bx - bw / 2;
+            const x2 = bx + bw / 2;
+            xend =
+              left + step * (k + 1) + (k === n - 1 ? -4 : step * 0.45 - bw / 2);
+            g.strokeStyle = G;
+            g.lineWidth = th(inten[k]);
+            g.beginPath();
+            g.moveTo(xprev, y0);
+            g.lineTo(x1, y0);
+            g.stroke();
+            g.fillStyle = "#131824";
+            g.strokeStyle = "#3a4560";
+            g.lineWidth = 1.5;
+            g.beginPath();
+            g.roundRect(x1, y0 - bh / 2, bw, bh, 8);
+            g.fill();
+            g.stroke();
+            arrow(g, bx, y0, A[k].a, 38, "#ffb454");
+            g.fillStyle = "#8993a8";
+            g.fillText(
+              "A" + (k + 1) + "  " + MODES[A[k].m],
+              bx,
+              y0 - bh / 2 - 8,
+            );
+
+            const out = inten[k + 1];
+            const other = inten[k] - out;
+            g.strokeStyle = G;
+            g.lineWidth = th(out);
+            g.beginPath();
+            g.moveTo(x2, y0);
+            g.lineTo(xend, y0);
+            g.stroke();
+            g.fillStyle = G;
+            g.fillText(out.toFixed(3), (x2 + xend) / 2, y0 - 10 - th(out) / 2);
+            if (A[k].m !== 2) {
+              const up = false;
+              const ys = up ? y0 - bh / 2 - 6 : y0 + bh / 2 + 6; // blocked output exits the opposite side
+              g.strokeStyle = MUT;
+              g.lineWidth = th(other);
+              g.setLineDash([3, 3]);
+              g.beginPath();
+              g.moveTo(bx, up ? y0 - bh / 2 : y0 + bh / 2);
+              g.lineTo(bx, up ? ys - 14 : ys + 14);
+              g.stroke();
+              g.setLineDash([]);
+              g.fillStyle = "#8993a8";
+              g.fillText(
+                "blocked " + other.toFixed(3),
+                bx,
+                up ? ys - 20 : ys + 28,
+              );
+            }
+            xprev = xend;
+          }
+
+          g.fillStyle = "#d7dce5";
+          g.textAlign = "right";
+          g.font = "13px ui-monospace,monospace";
+          g.fillText("final intensity " + inten[n].toFixed(4), W - 12, 20);
+        }
+
+        function drawScreen() {
+          const { g, W, H } = fit($("pc"));
+          const zm = 8;
+          const Lm = 40;
+          const Rr = 12;
+          const Tp = 28;
+          const Bt = 34;
+          pup = firstUp();
+          ov = w.qmc_sg_screen(pup, d, sg, 401, zm);
+          const z = B(w.qmc_sg_z_buffer, 401);
+          const q = B(w.qmc_sg_quantum_buffer, 401);
+          const c = B(w.qmc_sg_classical_buffer, 401);
+
+          let ym = 0.05;
+          for (let i = 0; i < 401; i++) {
+            ym = Math.max(ym, q[i], c[i]);
+          }
+
+          ym *= 1.12;
+          const X = (v) => Lm + ((W - Lm - Rr) * (v + zm)) / (2 * zm);
+          const Y = (v) => H - Bt - ((H - Bt - Tp) * v) / ym;
+          g.font = "11px system-ui";
+          g.fillStyle = "#8993a8";
+          g.strokeStyle = "#232b3d";
+          g.textAlign = "center";
+          for (let v = -8; v <= 8; v += 4) {
+            g.fillText(v, X(v), H - 20);
+          }
+
+          g.fillText("position on the screen z", (Lm + W - Rr) / 2, H - 5);
+          g.beginPath();
+          g.moveTo(Lm, Y(0));
+          g.lineTo(W - Rr, Y(0));
+          g.stroke();
+          // histogram of hits
+          if (hits.length) {
+            const nb = 64;
+            const cnt = new Array(nb).fill(0);
+            const bw = (2 * zm) / nb;
+            for (const h of hits) {
+              const b = Math.floor((h + zm) / bw);
+              if (b >= 0 && b < nb) {
+                cnt[b]++;
+              }
+            }
+
+            const sc = 1 / (hits.length * bw);
+            g.fillStyle = "rgba(255,180,84,0.45)";
+            cnt.forEach((v, b) => {
+              const x0 = X(-zm + b * bw);
+              const x1 = X(-zm + (b + 1) * bw);
+              g.fillRect(x0 + 1, Y(v * sc), x1 - x0 - 2, Y(0) - Y(v * sc));
+            });
+          }
+
+          const line = (arr, col, dash) => {
+            g.strokeStyle = col;
+            g.lineWidth = 2.2;
+            g.setLineDash(dash || []);
+            g.beginPath();
+            arr.forEach((v, i) => {
+              const x = X(z[i]),
+                y = Y(v);
+              i ? g.lineTo(x, y) : g.moveTo(x, y);
+            });
+            g.stroke();
+            g.setLineDash([]);
+          };
+
+          line(c, "#ff6b81", [5, 3]);
+          line(q, G);
+          g.fillStyle = "#8993a8";
+          g.textAlign = "right";
+          g.font = "12px ui-monospace,monospace";
+          g.fillText(
+            "P(up) = " + pup.toFixed(3) + "   N = " + hits.length,
+            W - Rr,
+            20,
+          );
+        }
+
+        function drawOverlap() {
+          const { g, W, H } = fit($("oc"));
+          const Lm = 40;
+          const Rr = 12;
+          const Tp = 28;
+          const Bt = 34;
+          const xm = 8;
+          const X = (v) => Lm + ((W - Lm - Rr) * v) / xm;
+          const Y = (v) => H - Bt - (H - Bt - Tp) * v;
+          g.font = "11px system-ui";
+          g.fillStyle = "#8993a8";
+          g.strokeStyle = "#232b3d";
+          g.textAlign = "right";
+          for (const v of [0, 0.5, 1]) {
+            g.beginPath();
+            g.moveTo(Lm, Y(v));
+            g.lineTo(W - Rr, Y(v));
+            g.stroke();
+            g.fillText(v, Lm - 5, Y(v) + 4);
+          }
+
+          g.textAlign = "center";
+          for (let v = 0; v <= 8; v += 2) {
+            g.fillText(v, X(v), H - 20);
+          }
+          g.fillText("separation d / σ", (Lm + W - Rr) / 2, H - 5);
+          g.strokeStyle = G;
+          g.lineWidth = 2.2;
+          g.beginPath();
+          for (let i = 0; i <= 160; i++) {
+            const r = (xm * i) / 160;
+            const y = Math.exp((-r * r) / 8);
+            i ? g.lineTo(X(r), Y(y)) : g.moveTo(X(r), Y(y));
+          }
+
+          g.stroke();
+          const r0 = d / sg;
+          g.fillStyle = "#ffb454";
+          g.beginPath();
+          g.arc(X(Math.min(r0, xm)), Y(ov), 5, 0, 7);
+          g.fill();
+          g.fillStyle = "#d7dce5";
+          g.textAlign = "left";
+          g.fillText(
+            "overlap = recombination coherence = " + ov.toFixed(3),
+            Lm + 10,
+            Tp + 12,
+          );
+        }
+
+        function buildPanel() {
+          $("ans").innerHTML = A.map(
+            (x, k) => `<div class="an" data-k="${k}"><h3>Analyzer ${k + 1}</h3>
+      <div class="row"><label><span>Axis</span><input data-f="a" type="range" min="-180" max="180" step="5" value="${x.a}"><b data-o="a"></b></label></div>
+      <div class="row"><select data-f="m"><option value="0">pass + only</option><option value="1">pass − only</option><option value="2">pass both (recombine)</option></select>
+      <label><span>Coherence</span><input data-f="c" type="range" min="0" max="1" step="0.01" value="${x.c}"><b data-o="c"></b></label></div></div>`,
+          ).join("");
+          document.querySelectorAll(".an").forEach((el) => {
+            const k = +el.dataset.k;
+            el.querySelector("select").value = A[k].m;
+            el.querySelectorAll("[data-f]").forEach((inp) => {
+              inp.oninput = () => {
+                A[k][inp.dataset.f] = +inp.value;
+                update();
+              };
+            });
+          });
+        }
+
+        function sync() {
+          document.querySelectorAll(".an").forEach((el) => {
+            const k = +el.dataset.k;
+            el.style.display = k < n ? "" : "none";
+            el.querySelector('[data-f="a"]').value = A[k].a;
+            el.querySelector('[data-f="m"]').value = A[k].m;
+            el.querySelector('[data-f="c"]').value = A[k].c;
+            el.querySelector('[data-o="a"]').textContent = A[k].a + "°";
+            el.querySelector('[data-o="c"]').textContent = A[k].c.toFixed(2);
+            el.querySelector('[data-f="c"]').parentElement.style.opacity =
+              A[k].m === 2 ? 1 : 0.35;
+          });
+          $("s0v").textContent = src + "°";
+          $("spv").textContent = pol.toFixed(2);
+          $("nv").textContent = n;
+          $("dv").textContent = d.toFixed(1);
+          $("sgv").textContent = sg.toFixed(2);
+        }
+
+        function stats() {
+          const rn = Math.hypot(rv[3 * n], rv[3 * n + 1], rv[3 * n + 2]);
+          const rows = [
+            ["transmitted fraction", (100 * inten[n]).toFixed(2) + " %"],
+            ["polarisation of the exit beam", rn.toFixed(3)],
+            ["P(up) at the first magnet", pup.toFixed(3)],
+            ["packet overlap exp(−d²/8σ²)", ov.toFixed(3)],
+          ];
+          $("stats").innerHTML = rows
+            .map(
+              ([a, b]) =>
+                `<div class="stat"><span>${a}</span><span>${b}</span></div>`,
+            )
+            .join("");
+        }
+
+        function update() {
+          run();
+          drawScreenSafe();
+          drawChain();
+          drawOverlap();
+          sync();
+          stats();
+          run();
+        }
+
+        function drawScreenSafe() {
+          drawScreen();
+          run();
+        }
+        
+        $("s0").oninput = (e) => {
+          src = +e.target.value;
+          update();
+        };
+        $("sp").oninput = (e) => {
+          pol = +e.target.value;
+          update();
+        };
+        $("n").oninput = (e) => {
+          n = +e.target.value;
+          update();
+        };
+        $("d").oninput = (e) => {
+          d = +e.target.value;
+          hits = [];
+          update();
+        };
+        $("sg").oninput = (e) => {
+          sg = +e.target.value;
+          hits = [];
+          update();
+        };
+        $("shoot").onclick = () => {
+          w.qmc_sg_shoot(400, pup, d, sg, seed++);
+          const h = B(w.qmc_sg_hits_buffer, 800);
+          for (let i = 0; i < 400; i++) hits.push(h[2 * i]);
+          update();
+        };
+        
+        $("clear").onclick = () => {
+          hits = [];
+          update();
+        };
+        $("useov").onclick = () => {
+          A.forEach((x) => {
+            x.c = Math.round(ov * 100) / 100;
+          });
+          update();
+        };
+        
+        const preset = (s, nn, cfg, note) => {
+          src = s;
+          pol = 1;
+          n = nn;
+          $("s0").value = s;
+          $("sp").value = 1;
+          $("n").value = nn;
+          cfg.forEach((c, k) => {
+            A[k] = { a: c[0], m: c[1], c: c[2] };
+          });
+          $("note").textContent = note;
+          update();
+        };
+
+        $("p1").onclick = () =>
+          preset(
+            0,
+            3,
+            [
+              [0, 0, 1],
+              [90, 0, 1],
+              [0, 0, 1],
+            ],
+            "z+, x+, z+: the middle measurement erases the memory of z, so a quarter of the atoms get through.",
+          );
+        $("p2").onclick = () =>
+          preset(
+            0,
+            2,
+            [
+              [0, 0, 1],
+              [0, 1, 1],
+            ],
+            "z+ then z− with nothing in between: nothing passes.",
+          );
+        $("p3").onclick = () =>
+          preset(
+            0,
+            2,
+            [
+              [90, 2, 1],
+              [0, 1, 1],
+            ],
+            "A perfectly recombining x box leaves the z+ beam untouched, so the z− analyzer still blocks everything.",
+          );
+        $("p4").onclick = () =>
+          preset(
+            0,
+            2,
+            [
+              [90, 2, 0],
+              [0, 1, 1],
+            ],
+            "With the packets fully separated the x box has measured the spin: z− now passes half the beam.",
+          );
+
+        window.addEventListener("resize", update);
+        buildPanel();
+        $("p1").click();
+        window.__sg = {
+          preset: (k) => $("p" + k).click(),
+          set: (o) => {
+            if ("src" in o) {
+              src = o.src;
+              $("s0").value = src;
+            }
+            hits = [];
+            if ("d" in o) {
+              d = o.d;
+              $("d").value = d;
+            }
+            if ("sg" in o) {
+              sg = o.sg;
+              $("sg").value = sg;
+            }
+            update();
+          },
+          shoot: (k) => {
+            for (let i = 0; i < k; i++) $("shoot").click();
+          },
+        };
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>
