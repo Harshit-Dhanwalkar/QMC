@@ -109,6 +109,7 @@
 #include "physics/soft.h"
 #include "physics/spin_chain.h"
 #include "physics/ssh_chain.h"
+#include "physics/stern_gerlach.h"
 #include "physics/td_perturbation.h"
 #include "physics/tddft.h"
 #include "physics/tfim_quench.h"

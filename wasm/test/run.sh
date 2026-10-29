@@ -318,3 +318,16 @@ else
   echo "FAIL: zeeman WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Stern-Gerlach: sequential analyzers, recombination and screen pattern, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/sg_ref.c wasm/qmc_sg.c physics/stern_gerlach.c \
+  -lm -o "$TMP/qmc_sg_ref"
+"$TMP/qmc_sg_ref" > "$TMP/qmc_sg_native.txt"
+cat "$TMP/qmc_sg_native.txt"
+node wasm/test/sg_check.mjs > "$TMP/qmc_sg_wasm.txt"
+if diff -u "$TMP/qmc_sg_native.txt" "$TMP/qmc_sg_wasm.txt"; then
+  echo "OK: Stern-Gerlach WASM matches native"
+else
+  echo "FAIL: Stern-Gerlach WASM and native results differ" >&2
+  exit 1
+fi

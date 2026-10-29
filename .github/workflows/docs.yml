@@ -47,13 +47,13 @@ jobs:
         qmc_ssh.wasm qmc_tfim.wasm qmc_haldane.wasm qmc_wigner.wasm
         qmc_grover.wasm qmc_bell.wasm qmc_carpet.wasm qmc_zeno.wasm
         qmc_corral.wasm qmc_hubbard.wasm qmc_ring.wasm qmc_tunnel.wasm
-        qmc_josephson.wasm qmc_doublewell.wasm qmc_zeeman.wasm
+        qmc_josephson.wasm qmc_doublewell.wasm qmc_zeeman.wasm qmc_sg.wasm
       PLAYGROUND_HTML: >-
         index.html anderson.html bloch.html butterfly.html dirac.html
         orbitals.html quantum_walk.html landau_zener.html kicked_rotor.html
         ssh_chain.html ising_quench.html haldane.html wigner.html grover.html
         bell.html carpet.html zeno.html corral.html hubbard.html ring.html
-        tunnel.html josephson.html doublewell.html zeeman.html
+        tunnel.html josephson.html doublewell.html zeeman.html sg.html
         wasi-shim.js nav.js
 
     steps:

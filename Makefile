@@ -311,6 +311,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/boson_sampling.c \
                $(PHYSICS_DIR)/zeeman.c \
                $(PHYSICS_DIR)/zeeman_full.c \
+               $(PHYSICS_DIR)/stern_gerlach.c \
                $(PHYSICS_DIR)/vmc.c \
                $(PHYSICS_DIR)/dmc.c \
                $(PHYSICS_DIR)/pimc.c \
@@ -458,7 +459,11 @@ EXAMPLES    = $(BUILD_DIR)/eg_01_particle_box \
               $(BUILD_DIR)/eg_92_hubbard_dimer \
               $(BUILD_DIR)/eg_93_ab_ring \
               $(BUILD_DIR)/eg_94_double_barrier \
-              $(BUILD_DIR)/eg_95_josephson
+              $(BUILD_DIR)/eg_95_josephson \
+              $(BUILD_DIR)/eg_96_double_well \
+              $(BUILD_DIR)/eg_97_zeeman_full \
+              $(BUILD_DIR)/eg_98_stern_gerlach \
+              $(BUILD_DIR)/eg_latex_gen
 
 
 TESTS       = $(BUILD_DIR)/test_version \
@@ -517,6 +522,8 @@ TESTS       = $(BUILD_DIR)/test_version \
               $(BUILD_DIR)/test_fermi_golden_rule \
               $(BUILD_DIR)/test_boson_sampling \
               $(BUILD_DIR)/test_zeeman \
+              $(BUILD_DIR)/test_zeeman_full \
+              $(BUILD_DIR)/test_stern_gerlach \
               $(BUILD_DIR)/test_klein_gordon \
               $(BUILD_DIR)/test_tridiag_eigvals \
               $(BUILD_DIR)/test_random \
