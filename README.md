@@ -481,6 +481,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_95_josephson.c</code></li>
   <li><code>eg_96_double_well.c</code></li>
   <li><code>eg_97_zeeman_full.c</code></li>
+  <li><code>eg_98_stern_gerlach.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -496,10 +497,12 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_ccsd_t.c</code></li>
   <li><code>test_central_potential.c</code></li>
   <li><code>test_central_potential_3d.c</code></li>
+  <li><code>test_cg_solve.c</code></li>
   <li><code>test_cisd.c</code></li>
   <li><code>test_complex.c</code></li>
   <li><code>test_complex_eigh.c</code></li>
   <li><code>test_crank_nicolson.c</code></li>
+  <li><code>test_csv_writer.c</code></li>
   <li><code>test_dft.c</code></li>
   <li><code>test_dirac.c</code></li>
   <li><code>test_dmc.c</code></li>
@@ -514,6 +517,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_geometry_optimization.c</code></li>
   <li><code>test_grplot.c</code></li>
   <li><code>test_h2_vqe.c</code></li>
+  <li><code>test_hdf5_writer.c</code></li>
   <li><code>test_qaoa.c</code></li>
   <li><code>test_hartree_fock.c</code></li>
   <li><code>test_helium.c</code></li>
@@ -521,6 +525,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_hydrogen.c</code></li>
   <li><code>test_identical.c</code></li>
   <li><code>test_ising_chain.c</code></li>
+  <li><code>test_json_writer.c</code></li>
   <li><code>test_klein_gordon.c</code></li>
   <li><code>test_lanczos.c</code></li>
   <li><code>test_latex_gen.c</code></li>
@@ -535,8 +540,8 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_molecular_integrals.c</code></li>
   <li><code>test_molecular_integrals_fuzz.c</code></li>
   <li><code>test_mp2.c</code></li>
+  <li><code>test_netcdf_writer.c</code></li>
   <li><code>test_numerov.c</code></li>
-  <li><code>test_openmp_qmc.c</code></li>
   <li><code>test_perturbation.c</code></li>
   <li><code>test_td_perturbation.c</code></li>
   <li><code>test_dirac_evolve.c</code></li>
@@ -575,6 +580,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_scattering.c</code></li>
   <li><code>test_schrodinger.c</code></li>
   <li><code>test_second_quant.c</code></li>
+  <li><code>test_shift_invert.c</code></li>
   <li><code>test_soft.c</code></li>
   <li><code>test_special.c</code></li>
   <li><code>test_spin_chain.c</code></li>
@@ -587,13 +593,16 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_uhf.c</code></li>
   <li><code>test_uncertainty.c</code></li>
   <li><code>test_variational.c</code></li>
+  <li><code>test_version.c</code></li>
   <li><code>test_vmc.c</code></li>
   <li><code>test_vqe.c</code></li>
   <li><code>test_vqe_noisy.c</code></li>
+  <li><code>test_vtk_writer.c</code></li>
   <li><code>test_wavefn.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
   <li><code>test_zeeman_full.c</code></li>
+  <li><code>test_stern_gerlach.c</code></li>
 </ul>
 </details>
 
