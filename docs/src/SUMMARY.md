@@ -101,6 +101,7 @@
   - [helium](api/helium.md)
   - [identical](api/identical.md)
   - [perturbation](api/perturbation.md)
+  - [stern_gerlach](api/stern_gerlach.md)
   - [td_perturbation](api/td_perturbation.md)
   - [variational](api/variational.md)
   - [zeeman](api/zeeman.md)

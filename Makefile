@@ -311,6 +311,7 @@ PHYSICS_SRCS = $(PHYSICS_DIR)/casscf.c \
                $(PHYSICS_DIR)/boson_sampling.c \
                $(PHYSICS_DIR)/zeeman.c \
                $(PHYSICS_DIR)/zeeman_full.c \
+               $(PHYSICS_DIR)/stern_gerlach.c \
                $(PHYSICS_DIR)/vmc.c \
                $(PHYSICS_DIR)/dmc.c \
                $(PHYSICS_DIR)/pimc.c \

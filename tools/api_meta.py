@@ -86,6 +86,7 @@ SUMMARIES = {
     "identical": (ATOMS, "Identical particles: Slater determinants for fermions and permanents for bosons."),
     "hartree_fock": (ATOMS, "Restricted Hartree-Fock SCF for closed-shell atoms and ions."),
     "dft": (ATOMS, "Kohn-Sham LDA density functional theory for closed-shell atoms and ions."),
+    "stern_gerlach": (ATOMS, "Stern-Gerlach analyzers for spin-1/2: sequential measurements, partial coherence and screen patterns."),
     # Two-level / open systems
     "rabi": (OPEN, "Rabi oscillations of a two-level system in the rotating-wave approximation, exact and numerical."),
     "driven": (OPEN, "Driven two-level systems: general time-dependent Hamiltonians, Landau-Zener sweeps, lab-frame driving beyond the RWA."),
@@ -162,6 +163,7 @@ START = {
     "double_well": ["dw_potential", "dw_eigen", "dw_project", "dw_evolve"],
     "wavefn": ["wavefunction_alloc", "wavefunction_normalize", "wavefunction_free"],
     "zeeman_full": ["zf_solve", "zf_line_intensity", "zf_magnetic_moment"],
+    "stern_gerlach": ["sg_chain", "sg_screen_density", "sg_prob_up"],
 }
 
 # stem -> existing hand-written guide page (relative to docs/src), when name does not match
