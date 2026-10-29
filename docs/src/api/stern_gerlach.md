@@ -12,6 +12,8 @@ Stern-Gerlach analyzers for spin-1/2: sequential measurements, partial coherence
 
 **Start with:** [`sg_chain`](#sg_chain), [`sg_screen_density`](#sg_screen_density), [`sg_prob_up`](#sg_prob_up)
 
+- Example: `examples/eg_98_stern_gerlach.c`
+- Test (every call with expected results): `tests/test_stern_gerlach.c`
 - Runtime help: `qmc_help(stdout, "stern_gerlach");` or `qmc-help stern_gerlach`
 
 ## Overview

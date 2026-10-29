@@ -117,7 +117,7 @@ static const qmc_module_t qmc_catalog_modules[] = {
     {"stern_gerlach", "physics/stern_gerlach.h", "Atomic structure & perturbation theory",
      "Stern-Gerlach analyzers for spin-1/2: sequential measurements, partial coherence and screen patterns.",
      "sg_chain, sg_screen_density, sg_prob_up",
-     "", "", "", 1},
+     "", "examples/eg_98_stern_gerlach.c", "tests/test_stern_gerlach.c", 1},
     {"td_perturbation", "physics/td_perturbation.h", "Atomic structure & perturbation theory",
      "Time-dependent perturbation theory: Dyson series to arbitrary order and first-order closed forms.",
      "tdpt_dyson, tdpt_total_amplitude, tdpt_schrodinger_amplitude, tdpt_probability, tdpt_norm",
