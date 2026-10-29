@@ -1,34 +1,35 @@
 # Showcase: quantum mechanics that runs in your browser
 
-22 interactive demos, all computed live by the same C library you can read
+23 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
 
-| Demo                                               | Physics                                               | Library routine                     | Size  |
-| -------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
-| [Double slit](playground/index.html)               | 2D wave interference                                  | `soft_evolve_2d`                    | 21 KB |
-| [Hofstadter butterfly](playground/butterfly.html)  | Electrons in a magnetic field on a lattice            | Hofstadter spectrum + Chern numbers | 51 KB |
-| [Klein paradox](playground/dirac.html)             | Relativistic electron hitting a barrier               | `dirac_evolve_1d`                   | 24 KB |
-| [Hydrogen orbitals](playground/orbitals.html)      | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
-| [Bloch sphere](playground/bloch.html)              | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
-| [Anderson localisation](playground/anderson.html)  | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
-| [Quantum walk](playground/quantum_walk.html)       | Linear spreading instead of $\sqrt{t}$                | `qwalk_step`                        | 16 KB |
-| [Landau-Zener](playground/landau_zener.html)       | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
-| [Kicked rotor](playground/kicked_rotor.html)       | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
-| [SSH chain](playground/ssh_chain.html)             | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
-| [Ising quench](playground/ising_quench.html)       | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
-| [Haldane Chern insulator](playground/haldane.html) | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
-| [Kerr cat states](playground/wigner.html)          | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
-| [Grover search](playground/grover.html)            | Amplitude amplification, and overshooting it          | `grover_multi_step`                 | 20 KB |
-| [Bell test](playground/bell.html)                  | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
-| [Quantum carpet](playground/carpet.html)           | A packet in a box that reassembles itself             | `box_wavefunction`                  | 17 KB |
-| [Quantum Zeno effect](playground/zeno.html)        | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
-| [Quantum corral](playground/corral.html)           | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
-| [Hubbard dimer](playground/hubbard.html)           | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
-| [Resonant tunnelling](playground/tunnel.html)      | Two thin barriers, transmission jumps to 1            | `db_transmission`                   | 22 KB |
-| [Josephson junction](playground/josephson.html)    | Washboard pendulum: hysteresis and Shapiro steps      | `jj_sweep`                          | 22 KB |
-| [Zeeman effect](playground/zeeman.html)            | Sodium D lines from weak field to Paschen-Back        | `zf_solve`                          | 16 KB |
+| Demo                                                 | Physics                                               | Library routine                     | Size  |
+| ---------------------------------------------------- | ----------------------------------------------------- | ----------------------------------- | ----- |
+| [Double slit](playground/index.html)                 | 2D wave interference                                  | `soft_evolve_2d`                    | 21 KB |
+| [Hofstadter butterfly](playground/butterfly.html)    | Electrons in a magnetic field on a lattice            | Hofstadter spectrum + Chern numbers | 51 KB |
+| [Klein paradox](playground/dirac.html)               | Relativistic electron hitting a barrier               | `dirac_evolve_1d`                   | 24 KB |
+| [Hydrogen orbitals](playground/orbitals.html)        | Atomic orbitals in 3D                                 | `hydrogen_orbital_sample`           | 34 KB |
+| [Bloch sphere](playground/bloch.html)                | A driven, decaying qubit                              | `bloch_evolve`                      | 19 KB |
+| [Anderson localisation](playground/anderson.html)    | A particle that stops spreading in a disordered chain | `anderson_evolve`                   | 8 KB  |
+| [Quantum walk](playground/quantum_walk.html)         | Linear spreading instead of $\sqrt{t}$                | `qwalk_step`                        | 16 KB |
+| [Landau-Zener](playground/landau_zener.html)         | A qubit swept through an avoided crossing             | `lz_sweep`                          | 12 KB |
+| [Kicked rotor](playground/kicked_rotor.html)         | Quantum chaos and dynamical localisation              | `krotor_step`                       | 19 KB |
+| [SSH chain](playground/ssh_chain.html)               | Topological edge states in one dimension              | `ssh_chain_solve`                   | 25 KB |
+| [Ising quench](playground/ising_quench.html)         | Light cone and dynamical phase transitions            | `tfim_quench_zz`                    | 23 KB |
+| [Haldane Chern insulator](playground/haldane.html)   | One-way edge states and the phase diagram             | `tb_ribbon_bands`                   | 48 KB |
+| [Kerr cat states](playground/wigner.html)            | A Wigner function that goes negative                  | `ps_wigner`                         | 22 KB |
+| [Grover search](playground/grover.html)              | Amplitude amplification, and overshooting it          | `grover_multi_step`                 | 20 KB |
+| [Bell test](playground/bell.html)                    | Quantum correlations beating the classical bound      | `bell_chsh`                         | 15 KB |
+| [Quantum carpet](playground/carpet.html)             | A packet in a box that reassembles itself             | `box_wavefunction`                  | 17 KB |
+| [Quantum Zeno effect](playground/zeno.html)          | Watching a qubit stops it moving                      | `zeno_survival_pulsed`              | 18 KB |
+| [Quantum corral](playground/corral.html)             | Bessel modes of a circular drum and a bouncing packet | `cb_mode_value`                     | 22 KB |
+| [Hubbard dimer](playground/hubbard.html)             | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
+| [Resonant tunnelling](playground/tunnel.html)        | Two thin barriers, transmission jumps to 1            | `db_transmission`                   | 22 KB |
+| [Josephson junction](playground/josephson.html)      | Washboard pendulum: hysteresis and Shapiro steps      | `jj_sweep`                          | 22 KB |
+| [Double-well tunnelling](playground/doublewell.html) | Ammonia inversion: a packet tunnels back and forth    | `dw_eigen`                          | 22 KB |
+| [Zeeman effect](playground/zeeman.html)              | Sodium D lines from weak field to Paschen-Back        | `zf_solve`                          | 16 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -391,7 +392,7 @@ around a well and, at a few special energies, the particle gets through with
 probability exactly 1: the waves bouncing between the barriers interfere
 constructively, just as light does in a Fabry–Perot cavity. Those energies are
 the quasi-bound levels of the well, a little below the infinite-well values
-(nπ/w)², and the more opaque the barriers the narrower the peaks and the
+$(n\pi/w)^2$, and the more opaque the barriers the narrower the peaks and the
 longer the particle dwells inside. The page lets you set the heights and
 thicknesses of the barriers, the well width and its floor, then drag the
 energy to see the wavefunction pile up in the well at resonance. This is the
@@ -416,12 +417,32 @@ the voltage is the average speed. A lightly damped junction is hysteretic: it
 switches to the voltage state at $i = 1$ but only retraps near $4/(\pi Q)$ on
 the way down. Add an ac drive and the running phase locks to it, so the I–V curve
 has flat Shapiro steps at $V = n \Omega$, the basis of the voltage standard. The
-page animates the ball, draws the washboard, and sweeps the I–V curve up and down.
+page animates the ball, draws the washboard, and sweeps the I-V curve up and down.
 The tests check the supercurrent branch, the overdamped formula $V = Q\sqrt{(i^2−1)}$,
 fourth-order convergence of the integrator and its energy conservation, the
 hysteresis loop and the Shapiro plateau.
 
 [Open the demo](playground/josephson.html)
+
+## Double-well tunnelling: the ammonia molecule that flips
+
+[![Double-well tunnelling](playground/doublewell.gif)](playground/doublewell.html)
+
+Put a particle in a double well and the classical answer is that it stays in
+whichever well it starts in. Quantum mechanically the two lowest levels form a
+doublet, an even and an odd state a tiny energy $\Delta$ apart, and a particle
+prepared in one well is the difference of the two, so it oscillates between
+the wells with period $2\pi/\Delta$. Because $\Delta$ falls exponentially with
+the barrier (WKB estimate is shown against the exact splitting), the same model
+explains why the ammonia nitrogen flips through the plane of its hydrogens
+24 billion times a second, the transition used in the first maser. The page
+lets you set the barrier height and the separation of the wells, launch a
+Gaussian packet, and watch the probability slosh across while the doublet and
+its splitting update. The tests check the solver against the harmonic
+oscillator and the infinite well, orthonormality, parity and nodes, the
+exponential splitting against WKB, and the $\cos^2(\Delta t/2)$ tunnelling law.
+
+[Open the demo](playground/doublewell.html)
 
 ## Zeeman effect: from anomalous to Paschen–Back
 
