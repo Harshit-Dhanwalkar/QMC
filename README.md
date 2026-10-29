@@ -8,7 +8,7 @@
     <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/docs.yml?branch=main&label=docs" alt="Docs Deploy Status">
   </a>
   <a href="https://github.com/Harshit-Dhanwalkar/QMC/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build_and_tests" alt="CI Status">
+    <img src="https://img.shields.io/github/actions/workflow/status/Harshit-Dhanwalkar/QMC/ci.yml?branch=main&label=build_and_tests&cacheSeconds=0" alt="CI Status">
   </a>
   <a href="https://codecov.io/gh/Harshit-Dhanwalkar/QMC">
     <img src="https://codecov.io/gh/Harshit-Dhanwalkar/QMC/branch/main/graph/badge.svg" alt="Coverage">
