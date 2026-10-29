@@ -305,3 +305,16 @@ else
   echo "FAIL: doublewell WASM and native results differ" >&2
   exit 1
 fi
+
+echo "--- Zeeman: weak field to Paschen-Back, line intensities, native vs WASM ---"
+gcc -O2 -Wall -Wextra -I. -Icore -Iphysics wasm/test/zeeman_ref.c wasm/qmc_zeeman.c physics/zeeman_full.c \
+  -lm -o "$TMP/qmc_zeeman_ref"
+"$TMP/qmc_zeeman_ref" > "$TMP/qmc_zeeman_native.txt"
+cat "$TMP/qmc_zeeman_native.txt"
+node wasm/test/zeeman_check.mjs > "$TMP/qmc_zeeman_wasm.txt"
+if diff -u "$TMP/qmc_zeeman_native.txt" "$TMP/qmc_zeeman_wasm.txt"; then
+  echo "OK: zeeman WASM matches native"
+else
+  echo "FAIL: zeeman WASM and native results differ" >&2
+  exit 1
+fi

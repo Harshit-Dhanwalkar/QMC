@@ -42,6 +42,8 @@
 
 `qmc_dwell.c` wraps the double-well eigen-solver (`physics/double_well.c`): `docs/src/playground/doublewell.html` shows the parity doublet, the exponentially small splitting and a packet tunnelling between the wells.
 
+`qmc_zeeman.c` wraps the full-field Zeeman solver (`physics/zeeman_full.c`): `docs/src/playground/zeeman.html` shows the 2P levels, the 2S to 2P lines with polarisation and intensity, from the anomalous Zeeman regime to Paschen-Back.
+
 ## Build
 
 ```sh
@@ -134,13 +136,13 @@ Ising-quench module (`qmc_tfim.wasm`, no imports): `qmc_tq_set(h_i, h_f)` fixes 
 
 Haldane module (`qmc_haldane.wasm`, imports three WASI stubs): `qmc_hd_set(t2, phi, mass)` builds the model (t1 = 1), `qmc_hd_compute(n_k)` diagonalises a 14-cell ribbon at `n_k` wave numbers into `qmc_hd_energy_buffer()` and `qmc_hd_mean_buffer()` (position of each state across the ribbon, -1 to +1), `qmc_hd_profile(ik, n_k, state)` fills `qmc_hd_prob_buffer()` with one state's weight per cell, and `qmc_hd_chern()` / `qmc_hd_limit()` give the Chern number and phase boundary.
 
-Wigner module (`qmc_wigner.wasm`, no imports): `qmc_wg_state(kind, amp, param, chi_t)` builds a state (0 coherent, 1 Fock, 2 even cat, 3 odd cat, 4 squeezed), applies the Kerr phase `exp(-i chi_t n(n-1))` and fills `qmc_wg_w_buffer()` (128 x 128, row = p, column = x, window `qmc_wg_extent()`), the marginals `qmc_wg_x_buffer()` / `qmc_wg_p_buffer()` and the photon-number distribution `qmc_wg_pn_buffer()`. `qmc_wg_nbar()`, `qmc_wg_negativity()`, `qmc_wg_wmin()` and `qmc_wg_wmax()` are the readouts.
+Wigner module (`qmc_wigner.wasm`, no imports): `qmc_wg_state(kind, amp, param, chi_t)` builds a state (0 coherent, 1 Fock, 2 even cat, 3 odd cat, 4 squeezed), applies the Kerr phase `exp(-i chi_t n(n-1))` and fills `qmc_wg_w_buffer()` (128 x 128, row = $p$, column = $x$, window `qmc_wg_extent()`), the marginals `qmc_wg_x_buffer()` / `qmc_wg_p_buffer()` and the photon-number distribution `qmc_wg_pn_buffer()`. `qmc_wg_nbar()`, `qmc_wg_negativity()`, `qmc_wg_wmin()` and `qmc_wg_wmax()` are the readouts.
 
 Grover module (`qmc_grover.wasm`, no imports): `qmc_gv_set_n(n)` picks $2^n$ items (n up to 10), `qmc_gv_mark(i, flag)` marks or unmarks one (fewer than $N/2$ in total), `qmc_gv_step()` / `qmc_gv_goto(k)` apply Grover iterations to `qmc_gv_amp_buffer()`, and `qmc_gv_curve(count)` fills the simulated and closed-form success curves. `qmc_gv_success()`, `qmc_gv_theta()` and `qmc_gv_kopt()` are the readouts.
 
 Bell module (`qmc_bell.wasm`, no imports): `qmc_bl_set(a, a2, b, b2, V)` fixes the four detector angles (radians) and the Werner-state visibility, `qmc_bl_chsh()` / `qmc_bl_local_chsh()` give S for the quantum state and for the hidden-angle local model, `qmc_bl_max()` the best S over a $\pi/4$ grid, `qmc_bl_curve(n)` fills the correlation-versus-angle buffers and `qmc_bl_sample(n, seed)` simulates n pairs per setting (`qmc_bl_est(i)`, `qmc_bl_sigma()`).
 
-Zeno module (`qmc_zeno.wasm`, no imports): the drive is $\Omega = 1$ and the run lasts $T = \pi$. `qmc_zn_pulsed_curves(n)` fills the survival-versus-time curve for `n` projective measurements and the survival-versus-N curve, `qmc_zn_continuous(gamma)` the survival curve under continuous dephasing, `qmc_zn_rates(gmax)` the decay rate versus dephasing, and `qmc_zn_sample(n, n_traj, seed)` simulates trajectories (`qmc_zn_alive_buffer()`).
+Zeno module (`qmc_zeno.wasm`, no imports): the drive is $\Omega = 1$ and the run lasts $T = \pi$. `qmc_zn_pulsed_curves(n)` fills the survival-versus-time curve for $n$ projective measurements and the survival-versus-N curve, `qmc_zn_continuous(gamma)` the survival curve under continuous dephasing, `qmc_zn_rates(gmax)` the decay rate versus dephasing, and `qmc_zn_sample(n, n_traj, seed)` simulates trajectories (`qmc_zn_alive_buffer()`).
 
 Corral module (`qmc_corral.wasm`, no imports): the first call builds a table of every mode of the unit disc with k <= 26 on an 80 x 80 grid (about 10 MB, ~0.3 s). `qmc_cb_show_mode(i)` fills `qmc_cb_field_buffer()` with mode `i` (quantum numbers from `qmc_cb_mode_m/n/sine/k`), `qmc_cb_launch(x0, y0, s, px, py)` expands a Gaussian packet in the modes and `qmc_cb_evolve(t)` writes its density at time t into the same buffer.
 
@@ -150,7 +152,9 @@ Tunnel module (`qmc_tunnel.wasm`, no imports): units $\hbar^2/2m = 1$. `qmc_dt_s
 
 Josephson module (`qmc_josephson.wasm`, no imports): time in units of 1/omega_p. `qmc_jj_set(q, i_dc, i_ac, omega)` sets the junction, `qmc_jj_reset(phi, v)` and `qmc_jj_advance(t)` step the live pendulum (`qmc_jj_phi/v/time` read it), and `qmc_jj_iv(imax)` fills the up and down sweep I-V curves.
 
-Double-well module (`qmc_dwell.wasm`, no imports): $\hbar = m = 1$, a 500-point grid on $[-5, 5]$. `qmc_dw_set(B, a)` solves the lowest eight states of $V = B(1 - x^2/a^2)^2$ (`qmc_dw_e_buffer`, `qmc_dw_psi_buffer`, `qmc_dw_splitting`, `qmc_dw_wkb`), `qmc_dw_launch(center, sigma)` projects a Gaussian and `qmc_dw_evolve(t)` fills the density buffer and returns P(x < 0); `qmc_dw_split_curve(bmax)` gives the splitting and WKB curves against barrier height.
+Double-well module (`qmc_dwell.wasm`, no imports): $\hbar = m = 1$, a 500-point grid on \[-5, 5\]. `qmc_dw_set(B, a)` solves the lowest eight states of $V = B(1 - x^2/a^2)^2$ (`qmc_dw_e_buffer`, `qmc_dw_psi_buffer`, `qmc_dw_splitting`, `qmc_dw_wkb`), `qmc_dw_launch(center, sigma)` projects a Gaussian and `qmc_dw_evolve(t)` fills the density buffer and returns P(x < 0); `qmc_dw_split_curve(bmax)` gives the splitting and WKB curves against barrier height.
+
+Zeeman module (`qmc_zeeman.wasm`, no imports): $H = \xi L.S + b (L_z + 2 S_z)$ for a p electron, energies in the unit of $\xi$ and b. `qmc_zm_curves(xi, bmax, npts)` fills `qmc_zm_curves_buffer` with the six 2P levels and the two 2S levels (level $k$ at $k \* npts$, `qmc_zm_mj_buffer` holds $2 m_j$), `qmc_zm_lines(xi, b)` fills `qmc_zm_lines_buffer` with twelve rows \[energy, intensity, q, P state, spin\] for the 2S to 2P lines and returns the number with non-zero weight and `qmc_zm_moment(xi, b, k)` returns $dE/db$ of state $k$.
 
 Regenerate the butterfly images:
 

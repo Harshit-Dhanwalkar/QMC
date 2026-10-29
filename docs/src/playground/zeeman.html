@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QMC Playground: Zeeman effect to Paschen-Back</title>
+    <meta
+      name="description"
+      content="Put an alkali atom in a magnetic field and watch the 2P levels and the sodium D lines go from the anomalous Zeeman pattern to Paschen-Back. Levels, polarisations and line intensities are computed live in your browser by the QMC C library (WebAssembly)."
+    />
+    <meta
+      property="og:title"
+      content="Zeeman effect from weak field to Paschen-Back in pure C + WebAssembly"
+    />
+    <meta
+      property="og:description"
+      content="The D1 and D2 lines of an alkali atom split and regroup into the normal Zeeman triplet as the field grows."
+    />
+    <meta
+      property="og:image"
+      content="https://harshit-dhanwalkar.github.io/QMC/playground/zeeman.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      :root {
+        --bg: #0b0e14;
+        --panel: #131824;
+        --line: #232b3d;
+        --text: #d7dce5;
+        --muted: #8993a8;
+        --accent: #3ddc97;
+        --accent2: #f5a524;
+        --blue: #5aa9ff;
+        --red: #ff6b81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      .wrap {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 18px 16px 40px;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 16px;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+      h1 {
+        font-size: 1.35rem;
+        margin: 0;
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      .links a {
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        padding: 5px 10px;
+        border-radius: 8px;
+        margin-left: 6px;
+        font-size: 0.9rem;
+        display: inline-block;
+      }
+      .links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      @media (max-width: 800px) {
+        .main {
+          grid-template-columns: 1fr;
+        }
+      }
+      .cv {
+        position: relative;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #06080d;
+      }
+      .cv canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #sphere {
+        aspect-ratio: 1 / 1;
+        touch-action: none;
+        cursor: grab;
+      }
+      #sphere:active {
+        cursor: grabbing;
+      }
+      #hist {
+        aspect-ratio: 16 / 5;
+        margin-top: 14px;
+      }
+      #readout {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .panel + .panel {
+        margin-top: 14px;
+      }
+      .panel h2 {
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+        align-items: center;
+      }
+      .row + .row {
+        margin-top: 10px;
+      }
+      button {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 11px;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+      }
+      button.on {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: #10241d;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #05150e;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        width: 100%;
+      }
+      label span {
+        min-width: 5.2em;
+      }
+      label b {
+        color: var(--text);
+        font-weight: 500;
+        min-width: 3.4em;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        accent-color: var(--accent);
+        flex: 1;
+        min-width: 90px;
+      }
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-variant-numeric: tabular-nums;
+        padding: 2px 0;
+      }
+      .stat span:first-child {
+        color: var(--muted);
+      }
+      #note {
+        margin-top: 8px;
+        font-size: 0.88rem;
+        color: var(--muted);
+        min-height: 2.6em;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 14px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        vertical-align: middle;
+        margin-right: 5px;
+        border-radius: 2px;
+      }
+      #err {
+        display: none;
+        background: #3a1620;
+        border: 1px solid #7a2b3f;
+        color: #ffc9d4;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 14px;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-top: 22px;
+      }
+      footer a {
+        color: var(--accent);
+      }
+      code {
+        background: #1b2234;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.88em;
+      }
+    </style>
+    <style>
+      #stage {
+        aspect-ratio: 4 / 3;
+      }
+      #readout {
+        position: absolute;
+        left: 12px;
+        top: 10px;
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--muted);
+        pointer-events: none;
+        line-height: 1.5;
+      }
+      .plots {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 14px;
+      }
+      @media (max-width: 800px) {
+        .plots {
+          grid-template-columns: 1fr;
+        }
+      }
+      .plots .cv {
+        aspect-ratio: 16 / 10;
+      }
+      .ttl {
+        position: absolute;
+        left: 12px;
+        top: 8px;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        pointer-events: none;
+      }
+      .sw {
+        display: inline-block;
+        width: 12px;
+        height: 3px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-right: 5px;
+      }
+      select {
+        background: #1b2234;
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 8px;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1><span>QMC</span> Playground - Zeeman effect to Paschen-Back</h1>
+        <div class="links"></div>
+      </header>
+      <p class="sub">
+        A magnetic field splits the 2P levels of an alkali atom, but how depends
+        on its strength against the spin-orbit coupling &xi;. For weak fields
+        each fine-structure level splits evenly by
+        <b>g<sub>J</sub>m<sub>j</sub></b> (the anomalous Zeeman effect,
+        g&nbsp;=&nbsp;4/3 and 2/3); for strong fields the coupling breaks and
+        the levels fan out as <b>m<sub>l</sub>&nbsp;+&nbsp;2m<sub>s</sub></b
+        >, so the D lines regroup into the <i>normal</i> Zeeman triplet
+        (Paschen-Back). Drag the field and watch the six levels, the ten allowed
+        lines from 2S, their polarisations and their intensities.
+        H&nbsp;=&nbsp;&xi;&nbsp;<b>L</b>&middot;<b>S</b>&nbsp;+&nbsp;&mu;<sub>B</sub>B(L<sub>z</sub>&nbsp;+&nbsp;2S<sub>z</sub>),
+        solved in closed form per m<sub>j</sub> block by the QMC library
+        (<code>zeeman_full.c</code>).
+      </p>
+
+      <div class="main">
+        <div>
+          <div class="cv" id="stage">
+            <canvas id="sc"></canvas>
+            <div id="readout"></div>
+          </div>
+          <div class="legend" id="lg1"></div>
+        </div>
+        <div>
+          <div class="panel">
+            <h2>Atom and field</h2>
+            <div class="row">
+              <label
+                ><span>Atom</span
+                ><select id="atom"></select
+              ></label>
+            </div>
+            <div class="row">
+              <label
+                ><span>Field</span
+                ><input
+                  id="b"
+                  type="range"
+                  min="0"
+                  max="4"
+                  step="0.01"
+                  value="0.7" /><b id="bv"></b
+              ></label>
+            </div>
+            <div class="row">
+              <button id="weak">Weak field</button
+              ><button id="mid" class="primary">Crossover</button
+              ><button id="strong">Paschen-Back</button>
+            </div>
+            <div id="note"></div>
+          </div>
+          <div class="panel">
+            <h2>Readout</h2>
+            <div id="stats"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="plots">
+        <div class="cv">
+          <canvas id="pc"></canvas>
+          <div class="ttl">Spectrum at this field</div>
+        </div>
+        <div class="cv">
+          <canvas id="fc"></canvas>
+          <div class="ttl">Lines versus field</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span
+          ><i class="sw" style="background: #3ddc97"></i>&pi; (&Delta;m =
+          0)</span
+        >
+        <span
+          ><i class="sw" style="background: #5aa9ff"></i>&sigma;<sup
+            >+</sup
+          ></span
+        >
+        <span
+          ><i class="sw" style="background: #ff6b81"></i>&sigma;<sup
+            >&minus;</sup
+          ></span
+        >
+        <span>height / opacity = relative intensity</span>
+      </div>
+      <div id="err"></div>
+
+      <footer>
+        Each state is |j, m<sub>j</sub>&rang;;
+        m<sub>j</sub>&nbsp;=&nbsp;&plusmn;3/2 stay pure while the two
+        m<sub>j</sub>&nbsp;=&nbsp;&plusmn;1/2 pairs mix (a 2&times;2 block with
+        off-diagonal &xi;/&radic;2). A line from 2S with spin m<sub>s</sub> into
+        a P state has weight
+        |&lang;m<sub>l</sub>,&nbsp;m<sub>s</sub>|state&rang;|<sup>2</sup>,
+        because light does not act on spin; at zero field D2 is twice as strong
+        as D1 and in Paschen-Back all intensity sits in three lines at &minus;1,
+        0, +1 (in units of &mu;<sub>B</sub>B) plus small &xi; offsets. The field
+        in tesla uses
+        &mu;<sub>B</sub>&nbsp;=&nbsp;0.46686&nbsp;cm<sup>&minus;1</sup>/T and
+        &xi; of 0.227 (Li), 11.46 (Na), 38.5 (K), 158 cm<sup>&minus;1</sup> (Rb)
+        for the 2P / np level; the slider is in units of &xi;. Source:
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/physics/zeeman_full.c"
+          ><code>physics/zeeman_full.c</code></a
+        >, wrapper
+        <a
+          href="https://github.com/Harshit-Dhanwalkar/QMC/blob/main/wasm/qmc_zeeman.c"
+          ><code>wasm/qmc_zeeman.c</code></a
+        >; limits, slopes, sum rules and the block solution are verified against
+        a 6&times;6 diagonalisation in <code>tests/test_zeeman_full.c</code>.
+      </footer>
+    </div>
+
+    <script src="wasi-shim.js"></script>
+    <script type="module">
+      (async () => {
+        const $ = (id) => document.getElementById(id);
+        const showError = (m) => {
+          const e = $("err");
+          e.style.display = "block";
+          e.innerHTML = m;
+        };
+        const css = (v) =>
+          getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        // Load WebAssembly
+        let w;
+        let wasmMemory = null;
+        try {
+          const res = await fetch("qmc_zeeman.wasm");
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          const { instance } = await WebAssembly.instantiate(
+            await res.arrayBuffer(),
+            makeWasiImports(() => wasmMemory),
+          );
+          w = instance.exports;
+          wasmMemory = w.memory;
+          if (w._initialize) w._initialize();
+        } catch (err) {
+          showError(
+            "Could not load <code>qmc_zeeman.wasm</code> (" +
+              err.message +
+              "). If you opened this file directly " +
+              "from disk, serve the folder: <code>python3 -m http.server</code> and open <code>http://localhost:8000/zeeman.html</code>.",
+          );
+
+          return;
+        }
+
+        const B = (fn, n) =>
+          Array.from(new Float64Array(w.memory.buffer, fn(), n)); // copies: memory can grow
+        const COLQ = { "-1": "#ff6b81", 0: "#3ddc97", 1: "#5aa9ff" };
+        const MUB = 0.46686; // cm^-1 per tesla
+        const ATOMS = [
+          ["Sodium (D lines)", 11.46],
+          ["Lithium", 0.227],
+          ["Potassium", 38.5],
+          ["Rubidium", 158],
+        ];
+        const NP = 241;
+        const BMAX = 4;
+        const PCOL = [
+          "#ffb454",
+          "#ff8f4a",
+          "#ff6b4a",
+          "#ff4a6b",
+          "#5aa9ff",
+          "#8f7bff",
+        ];
+        const PLAB = [
+          "3/2, +3/2",
+          "3/2, +1/2",
+          "3/2, \u22121/2",
+          "3/2, \u22123/2",
+          "1/2, +1/2",
+          "1/2, \u22121/2",
+        ];
+        let xi = ATOMS[0][1];
+        let b = 0.7;
+        let curves = [];
+        let fan = [];
+        let lines = [];
+        let moments = [];
+        let nlines = 0;
+
+        for (const [n, x] of ATOMS) {
+          const o = document.createElement("option");
+          o.textContent = n + " \u03be = " + x + " cm\u207b\u00b9";
+          o.value = x;
+          $("atom").appendChild(o);
+        }
+
+        function fit(canvas) {
+          const r = canvas.parentElement.getBoundingClientRect();
+          const d = window.devicePixelRatio || 1;
+          canvas.width = Math.max(2, r.width * d);
+          canvas.height = Math.max(2, r.height * d);
+          const g = canvas.getContext("2d");
+          g.setTransform(d, 0, 0, d, 0, 0);
+          return { g, W: r.width, H: r.height };
+        }
+
+        const Lm = 46;
+        const R = 12;
+        const Tp = 28;
+        const Bt = 36;
+        function axes(g, W, H, o) {
+          const X = (x) => Lm + ((W - Lm - R) * (x - o.x0)) / (o.x1 - o.x0);
+          const Y = (y) =>
+            H - Bt - ((H - Bt - Tp) * (y - o.y0)) / (o.y1 - o.y0);
+          g.font = "11px system-ui";
+          g.strokeStyle = "#232b3d";
+          g.lineWidth = 1;
+          g.fillStyle = "#8993a8";
+          const yt = o.yt || [];
+          for (const v of yt) {
+            g.beginPath();
+            g.moveTo(Lm, Y(v));
+            g.lineTo(W - R, Y(v));
+            g.stroke();
+            g.textAlign = "right";
+            g.fillText(+v.toFixed(2), Lm - 5, Y(v) + 4);
+          }
+
+          g.textAlign = "center";
+          for (let i = 0; i <= 6; i++) {
+            const v = o.x0 + ((o.x1 - o.x0) * i) / 6;
+            g.fillText(+v.toFixed(2), X(v), H - 20);
+          }
+          g.fillText(o.xlabel, (Lm + W - R) / 2, H - 5);
+          g.save();
+          g.translate(11, (Tp + H - Bt) / 2);
+          g.rotate(-Math.PI / 2);
+          g.fillText(o.ylabel, 0, 0);
+          g.restore();
+
+          return { X, Y };
+        }
+
+        const ticks = (lo, hi, n) => {
+          const s = (hi - lo) / n;
+          const r = [];
+          for (let i = 0; i <= n; i++) {
+            r.push(lo + s * i);
+          }
+
+          return r;
+        };
+
+        function compute() {
+          w.qmc_zm_curves(1.0, BMAX, NP);
+          const all = B(w.qmc_zm_curves_buffer, 8 * NP);
+          curves = [];
+          for (let k = 0; k < 8; k++) {
+            curves.push(all.slice(k * NP, (k + 1) * NP));
+          }
+
+          // fan of lines: for each sample field the allowed lines
+          fan = [];
+          for (let i = 0; i < NP; i += 2) {
+            const bb = (BMAX * i) / (NP - 1);
+            w.qmc_zm_lines(1.0, bb);
+            const l = B(w.qmc_zm_lines_buffer, 60);
+            const rows = [];
+            for (let j = 0; j < 12; j++) {
+              if (l[j * 5 + 1] > 1e-6) {
+                rows.push({ e: l[j * 5], i: l[j * 5 + 1], q: l[j * 5 + 2] });
+              }
+            }
+            fan.push({ b: bb, rows });
+          }
+        }
+
+        function at(bb) {
+          nlines = w.qmc_zm_lines(1.0, bb);
+          const l = B(w.qmc_zm_lines_buffer, 60);
+          lines = [];
+          for (let j = 0; j < 12; j++) {
+            if (l[j * 5 + 1] > 1e-6) {
+              lines.push({
+                e: l[j * 5],
+                i: l[j * 5 + 1],
+                q: l[j * 5 + 2],
+                k: l[j * 5 + 3],
+                ms: l[j * 5 + 4],
+              });
+            }
+          }
+
+          moments = [];
+          for (let k = 0; k < 6; k++) {
+            moments.push(w.qmc_zm_moment(1.0, bb, k));
+          }
+        }
+
+        function drawLevels() {
+          const { g, W, H } = fit($("sc"));
+          const y0 = -2 * BMAX - 0.7;
+          const y1 = 2 * BMAX + 1;
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: BMAX,
+            y0,
+            y1,
+            xlabel: "field  \u03bc\u1d2eB / \u03be",
+            ylabel: "energy (units of \u03be)",
+            yt: [-8, -6, -4, -2, 0, 2, 4, 6, 8],
+          });
+
+          for (let k = 0; k < 6; k++) {
+            g.strokeStyle = PCOL[k];
+            g.lineWidth = 2;
+            g.beginPath();
+            curves[k].forEach((e, i) => {
+              const x = a.X((BMAX * i) / (NP - 1)),
+                y = a.Y(e);
+              i ? g.lineTo(x, y) : g.moveTo(x, y);
+            });
+            g.stroke();
+          }
+
+          g.font = "11px system-ui";
+          g.textAlign = "left";
+          g.strokeStyle = "#fff";
+          g.setLineDash([4, 3]);
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(a.X(b), Tp);
+          g.lineTo(a.X(b), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = "#8993a8";
+          g.fillText("2P3/2", Lm + 6, a.Y(0.5) - 8);
+          g.fillText("2P1/2", Lm + 6, a.Y(-1) + 16);
+          $("readout").textContent =
+            "B = " +
+            ((b * xi) / MUB).toFixed(1) +
+            " T   \u03bc\u1d2eB = " +
+            b.toFixed(2) +
+            " \u03be";
+        }
+
+        function drawSpectrum() {
+          const { g, W, H } = fit($("pc"));
+          let lo = -2.2;
+          let hi = 2.2;
+          for (const l of lines) {
+            if (l.i > 0.1) {
+              lo = Math.min(lo, l.e - 0.2);
+              hi = Math.max(hi, l.e + 0.2);
+            }
+          }
+
+          lo = Math.floor(lo);
+          hi = lo + 6 * Math.ceil((Math.ceil(hi) - lo) / 6);
+          const a = axes(g, W, H, {
+            x0: lo,
+            x1: hi,
+            y0: 0,
+            y1: 1.05,
+            xlabel:
+              "line energy relative to the unperturbed level pair (\u03be)",
+            ylabel: "intensity",
+            yt: [0, 0.5, 1],
+          });
+
+          g.lineCap = "round";
+          g.lineWidth = 4;
+          for (const l of lines) {
+            g.strokeStyle = COLQ[l.q];
+            g.beginPath();
+            g.moveTo(a.X(l.e), a.Y(0));
+            g.lineTo(a.X(l.e), a.Y(l.i));
+            g.stroke();
+          }
+          g.fillStyle = "#8993a8";
+          g.font = "11px system-ui";
+          g.textAlign = "center";
+          if (b < 0.4) {
+            g.fillText("D1", a.X(-1), Tp + 6);
+            g.fillText("D2", a.X(0.5), Tp + 6);
+          }
+        }
+
+        function drawFan() {
+          const { g, W, H } = fit($("fc"));
+          const a = axes(g, W, H, {
+            x0: 0,
+            x1: BMAX,
+            y0: -BMAX - 1.5,
+            y1: BMAX + 2.5,
+            xlabel: "field  \u03bc\u1d2eB / \u03be",
+            ylabel: "line energy (\u03be)",
+            yt: [-4, -2, 0, 2, 4, 6],
+          });
+
+          for (const f of fan) {
+            for (const r of f.rows) {
+              g.fillStyle = COLQ[r.q];
+              g.globalAlpha = 0.15 + 0.85 * r.i;
+              g.beginPath();
+              g.arc(a.X(f.b), a.Y(r.e), 1.7, 0, 7);
+              g.fill();
+            }
+          }
+          g.globalAlpha = 1;
+          g.strokeStyle = "#fff";
+          g.setLineDash([4, 3]);
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(a.X(b), Tp);
+          g.lineTo(a.X(b), H - Bt);
+          g.stroke();
+          g.setLineDash([]);
+        }
+
+        function stats() {
+          $("bv").textContent =
+            ((b * xi) / MUB).toFixed((b * xi) / MUB < 10 ? 2 : 0) + " T";
+          const regime =
+            b < 0.15
+              ? "weak field: anomalous Zeeman, E = E\u2c7c + g\u2c7c m\u2c7c \u03bc\u1d2eB"
+              : b > 2.5
+                ? "Paschen\u2013Back: E \u2248 \u03bc\u1d2eB(m_l + 2m_s) + \u03be m_l m_s"
+                : "crossover: levels with equal m\u2c7c repel";
+          const rows = [
+            [
+              "field",
+              ((b * xi) / MUB).toFixed(2) + " T  (" + b.toFixed(2) + " \u03be)",
+            ],
+            ["regime", regime],
+            ["allowed lines", nlines],
+            ["slope, 3/2 +1/2", moments[1].toFixed(3)],
+            ["slope, 1/2 +1/2", moments[4].toFixed(3)],
+            ["slope, 1/2 \u22121/2", moments[5].toFixed(3)],
+          ];
+
+          $("stats").innerHTML = rows
+            .map(
+              ([x, y]) =>
+                `<div class="stat"><span>${x}</span><span>${y}</span></div>`,
+            )
+            .join("");
+          $("note").textContent =
+            "Slopes dE/d(\u03bc\u1d2eB) = \u27e8L_z + 2S_z\u27e9: weak field g\u2c7cm\u2c7c (2, 2/3, \u22122/3, \u22122; 1/3, \u22121/3), strong field m_l + 2m_s.";
+        }
+
+        const legend = () => {
+          $("lg1").innerHTML =
+            PCOL.map(
+              (c, k) =>
+                `<span><i class="sw" style="background:${c}"></i>${PLAB[k]}</span>`,
+            ).join("") + "<span>dashed line = chosen field</span>";
+        };
+
+        function update() {
+          at(b);
+          drawLevels();
+          drawSpectrum();
+          drawFan();
+          stats();
+        }
+
+        $("b").oninput = (e) => {
+          b = +e.target.value;
+          update();
+        };
+        $("atom").onchange = (e) => {
+          xi = +e.target.value;
+          update();
+        };
+
+        const setB = (v) => {
+          b = v;
+          $("b").value = v;
+          update();
+        };
+
+        $("weak").onclick = () => setB(0.05);
+        $("mid").onclick = () => setB(0.7);
+        $("strong").onclick = () => setB(3.8);
+        window.addEventListener("resize", update);
+        legend();
+        compute();
+        update();
+        window.__zm = {
+          setB,
+          set: (o) => {
+            if ("b" in o) setB(o.b);
+          },
+        };
+      })();
+    </script>
+
+    <script src="nav.js"></script>
+  </body>
+</html>

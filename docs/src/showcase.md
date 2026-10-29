@@ -1,6 +1,6 @@
 # Showcase: quantum mechanics that runs in your browser
 
-21 interactive demos, all computed live by the same C library you can read
+22 interactive demos, all computed live by the same C library you can read
 in this repository. There is no JavaScript physics: each page loads a
 WebAssembly module compiled from the QMC sources and JavaScript only draws
 what the C code returns.
@@ -28,6 +28,7 @@ what the C code returns.
 | [Hubbard dimer](playground/hubbard.html)           | Two electrons, solved exactly: from band to Mott      | `hd_solve`                          | 24 KB |
 | [Resonant tunnelling](playground/tunnel.html)      | Two thin barriers, transmission jumps to 1            | `db_transmission`                   | 22 KB |
 | [Josephson junction](playground/josephson.html)    | Washboard pendulum: hysteresis and Shapiro steps      | `jj_sweep`                          | 22 KB |
+| [Zeeman effect](playground/zeeman.html)            | Sodium D lines from weak field to Paschen-Back        | `zf_solve`                          | 16 KB |
 
 ## The double slit, solved rather than drawn
 
@@ -347,7 +348,7 @@ trajectory statistics.
 
 Confine a particle to a disc and its allowed states are the standing waves
 of a drum: $J_m(kr)\cos(m \theta)$ and $J_m(kr)\sin(m \theta)$, with $k$ the
-zeros of the Bessel function J<sub>m</sub> and energy $k^$. Each state has
+zeros of the Bessel function $J_m$ and energy $k^$. Each state has
 $n−1$ circular nodes and $2m$ radial nodal lines; every level with $m \geq 1$
 is doubly degenerate because the cosine and the sine can be rotated into each
 other. The same picture is what scanning-tunnelling microscopists saw when
@@ -421,6 +422,26 @@ fourth-order convergence of the integrator and its energy conservation, the
 hysteresis loop and the Shapiro plateau.
 
 [Open the demo](playground/josephson.html)
+
+## Zeeman effect: from anomalous to Paschen–Back
+
+[![Zeeman effect](playground/zeeman.gif)](playground/zeeman.html)
+
+In a weak magnetic field every fine-structure level of an alkali atom splits
+evenly by $g_J m_j \mu_B B$, with $g = 4/3$ for $2P_{3/2}$ and 2/3 for $2P_{1/2}$:
+the "anomalous" Zeeman effect that puzzled early spectroscopists. Make the field
+larger than the spin–orbit coupling and $L$ and $S$ decouple, so the levels fan
+out as $m_l + 2m_s$ and the ten lines of the sodium $D$ doublet regroup into the
+"normal" Zeeman triplet (Paschen–Back). The page shows the six $2P$ levels against
+the field, the $2S \rightarrow 2P$ spectrum at the chosen field with each line's
+polarisation $(\pi, \sigma_+, \sigma_−)$ and relative intensity, and the full line
+fan, for Li, Na, K or Rb. The Hamiltonian is block diagonal in $m_j$, so each level
+comes from a closed-form $2 \times 2$ or $1 \times 1$ block. The tests check the
+zero-field levels and the 2:1 intensity ratio of $D2$ to $D1$, the g-factor slopes
+against `zeeman_lande_g_factor`, the Paschen–Back limit, the blocks against a $6 \times 6$
+diagonalisation, Hellmann–Feynman slopes and the intensity sum rules.
+
+[Open the demo](playground/zeeman.html)
 
 ## Run it yourself
 
