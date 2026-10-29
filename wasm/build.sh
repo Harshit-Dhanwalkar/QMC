@@ -27,6 +27,7 @@
 #   docs/src/playground/qmc_tunnel.wasm          resonant-tunnelling (double barrier) demo
 #   docs/src/playground/qmc_josephson.wasm       Josephson-junction (RCSJ) demo
 #   docs/src/playground/qmc_doublewell.wasm      double-well tunnelling demo
+#   docs/src/playground/qmc_zeeman.wasm          full-field Zeeman (Paschen-Back) demo
 #
 # Toolchains:
 #   * Emscripten:  https://emscripten.org/docs/getting_started/downloads.html
@@ -226,3 +227,7 @@ build_module "$OUT/qmc_doublewell.wasm" \
 qmc_dw_psi_buffer qmc_dw_e_buffer qmc_dw_split_buffer qmc_dw_wkb_buffer qmc_dw_set qmc_dw_splitting qmc_dw_wkb \
 qmc_dw_split_curve qmc_dw_launch qmc_dw_evolve qmc_dw_mean_x" \
   wasm/qmc_doublewell.c physics/double_well.c
+
+build_module "$OUT/qmc_zeeman.wasm" \
+  "qmc_zm_max_points qmc_zm_curves_buffer qmc_zm_lines_buffer qmc_zm_mj_buffer qmc_zm_curves qmc_zm_lines qmc_zm_moment" \
+  wasm/qmc_zeeman.c physics/zeeman_full.c

@@ -1,7 +1,29 @@
 /*
-Zeeman effect: Lande g-factor, weak-field energy shift, and
-Clebsch-Gordan-coupling cross-check of <Sz>.
-*/
+ * Zeeman effect: Lande g-factor, weak-field energy shift and
+ * Clebsch-Gordan-coupling cross-check of <Sz>
+ *
+ * This module implements general weak-field (anomalous) Zeeman effect for a
+ * single valence electron (spin s = 1/2) in an arbitrary orbital angular
+ * momentum state l
+ *
+ * In weak-field limit (\mu_B B << fine-structure splitting), magnetic field
+ * acts as a perturbation on |l, s; j, m_j> coupled basis:
+ *   H' = \mu_B B (L_z + 2 S_z) = \mu_B B (J_z + S_z)
+ *
+ * Energy shift to first order is:
+ *   \Delta E = g_J * \mu_B * B * m_j
+ *
+ * Where
+ * - g_J is Lande g-factor:
+ *   g_J = 1 + [j(j+1) + s(s+1) - l(l+1)] / (2 j(j+1))
+ *
+ * NOTE: This module assumes weak-field limit where Zeeman splitting is much
+ * smaller than fine-structure splitting (J is a good quantum number)
+ *
+ * NOTE: For exact (all-field) treatment of a p-electron (l=1)—which smoothly
+ * interpolates between this weak-field Zeeman effect and strong-field
+ * Paschen-Back effect-see zeeman_full.h
+ */
 
 #include "zeeman.h"
 #include "../core/vector.h"

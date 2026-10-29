@@ -22,7 +22,10 @@
 
 int main(void) {
   enum { N = 1200 };
-  static double v[N], psi[4 * N], re[N], im[N];
+  static double v[N];
+  static double psi[4 * N];
+  static double re[N];
+  static double im[N];
   const double hw = 5.0;
   const double a = 1.5;
   const double dx = dw_spacing(N, hw);

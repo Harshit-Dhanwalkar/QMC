@@ -233,7 +233,15 @@
       <br>
       <sub>A particle prepared in one well tunnels to the other and back with period 2&pi;/&Delta;, the ammonia-inversion mechanism</sub>
     </td>
-    <td align="center" width="33%"></td>
+    <td align="center" width="33%">
+      <a href="https://harshit-dhanwalkar.github.io/QMC/playground/zeeman.html">
+        <img src="docs/src/playground/zeeman.gif" alt="Zeeman effect: weak-field anomalous to strong-field Paschen-Back" width="260" height="260">
+      </a>
+      <br>
+      <b>Zeeman effect</b>
+      <br>
+      <sub>A p-electron transitioning from weak-field anomalous Zeeman splitting to strong-field Paschen-Back decoupling</sub>
+    </td>
     <td align="center" width="33%"></td>
   </tr>
 </table>
@@ -364,11 +372,12 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
 - Quantum Dynamics: Time-dependent Schr$\ddot{o}$dinger equation, Split-Operator Fourier Transform (SOFT 2D/3D), driven two-level systems, Rabi oscillations, and Complex Absorbing Potentials (CAP), exact Talbot-carpet time evolution of a Gaussian packet in a box, with closed-form revival identities checked against the state vector.
 - Many-Body & Chemistry: Identical particles (Slater determinants), exact diagonalisation of the two-site Hubbard model (doublons, spin correlations, canonical thermodynamics), closed-shell Hartree-Fock SCF, and Quantum Monte Carlo (VMC and DMC for two-electron atoms/ions with a Slater-Jastrow ansatz, and finite-temperature PIMC for helium with Kelbg-regularized Coulomb pair actions and bisection sampling).
 - Open Quantum Systems & Quantum Info: Lindblad master equation for dissipative density matrices, multi-qubit state evolution, entanglement, CHSH Bell-inequality violations on a Werner state (density-matrix correlations cross-checked against a concrete local hidden-variable model and sampled measurements), Boson sampling, and a Variational Quantum Eigensolver (hardware-efficient ansatz + classical coordinate-descent optimizer).
-- Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to 2^10 items).
+- Quantum algorithms: Grover search at the full state-vector level, with closed-form success-probability references (up to $2^{10}$ items).
 - Relativistic QM: 1D/3D Dirac equation and Klein-Gordon solver.
   - Topological invariants: Chern numbers for the Hofstadter model (Fukui–Hatsugai–Suzuki gauge‑invariant discretisation).
   - Quantum rings: Persistent currents and Aharonov-Bohm transmission (scattering matrix via Green's functions).
   - Josephson junctions: RCSJ model phase dynamics, I-V sweeps with hysteresis and Shapiro steps under AC drive.
+  - Zeeman effect: Exact $6 \times 6$ diagonalisation of a p-electron transitioning from weak-field anomalous Zeeman splitting to the strong-field Paschen-Back regime.
 - Visualization: Multi-backend plot abstraction supporting GR Framework (default), GNUplot pipe, or Matplotlib (Python subprocess) pipe.
 - Optimised linear algebra (LAPACK/BLAS backend).
 
@@ -471,6 +480,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>eg_94_double_barrier.c</code></li>
   <li><code>eg_95_josephson.c</code></li>
   <li><code>eg_96_double_well.c</code></li>
+  <li><code>eg_97_zeeman_full.c</code></li>
   <li><code>eg_latex_gen.c</code></li>
 </ul>
 </details>
@@ -583,6 +593,7 @@ See [[benchmarks/README.md]] for build/run details, validation notes, and the re
   <li><code>test_wavefn.c</code></li>
   <li><code>test_wkb.c</code></li>
   <li><code>test_zeeman.c</code></li>
+  <li><code>test_zeeman_full.c</code></li>
 </ul>
 </details>
 

@@ -104,6 +104,7 @@
   - [td_perturbation](api/td_perturbation.md)
   - [variational](api/variational.md)
   - [zeeman](api/zeeman.md)
+  - [zeeman_full](api/zeeman_full.md)
 - [Two-level, open systems & quantum optics]()
   - [bloch](api/bloch.md)
   - [driven](api/driven.md)

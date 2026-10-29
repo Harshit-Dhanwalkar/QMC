@@ -142,11 +142,11 @@ static void test_optimize_b(void) {
   printf("  E(b=0) = %.6f Hartree (for comparison)\n", r_b0.mean);
 
   check_true(b_opt > 0.0 && b_opt < 0.5,
-             "optimized b falls in the physically expected range (0, 0.5)");
+             "optimized b falls in physically expected range (0, 0.5)");
   check_true(E_opt <= r_b0.mean,
-             "optimized energy is at or below the b=0 (no-Jastrow) energy");
+             "optimized energy is at or below b=0 (no-Jastrow) energy");
   check_true(E_opt >= -2.9037 - 0.02,
-             "optimized energy respects the variational bound (with tolerance "
+             "optimized energy respects variational bound (with tolerance "
              "for MC noise)");
 }
 
@@ -295,14 +295,13 @@ test_vmc_run_parallel_from_stream_long_jump_ranks_independent(void) {
   int burn = RUNNING_ON_VALGRIND ? 300 : 1000;
   int block_size = RUNNING_ON_VALGRIND ? 50 : 100;
 
-  // NOTE: Simulates the hybrid MPI+OpenMP pattern documented in vmc.h: one
-  // shared master stream, each "rank" long-jumps a distinct number of times to
-  // land on its own non-overlapping partition, then runs its own
-  // OpenMP-parallel replicas from there. With 3 simulated ranks (0, 1, 2
-  // long-jumps from the same root seed) the three resulting VMC energy
-  // estimates must differ (proof any two ranks aren't silently reusing the same
-  // substream) while all three still land within a physically sane range of the
-  // exact ground-state energy
+  // NOTE: Simulates hybrid MPI+OpenMP pattern documented in vmc.h: one shared
+  // master stream, each "rank" long-jumps a distinct number of times to land on
+  // its own non-overlapping partition, then runs its own OpenMP-parallel
+  // replicas from there. With 3 simulated ranks (0, 1, 2 long-jumps from same
+  // root seed) three resulting VMC energy estimates must differ (proof any two
+  // ranks aren't silently reusing same substream) while all three still land
+  // within a physically sane range of exact ground-state energy
   int n_ranks = 3;
   double means[3];
 

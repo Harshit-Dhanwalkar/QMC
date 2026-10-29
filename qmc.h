@@ -123,6 +123,7 @@
 #include "physics/wavefn.h"
 #include "physics/wkb.h"
 #include "physics/zeeman.h"
+#include "physics/zeeman_full.h"
 #include "physics/zeno.h"
 #include "export/csv_writer.h"
 #include "export/export_schema.h"
