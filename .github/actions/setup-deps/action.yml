@@ -8,23 +8,42 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install packages
+    - name: Cache apt packages
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: build-essential cmake gnuplot libomp-dev libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev libqhull-dev zlib1g-dev libx11-dev libxt-dev libxrender-dev libxext-dev libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev liblapacke-dev liblapack-dev libblas-dev libhdf5-dev libnetcdf-dev
+        version: 1.0
+        execute_install_scripts: false
+
+    # - name: Install packages
+    #   shell: bash
+    #   env:
+    #     EXTRA: ${{ inputs.extra }}
+    #   run: |
+    #     printf '%s\n' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'Acquire::Retries "2";' \
+    #       | sudo tee /etc/apt/apt.conf.d/99timeout >/dev/null
+    #     sudo apt-get update
+    #     # shellcheck disable=SC2086
+    #     sudo apt-get install -y \
+    #       build-essential cmake gnuplot libomp-dev \
+    #       libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
+    #       libqhull-dev zlib1g-dev \
+    #       libx11-dev libxt-dev libxrender-dev libxext-dev \
+    #       libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
+    #       libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
+    #       liblapacke-dev liblapack-dev libblas-dev \
+    #       libhdf5-dev libnetcdf-dev \
+    #       $EXTRA
+
+    - name: Install extra packages (cache restores the rest)
       shell: bash
       env:
         EXTRA: ${{ inputs.extra }}
       run: |
-        printf '%s\n' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'Acquire::Retries "2";' \
-          | sudo tee /etc/apt/apt.conf.d/99timeout >/dev/null
-        sudo apt-get update
-        # shellcheck disable=SC2086
-        sudo apt-get install -y \
-          build-essential cmake gnuplot libomp-dev \
-          libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev \
-          libqhull-dev zlib1g-dev \
-          libx11-dev libxt-dev libxrender-dev libxext-dev \
-          libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev \
-          libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev \
-          liblapacke-dev liblapack-dev libblas-dev liblapack-test \
-          libhdf5-dev libnetcdf-dev \
-          $EXTRA
-
+        if [ -n "$EXTRA" ]; then
+          printf '%s\n' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'Acquire::Retries "2";' \
+            | sudo tee /etc/apt/apt.conf.d/99timeout >/dev/null
+          sudo apt-get update
+          # shellcheck disable=SC2086
+          sudo apt-get install -y --no-install-recommends $EXTRA
+        fi

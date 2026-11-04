@@ -40,10 +40,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/cache@v6
+      - uses: actions/cache@v4
         with:
           path: .lycheecache
-          key: lychee-${{ github.run_id }}
+          key: lychee-cache-${{ github.run_id }}
           restore-keys: lychee-
       - uses: lycheeverse/lychee-action@v2
         with:

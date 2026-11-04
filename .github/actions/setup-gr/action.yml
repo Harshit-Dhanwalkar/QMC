@@ -15,10 +15,21 @@ runs:
 
     - name: Cache GR build
       id: gr-cache
-      uses: actions/cache@v6
+      uses: actions/cache@v4
       with:
-        path: third_party/gr/install
+        path: |
+          third_party/gr/build
+          third_party/gr/install
         key: gr-${{ runner.os }}-${{ inputs.compiler }}-${{ steps.gr-sha.outputs.sha }}
+        restore-keys: |
+          gr-${{ runner.os }}-${{ inputs.compiler }}-
+
+    - name: Install GR build deps
+      if: steps.gr-cache.outputs.cache-hit != 'true'
+      uses: awalsh128/cache-apt-pkgs-action@v1
+      with:
+        packages: libjpeg-dev libpng-dev libfreetype6-dev libfontconfig1-dev libqhull-dev zlib1g-dev libx11-dev libxt-dev libxrender-dev libxext-dev libgl1-mesa-dev libglu1-mesa-dev libglfw3-dev libxt6 libxrender1 libxext6 libglx-mesa0 libqt6widgets6 qtbase5-dev
+        version: 1.0
 
     - name: Build GR
       if: steps.gr-cache.outputs.cache-hit != 'true'

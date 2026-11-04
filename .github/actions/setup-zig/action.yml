@@ -1,5 +1,5 @@
 name: Set up Zig (cached)
-description: Download Zig once per version and put it on PATH (used by the WASM build)
+description: Download Zig once per version and put it on PATH (used by WASM build)
 inputs:
   version:
     description: Zig release to install
@@ -10,10 +10,10 @@ runs:
   steps:
     - name: Cache Zig
       id: cache-zig
-      uses: actions/cache@v6
+      uses: actions/cache@v4
       with:
         path: bin/zig
-        key: zig-${{ inputs.version }}-${{ runner.os }}
+        key: zig-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}
 
     - name: Install Zig
       if: steps.cache-zig.outputs.cache-hit != 'true'

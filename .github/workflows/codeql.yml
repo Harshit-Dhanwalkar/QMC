@@ -3,12 +3,12 @@ name: CodeQL
 on:
   push:
     branches: [main]
-    paths-ignore: ['docs/**', '**.md', 'LICENSE', 'LICENCE']
+    paths-ignore: ["docs/**", "**.md", "LICENSE", "LICENCE"]
   pull_request:
     branches: [main]
-    paths-ignore: ['docs/**', '**.md', 'LICENSE', 'LICENCE']
+    paths-ignore: ["docs/**", "**.md", "LICENSE", "LICENCE"]
   schedule:
-    - cron: "17 6 * * 1"   # Mondays 06:17 UTC
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC, Weekly
   workflow_dispatch:
 
 # Read-only by default; job asks for security-events itself
@@ -20,7 +20,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Get last week's commit
+        id: last-week
+        run: |
+          sha=$(git log --until='7 days ago' -1 --format='%H')
+          if [ -z "$sha" ]; then
+            # No commits older than 7 days — run CodeQL to be safe
+            sha=$(git rev-list --max-parents=0 HEAD | tail -1)
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          base: ${{ steps.last-week.outputs.sha }}
+          filters: |
+            code:
+              - 'core/**'
+              - 'physics/**'
+              - 'export/**'
+              - 'latex/**'
+              - 'main.c'
+              - 'config.h'
+              - 'qmc.h'
+              - 'Makefile'
+              - 'CMakeLists.txt'
+              - 'bindings/**'
+
   analyze:
+    needs: detect-changes
+    if: |
+      always() &&
+      (github.event_name != 'schedule' || needs.detect-changes.outputs.code == 'true')
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     timeout-minutes: 120
