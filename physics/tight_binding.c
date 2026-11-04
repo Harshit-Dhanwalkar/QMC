@@ -1,3 +1,82 @@
+/*
+ * Multi-band tight-binding models and topological invariants
+ *
+ * Model storage. tb_model_t holds onsite energies eps[i] (dense array) and
+ * a growable list of tb_hop_t {i, j, n1, n2, t} with t complex. Hoppings
+ * are stored one-directionally as they were added; Bloch assembly writes both
+ * H[i,j] and H[j,i] = conj(...) from each term, so physically Hermitian H(k) is
+ * guaranteed as long as every t is added once via tb_add_hopping. (Adding i->j
+ * and j->i separately with conjugate t would double term, this is why "hoppings
+ * accumulate" is called out there)
+ *
+ * tb_fill_hamiltonian: for each hopping, phase = k1*n1 + k2*n2, v =
+ * t*exp(i*phase), and H[i,j] += v, H[j,i] += conj(v). Orbital-diagonal
+ * energy is set from eps[] first. This is O(n_hops) per (k1, k2) evaluation
+ * - ready-made models have O(n_orb) hoppings, so tb_bands is O(n_orb^3)
+ * for eigendecomposition and O(n_orb^2) for assembly, which is fine for
+ * DOS/Chern grids up to TB_MAX_GRID
+ *
+ * Diagonalization uniformly goes through cmatrix_eigh_complex (Hermitian
+ * solver). Because H(k) is exactly Hermitian by construction, eigenvalues are
+ * real to working precision; only eigenvalues are copied out in tb_bands, while
+ * topological routines need eigenvector columns and use tb_group_at
+ *
+ * Determinant (tb_det): LU with partial pivoting. Used only on small (n_bands x
+ * n_bands) overlap matrices inside tb_link, so stability at TB_LINK_TOL = 1e-10
+ * threshold is adequate - below that phase of overlap determinant is
+ * meaningless, and we set bad flag rather than fabricate a phase
+ *
+ * Link variable (tb_link): forms overlap matrix O_{cd} = <u_c(k)|u_d(k')> for
+ * selected group, takes its determinant and returns det/|det|
+ * Non-Abelian safe: for a group of count > 1 bands this is det of count x count
+ * overlap, which is standard FHS prescription and is invariant under unitary
+ * mixing within group
+ *
+ * Berry flux grid (tb_berry_flux_grid): precomputes group's eigenvector block
+ * at every k on n_k x n_k grid (stored contiguously), then walks each plaquette
+ * counter-clockwise (a,b) -> (a+1,b) -> (a+1,b+1) -> (a,b+1) -> (a,b),
+ * multiplying four link variables. flux_out[a*n_k+b] is argument of product, in
+ * (-\pi, \pi]. Chern number is sum over all plaquettes divided by 2 * \pi -
+ * this discretization is exactly integer- quantized as long as grid resolves
+ * Berry curvature (FHS 2005). If gap_min < TB_GAP_TOL or any link determinant
+ * falls below TB_LINK_TOL, TB_ERR_DEGENERATE is returned and flux_out is left
+ * undefined; grid is too coarse or band group touches its neighbors, in which
+ * case "Chern number" is not a well-defined quantity
+ *
+ * Grid-size guard: TB_MAX_STORED_ELEMENTS caps product n_k * n_k * n_orb *
+ * n_bands so that a caller passing n_k = TB_MAX_GRID with a large model gets
+ * TB_ERR_INVALID rather than an OOM. Same cap is used for Wilson-loop storage
+ * (n_k * n_orb * n_bands). This makes failure mode predictable ("refuse before
+ * allocating")
+ *
+ * Wilson loops (tb_wilson_core / tb_wilson_phase / tb_wilson_winding):
+ * Wilson phase along k1 at fixed k2 is -arg(prod_a <u(k_a)|u(k_{a+1})>)
+ * Because product is a complex number, arg is folded into (-\pi, \pi] by adding
+ * 2 * \pi if it lands at exactly -pi (that branch of \atan(2) is a measure-zero
+ * set but numerical noise can reach it, so this makes result deterministic)
+ * Winding accumulates *difference* between consecutive k2 Wilson phases with a
+ * wrap-to-[-\pi, \pi) step, and refuses (TB_ERR_DEGENERATE) if any single jump
+ * exceeds 0.9*pi - that is standard "phase slipped by a whole branch" detector,
+ * and means n_k2 is too coarse for model
+ *
+ * Ribbon Hamiltonian (tb_ribbon_hamiltonian): a 2D model is unfolded into
+ * width * n_orb sites (cell r, orbital i -> index r * no + i), periodic along
+ * a1 (Bloch phase \exp(i * k1 * n1)) and open along a2. n2 = \m1 hops connect
+ * adjacent cells in width direction; anything outside [0, width) is dropped
+ * (hard wall). This is exactly standard strip geometry: at gapped-bulk
+ * topological phases, surviving subgap states are chiral edge modes, and
+ * tb_ribbon_bands with mean_cell lets callers see which edge each state lives
+ * on
+ *
+ * Ready-made model factories delegate through tb_finish, which adds a bond
+ * table and frees model on first add failure, so factories have a
+ * single success path (return built model) and a single failure path
+ * (return NULL). Analytic references (tb_*_energy, tb_haldane_chern,
+ * tb_ssh_zak_phase) are closed forms matching what numerical invariants
+ * converge to and are ground truth for tests - they are intentionally
+ * kept separate from numeric routines so a bug in either shows up as a
+ * disagreement rather than cancelling
+ */
 #include "tight_binding.h"
 #include "../core/linalg/complex_eigh.h"
 #include "complex.h"

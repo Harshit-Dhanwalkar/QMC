@@ -1,9 +1,10 @@
 /*
-Variational Quantum Eigensolver: hardware-efficient ansatz (qubits.c) +
-coordinate-descent optimizer (reusing variational.c's golden_section_minimize)
-
-// WARN:See vqe.h for full algorithm description and known limitations
-*/
+ * Variational Quantum Eigensolver: hardware-efficient ansatz (qubits.c) +
+ * coordinate-descent optimizer (reusing variational.c's
+ * golden_section_minimize)
+ *
+ * // WARN:See vqe.h for full algorithm description and known limitations
+ */
 
 #include "vqe.h"
 #include "../core/complex.h"
@@ -26,11 +27,9 @@ cvector_t *vqe_prepare_ansatz(int n_qubits, int n_layers, const double *theta) {
     return NULL;
   }
 
-  complex_t g[4];
-
+  complex_t g[4] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
   for (int layer = 0; layer < n_layers; layer++) {
     for (int q = 0; q < n_qubits; q++) {
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       ry_gate(theta[layer * n_qubits + q], g);
       qstate_apply_gate1(psi, n_qubits, q, g);
     }
@@ -225,12 +224,10 @@ cmatrix_t *vqe_build_pauli_hamiltonian(int n_qubits,
 
   /* NOTE: <i|P|j> = prod_k <i_k|P_k|j_k>, computed one qubit at a time: I/Z are
    * diagonal per-qubit (nonzero only when i_k == j_k), X/Y are off-diagonal
-   * per-qubit (nonzero only when i_k != j_k). The whole matrix element is 0
-   * unless every qubit's local factor is nonzero, in which case it's the
-   * product of those n_qubits factors. Bit position convention matches
-   * vqe_build_tfim: qubit 0 = leftmost string character = MSB (bit n_qubits-1-k
-   * for qubit k).
-   */
+   * per-qubit (nonzero only when i_k != j_k). Whole matrix element is 0 unless
+   * every qubit's local factor is nonzero, in which case it's product of those
+   * n_qubits factors. Bit position convention matches vqe_build_tfim: qubit 0 =
+   * leftmost string character = MSB (bit n_qubits-1-k for qubit k) */
   for (int t = 0; t < n_terms; t++) {
     const char *s = pauli_strings[t];
     double coeff = coefficients[t];

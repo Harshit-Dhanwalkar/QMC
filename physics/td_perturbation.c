@@ -1,3 +1,56 @@
+/*
+ * Dyson-series integration via RK4 on a coupled hierarchy (implementation)
+ *
+ * Representation: State is a flat complex_t array y of length (K+1)*n
+ * Where
+ *   y[k*n + i] = c_i^{(k)}(t)
+ * k-th order coefficient of basis state i in interaction picture, stacked by
+ * order. This layout lets RHS kernel tdpt_rhs touch one order at a time without
+ * gathering across order boundaries, and lets tdpt_integrate treat y as a
+ * single vector for RK4 bookkeeping
+ *
+ * tdpt_rhs: for each k >= 1, computes dy_k = -i P(t) V(t) P(t)^\dagger y_{k-1}.
+ * P(t) = diag(e^{i E_n t}) is built fresh into `ph` (one cos/sin per state)
+ * Sequence is: z_m = conj(ph_m) * y_{k-1,m} (undo phase of previous order),
+ * then a dense V-multiply (complex, hand-written to avoid function-call
+ * overhead in inner k-loop), then rephase into order k and multiply by -i.
+ * Order 0 has dy_0 = 0 by construction — its slot in `dy` is zeroed before
+ * k-loop and never written, which is exactly "c^{(0)} is constant" statement in
+ * header
+ *
+ * Workspace in tdpt_integrate: one calloc of 5*len + 2*n complex_t, sliced
+ * into k1..k4 (RK4 stages), tmp (stage accumulator), ph/z (per-rhs scratch)
+ * Three cmatrix_t's Va/Vm/Vb hold V at start, midpoint, end of each step; Va is
+ * swapped with Vb at end of step instead of copied so there is exactly one
+ * matrix copy per step (memset+Vfn into Vm) Vfn is called three times per step
+ * (t, t+h/2, t+h) - matching header's contract that callback receives those
+ * three points
+ *
+ * Stage-3 call is at t + h/2 (not t + h/2 with Vm again - checking carefully:
+ * it reuses Vm, which is V(t + h/2), and evaluates tmp = y + (h/2)*k2, which is
+ * RK4 mid-point state; 'stage time' for k3 is t + h/2, so this is textbook
+ * RK4). Final step uses t_end = t1 exactly (not t + h), so last nterval closes
+ * at requested endpoint even when t1 - t0 is not an exact multiple of steps to
+ * floating point precision; Vfn call at t_end receives exact t1
+ *
+ * Numerical notes:
+ *   - No step-size adaptation: RK4 with error O(h^4) is intended for short
+ *     windows where perturbative truncation error already dominates;
+ *     adapting would just spend time subdividing a regime where series
+ *     itself is invalid. See header for convergence envelope
+ *   - tdpt_all_finite is called on final y before transfer into result; any
+ *     NaN/Inf anywhere aborts, since a single blown-up mode would corrupt every
+ *     probability computed downstream
+ *   - V is zeroed (memset) before each Vfn call, so callback can write
+ *     sparsely; it need not memset itself
+ *
+ * Closed-form building blocks (tdpt_phase_integral and friends) are kept here
+ * alongside integrator so tests can compare same formula RK4 is converging to.
+ * tdpt_phase_integral has a Taylor-series branch for
+ * |\Delta t| < 1e-2 (8 terms) to keep (\exp^{ix} - 1)/(i\Delta) continuous
+ * through \Delta = 0 without a special-case at exactly zero
+ */
+
 #include "td_perturbation.h"
 #include "complex.h"
 #include "matrix.h"
@@ -60,12 +113,13 @@ static tdpt_result_t *tdpt_result_alloc(int n, int max_order, double t0,
 }
 
 // Dyson hierarchy integration
-// Right-hand side of the hierarchy at time t:
+// Right-hand side of hierarchy at time t:
 //   dy_0 = 0,   dy_k = -i P(t) V(t) P(t)^dagger y_{k-1}   (k >= 1),
 //
-// Where
+// Where:
 //   P(t) = diag(e^{i E_n t})
-// y is laid out as y[k * n + i]. `ph` and `z` are length-n scratch arrays.
+//   y is laid out as y[k * n + i]
+//   `ph` and `z` are length-n scratch arrays
 static void tdpt_rhs(int n, int K, const double *E, double t,
                      const cmatrix_t *V, const complex_t *y, complex_t *dy,
                      complex_t *ph, complex_t *z) {

@@ -1,8 +1,8 @@
 /*
-Numerov's method for Schrödinger equation
-
-Reference: https://en.wikipedia.org/wiki/Numerov%27s_method
-*/
+ * Numerov's method for Schrödinger equation
+ *
+ * Reference: https://en.wikipedia.org/wiki/Numerov%27s_method
+ */
 
 #include "numerov.h"
 #include "../../core/complex.h"
@@ -30,13 +30,16 @@ void numerov_integrate(const numerov_params_t *p, double E, cvector_t *psi) {
     f[i] = (p->V[i] - E) / p->hbar_sq_2m;
   }
 
-  psi->data[0].re = 0.0;
-  psi->data[0].im = 0.0;
+  // Zero-init whole wavefunction, every entry is initialized before Numerov
+  // recurrence reads psi->data[i]
+  // Recurrence overwrites all but first two entries anyway
+  for (int i = 0; i < N; i++) {
+    psi->data[i] = c_zero();
+  }
+
   psi->data[1].re = 1e-8;
-  psi->data[1].im = 0.0;
 
   for (int i = 1; i < N - 1; i++) {
-    // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult)
     double num = 2.0 * (1.0 + (5.0 / 12.0) * h2 * f[i]) * psi->data[i].re -
                  (1.0 - (1.0 / 12.0) * h2 * f[i - 1]) * psi->data[i - 1].re;
     double den = 1.0 - (1.0 / 12.0) * h2 * f[i + 1];

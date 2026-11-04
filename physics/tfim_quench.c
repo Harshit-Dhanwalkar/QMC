@@ -1,3 +1,61 @@
+/*
+ * Free-fermion solution of TFIM quench
+ *
+ * Bloch vector evolution (bloch_at): two-level problem for each
+ * momentum pair k is a spin-1/2 that starts antiparallel to n_i = n_k(h_i)
+ * and precesses about n_f = n_k(h_f) at rate 2*eps_k. Rather than building
+ * a 2x2 unitary and applying it, we use closed-form Rodrigues rotation
+ * of initial vector: s(t) = s0 * \cos(\theta) + (n x s0) * \sin(\theta) +
+ * n*(n.s0) * (1 - \cos(\theta)). \theta = 2 * eps_k * t. This is O(1) per mode
+ * and has no matrix storage, so tfim_quench_modes is trivially cheap even at
+ * TFIM_QUENCH_MAX_SITES
+ *
+ * field_dir guards against len = 0 (h = J, k = 0, gapless point) by
+ * substituting len = 1.0 - resulting direction (0, 0, 0) is only reached by
+ * caller in degenerate case where "field direction" is genuinely undefined, and
+ * any observable built from a zero vector contributes zero, which is correct
+ * limit at critical point
+ * Similarly, tfim_quench_loschmidt_rate clamps its log argument at 1e-300 so an
+ * exactly-overlapping quench (c = 1) gives rate 0 rather than -\inf
+ *
+ * Only k > 0 modes appear in loops (k = (2m + 1) * \pi / N for m = 0..N/2-1)
+ * k < 0 partners have conjugate Bloch vectors that contribute identically
+ * to real observables <sx>, rate function, and zz correlations, so summing
+ * half-spectrum and doubling where appropriate (mx uses -2/N, rate function
+ * uses -1/N) exactly accounts for full BZ
+ *
+ * Pfaffian (pfaffian): Parlett-Reid elimination with partial pivoting. At each
+ * pivot column k we find largest-magnitude entry in a[i][k] for i > k+1, swap
+ * row k+1 with that row (and column k+1 with that column, to keep
+ * antisymmetry), flip sign of running result. Then eliminate: a[i][j] +=
+ * \tau_{i} * a[j][k+1] - a[i][k+1] * (a[k][j]/p) where \tau_{i} = a[k][i]/p and
+ * p = a[k][k+1]. Returns 0 if any pivot vanishes. Matrix is destroyed - callers
+ * in tfim_quench_zz rebuild it fresh for every r
+ *
+ * tfim_quench_zz assembles 2r x 2r Majorana contraction matrix R for operator
+ * string B_0 A_1 B_1 A_2 ... B_{r-1} A_r (B_i = Majorana at even index, A_i =
+ * Majorana at odd index), using Fourier sums g[l] and x[l] of Bloch vectors:
+ *
+ *   g[l] = (2/N) sum_k [ cos(k l) * (-s_z(k)) + sin(k l) * s_y(k) ]
+ *   x[l] = (2/N) sum_k [ sin(k l) * s_x(k) ]
+ *
+ * populated once per call up to |l| <= r_max+1. For each r, 2r x 2r matrix is
+ * filled using sign rules for A/B vs B/A operator ordering (four cases in
+ * switch), then handed to pfaffian. (-1)^r alternating sign in zz[r] comes from
+ * Jordan-Wigner string and is included here rather than at call sites
+ *
+ * Rollover guard: r_max <= n_sites/2 - 1 ensures operator string B_0 A_1 ...
+ * A_r on ring never reaches all way around to site 0, which would produce a
+ * Pfaffian block that is not simply two-point correlator.
+ * tfim_quench_critical_time does not need this guard because it is a property
+ * of infinite-chain dispersion at gap-closing k
+ *
+ * Ready-made dispersion helpers (quasi_energy, tfim_quench_critical_time) are
+ * inlined closed forms rather than special cases of mode sums, so critical-time
+ * formula remains correct in thermodynamic limit where discrete sum would give
+ * a staircase instead of a smooth curve
+ */
+
 #include "tfim_quench.h"
 #include <math.h>
 #include <stddef.h>

@@ -1,3 +1,55 @@
+/*
+ * Gaussian94 basis-set-file parser
+ *
+ * Flow: basis_set_parse_file -> reads whole file into a heap buffer ->
+ * basis_set_parse_string does all real work line-by-line on a strdup'd mutable
+ * copy (strtok_r mutates). Nothing in parser looks at more than current line
+ * and accumulated per-element shell list, so memory use is O(file size + parsed
+ * output)
+ *
+ * Structure of parser state:
+ *   - `elems` : growable vec of finished basis_element_t blocks
+ *   - `cur_shells` / `cur_symbol` / `have_open_element` : element block
+ *     currently being filled; it is flushed into `elems` only when a "****"
+ *     separator line or EOF is seen. This mirrors on-disk layout so that
+ *     a truncated file still yields whatever complete element blocks it had
+ *   - Two small growable vec types (elem_vec_t, shell_vec_t) with doubling
+ *     growth. Both are plain realloc+memcpy of structs; shell vec moves shell
+ *     structs by value, which is why basis_shell_t owns raw pointers that are
+ *     only ever passed on to a later owner, never duplicated
+ *
+ * Shell handling:
+ *   - "SP" is special-cased before generic l lookup, because it is a two-column
+ *     coefficient block (S coef1, P coef2) that expands to a single S function
+ *     plus three P functions. Its `l` field in parsed shell is 0 (S half) and
+ *     coef2 is non-NULL (P half)
+ *   - Any single-letter shell from S..G maps via shell_letter_to_l; anything
+ *     else (multi-letter non-SP, unknown letter, unsupported higher l) is a
+ *     parse error, not a silent skip. This is deliberate: silently dropping
+ *     a shell would corrupt a downstream SCF
+ *
+ * Expansion to basis_function_t (append_shell_functions):
+ *   - cartesian_components enumerates (lx, ly, lz) with decreasing lx as outer
+ *     loop, so P order is (px, py, pz) as molint_basis_sto3g_li expects
+ *     Higher l values follow same canonical order - array is sized for l up to
+ *     4 (15 components), which covers every shell type parser accepts
+ *   - Each component shares shell's exponent/coefficient arrays by pointer
+ *     (basis_function_alloc copies); molint_normalize_contraction is applied
+ *     once per component immediately after allocation, so callers of
+ *     basis_set_build_atom / _molecule never see unnormalized functions
+ *   - Growable output array (arr / count / cap) is passed by pointer and
+ *     grown by doubling; on any allocation failure mid-expansion caller
+ *     (basis_set_build_atom) frees partial array, so no leaked basis_function_t
+ *     is possible here
+ *
+ * basis_set_build_atom concatenates shells for one element
+ * Return-value convention: 0 with *out = NULL means failure; 0 with a
+ * legitimately zero-shell element is impossible because every parsed element
+ * has at least one shell (parser rejects a header with no following shell
+ * lines) basis_set_build_molecule distinguishes two by checking elem->n_shells
+ * > 0 && !atom_fns
+ */
+
 #include "basis_parser.h"
 #include "molecular_integrals.h"
 
@@ -256,7 +308,7 @@ basis_set_t *basis_set_parse_string(const char *text) {
     int is_sp = (strcmp(shell_type, "SP") == 0);
     int l = is_sp ? 0 : shell_letter_to_l(shell_type[0]);
     if (!is_sp && (l < 0 || shell_type[1] != '\0')) {
-      // Single-letter shell types only (beyond the special-cased "SP")
+      // Single-letter shell types only (beyond special-cased "SP")
       ok = 0;
       break;
     }
@@ -473,10 +525,9 @@ const basis_element_t *basis_set_find_element(const basis_set_t *bs,
 
 // Shell -> basis_function_t expansion
 
-// Enumerate the (l+1)(l+2)/2 Cartesian (lx,ly,lz) components of angular
-// momentum l, in decreasing-lx canonical order (convention used by
-// molint_basis_sto3g_li's explicit px,py,pz ordering for l=1). Writes into
-// out[][3], returns the count
+// Enumerate (l+1)(l+2)/2 Cartesian (lx,ly,lz) components of angular momentum l,
+// in decreasing-lx canonical order (convention used by molint_basis_sto3g_li's
+// explicit px,py,pz ordering for l=1). Writes into out[][3], returns count
 static int cartesian_components(int l_quantum, int out[][3]) {
   int n = 0;
   for (int lx = l_quantum; lx >= 0; lx--) {
@@ -575,7 +626,7 @@ static int append_shell_functions(const basis_shell_t *sh,
     if (*count == *cap) {
       int new_cap = *cap == 0 ? 8 : *cap * 2;
 
-      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(**tmp));
+      basis_function_t **tmp = realloc(*arr, (size_t)new_cap * sizeof(*tmp));
       if (!tmp) {
         basis_function_free(fn);
 

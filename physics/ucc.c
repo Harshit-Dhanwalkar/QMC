@@ -1,3 +1,54 @@
+/*
+ * UCC ansatz implementation (dense small-system reference)
+ *
+ * Generator construction (ucc_build_generator):
+ *   For each single (i, a), term = a_a^+ a_i and term_dag = a_i^+ a_a are
+ *   built from JW matrices (jw_creation_operator / jw_annihilation_operator)
+ *   Contribution to kappa is \theta_s * (term - term_dag), which is
+ *   anti-Hermitian by construction. For each double (i, j, a, b), term
+ *   is a_a^+ a_b^+ a_j a_i and its adjoint is a_i^+ a_j^+ a_b a_a; again
+ *   \theta_d * (term - term_dag) is anti-Hermitian. \kappa is a single
+ *   accumulated dense matrix; intermediate term/term_dag/tensor-product
+ *   matrices are freed as soon as they've been folded in
+ *   Index validation happens before any operator is built, so an invalid (i, a)
+ *   or (i, j, a, b) always returns NULL with no partial state
+ *
+ * Exponential (ucc_prepare_state):
+ *   H = i * kappa is Hermitian when \kappa is anti-Hermitian, so we diagonalize
+ *   H instead of kappa - this lets us reuse cmatrix_eigh_complex directly
+ *   (its input contract is Hermitian) and gives real eigenvalues \lambda_k
+ *   Then \exp(\kappa) = \exp(-i*H) = V * diag(\exp(-i * \lambda_k)) * V^\dagger
+ *   We apply this to |reference> as:
+ *       coeffs = V^\dagger @ reference      (project)
+ *       coeffs[k] *= \exp(-i * \lambda_k)   (phase in eigenbasis)
+ *       \psi = V @ coeffs                   (back-transform)
+ *   which is O(dim^2) once eigenvectors are known, instead of O(dim^3) to form
+ *   \exp(\kappa) explicitly. Result is normalized with cvector_normalize
+ *   afterward: \exp(\kappa) is exactly unitary only in exact arithmetic;
+ *   rounding in eigendecomposition can leave norm at 1 \pm 1e-15 and
+ *   re-normalizing keeps downstream overlap computations consistent with each
+ *   other
+ *
+ * CCSD amplitude conversion (ucc_excitations_from_ccsd_amplitudes):
+ *   t1[i, a] and t2[i, j, a, b] are already "converged amplitude" for single (i
+ *   -> a) and double (i,j -> a,b) excitations. Generator uses these directly as
+ *   \theta_s / \theta_d, which is standard "UCC from CC amplitudes"
+ *   initialization; it is not variational optimum of UCC, just a good starting
+ *   point. Occupied and virtual indices are taken from amp->occ[]/amp->virt[]
+ *   (they are not necessarily contiguous 0..no-1 / no..nso-1) so returned
+ *   indices are always valid spin-orbital labels even for restricted
+ *   calculations where CCSD is run in a symmetry-adapted (frozen-core) space
+ *
+ *   Doubles enumeration uses i < j (occupied) and a < b (virtual) to avoid
+ *   double-counting antisymmetric pair; single t2 entry t2[i, j, a, b] carries
+ *   full amplitude, so (j, i, b, a) variant would just be its negation and must
+ *   not be added separately
+ *
+ *   All four output pointers are set on success. If n_doubles == 0 caller gets
+ *   NULL doubles/\theta_d with *n_doubles_out = 0 - this is a legitimate case
+ *   (e.g. one virtual orbital) and is handled uniformly by ucc_build_generator,
+ *   which accepts NULL list when count == 0
+ */
 #include "ucc.h"
 #include "../core/complex.h"
 #include "../core/linalg/complex_eigh.h"

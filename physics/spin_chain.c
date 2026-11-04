@@ -89,6 +89,14 @@ static inline double sz_bit(uint64_t s, int j) {
 //  WARN: sector dimension itself is bottleneck, not this scan
 static uint64_t find_representative(uint64_t s, int N, uint64_t mask,
                                     int *l_out) {
+  if (N <= 0) {
+    if (l_out) {
+      *l_out = 0;
+    }
+
+    return s;
+  }
+
   uint64_t best = s;
   int lbest = 0;
   uint64_t t = s;
@@ -102,9 +110,7 @@ static uint64_t find_representative(uint64_t s, int N, uint64_t mask,
   }
 
   // translate^{lbest}(s) == best (== rep), so s == translate^{N-lbest}(rep)
-  // NOLINTNEXTLINE(clang-analyzer-core.DivideZero)
   *l_out = (N - lbest) % N;
-
   return best;
 }
 

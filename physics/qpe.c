@@ -12,15 +12,15 @@
  *      so inverse QFT that follows yields \phi as a big-endian binary fraction
  *      directly in counting register
  *   3. Apply inverse QFT on counting register
- *   4. Measure counting register: outcome c / 2^{n_count} is estimate
- *      of \phi, with standard peaked distribution centered on true phase
+ *   4. Measure counting register: outcome c / 2^{n_count} is estimate of \phi,
+ *      with standard peaked distribution centered on true phase
  *      Estimator is exact when \phi is a multiple of 1 / 2^{n_count}, otherwise
  *      it has a spread of a few bins whose width depends on distance from true
  *      phase to nearest representable value
  *
  * Power of U: Controlled-U^{2^i} operators are built once at start via repeated
- * squaring: pow[0] = U, pow[i] = pow[i - 1] * pow[i - 1]. This gives exact
- * matrix powers (up to floating-point matrix-multiplication rounding)
+ * squaring: pow[0] = U, pow[i] = pow[i - 1] * pow[i - 1] gives exact matrix
+ * powers (up to floating-point matrix-multiplication rounding)
  *
  * Two entry points:
  * qpe_run()               applies circuit to a caller-supplied state vector, in
@@ -135,9 +135,14 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
     return NULL;
   }
 
-  // Prepare target register in target_eigenstate: overwrite (counting = 0...0,
-  // target = *) amplitudes directly, all other amplitudes start at zero from
-  // qstate_alloc
+  long long dim = 1LL << n_qubits;
+  // NOTE: Prepare target register in target_eigenstate: overwrite (counting =
+  // 0...0, target = *) amplitudes directly by explicitly zero entire state
+  // vector, then overwrite target-register slice with supplied eigenstate
+  for (long long s = 0; s < dim; s++) {
+    psi->data[s] = c_zero();
+  }
+
   for (long long s = 0; s < block; s++) {
     psi->data[s] = target_eigenstate[s];
   }
@@ -163,7 +168,6 @@ qpe_distribution_t *qpe_estimate_phase(int n_count, int n_target,
 
   // Marginalize over target register: \sum |amplitude|^2 over every
   // target-register configuration for each counting-register bitstring
-  long long dim = 1LL << n_qubits;
   for (long long c = 0; c < n_bins; c++) {
     d->probabilities[c] = 0.0;
   }

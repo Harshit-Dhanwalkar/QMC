@@ -7,7 +7,7 @@ typedef struct {
   double re, im;
 } complex_t;
 
-/* Basic operations */
+// Basic operations 
 static inline complex_t c_new(double re, double im) {
   return (complex_t){re, im};
 }
@@ -22,7 +22,7 @@ static inline double c_abs(complex_t z) { return sqrt(z.re * z.re + z.im * z.im)
 static inline double c_abs2(complex_t z) { return z.re * z.re + z.im * z.im; }
 static inline double c_arg(complex_t z) { return atan2(z.im, z.re); }
 
-/* Arithmetic */
+// Arithmetic
 static inline complex_t c_add(complex_t a, complex_t b) {
   return (complex_t){a.re + b.re, a.im + b.im};
 }
@@ -34,6 +34,7 @@ static inline complex_t c_mul(complex_t a, complex_t b) {
 }
 static inline complex_t c_div(complex_t a, complex_t b) {
   double denom = c_abs2(b);
+
   return (complex_t){(a.re * b.re + a.im * b.im) / denom,
                      (a.im * b.re - a.re * b.im) / denom};
 }
@@ -42,10 +43,11 @@ static inline complex_t c_scale(complex_t z, double s) {
 }
 static inline complex_t c_exp(complex_t z) {
   double exp_re = exp(z.re);
+
   return (complex_t){exp_re * cos(z.im), exp_re * sin(z.im)};
 }
 
-/* Polar coorindates */
+// Polar coorindates 
 static inline double c_abs_sqr(complex_t z) {
   return z.re * z.re + z.im * z.im;
 }

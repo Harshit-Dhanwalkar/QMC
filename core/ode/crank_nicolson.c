@@ -1,15 +1,16 @@
 /*
-Crank-Nicolson method for TDSE (complex tridiagonal solver), with support
-for time-dependent V(x,t) and complex absorbing potentials (CAP).
-
-TDSE
- - For time evolution `i * \hbar d\phi / dt = H\phi`, Crank-Nicolson is
-   unconditionally stable and unitary for Hermitian H. A complex absorbing
-   potential (CAP) makes H = H0 - i * \Gamma(x) non-Hermitian by design, so norm
-   decays in absorbing region instead of being conserved
- - This reduces to a tridiagonal complex linear system per timestep - solvable
-   with Thomas algorithm in O(N)
-*/
+ * Crank-Nicolson method for TDSE (complex tridiagonal solver), with support
+ * for time-dependent V(x,t) and complex absorbing potentials (CAP)
+ *
+ * TDSE
+ *  - For time evolution `i * \hbar d\phi / dt = H\phi`, Crank-Nicolson is
+ *    unconditionally stable and unitary for Hermitian H
+ *    A complex absorbing potential (CAP) makes H = H0 - i * \Gamma(x)
+ *    non-Hermitian by design, so norm decays in absorbing region instead of
+ * being conserved
+ *  - This reduces to a tridiagonal complex linear system per timestep solvable
+ *    with Thomas algorithm in O(N)
+ */
 
 #include "crank_nicolson.h"
 #include "../complex.h"
@@ -18,14 +19,13 @@ TDSE
 #include <stdlib.h>
 #include <string.h>
 
-/* Complex Thomas algorithm for tridiagonal system.
+/* Complex Thomas algorithm for tridiagonal system
  *  a: lower diagonal (size N-1),
  *  b: diagonal (size N),
  *  c: upper diagonal (size N-1)
  *  d: RHS (complex) input, solution overwritten in d.
  *
- *  Returns 0 on success.
- */
+ *  Returns 0 on success */
 static int thomas_complex(const complex_t *a, const complex_t *b,
                           const complex_t *c, complex_t *d, int N) {
   if (N < 1) {
@@ -52,8 +52,9 @@ static int thomas_complex(const complex_t *a, const complex_t *b,
       return -1;
     }
 
-    if (i < N - 1)
+    if (i < N - 1) {
       cp[i] = c_div(c[i], denom);
+    }
     dp[i] = c_div(c_sub(d[i], c_mul(a[i - 1], dp[i - 1])), denom);
   }
 
@@ -81,10 +82,10 @@ int crank_nicolson_step_general(const complex_t *diag, const double *offdiag,
 
   // Build complex tridiagonal matrix A = I + i * dt / 2 * H, H possibly
   // non-Hermitian (CAP) and/or time-dependent
-  complex_t *a = malloc((N - 1) * sizeof(complex_t));
-  complex_t *b = malloc(N * sizeof(complex_t));
-  complex_t *c = malloc((N - 1) * sizeof(complex_t));
-  complex_t *rhs = malloc(N * sizeof(complex_t));
+  complex_t *a = calloc((size_t)(N - 1), sizeof(complex_t));
+  complex_t *b = calloc((size_t)N, sizeof(complex_t));
+  complex_t *c = calloc((size_t)(N - 1), sizeof(complex_t));
+  complex_t *rhs = calloc((size_t)N, sizeof(complex_t));
   if (!a || !b || !c || !rhs) {
     free(a);
     free(b);
@@ -100,7 +101,6 @@ int crank_nicolson_step_general(const complex_t *diag, const double *offdiag,
     // b[i] = 1 + i * dt / 2 * diag[i]
     b[i] = c_add(c_one(), c_mul(i_dt2, diag[i]));
     if (i < N - 1) {
-      // NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
       complex_t off = c_mul(i_dt2, c_real(offdiag[i]));
       c[i] = off;
       a[i] = off; // symmetric kinetic coupling
@@ -249,7 +249,7 @@ int crank_nicolson_evolve_time_dependent(const double *x, int N, double dx,
   int rc = 0;
 
   for (int s = 0; s < steps && rc == 0; s++) {
-    // Evaluate H at step's midpoint time for 2nd-order accuracy.
+    // Evaluate H at step's midpoint time for 2nd-order accuracy
     double t_mid = t + dt / 2.0;
     build_tridiagonal_hamiltonian_time_dependent(
         x, N, dx, hbar_sq_2m, V, params, t_mid, absorb, diag, offdiag);
