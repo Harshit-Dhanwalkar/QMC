@@ -337,13 +337,13 @@
         output and you have <b>measured</b> the spin: send that beam through a
         magnet turned by 90&deg;, block one output again, and a third magnet
         along the original axis finds half of those atoms &ldquo;down&rdquo;
-        again &mdash; z+ &rarr; x+ &rarr; z+ passes <b>&frac14;</b> of the beam,
+        again - z+ &rarr; x+ &rarr; z+ passes <b>&frac14;</b> of the beam,
         though z+ &rarr; z+ passes all of it and z+ &rarr; z&minus; none. Let
         <i>both</i> beams through and bring them back together and the state is
-        restored (Feynman&rsquo;s &ldquo;Humpty Dumpty&rdquo; magnet) &mdash;
-        but only as far as the two packets still overlap. Chain up to three
-        analyzers, tilt them, mix the source, and compare the screen pattern
-        with the classical smear. Bloch-vector bookkeeping by the QMC library
+        restored (Feynman&rsquo;s &ldquo;Humpty Dumpty&rdquo; magnet) - but only
+        as far as the two packets still overlap. Chain up to three analyzers,
+        tilt them, mix the source, and compare the screen pattern with the
+        classical smear. Bloch-vector bookkeeping by the QMC library
         (<code>stern_gerlach.c</code>).
       </p>
 
@@ -798,6 +798,11 @@
 
         function drawOverlap() {
           const { g, W, H } = fit($("oc"));
+          if (W === 0 || H === 0) {
+            // skip if layout not ready
+            return;
+          }
+
           const Lm = 40;
           const Rr = 12;
           const Tp = 28;
@@ -805,10 +810,13 @@
           const xm = 8;
           const X = (v) => Lm + ((W - Lm - Rr) * v) / xm;
           const Y = (v) => H - Bt - (H - Bt - Tp) * v;
+
           g.font = "11px system-ui";
           g.fillStyle = "#8993a8";
           g.strokeStyle = "#232b3d";
           g.textAlign = "right";
+
+          // Draw Y-axis grid
           for (const v of [0, 0.5, 1]) {
             g.beginPath();
             g.moveTo(Lm, Y(v));
@@ -817,11 +825,14 @@
             g.fillText(v, Lm - 5, Y(v) + 4);
           }
 
+          // Draw X-axis labels
           g.textAlign = "center";
           for (let v = 0; v <= 8; v += 2) {
             g.fillText(v, X(v), H - 20);
           }
           g.fillText("separation d / σ", (Lm + W - Rr) / 2, H - 5);
+
+          // Draw Gaussian overlap curve
           g.strokeStyle = G;
           g.lineWidth = 2.2;
           g.beginPath();
@@ -830,13 +841,17 @@
             const y = Math.exp((-r * r) / 8);
             i ? g.lineTo(X(r), Y(y)) : g.moveTo(X(r), Y(y));
           }
-
           g.stroke();
+
+          // Draw orange dot
           const r0 = d / sg;
+          const validOv = typeof ov === "number" && !isNaN(ov) ? ov : 0;
           g.fillStyle = "#ffb454";
           g.beginPath();
           g.arc(X(Math.min(r0, xm)), Y(ov), 5, 0, 7);
           g.fill();
+
+          // Draw text readout
           g.fillStyle = "#d7dce5";
           g.textAlign = "left";
           g.fillText(
@@ -914,7 +929,7 @@
           drawScreen();
           run();
         }
-        
+
         $("s0").oninput = (e) => {
           src = +e.target.value;
           update();
@@ -943,7 +958,7 @@
           for (let i = 0; i < 400; i++) hits.push(h[2 * i]);
           update();
         };
-        
+
         $("clear").onclick = () => {
           hits = [];
           update();
@@ -954,7 +969,7 @@
           });
           update();
         };
-        
+
         const preset = (s, nn, cfg, note) => {
           src = s;
           pol = 1;
@@ -1013,6 +1028,12 @@
 
         window.addEventListener("resize", update);
         buildPanel();
+
+        // Wait for browser to calculate grid layout before first draw
+        requestAnimationFrame(() => {
+          $("p1").click();
+        });
+
         $("p1").click();
         window.__sg = {
           preset: (k) => $("p" + k).click(),
@@ -1021,11 +1042,13 @@
               src = o.src;
               $("s0").value = src;
             }
+
             hits = [];
             if ("d" in o) {
               d = o.d;
               $("d").value = d;
             }
+
             if ("sg" in o) {
               sg = o.sg;
               $("sg").value = sg;

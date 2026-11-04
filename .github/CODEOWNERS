@@ -1,0 +1,5 @@
+# .github/CODEOWNERS
+# Default owner for everything not explicitly listed below
+* @Harshit-Dhanwalkar
+/.github/ @Harshit-Dhanwalkar
+/Makefile @Harshit-Dhanwalkar
