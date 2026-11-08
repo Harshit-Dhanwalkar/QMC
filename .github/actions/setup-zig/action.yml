@@ -10,7 +10,7 @@ runs:
   steps:
     - name: Cache Zig
       id: cache-zig
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: bin/zig
         key: zig-${{ inputs.version }}-${{ runner.os }}-${{ runner.arch }}
